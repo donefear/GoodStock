@@ -479,9 +479,9 @@ function renderWeek() {
   const planned = selectedPlans.length ? selectedPlans.map((entry) => {
     const recipe = recipeById(entry.recipeId);
     if (!recipe) return '';
-    const title = mealieConfigured && recipe.source === 'Mealie' && recipe.slug
+    const title = recipe.source === 'Mealie' && recipe.slug
       ? `<a class="mealie-link" href="/api/mealie/open/${encodeURIComponent(recipe.slug)}" target="_blank" rel="noopener" title="Open recipe in Mealie">${escapeHtml(recipe.name)} <span aria-hidden="true">↗</span></a>`
-      : escapeHtml(recipe.name);
+      : `<button class="mealie-link recipe-title-link" type="button" data-action="open-recipe" data-id="${escapeHtml(recipe.id)}" title="Show recipe">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`;
     return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? 'Cooked and confirmed' : `${recipe.ingredients.length} ingredients`}</span></div>${entry.cooked ? '<span class="cooked-label">DONE</span>' : `<button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}">Cook & review</button>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="Remove meal">×</button></article>`;
   }).join('') : '<div class="day-empty"><span aria-hidden="true">✳</span><p>No meal planned for this day.</p><small>Pick a recipe below to give the day a little shape.</small></div>';
   const recipeOptions = [...state.recipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
@@ -676,7 +676,7 @@ document.addEventListener('click', async (event) => {
     return;
   }
   if (action === 'show-shopping-qr') openShoppingShare();
-  if (action === 'show-expiring-recipe') {
+  if (action === 'show-expiring-recipe' || action === 'open-recipe') {
     const recipe = recipeById(id);
     if (recipe) {
       activeView = 'recipes';

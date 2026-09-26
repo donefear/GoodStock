@@ -190,6 +190,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .mealie-link { color: inherit; text-decoration: underline; text-decoration-color: #33785e66; text-underline-offset: 3px; }
 .mealie-link:hover, .mealie-link:focus-visible { color: var(--green); text-decoration-color: currentColor; }
 .mealie-link span { color: var(--green); font-size: 11px; }
+.recipe-title-link { padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
 .planned-copy > strong, .planned-copy > span { display: block; }
 .planned-copy strong { font-size: 13px; }
 .planned-copy > span { margin-top: 3px; color: #8b958c; font-size: 10px; }
