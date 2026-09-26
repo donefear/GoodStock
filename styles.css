@@ -49,7 +49,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .sync-card strong { font-size: 12px; font-weight: 700; }
 .sync-card small { margin-top: 3px; color: var(--muted); font-size: 11px; }
 .side-foot { display: block; margin: 16px 10px 0; color: #818d83; font: italic 13px 'Fraunces', Georgia, serif; }
-.made-by { display: block; margin: 6px 10px 0; color: var(--muted); font-size: 11px; letter-spacing: .3px; }
+.made-by { display: flex; align-items: center; gap: 6px; margin: 6px 10px 0; color: var(--muted); font-size: 11px; letter-spacing: .3px; }
+.made-by-logo { width: 13px; height: 15px; flex: 0 0 auto; opacity: .75; }
 .settings-actions { align-items: center; }
 .settings-actions .made-by { margin: 0 auto 0 0; }
 .main-area { min-height: 100vh; margin-left: 236px; }
@@ -500,7 +501,8 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .steps-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
 .steps-nav .button { min-height: 60px; font-size: 17px; }
 .steps-nav .button:disabled { opacity: .4; cursor: default; }
-.planned-meal .steps-start { flex: 0 0 auto; }
+.planned-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 6px; }
+.planned-actions .button { flex: 0 0 auto; }
 :root[data-theme="dark"] .steps-text mark { background: #4a3f22; }
 @media (max-width: 720px) {
   .steps-dialog { width: 100%; height: 100%; max-width: 100%; max-height: 100%; margin: 0; border-radius: 0; padding: 16px; }

@@ -482,7 +482,7 @@ function renderWeek() {
     if (!recipe) return '';
     const title = mealieRecipeLink(recipe, 'mealie-link', escapeHtml(recipe.name))
       || `<button class="mealie-link recipe-title-link" type="button" data-action="view-recipe" data-id="${escapeHtml(recipe.id)}" title="Show recipe">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`;
-    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? 'Cooked and confirmed' : `${recipe.ingredients.length} ingredients`}</span></div>${entry.cooked ? '<span class="cooked-label">DONE</span>' : `<button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="Cook it step by step">Steps <span aria-hidden="true">▶</span></button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}">Cook & review</button>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="Remove meal">×</button></article>`;
+    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? 'Cooked and confirmed' : `${recipe.ingredients.length} ingredients`}</span></div>${entry.cooked ? '<span class="cooked-label">DONE</span>' : `<div class="planned-actions"><button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="Cook it step by step">Steps <span aria-hidden="true">▶</span></button><button class="button button-small button-quiet" data-action="review-plan" data-id="${escapeHtml(entry.id)}" title="See what this needs and what you have">Review</button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}" title="Mark as cooked and remove the ingredients from stock">Cooked <span aria-hidden="true">✓</span></button></div>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="Remove meal">×</button></article>`;
   }).join('') : '<div class="day-empty"><span aria-hidden="true">✳</span><p>No meal planned for this day.</p><small>Pick a recipe below to give the day a little shape.</small></div>';
   const recipeOptions = [...state.recipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   return `${pageHeading('A GOOD WEEK STARTS HERE', 'Make room for dinner.', 'Plan meals at your own pace. Your list will follow along.', '<button class="button button-outline" data-action="generate-shopping">Build shopping list <span aria-hidden="true">↗</span></button>')}
@@ -563,7 +563,7 @@ function mealieRecipeLink(recipe, className, label) {
     : '';
 }
 
-async function openRecipeDialog(id, isRemote) {
+async function openRecipeDialog(id, isRemote, planId = '') {
   let recipe = isRemote ? mealieResults.find((entry) => entry.id === id || entry.slug === id) : recipeById(id);
   if (!recipe) return;
   if (isRemote && !recipe.ingredients?.length && recipe.slug) {
@@ -583,10 +583,17 @@ async function openRecipeDialog(id, isRemote) {
       return `<li class="${item ? 'in-stock' : 'not-stocked'}"><span aria-hidden="true">${item ? '✓' : '○'}</span><span>${escapeHtml(ingredient)}</span><small>${item ? `in ${escapeHtml(item.location)}` : 'not in inventory'}</small></li>`;
     }).join('')
     : '<li class="not-stocked"><span></span><span>No ingredients listed.</span></li>';
-  const planAction = isRemote
-    ? `<button class="button button-primary" type="button" data-action="import-recipe" data-id="${escapeHtml(recipe.slug || recipe.id)}">Add to library</button>`
-    : `<button class="button button-primary" type="button" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">Plan this week</button>`;
+  const planAction = planId
+    ? ''
+    : isRemote
+      ? `<button class="button button-primary" type="button" data-action="import-recipe" data-id="${escapeHtml(recipe.slug || recipe.id)}">Add to library</button>`
+      : `<button class="button button-primary" type="button" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">Plan this week</button>`;
+  if (planId) {
+    const missing = missingIngredients(recipe).length;
+    $('#recipe-dialog-source').textContent = `REVIEW · ${missing ? `${missing} MISSING` : 'ALL IN STOCK'}`;
+  }
   recipeDialogRecipe = recipe;
+  recipeDialogPlanId = planId;
   $('#recipe-dialog-actions').innerHTML = `${mealieRecipeLink(recipe, 'button button-quiet mealie-button', 'Open in Mealie')}<button class="button button-outline" type="button" data-action="start-steps" data-source="recipe-dialog">Step by step <span aria-hidden="true">▶</span></button>${planAction}`;
   const dialog = $('#recipe-dialog');
   if (!dialog.open) dialog.showModal();
@@ -596,6 +603,7 @@ async function openRecipeDialog(id, isRemote) {
 const TIME_PATTERN = /(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|to|tot)\s*(\d+))?\s*(hours?|hrs?|uur|uren|minutes?|minuten|minuut|mins?|seconds?|seconden|secs?)(?![a-z])/i;
 const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
 let recipeDialogRecipe = null;
+let recipeDialogPlanId = '';
 let cookSession = null;
 let cookTimer = null;
 let cookWakeLock = null;
@@ -751,7 +759,7 @@ function renderCookStep() {
     body = `<h3 class="steps-heading">No steps saved for this recipe</h3><p class="steps-hint">The ingredients are ready above. ${mealieRecipeLink(recipe, 'mealie-link', 'Check the full recipe in Mealie') || 'Add instructions to the recipe to get small steps here.'}</p>`;
   } else {
     const plan = cookSession.planId && state.plan.find((entry) => entry.id === cookSession.planId);
-    body = `<div class="steps-done"><span aria-hidden="true">✓</span><h3 class="steps-heading">You did it.</h3><p class="steps-hint">${plan && !plan.cooked ? 'Want to take the used ingredients out of your inventory?' : 'Enjoy your meal.'}</p>${plan && !plan.cooked ? `<button class="button button-primary" type="button" data-action="steps-review" data-id="${escapeHtml(plan.id)}">Review ingredients used</button>` : ''}</div>`;
+    body = `<div class="steps-done"><span aria-hidden="true">✓</span><h3 class="steps-heading">You did it.</h3><p class="steps-hint">${plan && !plan.cooked ? 'Mark it as cooked and take the used ingredients out of your stock.' : 'Enjoy your meal.'}</p>${plan && !plan.cooked ? `<button class="button button-primary" type="button" data-action="steps-review" data-id="${escapeHtml(plan.id)}">Mark as cooked ✓</button>` : ''}</div>`;
   }
   $('#steps-body').innerHTML = `${resume}${body}`;
   $('.steps-back').disabled = index === 0;
@@ -912,10 +920,14 @@ document.addEventListener('click', async (event) => {
   }
   if (action === 'show-shopping-qr') openShoppingShare();
   if (action === 'view-recipe') openRecipeDialog(id, button.dataset.remote === 'true');
+  if (action === 'review-plan') {
+    const plan = state.plan.find((entry) => entry.id === id);
+    if (plan) openRecipeDialog(plan.recipeId, false, plan.id);
+  }
   if (action === 'start-steps') {
     if (button.dataset.source === 'recipe-dialog') {
       $('#recipe-dialog').close();
-      startCookSteps(recipeDialogRecipe);
+      startCookSteps(recipeDialogRecipe, recipeDialogPlanId);
     } else {
       startCookSteps(recipeById(id), button.dataset.plan || '');
     }
