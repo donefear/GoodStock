@@ -6,7 +6,7 @@ services:
     ports:
       - "8484:8080"
     environment:
-      PORT: "8484"
+      PORT: "8080"
       DATA_DIR: /data
       # Optional: set both values to enable recipe search from Mealie.
       MEALIE_URL: "${MEALIE_URL:-}"
