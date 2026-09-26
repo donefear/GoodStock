@@ -19,6 +19,14 @@ When both environment variables are set, the Recipes view searches Mealie and le
 
 The bundled `ingredients.json` catalog contains common ingredients with English and Dutch names. Both names are suggested when adding inventory, and the pairs allow recipe availability checks to match an English recipe ingredient against a Dutch inventory item. The catalog is included in the offline app cache.
 
+## Expiration reminders
+
+Set an optional expiration date when adding or editing inventory. Common perishables get a storage-specific shelf-life estimate when added; dates are marked as estimates and the package date can override them. Stable pantry items are left blank. Items due within three days (and overdue items) appear in the Inventory **Use soon** panel with saved recipes that use them. Browser notifications are optional, require HTTPS and permission, and are checked daily while Goodstock is open; the in-app panel works without notifications. Estimates are general guidance, not food-safety guarantees.
+
+## Shopping list on a phone
+
+Choose **Share to phone** on the shopping list and scan the QR code with the phone camera. It downloads a plain-text copy; checked items are marked. The random link expires after 30 minutes and works while the phone can reach the Goodstock server, normally on the same home network. QR generation runs in the container using the `qrcode` package; rebuilding the image installs this dependency.
+
 ## Offline behavior
 
 After the first online visit, the browser caches the app shell and keeps the latest kitchen state on that device. Inventory and planning remain viewable offline. Changes are saved locally and the newest state is sent to the server after connectivity returns. Keep a single household tablet as the active editor; simultaneous edits from multiple devices are last-write-wins in this first version.

@@ -1,12 +1,16 @@
 import { createServer } from 'node:http';
+import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import QRCode from 'qrcode';
 
 const port = Number(process.env.PORT || 8080);
 const dataDirectory = process.env.DATA_DIR || './data';
 const statePath = join(dataDirectory, 'state.json');
 const mealieUrl = (process.env.MEALIE_URL || '').replace(/\/+$/, '');
 const mealieKey = process.env.MEALIE_API_KEY || '';
+const shoppingShares = new Map();
+const shoppingShareLifetime = 30 * 60 * 1000;
 const staticFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
@@ -75,6 +79,10 @@ async function fetchMealie(path) {
   return result.json();
 }
 
+function safeExportText(value, limit) {
+  return String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, limit);
+}
+
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
@@ -94,6 +102,77 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === 'GET' && url.pathname === '/api/mealie/status') {
       sendJson(response, 200, { configured: Boolean(mealieUrl && mealieKey) });
+      return;
+    }
+    if (request.method === 'POST' && url.pathname === '/api/shopping/share') {
+      const payload = await requestBody(request);
+      if (!Array.isArray(payload.items) || payload.items.length === 0 || payload.items.length > 200) {
+        sendJson(response, 400, { error: 'The shopping list must contain between 1 and 200 items' });
+        return;
+      }
+      const items = payload.items.map((item) => ({
+        name: safeExportText(item?.name, 120),
+        quantity: safeExportText(item?.quantity, 30),
+        unit: safeExportText(item?.unit, 30),
+        checked: Boolean(item?.checked),
+      })).filter((item) => item.name);
+      if (!items.length) {
+        sendJson(response, 400, { error: 'The shopping list has no named items' });
+        return;
+      }
+      const now = Date.now();
+      for (const [token, share] of shoppingShares) if (share.expiresAt <= now) shoppingShares.delete(token);
+      const token = randomBytes(18).toString('base64url');
+      const expiresAt = now + shoppingShareLifetime;
+      shoppingShares.set(token, { items, expiresAt });
+      let shareOrigin;
+      try {
+        const origin = new URL(request.headers.origin || '');
+        if (!['http:', 'https:'].includes(origin.protocol)) throw new Error('Invalid origin');
+        shareOrigin = origin.origin;
+      } catch {
+        const protocol = String(request.headers['x-forwarded-proto'] || 'http').split(',')[0].trim();
+        if (!request.headers.host || !['http', 'https'].includes(protocol)) {
+          sendJson(response, 400, { error: 'Could not determine the application address for the QR code' });
+          return;
+        }
+        shareOrigin = `${protocol}://${request.headers.host}`;
+      }
+      const shareUrl = new URL(`/api/shopping/download/${token}`, shareOrigin).toString();
+      const qrCode = await QRCode.toDataURL(shareUrl, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 320,
+        color: { dark: '#1e3528', light: '#ffffff' },
+      });
+      sendJson(response, 201, { url: shareUrl, qrCode, expiresAt });
+      return;
+    }
+    if (request.method === 'GET' && url.pathname.startsWith('/api/shopping/download/')) {
+      const token = url.pathname.slice('/api/shopping/download/'.length);
+      const share = shoppingShares.get(token);
+      if (!share || share.expiresAt <= Date.now()) {
+        shoppingShares.delete(token);
+        response.writeHead(410, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+        response.end('This shopping-list download link has expired. Create a new QR code in Goodstock.');
+        return;
+      }
+      const lines = [
+        'Goodstock shopping list',
+        `Created: ${new Date().toLocaleString()}`,
+        '',
+        ...share.items.map((item) => {
+          const amount = [item.quantity, item.unit].filter(Boolean).join(' ');
+          return `[${item.checked ? 'x' : ' '}] ${item.name}${amount ? ` (${amount})` : ''}`;
+        }),
+      ];
+      response.writeHead(200, {
+        'content-type': 'text/plain; charset=utf-8',
+        'content-disposition': 'attachment; filename="goodstock-shopping-list.txt"',
+        'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff',
+      });
+      response.end(lines.join('\n'));
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/mealie/recipes') {

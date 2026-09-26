@@ -45,6 +45,7 @@
         <input type="hidden" name="id" />
         <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients in English and Dutch</span></label>
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
+        <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label>
         <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option>Food</option><option>Household</option></select></label></div>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save item</button></div>
       </form>
@@ -66,15 +67,26 @@
         <input type="hidden" name="shoppingId" />
         <p class="putaway-item" id="putaway-item-name"></p>
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" value="1" required /></label><label>Unit<input name="unit" placeholder="e.g. cans" /></label></div>
+        <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="putaway-expiry-note">An estimate is added for supported products.</span></label>
         <label>Stored in<select name="location"></select></label>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Add to inventory</button></div>
       </form>
+    </dialog>
+
+    <dialog id="share-dialog" class="app-dialog share-dialog">
+      <div class="dialog-heading"><div><span class="eyebrow">TAKE IT WITH YOU</span><h2>Scan to download</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+      <p class="dialog-copy" id="share-status" role="status" aria-live="polite">Preparing your shopping list link…</p>
+      <div class="qr-frame"><img id="shopping-qr" alt="QR code for downloading the shopping list" hidden /></div>
+      <div class="dialog-actions share-actions"><a class="button button-primary" id="share-download-link" href="#" target="_blank" rel="noopener" hidden>Open download</a><button class="button button-outline" type="button" data-action="copy-shopping-link">Copy link</button></div>
+      <p class="share-expiry">Anyone with the QR can download this list for 30 minutes. Scan while connected to your home network.</p>
     </dialog>
 
     <dialog id="settings-dialog" class="app-dialog">
       <form id="settings-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">YOUR SPACE</span><h2>Kitchen settings</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <label class="setting-toggle" for="dark-mode-toggle"><span><strong>Dark mode</strong><small>Use a darker palette on this device</small></span><input id="dark-mode-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
+        <label class="setting-toggle" for="expiry-notifications-toggle"><span><strong>Expiration notifications</strong><small>Get a daily browser alert for items due within 3 days</small></span><input id="expiry-notifications-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
+        <p class="field-hint settings-permission-note" id="expiry-notifications-note">The in-app Use soon panel is always available. System alerts require HTTPS and browser permission, and are checked while the app is open.</p>
         <label>Storage locations <span class="field-hint">Separate with commas</span><input name="locations" /></label>
         <p class="settings-note" id="mealie-note">Recipe library: checking…</p>
         <p class="settings-note">To connect Mealie, set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack environment.</p>
