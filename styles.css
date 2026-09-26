@@ -49,6 +49,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .sync-card strong { font-size: 12px; font-weight: 700; }
 .sync-card small { margin-top: 3px; color: var(--muted); font-size: 11px; }
 .side-foot { display: block; margin: 16px 10px 0; color: #818d83; font: italic 13px 'Fraunces', Georgia, serif; }
+.made-by { display: block; margin: 6px 10px 0; color: var(--muted); font-size: 11px; letter-spacing: .3px; }
+.settings-actions { align-items: center; }
+.settings-actions .made-by { margin: 0 auto 0 0; }
 .main-area { min-height: 100vh; margin-left: 236px; }
 .topbar { height: 70px; padding: 0 clamp(28px, 5vw, 70px); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(255,254,250,.56); }
 .breadcrumb { display: flex; gap: 9px; align-items: center; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #8c958d; }
