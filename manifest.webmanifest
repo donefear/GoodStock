@@ -1,0 +1,9 @@
+{
+  "name": "Goodstock Kitchen",
+  "short_name": "Goodstock",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f5ef",
+  "theme_color": "#f4f5ef",
+  "icons": []
+}

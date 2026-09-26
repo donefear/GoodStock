@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f5ef" />
+    <meta name="description" content="A calm, practical home kitchen inventory and meal planner." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Goodstock | Kitchen</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <a class="brand" href="#inventory" aria-label="Goodstock home">
+          <span class="brand-mark" aria-hidden="true">G</span>
+          <span class="brand-name">goodstock<span>.</span></span>
+        </a>
+        <p class="side-label">YOUR KITCHEN</p>
+        <nav class="nav-list">
+          <button class="nav-item active" data-view="inventory"><span class="nav-icon" aria-hidden="true">▤</span>Inventory</button>
+          <button class="nav-item" data-view="week"><span class="nav-icon" aria-hidden="true">▦</span>This week</button>
+          <button class="nav-item" data-view="shopping"><span class="nav-icon" aria-hidden="true">☷</span>Shopping <span class="nav-count" id="shopping-count">0</span></button>
+          <button class="nav-item" data-view="recipes"><span class="nav-icon" aria-hidden="true">⌘</span>Recipes</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="sync-card"><span class="sync-dot" id="sync-dot"></span><div><strong id="sync-label">Checking sync</strong><small id="sync-detail">Your kitchen, in sync</small></div></div>
+          <span class="side-foot">A little less waste, every day.</span>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div class="mobile-brand"><span class="brand-mark" aria-hidden="true">G</span><span class="brand-name">goodstock<span>.</span></span></div>
+          <div class="breadcrumb"><span>HOME</span><span class="crumb-slash">/</span><strong id="page-crumb">INVENTORY</strong></div>
+          <div class="top-actions"><span class="today-label" id="today-label"></span><button class="icon-button" id="settings-button" aria-label="Settings" title="Settings">⚙</button></div>
+        </header>
+        <div class="view-container" id="view-container" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <dialog id="item-dialog" class="app-dialog">
+      <form id="item-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow">INVENTORY</span><h2 id="item-dialog-title">Add an item</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <input type="hidden" name="id" />
+        <label>Item name<input name="name" autocomplete="off" required placeholder="e.g. Rolled oats" /></label>
+        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
+        <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option>Food</option><option>Household</option></select></label></div>
+        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save item</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="cook-dialog" class="app-dialog">
+      <form id="cook-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow">MEAL COMPLETE</span><h2 id="cook-title">What did you use?</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <p class="dialog-copy">Confirm the ingredients to deduct from your kitchen. Nothing changes until you confirm.</p>
+        <div class="ingredient-checks" id="cook-ingredients"></div>
+        <input type="hidden" name="planId" />
+        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Not yet</button><button class="button button-primary" type="submit">Confirm ingredients</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="putaway-dialog" class="app-dialog">
+      <form id="putaway-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow">GROCERIES</span><h2>Put it away</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <input type="hidden" name="shoppingId" />
+        <p class="putaway-item" id="putaway-item-name"></p>
+        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" value="1" required /></label><label>Unit<input name="unit" placeholder="e.g. cans" /></label></div>
+        <label>Stored in<select name="location"></select></label>
+        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Add to inventory</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="settings-dialog" class="app-dialog">
+      <form id="settings-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow">YOUR SPACE</span><h2>Kitchen settings</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <label>Storage locations <span class="field-hint">Separate with commas</span><input name="locations" /></label>
+        <p class="settings-note" id="mealie-note">Recipe library: checking…</p>
+        <p class="settings-note">To connect Mealie, set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack environment.</p>
+        <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
+        <div class="dialog-actions"><button class="button button-primary" type="submit">Save settings</button></div>
+      </form>
+    </dialog>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+services:
+  goodstock:
+    build: .
+    container_name: goodstock-kitchen
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DATA_DIR: /data
+      # Optional: set both values to enable recipe search from Mealie.
+      MEALIE_URL: "${MEALIE_URL:-}"
+      MEALIE_API_KEY: "${MEALIE_API_KEY:-}"
+    volumes:
+      - goodstock-data:/data
+
+volumes:
+  goodstock-data:
