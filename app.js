@@ -5,14 +5,15 @@ const INGREDIENTS_KEY = 'goodstock-ingredients-v1';
 const INVENTORY_MODE_KEY = 'goodstock-inventory-mode-v1';
 const EXPIRY_REMINDERS_KEY = 'goodstock-expiry-reminders-v1';
 const LAST_EXPIRY_REMINDER_KEY = 'goodstock-last-expiry-reminder-v1';
+const COOK_PROGRESS_KEY = 'goodstock-cook-progress-v1';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPIRY_WINDOW_DAYS = 3;
 const defaultLocations = ['Pantry', 'Fridge', 'Freezer', 'Cleaning shelf'];
 const starterRecipes = [
-  { id: 'tomato-bean-soup', name: 'Tomato & white bean soup', description: 'A bright, hearty one-pot lunch.', ingredients: ['1 onion', '2 cans white beans', '1 can tomatoes', 'vegetable stock'], source: 'Goodstock' },
-  { id: 'lemon-pasta', name: 'Lemony greens pasta', description: 'Fast pasta with greens and a little parmesan.', ingredients: ['pasta', 'spinach', '1 lemon', 'parmesan'], source: 'Goodstock' },
-  { id: 'crispy-potatoes', name: 'Crispy potato tray', description: 'Crisp edges, soft middle, plenty of herbs.', ingredients: ['potatoes', 'olive oil', 'garlic', 'rosemary'], source: 'Goodstock' },
-  { id: 'oat-pancakes', name: 'Everyday oat pancakes', description: 'A small-batch breakfast for slow mornings.', ingredients: ['rolled oats', '2 eggs', 'milk', '1 banana'], source: 'Goodstock' },
+  { id: 'tomato-bean-soup', name: 'Tomato & white bean soup', description: 'A bright, hearty one-pot lunch.', ingredients: ['1 onion', '2 cans white beans', '1 can tomatoes', 'vegetable stock'], source: 'Goodstock', instructions: ['Chop the onion.', 'Soften the onion in a splash of oil over medium heat for 5 minutes.', 'Add the tomatoes, drained beans, and stock.', 'Simmer for 15 minutes.', 'Season with salt and pepper, then mash a few beans to thicken.'] },
+  { id: 'lemon-pasta', name: 'Lemony greens pasta', description: 'Fast pasta with greens and a little parmesan.', ingredients: ['pasta', 'spinach', '1 lemon', 'parmesan'], source: 'Goodstock', instructions: ['Bring a big pot of salted water to the boil.', 'Cook the pasta for 10 minutes.', 'Zest and juice the lemon while the pasta cooks.', 'Add the spinach to the pot for the last minute.', 'Drain, keeping a cup of pasta water.', 'Toss with lemon, grated parmesan, and a splash of pasta water.'] },
+  { id: 'crispy-potatoes', name: 'Crispy potato tray', description: 'Crisp edges, soft middle, plenty of herbs.', ingredients: ['potatoes', 'olive oil', 'garlic', 'rosemary'], source: 'Goodstock', instructions: ['Heat the oven to 220°C.', 'Cut the potatoes into chunks.', 'Toss with olive oil, crushed garlic, rosemary, and salt on a tray.', 'Roast for 40 minutes, turning once halfway.'] },
+  { id: 'oat-pancakes', name: 'Everyday oat pancakes', description: 'A small-batch breakfast for slow mornings.', ingredients: ['rolled oats', '2 eggs', 'milk', '1 banana'], source: 'Goodstock', instructions: ['Blend the oats into a rough flour.', 'Mash the banana, then whisk in the eggs, milk, and oat flour.', 'Let the batter rest for 5 minutes.', 'Cook small pancakes in a hot oiled pan for 2 minutes per side.'] },
 ];
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -481,7 +482,7 @@ function renderWeek() {
     if (!recipe) return '';
     const title = mealieRecipeLink(recipe, 'mealie-link', escapeHtml(recipe.name))
       || `<button class="mealie-link recipe-title-link" type="button" data-action="view-recipe" data-id="${escapeHtml(recipe.id)}" title="Show recipe">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`;
-    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? 'Cooked and confirmed' : `${recipe.ingredients.length} ingredients`}</span></div>${entry.cooked ? '<span class="cooked-label">DONE</span>' : `<button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}">Cook & review</button>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="Remove meal">×</button></article>`;
+    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? 'Cooked and confirmed' : `${recipe.ingredients.length} ingredients`}</span></div>${entry.cooked ? '<span class="cooked-label">DONE</span>' : `<button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="Cook it step by step">Steps <span aria-hidden="true">▶</span></button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}">Cook & review</button>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="Remove meal">×</button></article>`;
   }).join('') : '<div class="day-empty"><span aria-hidden="true">✳</span><p>No meal planned for this day.</p><small>Pick a recipe below to give the day a little shape.</small></div>';
   const recipeOptions = [...state.recipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   return `${pageHeading('A GOOD WEEK STARTS HERE', 'Make room for dinner.', 'Plan meals at your own pace. Your list will follow along.', '<button class="button button-outline" data-action="generate-shopping">Build shopping list <span aria-hidden="true">↗</span></button>')}
@@ -585,9 +586,210 @@ async function openRecipeDialog(id, isRemote) {
   const planAction = isRemote
     ? `<button class="button button-primary" type="button" data-action="import-recipe" data-id="${escapeHtml(recipe.slug || recipe.id)}">Add to library</button>`
     : `<button class="button button-primary" type="button" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">Plan this week</button>`;
-  $('#recipe-dialog-actions').innerHTML = `${mealieRecipeLink(recipe, 'button button-quiet mealie-button', 'Open in Mealie')}${planAction}`;
+  recipeDialogRecipe = recipe;
+  $('#recipe-dialog-actions').innerHTML = `${mealieRecipeLink(recipe, 'button button-quiet mealie-button', 'Open in Mealie')}<button class="button button-outline" type="button" data-action="start-steps" data-source="recipe-dialog">Step by step <span aria-hidden="true">▶</span></button>${planAction}`;
   const dialog = $('#recipe-dialog');
   if (!dialog.open) dialog.showModal();
+}
+
+// Step-by-step cook mode: one small, concrete action per screen.
+const TIME_PATTERN = /(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|to|tot)\s*(\d+))?\s*(hours?|hrs?|uur|uren|minutes?|minuten|minuut|mins?|seconds?|seconden|secs?)(?![a-z])/i;
+const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
+let recipeDialogRecipe = null;
+let cookSession = null;
+let cookTimer = null;
+let cookWakeLock = null;
+
+function readCookProgress() {
+  try { return JSON.parse(localStorage.getItem(COOK_PROGRESS_KEY) || '{}'); } catch { return {}; }
+}
+
+function saveCookProgress() {
+  if (!cookSession) return;
+  const progress = readCookProgress();
+  const finished = cookSession.index >= cookSession.bites.length - 1;
+  if (finished || cookSession.index === 0) delete progress[cookSession.recipe.id]; else progress[cookSession.recipe.id] = cookSession.index;
+  try { localStorage.setItem(COOK_PROGRESS_KEY, JSON.stringify(progress)); } catch { /* Progress is a convenience only. */ }
+}
+
+function stepMinutes(text) {
+  const match = TIME_PATTERN.exec(text);
+  if (!match) return null;
+  const value = Number(match[1].replace(',', '.'));
+  const unit = match[3].toLowerCase();
+  const minutes = /^(h|uur|uren)/.test(unit) ? value * 60 : /^s/.test(unit) ? value / 60 : value;
+  return minutes > 0 ? { minutes, label: match[0].trim() } : null;
+}
+
+function isStepHeading(text) {
+  return text.length <= 40 && !/[.!?:]$/.test(text) && text.split(/\s+/).length <= 4;
+}
+
+function splitIntoBites(text) {
+  const cleaned = text.replace(/^\s*(?:step\s*)?\d+[.):]\s*/i, '').trim();
+  const sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý0-9])/).flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
+  return sentences.reduce((bites, sentence) => {
+    const previous = bites[bites.length - 1];
+    if (previous && previous.length < 25) bites[bites.length - 1] = `${previous} ${sentence}`;
+    else bites.push(sentence.trim());
+    return bites;
+  }, []).filter(Boolean);
+}
+
+function recipeInstructions(recipe) {
+  if (Array.isArray(recipe.instructions) && recipe.instructions.length) return recipe.instructions;
+  return starterRecipes.find((starter) => starter.id === recipe.id)?.instructions || [];
+}
+
+function buildCookBites(recipe) {
+  const bites = [];
+  const ingredients = recipe.ingredients || [];
+  for (let start = 0; start < ingredients.length; start += 6) {
+    bites.push({ type: 'gather', items: ingredients.slice(start, start + 6), part: start / 6 + 1, parts: Math.ceil(ingredients.length / 6) });
+  }
+  const steps = [];
+  let heading = '';
+  for (const raw of recipeInstructions(recipe).map((text) => String(text).trim()).filter(Boolean)) {
+    if (isStepHeading(raw)) {
+      if (heading) steps.push({ type: 'step', heading: '', text: heading });
+      heading = raw;
+      continue;
+    }
+    for (const text of splitIntoBites(raw)) steps.push({ type: 'step', heading, text, timer: stepMinutes(text) });
+    heading = '';
+  }
+  if (heading) steps.push({ type: 'step', heading: '', text: heading });
+  const ovenIndex = steps.findIndex((step) => TEMPERATURE_PATTERN.test(step.text));
+  if (ovenIndex > 0) {
+    const temperature = steps[ovenIndex].text.match(TEMPERATURE_PATTERN)[0].replace(/\s+/g, '');
+    steps.unshift({ type: 'step', heading: 'Heads-up', text: `Turn the oven on to ${temperature} now. You will need it in step ${ovenIndex + 2}.` });
+  }
+  if (!steps.length) bites.push({ type: 'empty' });
+  bites.push(...steps, { type: 'done' });
+  return bites;
+}
+
+function highlightStepText(text) {
+  const pattern = new RegExp(`${TIME_PATTERN.source}|${TEMPERATURE_PATTERN.source}`, 'gi');
+  return escapeHtml(text).replace(pattern, (match) => `<mark>${match}</mark>`);
+}
+
+function formatTimer(seconds) {
+  const safe = Math.max(0, Math.ceil(seconds));
+  const hours = Math.floor(safe / 3600);
+  const rest = `${String(Math.floor((safe % 3600) / 60)).padStart(hours ? 2 : 1, '0')}:${String(safe % 60).padStart(2, '0')}`;
+  return hours ? `${hours}:${rest}` : rest;
+}
+
+function timerAlarm() {
+  try {
+    const context = new AudioContext();
+    [0, 0.35, 0.7].forEach((offset) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.frequency.value = 880;
+      gain.gain.setValueAtTime(0.25, context.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + offset + 0.3);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start(context.currentTime + offset);
+      oscillator.stop(context.currentTime + offset + 0.3);
+    });
+  } catch { /* Sound is optional. */ }
+  navigator.vibrate?.([300, 150, 300]);
+  if (document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
+    new Notification('Goodstock timer', { body: `${cookTimer?.label || 'Your timer'} is done.` });
+  }
+}
+
+function updateTimerChip() {
+  const chip = $('#steps-timer-chip');
+  if (!cookTimer) { chip.hidden = true; return; }
+  const remaining = (cookTimer.endsAt - Date.now()) / 1000;
+  if (remaining <= 0 && !cookTimer.done) {
+    cookTimer.done = true;
+    timerAlarm();
+  }
+  chip.hidden = false;
+  chip.classList.toggle('is-done', cookTimer.done);
+  chip.textContent = cookTimer.done ? '⏰ Time is up · tap to clear' : `⏱ ${formatTimer(remaining)} · tap to stop`;
+}
+
+function startCookTimer(minutes, label) {
+  clearInterval(cookTimer?.intervalId);
+  cookTimer = { endsAt: Date.now() + minutes * 60_000, label, done: false, intervalId: setInterval(updateTimerChip, 1000) };
+  updateTimerChip();
+}
+
+function stopCookTimer() {
+  clearInterval(cookTimer?.intervalId);
+  cookTimer = null;
+  updateTimerChip();
+}
+
+function renderCookStep() {
+  const { recipe, bites, index, checked } = cookSession;
+  const bite = bites[index];
+  const stepCount = bites.filter((entry) => entry.type === 'step').length;
+  const stepNumber = bites.slice(0, index + 1).filter((entry) => entry.type === 'step').length;
+  $('#steps-recipe-name').textContent = recipe.name;
+  $('#steps-counter').textContent = bite.type === 'gather' ? 'GET READY' : bite.type === 'done' ? 'FINISHED' : bite.type === 'empty' ? 'NO STEPS' : `STEP ${stepNumber} OF ${stepCount}`;
+  $('#steps-progress-bar').style.width = `${Math.round((index / Math.max(1, bites.length - 1)) * 100)}%`;
+  const resume = cookSession.resumed && index > 0 ? '<button class="text-button steps-restart" type="button" data-action="steps-restart">Resumed where you left off · start over</button>' : '';
+  let body = '';
+  if (bite.type === 'gather') {
+    body = `<h3 class="steps-heading">Get these out${bite.parts > 1 ? ` (${bite.part}/${bite.parts})` : ''}</h3><p class="steps-hint">Tap each one as it lands on the counter.</p><div class="steps-gather">${bite.items.map((item) => {
+      const key = `${index}:${item}`;
+      const stocked = matchingInventory(item);
+      return `<label class="ingredient-check"><input type="checkbox" data-steps-item="${escapeHtml(key)}" ${checked.has(key) ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span><span>${escapeHtml(item)}</span><small>${stocked ? escapeHtml(stocked.location) : 'not in inventory'}</small></label>`;
+    }).join('')}</div>`;
+  } else if (bite.type === 'step') {
+    const timer = bite.timer
+      ? `<button class="button button-outline steps-timer-button" type="button" data-action="steps-timer-start" data-minutes="${bite.timer.minutes}" data-label="${escapeHtml(bite.timer.label)}">⏱ Start ${escapeHtml(bite.timer.label)} timer</button>`
+      : '';
+    body = `${bite.heading ? `<span class="steps-step-heading">${escapeHtml(bite.heading)}</span>` : ''}<p class="steps-text">${highlightStepText(bite.text)}</p>${timer}`;
+  } else if (bite.type === 'empty') {
+    body = `<h3 class="steps-heading">No steps saved for this recipe</h3><p class="steps-hint">The ingredients are ready above. ${mealieRecipeLink(recipe, 'mealie-link', 'Check the full recipe in Mealie') || 'Add instructions to the recipe to get small steps here.'}</p>`;
+  } else {
+    const plan = cookSession.planId && state.plan.find((entry) => entry.id === cookSession.planId);
+    body = `<div class="steps-done"><span aria-hidden="true">✓</span><h3 class="steps-heading">You did it.</h3><p class="steps-hint">${plan && !plan.cooked ? 'Want to take the used ingredients out of your inventory?' : 'Enjoy your meal.'}</p>${plan && !plan.cooked ? `<button class="button button-primary" type="button" data-action="steps-review" data-id="${escapeHtml(plan.id)}">Review ingredients used</button>` : ''}</div>`;
+  }
+  $('#steps-body').innerHTML = `${resume}${body}`;
+  $('.steps-back').disabled = index === 0;
+  $('.steps-next').textContent = index === bites.length - 1 ? 'Close' : index === bites.length - 2 ? 'Finish ›' : 'Next ›';
+  updateTimerChip();
+}
+
+async function startCookSteps(recipe, planId = '') {
+  if (!recipe) return;
+  if (recipe.source === 'Mealie' && recipe.slug && !Array.isArray(recipe.instructions)) {
+    try {
+      const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(recipe.slug)}`);
+      if (response.ok) {
+        const details = await response.json();
+        const saved = recipeById(recipe.id);
+        if (saved) { saved.instructions = details.instructions || []; persist(); }
+        recipe = { ...recipe, instructions: details.instructions || [] };
+      }
+    } catch { /* Fall back to ingredients only while Mealie is unreachable. */ }
+  }
+  const bites = buildCookBites(recipe);
+  const saved = readCookProgress()[recipe.id];
+  const index = Number.isInteger(saved) && saved > 0 && saved < bites.length - 1 ? saved : 0;
+  cookSession = { recipe, bites, index, planId, checked: new Set(), resumed: index > 0 };
+  renderCookStep();
+  const dialog = $('#steps-dialog');
+  if (!dialog.open) dialog.showModal();
+  try { cookWakeLock = await navigator.wakeLock?.request('screen'); } catch { cookWakeLock = null; }
+}
+
+function moveCookStep(direction) {
+  if (!cookSession) return;
+  const next = cookSession.index + direction;
+  if (next >= cookSession.bites.length) { $('#steps-dialog').close(); return; }
+  cookSession.index = Math.max(0, next);
+  cookSession.resumed = false;
+  saveCookProgress();
+  renderCookStep();
 }
 
 function openPutawayDialog(item) {
@@ -710,6 +912,23 @@ document.addEventListener('click', async (event) => {
   }
   if (action === 'show-shopping-qr') openShoppingShare();
   if (action === 'view-recipe') openRecipeDialog(id, button.dataset.remote === 'true');
+  if (action === 'start-steps') {
+    if (button.dataset.source === 'recipe-dialog') {
+      $('#recipe-dialog').close();
+      startCookSteps(recipeDialogRecipe);
+    } else {
+      startCookSteps(recipeById(id), button.dataset.plan || '');
+    }
+  }
+  if (action === 'steps-next') moveCookStep(1);
+  if (action === 'steps-back') moveCookStep(-1);
+  if (action === 'steps-restart') moveCookStep(-cookSession.index);
+  if (action === 'steps-timer-start') startCookTimer(Number(button.dataset.minutes), button.dataset.label);
+  if (action === 'steps-timer-toggle') stopCookTimer();
+  if (action === 'steps-review') {
+    $('#steps-dialog').close();
+    openCookDialog(state.plan.find((entry) => entry.id === id));
+  }
   if (['plan-recipe', 'import-recipe'].includes(action) && button.closest('#recipe-dialog')) $('#recipe-dialog').close();
   if (action === 'show-expiring-recipe') {
     const recipe = recipeById(id);
@@ -974,6 +1193,23 @@ $('#settings-button').addEventListener('click', async () => {
 
 document.addEventListener('click', (event) => {
   if (event.target.matches('[data-close]')) event.target.closest('dialog').close();
+});
+
+$('#steps-body').addEventListener('change', (event) => {
+  const key = event.target.dataset.stepsItem;
+  if (!key || !cookSession) return;
+  if (event.target.checked) cookSession.checked.add(key); else cookSession.checked.delete(key);
+});
+
+$('#steps-dialog').addEventListener('keydown', (event) => {
+  if (event.key === 'ArrowRight') { event.preventDefault(); moveCookStep(1); }
+  if (event.key === 'ArrowLeft') { event.preventDefault(); moveCookStep(-1); }
+});
+
+$('#steps-dialog').addEventListener('close', () => {
+  saveCookProgress();
+  cookWakeLock?.release?.().catch(() => {});
+  cookWakeLock = null;
 });
 
 document.addEventListener('visibilitychange', () => {

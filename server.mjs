@@ -66,6 +66,10 @@ function mapMealieRecipe(recipe) {
     const unit = row.unit?.name || row.unit || '';
     return [amount, unit, name].filter(Boolean).join(' ').trim();
   }).filter(Boolean);
+  const instructions = (recipe.recipeInstructions || [])
+    .flatMap((step) => [step.title, typeof step === 'string' ? step : step.text])
+    .map((text) => String(text || '').trim())
+    .filter((text) => text && !/^could not detect instructions$/i.test(text));
   return {
     id: String(recipe.slug || recipe.id || recipe.name),
     slug: String(recipe.slug || recipe.id || ''),
@@ -73,6 +77,7 @@ function mapMealieRecipe(recipe) {
     description: recipe.description || '',
     image: recipe.image || recipe.recipeImage || '',
     ingredients,
+    instructions,
     source: 'Mealie',
   };
 }

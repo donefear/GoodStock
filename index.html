@@ -61,6 +61,20 @@
       </form>
     </dialog>
 
+    <dialog id="steps-dialog" class="app-dialog steps-dialog" aria-labelledby="steps-recipe-name">
+      <div class="steps-top">
+        <div><span class="eyebrow" id="steps-counter">STEP 1</span><strong id="steps-recipe-name">Recipe</strong></div>
+        <button class="steps-timer-chip" id="steps-timer-chip" type="button" data-action="steps-timer-toggle" hidden></button>
+        <button class="icon-button close-button" type="button" data-close aria-label="Close step-by-step">×</button>
+      </div>
+      <div class="steps-progress" aria-hidden="true"><span id="steps-progress-bar"></span></div>
+      <div class="steps-body" id="steps-body" aria-live="polite"></div>
+      <div class="steps-nav">
+        <button class="button button-quiet steps-back" type="button" data-action="steps-back">‹ Back</button>
+        <button class="button button-primary steps-next" type="button" data-action="steps-next">Next ›</button>
+      </div>
+    </dialog>
+
     <dialog id="recipe-dialog" class="app-dialog">
       <form method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow" id="recipe-dialog-source">RECIPE</span><h2 id="recipe-dialog-title">Recipe</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>

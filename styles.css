@@ -469,3 +469,37 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 :root[data-theme="dark"] .ingredient-check.not-stocked .custom-check { background: #26322a; }
 :root[data-theme="dark"] .danger-zone { border-color: #63433b; background: #342824; }
 :root[data-theme="dark"] .danger-zone span { color: #c2a99f; }
+/* Step-by-step cook mode */
+.steps-dialog { width: min(640px, calc(100% - 20px)); height: min(640px, calc(100% - 20px)); max-height: none; padding: 20px 22px; flex-direction: column; gap: 14px; }
+.steps-dialog[open] { display: flex; }
+.steps-top { display: flex; align-items: center; gap: 10px; }
+.steps-top > div { min-width: 0; flex: 1; }
+.steps-top strong { display: block; overflow: hidden; margin-top: 3px; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.steps-timer-chip { min-height: 40px; padding: 0 12px; border: 1px solid var(--green); border-radius: 20px; background: var(--mint); color: var(--green); font: inherit; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; }
+.steps-timer-chip.is-done { border-color: var(--coral); background: var(--coral-pale); color: var(--coral); animation: steps-pulse 1s ease-in-out infinite; }
+@keyframes steps-pulse { 50% { transform: scale(1.05); } }
+.steps-progress { height: 6px; overflow: hidden; border-radius: 3px; background: var(--line); }
+.steps-progress span { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--green); transition: width .25s ease; }
+.steps-body { min-height: 0; flex: 1; overflow: auto; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+.steps-step-heading { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
+.steps-text { margin: 0; color: var(--ink); font-size: clamp(22px, 4.2vw, 30px); font-weight: 600; line-height: 1.4; }
+.steps-text mark { padding: 0 4px; border-radius: 4px; background: #f5ead0; color: inherit; }
+.steps-heading { margin: 0; font-size: 24px; }
+.steps-hint { margin: -8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.steps-gather { display: grid; gap: 8px; }
+.steps-gather .ingredient-check { min-height: 52px; font-size: 15px; }
+.steps-gather .ingredient-check > span:nth-of-type(2) { font-size: 15px; }
+.steps-timer-button { align-self: flex-start; min-height: 52px; font-size: 15px; }
+.steps-restart { align-self: flex-start; padding: 0; min-height: 30px; }
+.steps-done { display: grid; justify-items: center; gap: 14px; text-align: center; }
+.steps-done > span { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: var(--green); font-size: 30px; font-weight: 700; }
+.steps-done .steps-hint { margin: 0; }
+.steps-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+.steps-nav .button { min-height: 60px; font-size: 17px; }
+.steps-nav .button:disabled { opacity: .4; cursor: default; }
+.planned-meal .steps-start { flex: 0 0 auto; }
+:root[data-theme="dark"] .steps-text mark { background: #4a3f22; }
+@media (max-width: 720px) {
+  .steps-dialog { width: 100%; height: 100%; max-width: 100%; max-height: 100%; margin: 0; border-radius: 0; padding: 16px; }
+  @supports (height: 100dvh) { .steps-dialog { height: 100dvh; max-height: 100dvh; } }
+}
