@@ -9,6 +9,8 @@ const dataDirectory = process.env.DATA_DIR || './data';
 const statePath = join(dataDirectory, 'state.json');
 const mealieUrl = (process.env.MEALIE_URL || '').replace(/\/+$/, '');
 const mealieKey = process.env.MEALIE_API_KEY || '';
+const mealiePublicUrl = (process.env.MEALIE_PUBLIC_URL || mealieUrl).replace(/\/+$/, '');
+let mealieGroupSlug = '';
 const shoppingShares = new Map();
 const shoppingShareLifetime = 30 * 60 * 1000;
 const staticFiles = new Map([
@@ -77,6 +79,15 @@ async function fetchMealie(path) {
   });
   if (!result.ok) throw new Error(`Mealie returned HTTP ${result.status}`);
   return result.json();
+}
+
+async function mealieRecipePageUrl(slug) {
+  if (!mealieGroupSlug) {
+    try {
+      mealieGroupSlug = (await fetchMealie('/groups/self')).slug || '';
+    } catch { /* Fall back to Mealie's default group below. */ }
+  }
+  return `${mealiePublicUrl}/g/${encodeURIComponent(mealieGroupSlug || 'home')}/r/${encodeURIComponent(slug)}`;
 }
 
 function safeExportText(value, limit) {
@@ -185,6 +196,16 @@ const server = createServer(async (request, response) => {
       const payload = await fetchMealie(`/recipes?${query}`);
       const rows = Array.isArray(payload) ? payload : payload.items || payload.recipes || [];
       sendJson(response, 200, rows.map(mapMealieRecipe));
+      return;
+    }
+    if (request.method === 'GET' && url.pathname.startsWith('/api/mealie/open/')) {
+      if (!mealiePublicUrl || !mealieKey) {
+        sendJson(response, 503, { error: 'Mealie is not configured' });
+        return;
+      }
+      const slug = decodeURIComponent(url.pathname.slice('/api/mealie/open/'.length));
+      response.writeHead(302, { location: await mealieRecipePageUrl(slug), 'cache-control': 'no-store' });
+      response.end();
       return;
     }
     if (request.method === 'GET' && url.pathname.startsWith('/api/mealie/recipes/')) {

@@ -13,7 +13,7 @@ The named `goodstock-data` volume keeps inventory and planning data across conta
 
 ## Mealie
 
-When both environment variables are set, the Recipes view searches Mealie and lets you import recipes into Goodstock. Goodstock owns the inventory, weekly plan, and shopping list; imported recipes are stored in its own data volume.
+When both environment variables are set, the Recipes view searches Mealie and lets you import recipes into Goodstock. Planned Mealie recipes in This week get a **Mealie ↗** link. If `MEALIE_URL` is an internal Docker address, set `MEALIE_PUBLIC_URL` to the address browsers use, for example `http://192.168.1.10:9925`. Goodstock owns the inventory, weekly plan, and shopping list; imported recipes are stored in its own data volume.
 
 ## Ingredients
 

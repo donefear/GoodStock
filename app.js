@@ -394,7 +394,7 @@ async function initialize() {
   fetch('/api/mealie/status').then((response) => response.json()).then((result) => {
     mealieConfigured = Boolean(result.configured);
   }).catch(() => { mealieConfigured = false; }).finally(() => {
-    if (activeView === 'recipes') render();
+    if (activeView === 'recipes' || activeView === 'week') render();
   });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   checkExpiryReminders();
@@ -479,7 +479,10 @@ function renderWeek() {
   const planned = selectedPlans.length ? selectedPlans.map((entry) => {
     const recipe = recipeById(entry.recipeId);
     if (!recipe) return '';
-    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${escapeHtml(recipe.name)}</strong><span>${entry.cooked ? 'Cooked and confirmed' : `${recipe.ingredients.length} ingredients`}</span></div>${entry.cooked ? '<span class="cooked-label">DONE</span>' : `<button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}">Cook & review</button>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="Remove meal">×</button></article>`;
+    const mealieLink = mealieConfigured && recipe.source === 'Mealie' && recipe.slug
+      ? `<a class="button button-small button-quiet mealie-link" href="/api/mealie/open/${encodeURIComponent(recipe.slug)}" target="_blank" rel="noopener" aria-label="Open ${escapeHtml(recipe.name)} in Mealie" title="Open recipe in Mealie">Mealie <span aria-hidden="true">↗</span></a>`
+      : '';
+    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${escapeHtml(recipe.name)}</strong><span>${entry.cooked ? 'Cooked and confirmed' : `${recipe.ingredients.length} ingredients`}</span></div>${mealieLink}${entry.cooked ? '<span class="cooked-label">DONE</span>' : `<button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}">Cook & review</button>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="Remove meal">×</button></article>`;
   }).join('') : '<div class="day-empty"><span aria-hidden="true">✳</span><p>No meal planned for this day.</p><small>Pick a recipe below to give the day a little shape.</small></div>';
   const recipeOptions = [...state.recipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   return `${pageHeading('A GOOD WEEK STARTS HERE', 'Make room for dinner.', 'Plan meals at your own pace. Your list will follow along.', '<button class="button button-outline" data-action="generate-shopping">Build shopping list <span aria-hidden="true">↗</span></button>')}

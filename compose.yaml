@@ -11,6 +11,8 @@ services:
       # Optional: set both values to enable recipe search from Mealie.
       MEALIE_URL: "${MEALIE_URL:-}"
       MEALIE_API_KEY: "${MEALIE_API_KEY:-}"
+      # Optional: browser-facing Mealie address for "open in Mealie" links (defaults to MEALIE_URL).
+      MEALIE_PUBLIC_URL: "${MEALIE_PUBLIC_URL:-}"
     volumes:
       - goodstock-data:/data
 
