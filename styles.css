@@ -98,6 +98,7 @@ h3 { margin: 0; font: 500 21px/1.25 'Fraunces', Georgia, serif; }
 .item-expiry.expiring { color: #996715 !important; font-weight: 700; }
 .item-expiry.expired { color: #ad493a !important; font-weight: 700; }
 .item-expiry.expiry-normal { color: var(--muted); }
+.item-expiry.expiry-missing { color: var(--muted); font-style: italic; opacity: 0.75; }
 .stat { min-height: 86px; display: flex; align-items: center; gap: 13px; padding: 16px 22px; }
 .stat + .stat { border-left: 1px solid var(--line); }
 .stat-icon { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 50%; font-size: 19px; }

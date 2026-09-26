@@ -144,15 +144,21 @@ function expiryDaysRemaining(value) {
   return Math.round((expiryDay - todayDay) / DAY_MS);
 }
 
+function expirationDateText(value) {
+  const [year, month, day] = value.split('-').map(Number);
+  const options = year === new Date().getFullYear() ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' };
+  return formatDate(new Date(year, month - 1, day), options);
+}
+
 function expirationLabel(value) {
   const days = expiryDaysRemaining(value);
   if (days === null) return '';
-  if (days < 0) return `Expired ${Math.abs(days)} ${Math.abs(days) === 1 ? 'day' : 'days'} ago`;
-  if (days === 0) return 'Expires today';
-  if (days === 1) return 'Expires tomorrow';
-  if (days <= EXPIRY_WINDOW_DAYS) return `Expires in ${days} days`;
-  const [year, month, day] = value.split('-').map(Number);
-  return `Expires ${formatDate(new Date(year, month - 1, day), { month: 'short', day: 'numeric' })}`;
+  const date = expirationDateText(value);
+  if (days < 0) return `Expired ${Math.abs(days)} ${Math.abs(days) === 1 ? 'day' : 'days'} ago · ${date}`;
+  if (days === 0) return `Expires today · ${date}`;
+  if (days === 1) return `Expires tomorrow · ${date}`;
+  if (days <= EXPIRY_WINDOW_DAYS) return `Expires in ${days} days · ${date}`;
+  return `Expires ${date}`;
 }
 
 function expiryClass(value) {
@@ -173,11 +179,38 @@ function recipesUsingInventoryItem(item) {
   return state.recipes.filter((recipe) => (recipe.ingredients || []).some((ingredient) => matchingInventory(ingredient)?.id === item.id));
 }
 
+// General estimates used when the catalog has no entry (or no value for this storage type).
+const CATEGORY_SHELF_LIFE_DAYS = {
+  Fruit: { pantry: 5, fridge: 7, freezer: 180 },
+  Vegetables: { pantry: 7, fridge: 7, freezer: 240 },
+  Herbs: { pantry: 3, fridge: 7, freezer: 180 },
+  Dairy: { pantry: 1, fridge: 7, freezer: 90 },
+  'Meat and fish': { pantry: 1, fridge: 2, freezer: 120 },
+  Bakery: { pantry: 4, fridge: 7, freezer: 90 },
+  Baking: { pantry: 365, fridge: 365, freezer: 365 },
+  Seasoning: { pantry: 730, fridge: 730, freezer: 730 },
+  Pantry: { pantry: 365, fridge: 5, freezer: 180 },
+};
+const DEFAULT_SHELF_LIFE_DAYS = { pantry: 90, fridge: 7, freezer: 90 };
+
 function shelfLifeDaysFor(name, location) {
-  const shelfLife = ingredientRecord(name)?.shelfLifeDays;
-  if (!shelfLife) return null;
+  const record = ingredientRecord(name);
   const storage = /freezer|vriezer/i.test(location) ? 'freezer' : /fridge|koelkast/i.test(location) ? 'fridge' : 'pantry';
-  return Number.isFinite(shelfLife[storage]) ? shelfLife[storage] : null;
+  const candidates = [record?.shelfLifeDays, CATEGORY_SHELF_LIFE_DAYS[record?.category], DEFAULT_SHELF_LIFE_DAYS];
+  return candidates.map((shelfLife) => shelfLife?.[storage]).find(Number.isFinite) ?? null;
+}
+
+function backfillMissingExpirations() {
+  let changed = false;
+  for (const item of state.inventory) {
+    if (item.kind === 'Household' || item.expiresOn) continue;
+    const suggestion = suggestedExpiration(item.name, item.location);
+    if (!suggestion) continue;
+    item.expiresOn = suggestion.date;
+    item.expirationSource = 'estimated';
+    changed = true;
+  }
+  return changed;
 }
 
 function suggestedExpiration(name, location) {
@@ -218,6 +251,11 @@ function resolvedExpiration(name, location, input) {
 function expirationText(item) {
   const label = expirationLabel(item.expiresOn);
   return item.expirationSource === 'estimated' ? `Estimate · ${label}` : label;
+}
+
+function inventoryExpiryMarkup(item, tag) {
+  if (item.expiresOn) return `<${tag} class="item-expiry ${expiryClass(item.expiresOn)}">${escapeHtml(expirationText(item))}</${tag}>`;
+  return item.kind === 'Household' ? '' : `<${tag} class="item-expiry expiry-missing">No expiry date</${tag}>`;
 }
 
 function checkExpiryReminders() {
@@ -345,6 +383,11 @@ async function initialize() {
     localStorage.setItem(PENDING_KEY, JSON.stringify(state));
   }
   await loadIngredientCatalog();
+  if (backfillMissingExpirations()) {
+    const snapshot = JSON.stringify(state);
+    localStorage.setItem(STORAGE_KEY, snapshot);
+    localStorage.setItem(PENDING_KEY, snapshot);
+  }
   inventoryMode = localStorage.getItem(INVENTORY_MODE_KEY) === 'map' ? 'map' : 'list';
   render();
   pushPendingState();
@@ -392,7 +435,7 @@ function renderInventory() {
     <div class="stats-row"><div class="stat"><span class="stat-icon mint">▤</span><div><strong>${foodCount}</strong><span>food items</span></div></div><div class="stat"><span class="stat-icon coral">◷</span><div><strong>${lowCount}</strong><span>running low</span></div></div><div class="stat"><span class="stat-icon yellow">⌂</span><div><strong>${state.locations.length}</strong><span>storage spots</span></div></div></div>
     ${renderExpirationPanel()}
     <section class="section-block"><div class="section-heading"><div><h2>Everything in its place</h2><span class="muted">${rows.length} ${rows.length === 1 ? 'item' : 'items'}</span></div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="Find something" aria-label="Find an item" /></label><select id="location-filter" aria-label="Filter by location">${locations.map((location) => `<option ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="Inventory display mode"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">List</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">Map</button></div></div></div>
-    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(item.kind)}</span>${item.expiresOn ? `<span class="item-expiry ${expiryClass(item.expiresOn)}">${escapeHtml(expirationText(item))}</span>` : ''}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="Decrease ${escapeHtml(item.name)}">−</button><span>${escapeHtml(item.quantity)} <small>${escapeHtml(item.unit || '')}</small></span><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="Increase ${escapeHtml(item.name)}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="Edit ${escapeHtml(item.name)}" title="Edit item">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery ? 'Nothing found just yet.' : 'A little room for the good stuff.'}</strong><p>${inventoryQuery ? 'Try another name or location.' : 'Add what you already have in your kitchen.'}</p>${inventoryQuery ? '' : '<button class="button button-primary" data-action="add-item">Add the first item</button>'}</div>`}</section>`;
+    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(item.kind)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="Decrease ${escapeHtml(item.name)}">−</button><span>${escapeHtml(item.quantity)} <small>${escapeHtml(item.unit || '')}</small></span><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="Increase ${escapeHtml(item.name)}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="Edit ${escapeHtml(item.name)}" title="Edit item">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery ? 'Nothing found just yet.' : 'A little room for the good stuff.'}</strong><p>${inventoryQuery ? 'Try another name or location.' : 'Add what you already have in your kitchen.'}</p>${inventoryQuery ? '' : '<button class="button button-primary" data-action="add-item">Add the first item</button>'}</div>`}</section>`;
 }
 
 function renderInventoryMap(rows) {
@@ -404,7 +447,7 @@ function renderInventoryMap(rows) {
   const itemIcon = (item) => item.kind === 'Household' ? '🧽' : categoryIcons[ingredientRecord(item.name)?.category] || '◌';
   return `<div class="storage-map">${locations.map((location) => {
     const items = rows.filter((item) => item.location === location);
-    return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${items.length} ${items.length === 1 ? 'item' : 'items'}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.kind)}</small>${item.expiresOn ? `<small class="item-expiry ${expiryClass(item.expiresOn)}">${escapeHtml(expirationText(item))}</small>` : ''}</div><div class="visual-quantity"><strong>${escapeHtml(item.quantity)}</strong><small>${escapeHtml(item.unit || 'items')}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="Edit ${escapeHtml(item.name)}" title="Edit item">•••</button></article>`).join('')}</div>` : '<p class="storage-zone-empty">Nothing stored here yet</p>'}</section>`;
+    return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${items.length} ${items.length === 1 ? 'item' : 'items'}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.kind)}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(item.quantity)}</strong><small>${escapeHtml(item.unit || 'items')}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="Edit ${escapeHtml(item.name)}" title="Edit item">•••</button></article>`).join('')}</div>` : '<p class="storage-zone-empty">Nothing stored here yet</p>'}</section>`;
   }).join('')}</div>`;
 }
 
@@ -790,7 +833,8 @@ $('#item-form').addEventListener('submit', (event) => {
   const form = event.currentTarget;
   const name = form.elements.name.value.trim();
   const location = form.elements.location.value;
-  const expiration = resolvedExpiration(name, location, form.elements.expiresOn);
+  const resolved = resolvedExpiration(name, location, form.elements.expiresOn);
+  const expiration = form.elements.kind.value === 'Household' && resolved.expirationSource === 'estimated' ? { expiresOn: '', expirationSource: '' } : resolved;
   const item = {
     id: form.elements.id.value || makeId(),
     name,
