@@ -43,7 +43,7 @@
       <form id="item-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">INVENTORY</span><h2 id="item-dialog-title">Add an item</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <input type="hidden" name="id" />
-        <label>Item name<input name="name" autocomplete="off" required placeholder="e.g. Rolled oats" /></label>
+        <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients in English and Dutch</span></label>
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
         <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option>Food</option><option>Household</option></select></label></div>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save item</button></div>
@@ -74,6 +74,7 @@
     <dialog id="settings-dialog" class="app-dialog">
       <form id="settings-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">YOUR SPACE</span><h2>Kitchen settings</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <label class="setting-toggle" for="dark-mode-toggle"><span><strong>Dark mode</strong><small>Use a darker palette on this device</small></span><input id="dark-mode-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
         <label>Storage locations <span class="field-hint">Separate with commas</span><input name="locations" /></label>
         <p class="settings-note" id="mealie-note">Recipe library: checking…</p>
         <p class="settings-note">To connect Mealie, set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack environment.</p>

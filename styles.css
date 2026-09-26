@@ -122,6 +122,11 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .empty-state strong { font: 500 20px 'Fraunces', Georgia, serif; }
 .empty-state p { margin: 6px 0 16px; color: var(--muted); font-size: 12px; }
 .week-planner { border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,254,250,.55); overflow: hidden; }
+.week-navigation { min-height: 56px; margin: -9px 0 12px; display: flex; align-items: center; gap: 10px; }
+.date-jump { display: flex; align-items: center; gap: 8px; color: #6f7d72; font-size: 11px; font-weight: 700; }
+.date-jump input { min-height: 40px; padding: 0 10px; border: 1px solid #dce2d9; border-radius: 5px; background: var(--white); color: var(--ink); font-size: 12px; }
+.week-range { margin-left: auto; color: #758078; font-size: 11px; }
+.today-button { min-height: 40px; }
 .week-strip { padding: 12px; display: grid; grid-template-columns: repeat(7, minmax(62px, 1fr)); gap: 7px; border-bottom: 1px solid var(--line); overflow-x: auto; }
 .day-chip { min-width: 62px; min-height: 78px; padding: 8px 4px; border: 1px solid transparent; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; cursor: pointer; }
 .day-chip > span { color: #879188; font-size: 9px; font-weight: 700; letter-spacing: .6px; }
@@ -216,6 +221,16 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .field-hint { display: block; margin-top: 4px; color: #929b93; font-size: 10px; font-weight: 400; }
 .settings-note { margin: 1px 0; }
 .settings-note code { color: #43594b; font-size: 11px; }
+.setting-toggle { position: relative; min-height: 55px; padding: 8px 0; display: flex !important; align-items: center; justify-content: space-between; }
+.setting-toggle strong, .setting-toggle small { display: block; }
+.setting-toggle strong { color: var(--ink); font-size: 13px; }
+.setting-toggle small { margin-top: 4px; color: var(--muted); font-size: 10px; font-weight: 400; }
+.setting-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.toggle-track { position: relative; width: 46px; height: 26px; flex: 0 0 46px; border-radius: 20px; background: #c7d0c7; transition: background .18s ease; }
+.toggle-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; transition: transform .18s ease; }
+.setting-toggle input:checked + .toggle-track { background: var(--green); }
+.setting-toggle input:checked + .toggle-track::after { transform: translateX(20px); }
+.setting-toggle input:focus-visible + .toggle-track { outline: 3px solid #80ad94; outline-offset: 2px; }
 .danger-zone { margin-top: 4px; padding: 14px 12px; border: 1px solid #efd2c9; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fcf4f0; }
 .danger-zone strong, .danger-zone span { display: block; }
 .danger-zone strong { color: #984b3b; font-size: 12px; }
@@ -271,6 +286,13 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
   .quantity-stepper > span { min-width: 48px; font-size: 11px; }
   .row-edit { width: 28px; }
   .week-strip { grid-template-columns: repeat(7, minmax(58px, 1fr)); padding: 8px; gap: 3px; }
+  .week-navigation { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 40px; gap: 7px; margin-top: -5px; }
+  .week-navigation > [data-action="previous-week"] { grid-column: 1; }
+  .date-jump { grid-column: 2; min-width: 0; flex-direction: column; align-items: start; gap: 3px; }
+  .date-jump input { width: 100%; min-width: 0; }
+  .week-range { display: none; }
+  .week-navigation > .today-button { grid-column: 3; }
+  .week-navigation > [data-action="next-week"] { grid-column: 4; }
   .day-chip { min-width: 58px; min-height: 70px; }
   .day-detail { padding: 16px 12px; }
   .day-detail .section-heading { flex-direction: row; align-items: end; }
@@ -296,3 +318,66 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #e7eee8;
+  background: #151d19;
+  --paper: #151d19;
+  --white: #202a24;
+  --ink: #e7eee8;
+  --muted: #a0ada2;
+  --line: #34443a;
+  --green: #73b689;
+  --green-dark: #a2d1ad;
+  --mint: #263b2e;
+  --coral: #e58a70;
+  --coral-pale: #432f29;
+  --yellow: #e3bd5d;
+}
+
+:root[data-theme="dark"] body { color: var(--ink); background: var(--paper); }
+:root[data-theme="dark"] .sidebar { background: #19251f; border-color: #2c3b31; }
+:root[data-theme="dark"] .nav-item { color: #b5c2b8; }
+:root[data-theme="dark"] .nav-item:hover { background: #26362c; color: var(--ink); }
+:root[data-theme="dark"] .nav-item.active { background: #294333; color: #b6dfbe; }
+:root[data-theme="dark"] .nav-icon { color: #9db2a2; }
+:root[data-theme="dark"] .sync-card { border-color: #35463a; }
+:root[data-theme="dark"] .side-foot { color: #a5b2a7; }
+:root[data-theme="dark"] .topbar { background: #19231e; }
+:root[data-theme="dark"] .breadcrumb, :root[data-theme="dark"] .today-label,
+:root[data-theme="dark"] .page-heading p, :root[data-theme="dark"] .date-jump { color: #a0ada2; }
+:root[data-theme="dark"] .breadcrumb strong { color: #d5e0d7; }
+:root[data-theme="dark"] .button-dark { background: #355342; color: #f2f7f2; }
+:root[data-theme="dark"] .button-outline { border-color: #506454; color: #c5d5c8; }
+:root[data-theme="dark"] .button-outline:hover { background: #293a30; }
+:root[data-theme="dark"] .button-quiet, :root[data-theme="dark"] .icon-button { background: var(--white); color: #c7d4ca; }
+:root[data-theme="dark"] .stats-row, :root[data-theme="dark"] .week-planner { background: #1b2620; }
+:root[data-theme="dark"] .section-heading h2, :root[data-theme="dark"] .day-empty p { color: var(--ink); }
+:root[data-theme="dark"] .search-field, :root[data-theme="dark"] select,
+:root[data-theme="dark"] .date-jump input, :root[data-theme="dark"] .quantity-stepper { border-color: #3c4d42; background: var(--white); color: var(--ink); }
+:root[data-theme="dark"] .item-main strong, :root[data-theme="dark"] .quantity-stepper > span { color: #e0e9e1; }
+:root[data-theme="dark"] .row-edit:hover, :root[data-theme="dark"] .quantity-stepper button:hover { background: #293a30; }
+:root[data-theme="dark"] .empty-state { border-color: #435649; }
+:root[data-theme="dark"] .day-chip.selected { border-color: #52785c; background: #293d30; }
+:root[data-theme="dark"] .day-chip.selected strong { color: #b1dcbc; }
+:root[data-theme="dark"] .planned-meal, :root[data-theme="dark"] .inventory-row,
+:root[data-theme="dark"] .shopping-row, :root[data-theme="dark"] .planned-list,
+:root[data-theme="dark"] .week-strip { border-color: var(--line); }
+:root[data-theme="dark"] .day-empty small, :root[data-theme="dark"] .plan-count,
+:root[data-theme="dark"] .shopping-amount, :root[data-theme="dark"] .shopping-source { color: #a0ada2; }
+:root[data-theme="dark"] .picker-item, :root[data-theme="dark"] .recipe-card { border-color: var(--line); background: var(--white); }
+:root[data-theme="dark"] .picker-item p, :root[data-theme="dark"] .recipe-card > p { color: #a4b0a6; }
+:root[data-theme="dark"] .recipe-missing { background: #293c30; color: #a6d5b0; }
+:root[data-theme="dark"] .recipe-missing.has-missing { background: #403824; color: #edce83; }
+:root[data-theme="dark"] .integration-note { border-color: #34473a; background: #202e25; }
+:root[data-theme="dark"] .integration-note p { color: #adbaaf; }
+:root[data-theme="dark"] .integration-note p strong { color: #dce9de; }
+:root[data-theme="dark"] .app-dialog { border-color: #3a4b3e; background: #202a24; color: var(--ink); }
+:root[data-theme="dark"] .app-dialog label:not(.ingredient-check) { color: #becbbf; }
+:root[data-theme="dark"] .app-dialog label > input, :root[data-theme="dark"] .app-dialog label > select { border-color: #3b4b40; background: #18221c; color: var(--ink); }
+:root[data-theme="dark"] .dialog-copy, :root[data-theme="dark"] .settings-note { color: #aab6ac; }
+:root[data-theme="dark"] .ingredient-check { border-color: #3a4b3f; }
+:root[data-theme="dark"] .ingredient-check.not-stocked .custom-check { background: #26322a; }
+:root[data-theme="dark"] .danger-zone { border-color: #63433b; background: #342824; }
+:root[data-theme="dark"] .danger-zone span { color: #c2a99f; }

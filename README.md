@@ -15,6 +15,10 @@ The named `goodstock-data` volume keeps inventory and planning data across conta
 
 When both environment variables are set, the Recipes view searches Mealie and lets you import recipes into Goodstock. Goodstock owns the inventory, weekly plan, and shopping list; imported recipes are stored in its own data volume.
 
+## Ingredients
+
+The bundled `ingredients.json` catalog contains common ingredients with English and Dutch names. Both names are suggested when adding inventory, and the pairs allow recipe availability checks to match an English recipe ingredient against a Dutch inventory item. The catalog is included in the offline app cache.
+
 ## Offline behavior
 
 After the first online visit, the browser caches the app shell and keeps the latest kitchen state on that device. Inventory and planning remain viewable offline. Changes are saved locally and the newest state is sent to the server after connectivity returns. Keep a single household tablet as the active editor; simultaneous edits from multiple devices are last-write-wins in this first version.

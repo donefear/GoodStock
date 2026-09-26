@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'goodstock-state-v1';
 const PENDING_KEY = 'goodstock-pending-v1';
+const THEME_KEY = 'goodstock-theme-v1';
+const INGREDIENTS_KEY = 'goodstock-ingredients-v1';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const defaultLocations = ['Pantry', 'Fridge', 'Freezer', 'Cleaning shelf'];
 const starterRecipes = [
@@ -43,13 +45,15 @@ function normalizeState(value) {
 
 let state = normalizeState(null);
 let activeView = 'inventory';
-let selectedDate = startOfWeek(new Date());
+let weekStart = startOfWeek(new Date());
+let selectedDate = new Date();
 let inventoryQuery = '';
 let inventoryLocation = 'All locations';
 let recipeQuery = '';
 let mealieResults = [];
 let mealieConfigured = false;
 let syncing = false;
+let ingredientCatalog = [];
 
 function dateKey(date) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -63,7 +67,9 @@ function startOfWeek(date) {
 }
 
 function dateAtOffset(offset) {
-  return new Date(selectedDate.getTime() + offset * DAY_MS);
+  const date = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate());
+  date.setDate(date.getDate() + offset);
+  return date;
 }
 
 function formatDate(date, options = { weekday: 'short', day: 'numeric' }) {
@@ -71,9 +77,24 @@ function formatDate(date, options = { weekday: 'short', day: 'numeric' }) {
 }
 
 function currentWeekPlans() {
-  const first = dateKey(selectedDate);
+  const first = dateKey(weekStart);
   const last = dateKey(dateAtOffset(6));
   return state.plan.filter((entry) => entry.date >= first && entry.date <= last);
+}
+
+function ingredientRecord(value) {
+  const normalized = cleanIngredient(value);
+  if (!normalized) return undefined;
+  return ingredientCatalog.find((ingredient) => [ingredient.en, ingredient.nl].some((name) => {
+    const alias = cleanIngredient(name);
+    return normalized === alias || (normalized.length > 4 && normalized.includes(alias));
+  }));
+}
+
+function ingredientTerms(value) {
+  const normalized = cleanIngredient(value);
+  const record = ingredientRecord(value);
+  return record ? [normalized, cleanIngredient(record.en), cleanIngredient(record.nl)] : [normalized];
 }
 
 function recipeById(id) {
@@ -81,22 +102,23 @@ function recipeById(id) {
 }
 
 function cleanIngredient(value) {
-  return String(value || '').toLowerCase()
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/^\s*\d+(?:[./]\d+)?\s*/, '')
     .replace(/\b(?:g|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of)\b/g, ' ')
     .replace(/[^a-z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+    .replace(/ies$/, 'y')
     .replace(/s$/, '');
 }
 
 function matchingInventory(ingredient) {
-  const wanted = cleanIngredient(ingredient);
-  if (!wanted) return undefined;
+  const wantedTerms = ingredientTerms(ingredient).filter(Boolean);
+  if (!wantedTerms.length) return undefined;
   return state.inventory.find((item) => {
     if (Number(item.quantity) <= 0) return false;
-    const available = cleanIngredient(item.name);
-    return available === wanted || (wanted.length > 3 && (available.includes(wanted) || wanted.includes(available)));
+    const availableTerms = ingredientTerms(item.name).filter(Boolean);
+    return wantedTerms.some((wanted) => availableTerms.some((available) => available === wanted || (wanted.length > 3 && (available.includes(wanted) || wanted.includes(available)))));
   });
 }
 
@@ -144,7 +166,39 @@ function persist() {
   pushPendingState();
 }
 
+function applyTheme(theme) {
+  const isDark = theme === 'dark';
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  const themeColor = $('meta[name="theme-color"]');
+  if (themeColor) themeColor.content = isDark ? '#151d19' : '#f4f5ef';
+  const toggle = $('#dark-mode-toggle');
+  if (toggle) toggle.checked = isDark;
+}
+
+async function loadIngredientCatalog() {
+  try {
+    const response = await fetch('/ingredients.json');
+    if (!response.ok) throw new Error('Ingredient catalog unavailable');
+    ingredientCatalog = await response.json();
+    localStorage.setItem(INGREDIENTS_KEY, JSON.stringify(ingredientCatalog));
+  } catch {
+    try {
+      ingredientCatalog = JSON.parse(localStorage.getItem(INGREDIENTS_KEY) || '[]');
+    } catch {
+      ingredientCatalog = [];
+    }
+  }
+  const options = $('#ingredient-options');
+  if (options) {
+    options.innerHTML = ingredientCatalog.flatMap((ingredient) => [
+      `<option value="${escapeHtml(ingredient.en)}" label="${escapeHtml(ingredient.nl)} · ${escapeHtml(ingredient.category)}"></option>`,
+      `<option value="${escapeHtml(ingredient.nl)}" label="${escapeHtml(ingredient.en)} · ${escapeHtml(ingredient.category)}"></option>`,
+    ]).join('');
+  }
+}
+
 async function initialize() {
+  applyTheme(localStorage.getItem(THEME_KEY) || 'light');
   const cached = localStorage.getItem(STORAGE_KEY);
   const pending = localStorage.getItem(PENDING_KEY);
   if (cached) state = normalizeState(JSON.parse(cached));
@@ -165,6 +219,7 @@ async function initialize() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     localStorage.setItem(PENDING_KEY, JSON.stringify(state));
   }
+  await loadIngredientCatalog();
   render();
   pushPendingState();
   fetch('/api/mealie/status').then((response) => response.json()).then((result) => {
@@ -208,6 +263,8 @@ function renderInventory() {
 
 function renderWeek() {
   const plans = currentWeekPlans();
+  const weekEnd = dateAtOffset(6);
+  const weekLabel = `${formatDate(weekStart, { month: 'short', day: 'numeric' })} – ${formatDate(weekEnd, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   const dayButtons = Array.from({ length: 7 }, (_, index) => {
     const date = dateAtOffset(index);
     const key = dateKey(date);
@@ -223,6 +280,7 @@ function renderWeek() {
   }).join('') : '<div class="day-empty"><span aria-hidden="true">✳</span><p>No meal planned for this day.</p><small>Pick a recipe below to give the day a little shape.</small></div>';
   const recipeOptions = [...state.recipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   return `${pageHeading('A GOOD WEEK STARTS HERE', 'Make room for dinner.', 'Plan meals at your own pace. Your list will follow along.', '<button class="button button-outline" data-action="generate-shopping">Build shopping list <span aria-hidden="true">↗</span></button>')}
+    <div class="week-navigation"><button class="icon-button" data-action="previous-week" aria-label="Previous week" title="Previous week">‹</button><label class="date-jump">Jump to date<input id="week-date" type="date" value="${dateKey(selectedDate)}" aria-label="Select a date" /></label><span class="week-range">${escapeHtml(weekLabel)}</span><button class="button button-quiet today-button" data-action="go-today">Today</button><button class="icon-button" data-action="next-week" aria-label="Next week" title="Next week">›</button></div>
     <section class="week-planner"><div class="week-strip">${dayButtons}</div><div class="day-detail"><div class="section-heading"><div><span class="eyebrow">YOUR PLAN</span><h2>${escapeHtml(selectedLabel)}</h2></div><span class="plan-count">${selectedPlans.length} ${selectedPlans.length === 1 ? 'meal' : 'meals'}</span></div><div class="planned-list">${planned}</div></div></section>
     <section class="section-block recipe-picker"><div class="section-heading"><div><span class="eyebrow">PICK SOMETHING GOOD</span><h2>Add a recipe to this day</h2></div><button class="text-button" data-view="recipes">Browse all recipes <span aria-hidden="true">→</span></button></div><div class="picker-grid">${recipeOptions.slice(0, 3).map((recipe) => `<article class="picker-item"><span class="recipe-number">${String(recipe.ingredients.length).padStart(2, '0')} INGREDIENTS</span><strong>${escapeHtml(recipe.name)}</strong><p>${escapeHtml(recipe.description || 'An idea from your recipe shelf.')}</p><div class="picker-foot"><span class="match-tag ${missingIngredients(recipe).length ? 'has-missing' : ''}">${missingIngredients(recipe).length ? `${missingIngredients(recipe).length} to pick up` : 'Ready to make'}</span><button class="button button-small button-dark" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">Add <span aria-hidden="true">＋</span></button></div></article>`).join('') || '<p class="muted">Add recipes in your recipe library first.</p>'}</div></section>`;
 }
@@ -376,6 +434,17 @@ document.addEventListener('click', async (event) => {
     selectedDate = new Date(year, month - 1, day);
     render();
   }
+  if (action === 'previous-week' || action === 'next-week') {
+    const direction = action === 'previous-week' ? -1 : 1;
+    weekStart = dateAtOffset(direction * 7);
+    selectedDate = new Date(weekStart);
+    render();
+  }
+  if (action === 'go-today') {
+    selectedDate = new Date();
+    weekStart = startOfWeek(selectedDate);
+    render();
+  }
   if (action === 'plan-recipe') {
     if (!currentWeekPlans().some((entry) => entry.date === dateKey(selectedDate) && entry.recipeId === id)) {
       state.plan.push({ id: makeId(), date: dateKey(selectedDate), recipeId: id, cooked: false });
@@ -429,6 +498,17 @@ document.addEventListener('input', (event) => {
 
 document.addEventListener('change', (event) => {
   if (event.target.id === 'location-filter') { inventoryLocation = event.target.value; render(); }
+  if (event.target.id === 'week-date' && event.target.value) {
+    const [year, month, day] = event.target.value.split('-').map(Number);
+    selectedDate = new Date(year, month - 1, day);
+    weekStart = startOfWeek(selectedDate);
+    render();
+  }
+  if (event.target.id === 'dark-mode-toggle') {
+    const theme = event.target.checked ? 'dark' : 'light';
+    localStorage.setItem(THEME_KEY, theme);
+    applyTheme(theme);
+  }
   if (event.target.matches('input[data-action="check-shopping"]')) {
     const item = state.shopping.find((entry) => entry.id === event.target.dataset.id);
     if (item) { item.checked = event.target.checked; persist(); }
@@ -508,6 +588,7 @@ document.addEventListener('submit', (event) => {
 $('#settings-button').addEventListener('click', async () => {
   const form = $('#settings-form');
   form.elements.locations.value = state.locations.join(', ');
+  $('#dark-mode-toggle').checked = document.documentElement.dataset.theme === 'dark';
   const note = $('#mealie-note');
   try {
     const response = await fetch('/api/mealie/status');

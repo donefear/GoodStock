@@ -14,6 +14,7 @@ const staticFiles = new Map([
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/sw.js', ['sw.js', 'text/javascript; charset=utf-8']],
   ['/manifest.webmanifest', ['manifest.webmanifest', 'application/manifest+json']],
+  ['/ingredients.json', ['ingredients.json', 'application/json; charset=utf-8']],
 ]);
 
 function sendJson(response, status, value) {
