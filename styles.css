@@ -190,7 +190,9 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .mealie-link { color: inherit; text-decoration: underline; text-decoration-color: #33785e66; text-underline-offset: 3px; }
 .mealie-link:hover, .mealie-link:focus-visible { color: var(--green); text-decoration-color: currentColor; }
 .mealie-link span { color: var(--green); font-size: 11px; }
-.recipe-title-link { padding: 0; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.recipe-title-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.recipe-card-title:hover, .recipe-card-title:focus-visible { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.mealie-button { text-decoration: none; }
 .planned-copy > strong, .planned-copy > span { display: block; }
 .planned-copy strong { font-size: 13px; }
 .planned-copy > span { margin-top: 3px; color: #8b958c; font-size: 10px; }
@@ -272,6 +274,13 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .ingredient-check > span:nth-of-type(2) { flex: 1; font-size: 12px; }
 .ingredient-check small { color: #879188; font-size: 10px; }
 .ingredient-check.not-stocked { color: #8e968f; }
+.recipe-ingredient-list { max-height: 45vh; margin: 0; padding: 0; overflow: auto; list-style: none; border-top: 1px solid var(--line); }
+.recipe-ingredient-list li { min-height: 40px; padding: 8px 4px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.recipe-ingredient-list li > span:first-child { width: 16px; color: var(--green); font-weight: 700; text-align: center; }
+.recipe-ingredient-list li > span:nth-child(2) { flex: 1; }
+.recipe-ingredient-list small { color: #879188; font-size: 10px; }
+.recipe-ingredient-list .not-stocked { color: #8e968f; }
+.recipe-ingredient-list .not-stocked > span:first-child { color: #b5bdb5; }
 .ingredient-check.not-stocked .custom-check { background: #f3f4f0; }
 .putaway-item { margin: -4px 0 0; color: var(--green-dark); font: 500 20px 'Fraunces', Georgia, serif; }
 .field-hint { display: block; margin-top: 4px; color: #929b93; font-size: 10px; font-weight: 400; }

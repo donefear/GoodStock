@@ -7,9 +7,14 @@ import QRCode from 'qrcode';
 const port = Number(process.env.PORT || 8080);
 const dataDirectory = process.env.DATA_DIR || './data';
 const statePath = join(dataDirectory, 'state.json');
-const mealieUrl = (process.env.MEALIE_URL || '').replace(/\/+$/, '');
+// Accept "mealie.example.com" as well as full URLs; without a scheme, redirects become relative and loop.
+const normalizeBaseUrl = (value) => {
+  const trimmed = String(value || '').trim().replace(/\/+$/, '');
+  return trimmed && !/^https?:\/\//i.test(trimmed) ? `https://${trimmed}` : trimmed;
+};
+const mealieUrl = normalizeBaseUrl(process.env.MEALIE_URL);
 const mealieKey = process.env.MEALIE_API_KEY || '';
-const mealiePublicUrl = (process.env.MEALIE_PUBLIC_URL || mealieUrl).replace(/\/+$/, '');
+const mealiePublicUrl = normalizeBaseUrl(process.env.MEALIE_PUBLIC_URL) || mealieUrl;
 let mealieGroupSlug = '';
 const shoppingShares = new Map();
 const shoppingShareLifetime = 30 * 60 * 1000;
