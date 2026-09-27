@@ -10,10 +10,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPIRY_WINDOW_DAYS = 3;
 const defaultLocations = ['Pantry', 'Fridge', 'Freezer', 'Cleaning shelf'];
 const starterRecipes = [
-  { id: 'tomato-bean-soup', name: 'Tomato & white bean soup', description: 'A bright, hearty one-pot lunch.', ingredients: ['1 onion', '2 cans white beans', '1 can tomatoes', 'vegetable stock'], source: 'Goodstock', instructions: ['Chop the onion.', 'Soften the onion in a splash of oil over medium heat for 5 minutes.', 'Add the tomatoes, drained beans, and stock.', 'Simmer for 15 minutes.', 'Season with salt and pepper, then mash a few beans to thicken.'] },
-  { id: 'lemon-pasta', name: 'Lemony greens pasta', description: 'Fast pasta with greens and a little parmesan.', ingredients: ['pasta', 'spinach', '1 lemon', 'parmesan'], source: 'Goodstock', instructions: ['Bring a big pot of salted water to the boil.', 'Cook the pasta for 10 minutes.', 'Zest and juice the lemon while the pasta cooks.', 'Add the spinach to the pot for the last minute.', 'Drain, keeping a cup of pasta water.', 'Toss with lemon, grated parmesan, and a splash of pasta water.'] },
-  { id: 'crispy-potatoes', name: 'Crispy potato tray', description: 'Crisp edges, soft middle, plenty of herbs.', ingredients: ['potatoes', 'olive oil', 'garlic', 'rosemary'], source: 'Goodstock', instructions: ['Heat the oven to 220°C.', 'Cut the potatoes into chunks.', 'Toss with olive oil, crushed garlic, rosemary, and salt on a tray.', 'Roast for 40 minutes, turning once halfway.'] },
-  { id: 'oat-pancakes', name: 'Everyday oat pancakes', description: 'A small-batch breakfast for slow mornings.', ingredients: ['rolled oats', '2 eggs', 'milk', '1 banana'], source: 'Goodstock', instructions: ['Blend the oats into a rough flour.', 'Mash the banana, then whisk in the eggs, milk, and oat flour.', 'Let the batter rest for 5 minutes.', 'Cook small pancakes in a hot oiled pan for 2 minutes per side.'] },
+  { id: 'tomato-bean-soup', name: 'Tomato & white bean soup', description: 'A bright, hearty one-pot lunch.', ingredients: ['1 onion', '2 cans white beans', '1 can tomatoes', '500 ml vegetable stock'], source: 'Goodstock', instructions: ['Chop the onion.', 'Soften the onion in a splash of oil over medium heat for 5 minutes.', 'Add the tomatoes, drained beans, and stock.', 'Simmer for 15 minutes.', 'Season with salt and pepper, then mash a few beans to thicken.'] },
+  { id: 'lemon-pasta', name: 'Lemony greens pasta', description: 'Fast pasta with greens and a little parmesan.', ingredients: ['250 g pasta', '100 g spinach', '1 lemon', '30 g parmesan'], source: 'Goodstock', instructions: ['Bring a big pot of salted water to the boil.', 'Cook the pasta for 10 minutes.', 'Zest and juice the lemon while the pasta cooks.', 'Add the spinach to the pot for the last minute.', 'Drain, keeping a cup of pasta water.', 'Toss with lemon, grated parmesan, and a splash of pasta water.'] },
+  { id: 'crispy-potatoes', name: 'Crispy potato tray', description: 'Crisp edges, soft middle, plenty of herbs.', ingredients: ['1 kg potatoes', '2 tbsp olive oil', '3 cloves garlic', '2 sprigs rosemary'], source: 'Goodstock', instructions: ['Heat the oven to 220°C.', 'Cut the potatoes into chunks.', 'Toss with olive oil, crushed garlic, rosemary, and salt on a tray.', 'Roast for 40 minutes, turning once halfway.'] },
+  { id: 'oat-pancakes', name: 'Everyday oat pancakes', description: 'A small-batch breakfast for slow mornings.', ingredients: ['100 g rolled oats', '2 eggs', '150 ml milk', '1 banana'], source: 'Goodstock', instructions: ['Blend the oats into a rough flour.', 'Mash the banana, then whisk in the eggs, milk, and oat flour.', 'Let the batter rest for 5 minutes.', 'Cook small pancakes in a hot oiled pan for 2 minutes per side.'] },
 ];
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -36,14 +36,28 @@ function freshState() {
   };
 }
 
+// Starter recipes saved before they had amounts get the new ingredient lists, unless the user changed them.
+const OLD_STARTER_INGREDIENTS = {
+  'tomato-bean-soup': '["1 onion","2 cans white beans","1 can tomatoes","vegetable stock"]',
+  'lemon-pasta': '["pasta","spinach","1 lemon","parmesan"]',
+  'crispy-potatoes': '["potatoes","olive oil","garlic","rosemary"]',
+  'oat-pancakes': '["rolled oats","2 eggs","milk","1 banana"]',
+};
+
+function upgradeStarterRecipe(recipe) {
+  const starter = starterRecipes.find((entry) => entry.id === recipe?.id);
+  if (!starter || JSON.stringify(recipe.ingredients) !== OLD_STARTER_INGREDIENTS[starter.id]) return recipe;
+  return { ...recipe, ingredients: [...starter.ingredients] };
+}
+
 function normalizeState(value) {
   const defaults = freshState();
   if (!value || typeof value !== 'object') return defaults;
   return {
-    inventory: Array.isArray(value.inventory) ? value.inventory : defaults.inventory,
-    recipes: Array.isArray(value.recipes) ? value.recipes : defaults.recipes,
+    inventory: Array.isArray(value.inventory) ? value.inventory.map(metricInventoryItem) : defaults.inventory,
+    recipes: Array.isArray(value.recipes) ? value.recipes.map(upgradeStarterRecipe).map(metricRecipe) : defaults.recipes,
     plan: Array.isArray(value.plan) ? value.plan : [],
-    shopping: Array.isArray(value.shopping) ? value.shopping : [],
+    shopping: Array.isArray(value.shopping) ? value.shopping.map(metricInventoryItem) : [],
     locations: Array.isArray(value.locations) && value.locations.length ? value.locations : defaults.locations,
   };
 }
@@ -111,13 +125,139 @@ function recipeById(id) {
 
 function cleanIngredient(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-    .replace(/^\s*\d+(?:[./]\d+)?\s*/, '')
-    .replace(/\b(?:g|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of)\b/g, ' ')
+    .replace(/^[\s\d\u00bc\u00bd\u00be\u2153\u2154\u215b\u215c\u215d\u215e./,\u2013-]+/, '')
+    .replace(/\b(?:g|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|el|tl|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of)\b/g, ' ')
     .replace(/[^a-z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/ies$/, 'y')
     .replace(/s$/, '');
+}
+
+// Quantities: parse "1 1/2 cups flour" and convert imperial amounts to metric. Cups, tbsp and tsp stay as they are.
+const FRACTION_GLYPHS = { '¼': 0.25, '½': 0.5, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875 };
+const AMOUNT_SOURCE = String.raw`(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?\s*[¼½¾⅓⅔⅛⅜⅝⅞]?|[¼½¾⅓⅔⅛⅜⅝⅞])`;
+const INGREDIENT_PATTERN = new RegExp(String.raw`^(${AMOUNT_SOURCE})(?:\s*(?:-|–|to|tot)\s*${AMOUNT_SOURCE})?\s*(.*)$`, 'i');
+const IMPERIAL_PATTERN = new RegExp(String.raw`(?<![\d.,/])(${AMOUNT_SOURCE})(?:\s*(-|–|to)\s*(${AMOUNT_SOURCE}))?\s*(fl\.?\s*oz|fluid\s+ounces?|ounces?|oz|pounds?|lbs?|pints?|quarts?|gallons?|inch(?:es)?)(?![a-z])\.?`, 'gi');
+const FAHRENHEIT_PATTERN = /(\d{3})\s*(?:°\s*F|degrees?\s+F(?:ahrenheit)?|F)\b/g;
+const UNIT_ALIASES = {
+  g: /^(?:g|gr|grams?|grammes?)$/, kg: /^(?:kg|kilos?|kilograms?)$/, mg: /^(?:mg|milligrams?)$/,
+  ml: /^(?:ml|millilit(?:er|re)s?)$/, cl: /^cl$/, dl: /^dl$/, l: /^(?:l|lit(?:er|re)s?)$/,
+  oz: /^(?:oz|ounces?)$/, lb: /^(?:lbs?|pounds?)$/, 'fl oz': /^(?:fl\.?\s*oz|fluid\s+ounces?)$/,
+  pint: /^(?:pints?|pt)$/, quart: /^(?:quarts?|qt)$/, gallon: /^(?:gallons?|gal)$/, inch: /^inch(?:es)?$/, cm: /^(?:cm|centimet(?:er|re)s?)$/,
+  cup: /^(?:cups?|kopjes?)$/, tbsp: /^(?:tbsps?|tbs|tablespoons?|el|eetlepels?)$/, tsp: /^(?:tsps?|teaspoons?|tl|theelepels?)$/,
+  can: /^(?:cans?|tins?|blikj?e?s?)$/, jar: /^(?:jars?|potj?e?s?)$/, bag: /^(?:bags?|zakj?e?s?)$/, bottle: /^(?:bottles?|flessen|fles)$/,
+  pack: /^(?:packs?|packets?|packages?|pakj?e?s?)$/, clove: /^(?:cloves?|teentjes?|tenen)$/, bunch: /^(?:bunch(?:es)?|bosj?e?s?)$/,
+  pinch: /^(?:pinch(?:es)?|snufjes?|snuf)$/, slice: /^(?:slices?|plakj?e?s?)$/, sprig: /^(?:sprigs?|takjes?)$/, handful: /^(?:handfuls?|handjes?)$/,
+  stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|stuks?|st|x|whole|items?)$/,
+};
+const TO_METRIC = { oz: [28.3495, 'g'], lb: [453.592, 'g'], 'fl oz': [29.5735, 'ml'], pint: [473.176, 'ml'], quart: [946.353, 'ml'], gallon: [3785.41, 'ml'], inch: [2.54, 'cm'] };
+const UNIT_SCALES = { mg: ['mass', 0.001], g: ['mass', 1], kg: ['mass', 1000], ml: ['volume', 1], cl: ['volume', 10], dl: ['volume', 100], l: ['volume', 1000], tsp: ['volume', 5], tbsp: ['volume', 15], cup: ['volume', 240] };
+const FRACTION_UNITS = new Set(['cup', 'tbsp', 'tsp', '', 'pcs', 'can', 'jar', 'bag', 'bottle', 'pack', 'clove', 'bunch', 'pinch', 'slice', 'sprig', 'handful', 'stick']);
+
+function parseAmount(text) {
+  const value = String(text || '').trim();
+  const mixed = /^(\d+)\s+(\d+)\/(\d+)$/.exec(value);
+  if (mixed) return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
+  const fraction = /^(\d+)\/(\d+)$/.exec(value);
+  if (fraction) return Number(fraction[2]) ? Number(fraction[1]) / Number(fraction[2]) : null;
+  const decimal = /^(\d+(?:[.,]\d+)?)?\s*([¼½¾⅓⅔⅛⅜⅝⅞])?$/.exec(value);
+  if (!decimal || (!decimal[1] && !decimal[2])) return null;
+  return Number((decimal[1] || '0').replace(',', '.')) + (FRACTION_GLYPHS[decimal[2]] || 0);
+}
+
+function canonicalUnit(value) {
+  const word = String(value || '').trim().toLowerCase().replace(/\.$/, '');
+  if (!word) return '';
+  return Object.keys(UNIT_ALIASES).find((unit) => UNIT_ALIASES[unit].test(word)) ?? null;
+}
+
+function parseIngredient(text) {
+  const raw = String(text || '').trim();
+  const match = INGREDIENT_PATTERN.exec(raw);
+  if (!match) return { amount: null, unit: '', unitText: '', name: raw };
+  const amount = parseAmount(match[1]) || null;
+  const rest = match[2].trim();
+  const unitMatch = /^(fl\.?\s*oz\.?|fluid\s+ounces?|[\p{L}]+\.?)(?:\s+(?:of|van)\b)?\s+(.+)$/iu.exec(rest);
+  const unit = unitMatch ? canonicalUnit(unitMatch[1]) : null;
+  const tidy = (name) => name.replace(/^\([^)]*\)\s*/, '').trim();
+  if (unit) return { amount, unit, unitText: unitMatch[1].replace(/\.$/, ''), name: tidy(unitMatch[2]) };
+  return { amount, unit: '', unitText: '', name: tidy(rest) || raw };
+}
+
+function roundMetric(value, unit) {
+  if (unit === 'cm') return Math.max(0.5, Math.round(value * 2) / 2);
+  if (value >= 1000) return { value: Math.round(value / 100) / 10, unit: unit === 'g' ? 'kg' : 'l' };
+  const step = value < 20 ? 1 : value < 250 ? 5 : 10;
+  return Math.max(1, Math.round(value / step) * step);
+}
+
+function metricAmount(amount, unit) {
+  const conversion = TO_METRIC[unit];
+  if (!conversion || !Number.isFinite(amount)) return { amount, unit };
+  const rounded = roundMetric(amount * conversion[0], conversion[1]);
+  return typeof rounded === 'object' ? { amount: rounded.value, unit: rounded.unit } : { amount: rounded, unit: conversion[1] };
+}
+
+function formatAmount(amount, unit = '') {
+  if (!Number.isFinite(amount)) return '';
+  const whole = Math.floor(amount);
+  const part = amount - whole;
+  if (FRACTION_UNITS.has(unit) && part > 0.01) {
+    const glyph = Object.keys(FRACTION_GLYPHS).find((key) => Math.abs(FRACTION_GLYPHS[key] - part) < 0.02);
+    if (glyph) return whole ? `${whole}${glyph}` : glyph;
+  }
+  return String(Math.round(amount * 100) / 100);
+}
+
+// Rewrites imperial amounts (8 oz, 1 lb, 2 pints, 350°F) anywhere in a line of text. Safe to run twice.
+function metricText(text) {
+  return String(text || '')
+    .replace(IMPERIAL_PATTERN, (match, first, dash, second, unitWord) => {
+      const unit = canonicalUnit(unitWord);
+      const low = metricAmount(parseAmount(first), unit);
+      if (!Number.isFinite(low.amount) || low.amount === null) return match;
+      const high = second ? metricAmount(parseAmount(second), unit) : null;
+      return high && high.unit === low.unit ? `${formatAmount(low.amount, low.unit)}–${formatAmount(high.amount, high.unit)} ${low.unit}` : `${formatAmount(low.amount, low.unit)} ${low.unit}`;
+    })
+    .replace(FAHRENHEIT_PATTERN, (match, degrees) => `${Math.round(((Number(degrees) - 32) * 5) / 9 / 5) * 5}°C`);
+}
+
+function metricIngredient(text) {
+  const converted = metricText(text).replace(/^0+(?:[.,]0+)?\s+/, '');
+  const decimal = /^(\d*[.,]\d+)\s/.exec(converted);
+  const { amount, unit } = parseIngredient(converted);
+  // "0.333 cup" → "⅓ cup"
+  return decimal && amount && ['cup', 'tbsp', 'tsp'].includes(unit) ? `${formatAmount(amount, unit)}${converted.slice(decimal[1].length)}` : converted;
+}
+
+function metricRecipe(recipe) {
+  if (!recipe || typeof recipe !== 'object') return recipe;
+  return {
+    ...recipe,
+    ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(metricIngredient) : recipe.ingredients,
+    instructions: Array.isArray(recipe.instructions) ? recipe.instructions.map(metricText) : recipe.instructions,
+  };
+}
+
+function metricInventoryItem(item) {
+  const unit = canonicalUnit(item?.unit);
+  if (!item || !TO_METRIC[unit]) return item;
+  const converted = metricAmount(Number(item.quantity), unit);
+  return { ...item, quantity: converted.amount, unit: converted.unit };
+}
+
+// How much of an inventory item a recipe line uses, in the item's own unit. 0 when the units can't be compared.
+function deductionAmount(ingredient, item) {
+  const { amount, unit } = parseIngredient(ingredient);
+  const itemUnit = canonicalUnit(item.unit);
+  const isCount = (value) => value === '' || value === 'pcs';
+  if (amount === null) return isCount(itemUnit) ? 1 : 0;
+  if (unit === itemUnit || (isCount(unit) && isCount(itemUnit))) return amount;
+  const from = UNIT_SCALES[unit];
+  const to = UNIT_SCALES[itemUnit];
+  if (from && to && from[0] === to[0]) return Math.round((amount * from[1] / to[1]) * 100) / 100;
+  return 0;
 }
 
 function matchingInventory(ingredient) {
@@ -496,7 +636,7 @@ function renderShopping() {
   const rows = state.shopping.map((item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}</span></label><span class="shopping-amount">${escapeHtml(item.quantity || '')} ${escapeHtml(item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">Put away</button>` : `<span class="shopping-source">${escapeHtml(item.source || 'Shopping list')}</span>`}</article>`).join('');
   const actions = `<div class="shopping-heading-actions">${state.shopping.length ? '<button class="button button-outline" data-action="show-shopping-qr">Share to phone <span aria-hidden="true">▦</span></button>' : ''}<button class="button button-outline" data-action="generate-shopping">Refresh from plan <span aria-hidden="true">↻</span></button></div>`;
   return `${pageHeading('OUT AND ABOUT', 'The list, in hand.', `${remaining} ${remaining === 1 ? 'thing' : 'things'} left to pick up. Check off as you go.`, actions)}
-    <section class="section-block shopping-block"><div class="section-heading"><div><h2>This week’s list</h2><span class="muted">${state.shopping.length} items</span></div><div class="list-actions">${state.shopping.some((item) => item.checked) ? '<button class="text-button" data-action="clear-checked">Clear checked</button>' : ''}${state.shopping.length ? '<button class="text-button clear-list-button" data-action="clear-list">× Clear list</button>' : ''}</div></div>${rows ? `<div class="shopping-list">${rows}</div>` : '<div class="empty-state compact"><span class="empty-mark">☷</span><strong>Your list is nice and clear.</strong><p>Build it from the meals in your weekly plan.</p><button class="button button-primary" data-action="generate-shopping">Build from this week</button></div>'}</section>`;
+    <section class="section-block shopping-block"><div class="section-heading"><div><h2>This week’s list</h2><span class="muted">${state.shopping.length} items</span></div><div class="list-actions">${remaining ? '<button class="text-button" data-action="check-all">✓ Check all</button>' : ''}${state.shopping.some((item) => item.checked) ? '<button class="button button-small button-outline" data-action="put-all-away">Put all away</button><button class="text-button" data-action="clear-checked">Clear checked</button>' : ''}${state.shopping.length ? '<button class="text-button clear-list-button" data-action="clear-list">× Clear list</button>' : ''}</div></div>${rows ? `<div class="shopping-list">${rows}</div>` : '<div class="empty-state compact"><span class="empty-mark">☷</span><strong>Your list is nice and clear.</strong><p>Build it from the meals in your weekly plan.</p><button class="button button-primary" data-action="generate-shopping">Build from this week</button></div>'}</section>`;
 }
 
 function recipeCard(recipe, isRemote = false) {
@@ -552,7 +692,8 @@ function openCookDialog(plan) {
   $('#cook-form').elements.planId.value = plan.id;
   $('#cook-ingredients').innerHTML = recipe.ingredients.map((ingredient, index) => {
     const item = matchingInventory(ingredient);
-    return `<label class="ingredient-check ${item ? '' : 'not-stocked'}"><input type="checkbox" name="ingredient" value="${index}" ${item ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span><span>${escapeHtml(ingredient)}</span><small>${item ? `in ${escapeHtml(item.location)}` : 'not in inventory'}</small></label>`;
+    const amount = item ? `<span class="cook-amount"><span>Remove</span><input type="number" name="amount-${index}" min="0" step="any" value="${Math.round(Math.min(deductionAmount(ingredient, item), Number(item.quantity)) * 100) / 100}" inputmode="decimal" aria-label="Amount of ${escapeHtml(item.name)} to remove"><span>${escapeHtml(item.unit || 'pcs')} <i>of ${escapeHtml(item.quantity)}</i></span></span>` : '';
+    return `<label class="ingredient-check cook-check ${item ? '' : 'not-stocked'}"><input type="checkbox" name="ingredient" value="${index}" ${item ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span><span>${escapeHtml(ingredient)}</span><small>${item ? `in ${escapeHtml(item.location)}` : 'not in inventory'}</small>${amount}</label>`;
   }).join('');
   $('#cook-dialog').showModal();
 }
@@ -569,7 +710,7 @@ async function openRecipeDialog(id, isRemote, planId = '') {
   if (isRemote && !recipe.ingredients?.length && recipe.slug) {
     try {
       const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(recipe.slug)}`);
-      if (response.ok) recipe = await response.json();
+      if (response.ok) recipe = metricRecipe(await response.json());
     } catch { /* Show the search-result details when Mealie is unavailable. */ }
   }
   $('#recipe-dialog-source').textContent = (recipe.source || 'Kitchen collection').toUpperCase();
@@ -649,6 +790,39 @@ function recipeInstructions(recipe) {
   return starterRecipes.find((starter) => starter.id === recipe.id)?.instructions || [];
 }
 
+function unitLabel(unitText, amount) {
+  if (amount <= 1 || !/^(?:cup|teaspoon|tablespoon|can|clove|jar|bag|bottle|pinch|slice|sprig|bunch|handful|stick|piece|pack|packet)$/i.test(unitText)) return unitText;
+  return /(?:ch|sh)$/i.test(unitText) ? `${unitText}es` : `${unitText}s`;
+}
+
+// Puts each ingredient's amount in front of its first mention: "Add the sesame oil" → "Add 1 tbsp of sesame oil".
+function addStepAmounts(steps, ingredients) {
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const stem = (word) => escapeRegExp(word.replace(/(?:es|s)$/i, ''));
+  for (const target of ingredients.map(parseIngredient).filter((entry) => entry.amount)) {
+    const full = target.name.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim().toLowerCase();
+    if (full.length < 2) continue;
+    const words = full.split(' ');
+    const head = words.length > 1 && words[words.length - 1].length > 3 ? words[words.length - 1] : '';
+    // An article is dropped ("the oil" → "1 tbsp of oil"); a prep word stays after the amount ("3 cloves of crushed garlic").
+    const prep = String.raw`\p{L}{2,}ed|ge\p{L}+(?:en|de|te)`;
+    const prefix = String.raw`(?:(?:the|de|het)\s+)?(?:(${prep})\s+)?`;
+    const patterns = [new RegExp(String.raw`\b${prefix}(${stem(full)}(?:e?s)?)\b`, 'iu')];
+    if (head) patterns.push(new RegExp(String.raw`\b(?=(?:the|de|het|${prep})\s)${prefix}(${stem(head)}(?:e?s)?)\b`, 'iu'));
+    for (const step of steps) {
+      const match = patterns.map((pattern) => pattern.exec(step.text)).find(Boolean);
+      if (!match) continue;
+      const before = step.text.slice(0, match.index);
+      if (/[\d¼½¾⅓⅔⅛⅜⅝⅞]\s*[\p{L}.]*\s*(?:of\s+|van\s+)?$/u.test(before)) break;
+      const dutch = /\b(?:de|het|een|en|met|voeg|toe|snijd|bak|kook|minuten)\b/i.test(step.text);
+      const unit = target.unitText ? ` ${unitLabel(target.unitText, target.amount)}${dutch ? '' : ' of'}` : '';
+      const words = `${match[1] ? `${match[1]} ` : ''}${match[2]}`;
+      step.text = `${before}\u0001${formatAmount(target.amount, target.unit)}${unit}\u0002 ${match.index === 0 ? words.toLowerCase() : words}${step.text.slice(match.index + match[0].length)}`;
+      break;
+    }
+  }
+}
+
 function buildCookBites(recipe) {
   const bites = [];
   const ingredients = recipe.ingredients || [];
@@ -657,7 +831,7 @@ function buildCookBites(recipe) {
   }
   const steps = [];
   let heading = '';
-  for (const raw of recipeInstructions(recipe).map((text) => String(text).trim()).filter(Boolean)) {
+  for (const raw of recipeInstructions(recipe).map((text) => metricText(String(text).trim())).filter(Boolean)) {
     if (isStepHeading(raw)) {
       if (heading) steps.push({ type: 'step', heading: '', text: heading });
       heading = raw;
@@ -667,6 +841,7 @@ function buildCookBites(recipe) {
     heading = '';
   }
   if (heading) steps.push({ type: 'step', heading: '', text: heading });
+  addStepAmounts(steps, ingredients);
   const ovenIndex = steps.findIndex((step) => TEMPERATURE_PATTERN.test(step.text));
   if (ovenIndex > 0) {
     const temperature = steps[ovenIndex].text.match(TEMPERATURE_PATTERN)[0].replace(/\s+/g, '');
@@ -679,7 +854,8 @@ function buildCookBites(recipe) {
 
 function highlightStepText(text) {
   const pattern = new RegExp(`${TIME_PATTERN.source}|${TEMPERATURE_PATTERN.source}`, 'gi');
-  return escapeHtml(text).replace(pattern, (match) => `<mark>${match}</mark>`);
+  return escapeHtml(text).replace(pattern, (match) => `<mark>${match}</mark>`)
+    .replace(/\u0001([^\u0002]*)\u0002/g, '<strong class="steps-amount">$1</strong>');
 }
 
 function formatTimer(seconds) {
@@ -773,7 +949,7 @@ async function startCookSteps(recipe, planId = '') {
     try {
       const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(recipe.slug)}`);
       if (response.ok) {
-        const details = await response.json();
+        const details = metricRecipe(await response.json());
         const saved = recipeById(recipe.id);
         if (saved) { saved.instructions = details.instructions || []; persist(); }
         recipe = { ...recipe, instructions: details.instructions || [] };
@@ -832,7 +1008,7 @@ async function searchMealie(query) {
         return response.ok ? response.json() : recipe;
       } catch { return recipe; }
     }));
-    mealieResults = details.sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
+    mealieResults = details.map(metricRecipe).sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   } catch {
     mealieResults = [];
   }
@@ -843,7 +1019,7 @@ async function importMealieRecipe(id) {
   let recipe = mealieResults.find((entry) => entry.id === id || entry.slug === id);
   try {
     const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(id)}`);
-    if (response.ok) recipe = await response.json();
+    if (response.ok) recipe = metricRecipe(await response.json());
   } catch { /* Keep search-result details when Mealie is temporarily unavailable. */ }
   if (!recipe) return;
   const exists = state.recipes.some((entry) => entry.id === recipe.id || entry.slug === recipe.slug);
@@ -860,11 +1036,13 @@ function generateShopping() {
     if (!recipe || plan.cooked) continue;
     for (const ingredient of recipe.ingredients || []) {
       if (matchingInventory(ingredient)) continue;
-      const name = ingredient.replace(/^\s*\d+(?:[./]\d+)?\s*/, '').trim();
+      const parsed = parseIngredient(ingredient);
+      const name = parsed.name.trim();
       const key = cleanIngredient(name);
       const alreadyListed = state.shopping.some((entry) => cleanIngredient(entry.name) === key);
-      const inAdditions = additions.some((entry) => cleanIngredient(entry.name) === key);
-      if (name && !alreadyListed && !inAdditions) additions.push({ id: makeId(), name, quantity: 1, unit: '', checked: false, source: recipe.name });
+      const inAdditions = additions.find((entry) => cleanIngredient(entry.name) === key);
+      if (inAdditions && parsed.amount && canonicalUnit(inAdditions.unit) === parsed.unit) inAdditions.quantity = Math.round((inAdditions.quantity + parsed.amount) * 100) / 100;
+      if (name && !alreadyListed && !inAdditions) additions.push({ id: makeId(), name, quantity: parsed.amount ? Math.round(parsed.amount * 100) / 100 : 1, unit: parsed.amount ? parsed.unitText : '', checked: false, source: recipe.name });
     }
   }
   state.shopping.push(...additions);
@@ -998,6 +1176,17 @@ document.addEventListener('click', async (event) => {
     render();
   }
   if (action === 'clear-checked') { state.shopping = state.shopping.filter((entry) => !entry.checked); persist(); }
+  if (action === 'check-all') { for (const entry of state.shopping) entry.checked = true; persist(); }
+  if (action === 'put-all-away') {
+    const checked = state.shopping.filter((entry) => entry.checked);
+    if (checked.length && window.confirm(`Put ${checked.length} checked ${checked.length === 1 ? 'item' : 'items'} away? Each goes to its usual spot with an estimated expiry date. You can edit them in Inventory afterwards.`)) {
+      for (const entry of checked) {
+        const location = defaultStorageLocation(entry.name);
+        storeShoppingItem(entry, { quantity: Number(entry.quantity) || 1, unit: String(entry.unit || '').trim(), location, expiration: resolvedExpiration(entry.name, location, { value: '', dataset: {} }), packageDate: false });
+      }
+      persist();
+    }
+  }
   if (action === 'put-away') {
     const item = state.shopping.find((entry) => entry.id === id);
     if (item) openPutawayDialog(item);
@@ -1104,7 +1293,7 @@ $('#item-form').addEventListener('submit', (event) => {
   const location = form.elements.location.value;
   const resolved = resolvedExpiration(name, location, form.elements.expiresOn);
   const expiration = form.elements.kind.value === 'Household' && resolved.expirationSource === 'estimated' ? { expiresOn: '', expirationSource: '' } : resolved;
-  const item = {
+  const item = metricInventoryItem({
     id: form.elements.id.value || makeId(),
     name,
     quantity: Number(form.elements.quantity.value),
@@ -1112,7 +1301,7 @@ $('#item-form').addEventListener('submit', (event) => {
     ...expiration,
     location,
     kind: form.elements.kind.value,
-  };
+  });
   const existingIndex = state.inventory.findIndex((entry) => entry.id === item.id);
   if (existingIndex < 0) state.inventory.unshift(item); else state.inventory[existingIndex] = item;
   persist();
@@ -1128,7 +1317,8 @@ $('#cook-form').addEventListener('submit', (event) => {
     const usedIndices = new Set($$('#cook-ingredients input[name="ingredient"]:checked').map((input) => Number(input.value)));
     for (const index of usedIndices) {
       const item = matchingInventory(recipe.ingredients[index]);
-      if (item) item.quantity = Math.max(0, Number(item.quantity) - 1);
+      const used = Number(form.elements[`amount-${index}`]?.value);
+      if (item && used > 0) item.quantity = Math.max(0, Math.round((Number(item.quantity) - used) * 100) / 100);
     }
     plan.cooked = true;
     persist();
@@ -1141,23 +1331,40 @@ $('#putaway-form').addEventListener('submit', (event) => {
   const form = event.currentTarget;
   const shoppingItem = state.shopping.find((entry) => entry.id === form.elements.shoppingId.value);
   if (shoppingItem) {
-    const existing = state.inventory.find((entry) => cleanIngredient(entry.name) === cleanIngredient(shoppingItem.name));
     const location = form.elements.location.value;
-    const expiration = resolvedExpiration(shoppingItem.name, location, form.elements.expiresOn);
-    if (existing) {
-      existing.quantity = Number(existing.quantity) + Number(form.elements.quantity.value);
-      if (form.elements.expiresOn.value && form.elements.expiresOn.dataset.estimated !== 'true') Object.assign(existing, expiration);
-      else if (!existing.expiresOn && expiration.expiresOn) Object.assign(existing, expiration);
-    }
-    else state.inventory.unshift({
-      id: makeId(), name: shoppingItem.name, quantity: Number(form.elements.quantity.value),
-      unit: form.elements.unit.value.trim(), ...expiration, location, kind: 'Food',
+    storeShoppingItem(shoppingItem, {
+      quantity: Number(form.elements.quantity.value), unit: form.elements.unit.value.trim(), location,
+      expiration: resolvedExpiration(shoppingItem.name, location, form.elements.expiresOn),
+      packageDate: Boolean(form.elements.expiresOn.value) && form.elements.expiresOn.dataset.estimated !== 'true',
     });
-    state.shopping = state.shopping.filter((entry) => entry.id !== shoppingItem.id);
     persist();
   }
   $('#putaway-dialog').close();
 });
+
+// Where a bought item usually lives: where it already is, else the fridge when it keeps longer there, else the pantry.
+function defaultStorageLocation(name) {
+  const existing = state.inventory.find((entry) => cleanIngredient(entry.name) === cleanIngredient(name));
+  if (existing && state.locations.includes(existing.location)) return existing.location;
+  const record = ingredientRecord(name);
+  const shelfLife = record?.shelfLifeDays || CATEGORY_SHELF_LIFE_DAYS[record?.category] || {};
+  const pattern = (shelfLife.fridge ?? 0) > (shelfLife.pantry ?? 0) ? /fridge|koelkast/i : /pantry|voorraad/i;
+  return state.locations.find((location) => pattern.test(location)) || state.locations[0];
+}
+
+function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration, packageDate }) {
+  const bought = metricInventoryItem({ quantity, unit });
+  const existing = state.inventory.find((entry) => cleanIngredient(entry.name) === cleanIngredient(shoppingItem.name));
+  if (existing) {
+    const added = deductionAmount(`${bought.quantity} ${bought.unit}`.trim(), existing) || bought.quantity;
+    existing.quantity = Math.round((Number(existing.quantity) + added) * 100) / 100;
+    if (packageDate) Object.assign(existing, expiration);
+    else if (!existing.expiresOn && expiration.expiresOn) Object.assign(existing, expiration);
+  } else {
+    state.inventory.unshift({ id: makeId(), name: shoppingItem.name, quantity: bought.quantity, unit: bought.unit, ...expiration, location, kind: 'Food' });
+  }
+  state.shopping = state.shopping.filter((entry) => entry.id !== shoppingItem.id);
+}
 
 $('#settings-form').addEventListener('submit', (event) => {
   event.preventDefault();

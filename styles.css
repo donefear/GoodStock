@@ -278,6 +278,11 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .ingredient-check > span:nth-of-type(2) { flex: 1; font-size: 12px; }
 .ingredient-check small { color: #879188; font-size: 10px; }
 .ingredient-check.not-stocked { color: #8e968f; }
+.cook-check { flex-wrap: wrap; }
+.cook-amount { flex: 1 0 100%; padding-left: 33px; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.cook-amount i { font-style: normal; opacity: .75; }
+.ingredient-check .cook-amount input { position: static; width: 84px; height: 38px; padding: 0 10px; border: 1px solid #dbe2d9; border-radius: 5px; background: white; color: var(--ink); font-size: 14px; opacity: 1; pointer-events: auto; }
+.cook-check:has(> input:not(:checked)) .cook-amount { opacity: .45; }
 .recipe-ingredient-list { max-height: 45vh; margin: 0; padding: 0; overflow: auto; list-style: none; border-top: 1px solid var(--line); }
 .recipe-ingredient-list li { min-height: 40px; padding: 8px 4px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; font-size: 12px; }
 .recipe-ingredient-list li > span:first-child { width: 16px; color: var(--green); font-weight: 700; text-align: center; }
@@ -470,6 +475,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 :root[data-theme="dark"] .dialog-copy, :root[data-theme="dark"] .settings-note { color: #aab6ac; }
 :root[data-theme="dark"] .share-expiry { color: #aab6ac; }
 :root[data-theme="dark"] .ingredient-check { border-color: #3a4b3f; }
+:root[data-theme="dark"] .ingredient-check .cook-amount input { border-color: #3b4b40; background: #18221c; }
 :root[data-theme="dark"] .ingredient-check.not-stocked .custom-check { background: #26322a; }
 :root[data-theme="dark"] .danger-zone { border-color: #63433b; background: #342824; }
 :root[data-theme="dark"] .danger-zone span { color: #c2a99f; }
@@ -488,6 +494,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .steps-step-heading { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
 .steps-text { margin: 0; color: var(--ink); font-size: clamp(22px, 4.2vw, 30px); font-weight: 600; line-height: 1.4; }
 .steps-text mark { padding: 0 4px; border-radius: 4px; background: #f5ead0; color: inherit; }
+.steps-text .steps-amount { color: var(--green); font-weight: 800; }
 .steps-heading { margin: 0; font-size: 24px; }
 .steps-hint { margin: -8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .steps-gather { display: grid; gap: 8px; }

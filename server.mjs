@@ -62,7 +62,7 @@ function mapMealieRecipe(recipe) {
   const ingredientRows = recipe.recipeIngredient || recipe.ingredients || [];
   const ingredients = ingredientRows.map((row) => {
     const name = row.food?.name || row.ingredient?.name || row.note || row.name || '';
-    const amount = row.quantity == null ? '' : String(row.quantity);
+    const amount = Number(row.quantity) > 0 ? String(Math.round(Number(row.quantity) * 1000) / 1000) : '';
     const unit = row.unit?.name || row.unit || '';
     return [amount, unit, name].filter(Boolean).join(' ').trim();
   }).filter(Boolean);
