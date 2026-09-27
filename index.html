@@ -116,7 +116,17 @@
         <p class="settings-note" id="mealie-note">Recipe library: checking…</p>
         <p class="settings-note">To connect Mealie, set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack environment.</p>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v1.2 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v1.5 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="wipe-dialog" class="app-dialog wipe-dialog">
+      <form id="wipe-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow wipe-eyebrow">CANNOT BE UNDONE</span><h2>Wipe all data?</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <p class="dialog-copy">This deletes everything on every device that uses this kitchen:</p>
+        <ul class="wipe-summary" id="wipe-summary"></ul>
+        <label>Type <strong>WIPE</strong> to confirm<input name="confirmation" autocomplete="off" autocapitalize="characters" spellcheck="false" /></label>
+        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Keep my data</button><button class="button button-danger" type="submit" disabled>Wipe everything</button></div>
       </form>
     </dialog>
 

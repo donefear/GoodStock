@@ -1192,16 +1192,7 @@ document.addEventListener('click', async (event) => {
     if (item) openPutawayDialog(item);
   }
   if (action === 'import-recipe') await importMealieRecipe(id);
-  if (action === 'wipe-data' && window.confirm('This permanently deletes all inventory, saved recipes, plans, and shopping-list items. Continue?')) {
-    $('#settings-dialog').close();
-    state = { inventory: [], recipes: [], plan: [], shopping: [], locations: [...defaultLocations] };
-    activeView = 'inventory';
-    inventoryQuery = '';
-    inventoryLocation = 'All locations';
-    recipeQuery = '';
-    mealieResults = [];
-    persist();
-  }
+  if (action === 'wipe-data') openWipeDialog();
   if (action === 'clear-list' && state.shopping.length && window.confirm('Clear every item from the shopping list?')) {
     state.shopping = [];
     persist();
@@ -1365,6 +1356,36 @@ function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration,
   }
   state.shopping = state.shopping.filter((entry) => entry.id !== shoppingItem.id);
 }
+
+function openWipeDialog() {
+  const count = (list, one, many) => `<li><strong>${list.length}</strong> ${list.length === 1 ? one : many}</li>`;
+  $('#wipe-summary').innerHTML = count(state.inventory, 'inventory item', 'inventory items') + count(state.recipes, 'saved recipe', 'saved recipes')
+    + count(state.plan, 'planned meal', 'planned meals') + count(state.shopping, 'shopping-list item', 'shopping-list items');
+  const form = $('#wipe-form');
+  form.reset();
+  form.querySelector('[type="submit"]').disabled = true;
+  $('#wipe-dialog').showModal();
+  form.elements.confirmation.focus();
+}
+
+$('#wipe-form').addEventListener('input', (event) => {
+  const form = event.currentTarget;
+  form.querySelector('[type="submit"]').disabled = form.elements.confirmation.value.trim().toUpperCase() !== 'WIPE';
+});
+
+$('#wipe-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (event.currentTarget.elements.confirmation.value.trim().toUpperCase() !== 'WIPE') return;
+  $('#wipe-dialog').close();
+  $('#settings-dialog').close();
+  state = { inventory: [], recipes: [], plan: [], shopping: [], locations: [...defaultLocations] };
+  activeView = 'inventory';
+  inventoryQuery = '';
+  inventoryLocation = 'All locations';
+  recipeQuery = '';
+  mealieResults = [];
+  persist();
+});
 
 $('#settings-form').addEventListener('submit', (event) => {
   event.preventDefault();

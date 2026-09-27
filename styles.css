@@ -312,6 +312,11 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .danger-zone span { max-width: 250px; margin-top: 4px; color: #8b7770; font-size: 10px; line-height: 1.45; }
 .button-danger { flex: 0 0 auto; background: #b65443; color: white; }
 .button-danger:hover { background: #973e32; }
+.button-danger:disabled { background: #d9b3aa; cursor: not-allowed; }
+.wipe-eyebrow { color: #b65443; }
+.wipe-summary { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #efd2c9; border-radius: 6px; list-style: none; display: grid; gap: 6px; background: #fcf4f0; color: #7a5a51; font-size: 13px; }
+.wipe-summary strong { color: #984b3b; }
+.wipe-dialog label > input { text-transform: uppercase; letter-spacing: 2px; }
 
 @media (max-width: 1100px) {
   .sidebar { width: 205px; }
@@ -479,6 +484,9 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 :root[data-theme="dark"] .ingredient-check.not-stocked .custom-check { background: #26322a; }
 :root[data-theme="dark"] .danger-zone { border-color: #63433b; background: #342824; }
 :root[data-theme="dark"] .danger-zone span { color: #c2a99f; }
+:root[data-theme="dark"] .wipe-summary { border-color: #63433b; background: #342824; color: #c2a99f; }
+:root[data-theme="dark"] .wipe-summary strong { color: #e8b3a6; }
+:root[data-theme="dark"] .button-danger:disabled { background: #5a3a33; color: #a58f88; }
 /* Step-by-step cook mode */
 .steps-dialog { width: min(640px, calc(100% - 20px)); height: min(640px, calc(100% - 20px)); max-height: none; padding: 20px 22px; flex-direction: column; gap: 14px; }
 .steps-dialog[open] { display: flex; }
