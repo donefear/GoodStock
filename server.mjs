@@ -1,22 +1,48 @@
 import { createServer } from 'node:http';
 import { randomBytes } from 'node:crypto';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import QRCode from 'qrcode';
 import { extractRecipeFromHtml, NO_RECIPE_MESSAGE } from './recipe-import.mjs';
+import { mapMealieRecipe, mealieErrorMessage, mealieRecipePageUrl, mealieRows, normalizeMealieUrl } from './mealie.mjs';
 
 const port = Number(process.env.PORT || 8080);
 const dataDirectory = process.env.DATA_DIR || './data';
 const statePath = join(dataDirectory, 'state.json');
-// Accept "mealie.example.com" as well as full URLs; without a scheme, redirects become relative and loop.
-const normalizeBaseUrl = (value) => {
-  const trimmed = String(value || '').trim().replace(/\/+$/, '');
-  return trimmed && !/^https?:\/\//i.test(trimmed) ? `https://${trimmed}` : trimmed;
+
+// Mealie connection: set in the app's Settings (saved to /data/mealie.json), or else from the MEALIE_URL,
+// MEALIE_API_KEY and MEALIE_PUBLIC_URL environment variables. The API key never goes back to the browser.
+const mealieConfigPath = join(dataDirectory, 'mealie.json');
+const envMealie = {
+  url: normalizeMealieUrl(process.env.MEALIE_URL),
+  key: process.env.MEALIE_API_KEY || '',
+  publicUrl: normalizeMealieUrl(process.env.MEALIE_PUBLIC_URL),
+  source: 'environment',
 };
-const mealieUrl = normalizeBaseUrl(process.env.MEALIE_URL);
-const mealieKey = process.env.MEALIE_API_KEY || '';
-const mealiePublicUrl = normalizeBaseUrl(process.env.MEALIE_PUBLIC_URL) || mealieUrl;
+let mealie = { ...envMealie };
 let mealieGroupSlug = '';
+const mealieConfigured = () => Boolean(mealie.url && mealie.key);
+const mealiePublicUrl = () => mealie.publicUrl || mealie.url;
+
+async function loadMealieConfig() {
+  try {
+    const saved = JSON.parse(await readFile(mealieConfigPath, 'utf8'));
+    if (saved?.url && saved?.key) mealie = { url: normalizeMealieUrl(saved.url), key: saved.key, publicUrl: normalizeMealieUrl(saved.publicUrl), source: 'settings' };
+  } catch (error) {
+    if (error.code !== 'ENOENT') console.error('Could not read the saved Mealie settings:', error.message);
+  }
+}
+
+async function saveMealieConfig(config) {
+  await mkdir(dataDirectory, { recursive: true });
+  const temporaryPath = `${mealieConfigPath}.tmp`;
+  await writeFile(temporaryPath, JSON.stringify({ url: config.url, key: config.key, publicUrl: config.publicUrl }), { encoding: 'utf8', mode: 0o600 });
+  await rename(temporaryPath, mealieConfigPath);
+}
+
+function mealieStatus() {
+  return { configured: mealieConfigured(), url: mealie.url, publicUrl: mealie.publicUrl, source: mealieConfigured() ? mealie.source : '' };
+}
 const shoppingShares = new Map();
 const shoppingShareLifetime = 30 * 60 * 1000;
 const staticFiles = new Map([
@@ -29,6 +55,7 @@ const staticFiles = new Map([
   ['/ingredients.json', ['ingredients.json', 'application/json; charset=utf-8']],
   ['/kitchen-tools.js', ['kitchen-tools.js', 'text/javascript; charset=utf-8']],
   ['/recipe-import.mjs', ['recipe-import.mjs', 'text/javascript; charset=utf-8']],
+  ['/mealie.mjs', ['mealie.mjs', 'text/javascript; charset=utf-8']],
 ]);
 
 function sendJson(response, status, value) {
@@ -61,46 +88,52 @@ async function saveState(state) {
   await rename(temporaryPath, statePath);
 }
 
-function mapMealieRecipe(recipe) {
-  const ingredientRows = recipe.recipeIngredient || recipe.ingredients || [];
-  const ingredients = ingredientRows.map((row) => {
-    const name = row.food?.name || row.ingredient?.name || row.note || row.name || '';
-    const amount = Number(row.quantity) > 0 ? String(Math.round(Number(row.quantity) * 1000) / 1000) : '';
-    const unit = row.unit?.name || row.unit || '';
-    return [amount, unit, name].filter(Boolean).join(' ').trim();
-  }).filter(Boolean);
-  const instructions = (recipe.recipeInstructions || [])
-    .flatMap((step) => [step.title, typeof step === 'string' ? step : step.text])
-    .map((text) => String(text || '').trim())
-    .filter((text) => text && !/^could not detect instructions$/i.test(text));
-  return {
-    id: String(recipe.slug || recipe.id || recipe.name),
-    slug: String(recipe.slug || recipe.id || ''),
-    name: recipe.name || 'Untitled recipe',
-    description: recipe.description || '',
-    image: recipe.image || recipe.recipeImage || '',
-    ingredients,
-    instructions,
-    source: 'Mealie',
-  };
-}
-
-async function fetchMealie(path) {
-  const result = await fetch(`${mealieUrl}/api${path}`, {
-    headers: { authorization: `Bearer ${mealieKey}`, accept: 'application/json' },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!result.ok) throw new Error(`Mealie returned HTTP ${result.status}`);
+async function fetchMealie(path, config = mealie) {
+  let result;
+  try {
+    result = await fetch(`${config.url}/api${path}`, {
+      headers: { authorization: `Bearer ${config.key}`, accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (error) {
+    const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    throw Object.assign(new Error(timedOut ? `Mealie at ${config.url} took too long to answer.` : `Could not reach Mealie at ${config.url}.`), { status: 502 });
+  }
+  if (!result.ok) throw Object.assign(new Error(mealieErrorMessage(result.status, config.url)), { status: 502 });
   return result.json();
 }
 
-async function mealieRecipePageUrl(slug) {
+async function openMealieRecipeUrl(slug) {
   if (!mealieGroupSlug) {
     try {
       mealieGroupSlug = (await fetchMealie('/groups/self')).slug || '';
     } catch { /* Fall back to Mealie's default group below. */ }
   }
-  return `${mealiePublicUrl}/g/${encodeURIComponent(mealieGroupSlug || 'home')}/r/${encodeURIComponent(slug)}`;
+  return mealieRecipePageUrl(mealiePublicUrl(), mealieGroupSlug, slug);
+}
+
+// Tests a connection before saving it. A new address needs the key typed again, so a saved key is never sent
+// to a different server.
+async function connectMealie(body) {
+  const url = normalizeMealieUrl(body?.url);
+  if (!url) throw Object.assign(new Error('Enter the address of your Mealie server.'), { status: 400 });
+  try { new URL(url); } catch { throw Object.assign(new Error('That does not look like a web address.'), { status: 400 }); }
+  const typedKey = String(body?.apiKey || '').trim();
+  const key = typedKey || (url === mealie.url ? mealie.key : '');
+  if (!key) throw Object.assign(new Error('Enter a Mealie API key. You can create one in Mealie under your user profile → API Tokens.'), { status: 400 });
+  const config = { url, key, publicUrl: normalizeMealieUrl(body?.publicUrl), source: 'settings' };
+  const user = await fetchMealie('/users/self', config);
+  await saveMealieConfig(config);
+  mealie = config;
+  mealieGroupSlug = '';
+  return { ...mealieStatus(), user: user?.fullName || user?.username || '' };
+}
+
+async function disconnectMealie() {
+  try { await unlink(mealieConfigPath); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  mealie = { ...envMealie };
+  mealieGroupSlug = '';
+  return mealieStatus();
 }
 
 // Recipe import from a web page: fetched here, parsed by the shared recipe-import.mjs (also used by the Android app).
@@ -150,7 +183,19 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/mealie/status') {
-      sendJson(response, 200, { configured: Boolean(mealieUrl && mealieKey) });
+      sendJson(response, 200, mealieStatus());
+      return;
+    }
+    if (request.method === 'POST' && url.pathname === '/api/mealie/config') {
+      try {
+        sendJson(response, 200, await connectMealie(await requestBody(request)));
+      } catch (error) {
+        sendJson(response, error?.status || 502, { error: error?.status ? error.message : 'Could not save the Mealie settings.' });
+      }
+      return;
+    }
+    if (request.method === 'DELETE' && url.pathname === '/api/mealie/config') {
+      sendJson(response, 200, await disconnectMealie());
       return;
     }
     if (request.method === 'POST' && url.pathname === '/api/shopping/share') {
@@ -225,29 +270,28 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/mealie/recipes') {
-      if (!mealieUrl || !mealieKey) {
+      if (!mealieConfigured()) {
         sendJson(response, 503, { error: 'Mealie is not configured' });
         return;
       }
       const search = url.searchParams.get('search') || '';
       const query = new URLSearchParams({ search, perPage: '40' });
       const payload = await fetchMealie(`/recipes?${query}`);
-      const rows = Array.isArray(payload) ? payload : payload.items || payload.recipes || [];
-      sendJson(response, 200, rows.map(mapMealieRecipe));
+      sendJson(response, 200, mealieRows(payload).map(mapMealieRecipe));
       return;
     }
     if (request.method === 'GET' && url.pathname.startsWith('/api/mealie/open/')) {
-      if (!mealiePublicUrl || !mealieKey) {
+      if (!mealieConfigured()) {
         sendJson(response, 503, { error: 'Mealie is not configured' });
         return;
       }
       const slug = decodeURIComponent(url.pathname.slice('/api/mealie/open/'.length));
-      response.writeHead(302, { location: await mealieRecipePageUrl(slug), 'cache-control': 'no-store' });
+      response.writeHead(302, { location: await openMealieRecipeUrl(slug), 'cache-control': 'no-store' });
       response.end();
       return;
     }
     if (request.method === 'GET' && url.pathname.startsWith('/api/mealie/recipes/')) {
-      if (!mealieUrl || !mealieKey) {
+      if (!mealieConfigured()) {
         sendJson(response, 503, { error: 'Mealie is not configured' });
         return;
       }
@@ -270,6 +314,7 @@ const server = createServer(async (request, response) => {
   }
 });
 
+await loadMealieConfig();
 server.listen(port, '0.0.0.0', () => {
   console.log(`Goodstock listening on port ${port}`);
 });

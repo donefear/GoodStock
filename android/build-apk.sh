@@ -28,7 +28,7 @@ docker run --rm \
   "${SIGNING[@]}" \
   "$IMAGE" gradle --no-daemon --quiet "$TASK"
 
-VERSION=$(grep -o 'Goodstock v[0-9]*\.[0-9]*' index.html | head -1 | cut -d v -f 2)
+VERSION=$(grep -oE 'Goodstock v[0-9]+\.[0-9]+(\.[0-9]+)?' index.html | head -1 | cut -d v -f 2)
 SUFFIX=$([ "$TYPE" = release ] && echo "" || echo "-$TYPE")
 mkdir -p dist
 cp "android/app/build/outputs/apk/$TYPE/app-$TYPE.apk" "dist/Goodstock-v$VERSION$SUFFIX.apk"

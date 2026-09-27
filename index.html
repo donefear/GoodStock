@@ -14,7 +14,7 @@
     <div class="app-shell">
       <aside class="sidebar" aria-label="Main navigation">
         <a class="brand" href="#inventory" aria-label="Goodstock home">
-          <span class="brand-mark" aria-hidden="true">G</span>
+          <span class="brand-mark" aria-hidden="true"><svg class="brand-logo" focusable="false"><use href="#donefear-logo"/></svg></span>
           <span class="brand-name">goodstock<span>.</span></span>
         </a>
         <p class="side-label">YOUR KITCHEN</p>
@@ -34,7 +34,7 @@
 
       <main class="main-area">
         <header class="topbar">
-          <div class="mobile-brand"><span class="brand-mark" aria-hidden="true">G</span><span class="brand-name">goodstock<span>.</span></span></div>
+          <div class="mobile-brand"><span class="brand-mark" aria-hidden="true"><svg class="brand-logo" focusable="false"><use href="#donefear-logo"/></svg></span><span class="brand-name">goodstock<span>.</span></span></div>
           <div class="breadcrumb"><span>HOME</span><span class="crumb-slash">/</span><strong id="page-crumb">INVENTORY</strong></div>
           <div class="top-actions"><span class="today-label" id="today-label"></span><button class="icon-button" id="settings-button" aria-label="Settings" title="Settings">⚙</button></div>
         </header>
@@ -135,12 +135,19 @@
         <label class="setting-toggle" for="expiry-notifications-toggle"><span><strong>Expiration notifications</strong><small>Get a daily browser alert for items due within 3 days</small></span><input id="expiry-notifications-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
         <p class="field-hint settings-permission-note" id="expiry-notifications-note">The in-app Use soon panel is always available. System alerts require HTTPS and browser permission, and are checked while the app is open.</p>
         <label>Storage locations <span class="field-hint">Separate with commas</span><input name="locations" /></label>
-        <p class="settings-note" id="mealie-note">Recipe library: checking…</p>
-        <p class="settings-note server-only">To connect Mealie, set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack environment.</p>
+        <fieldset class="mealie-settings" id="mealie-settings">
+          <legend>Mealie recipe library</legend>
+          <p class="settings-note" id="mealie-note">Checking…</p>
+          <label>Mealie address<input name="mealieUrl" type="url" inputmode="url" placeholder="https://mealie.example.com" autocomplete="off" /></label>
+          <label>API key<input name="mealieKey" type="password" autocomplete="off" placeholder="Paste a Mealie API token" /><span class="field-hint">In Mealie: your profile → API Tokens → create a token.</span></label>
+          <label>Public address <span class="field-hint">Optional. The address your devices use to open Mealie, if it differs from the one above.</span><input name="mealiePublicUrl" type="url" inputmode="url" placeholder="Same as above" autocomplete="off" /></label>
+          <div class="mealie-actions"><button class="button button-outline" type="button" data-action="mealie-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="mealie-disconnect" id="mealie-disconnect" hidden>Disconnect</button></div>
+          <p class="field-hint server-only">You can also set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack; settings saved here take priority.</p>
+        </fieldset>
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the Android app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.0 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.0.1 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 
@@ -158,6 +165,7 @@
 
     <script src="kitchen-tools.js" defer></script>
     <script type="module" src="recipe-import.mjs"></script>
+    <script type="module" src="mealie.mjs"></script>
     <script src="app.js" defer></script>
   </body>
 </html>

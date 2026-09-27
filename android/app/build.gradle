@@ -4,14 +4,15 @@ plugins {
 
 // The web app lives one folder up; the APK bundles these files so it runs with no server.
 def webRoot = rootProject.projectDir.parentFile
-def webFiles = ['index.html', 'app.js', 'kitchen-tools.js', 'recipe-import.mjs', 'styles.css', 'ingredients.json', 'manifest.webmanifest', 'logo.svg']
+def webFiles = ['index.html', 'app.js', 'kitchen-tools.js', 'recipe-import.mjs', 'mealie.mjs', 'styles.css', 'ingredients.json', 'manifest.webmanifest', 'logo.svg']
 def webAssetsDir = layout.buildDirectory.dir('generated/web-assets')
 
-// Version follows the "Goodstock vX.Y" label in index.html, so there is one place to bump it.
-def versionMatch = (new File(webRoot, 'index.html').text =~ /Goodstock v(\d+)\.(\d+)/)
+// Version follows the "Goodstock vX.Y.Z" label in index.html (patch optional), so there is one place to bump it.
+def versionMatch = (new File(webRoot, 'index.html').text =~ /Goodstock v(\d+)\.(\d+)(?:\.(\d+))?/)
 def hasVersion = versionMatch.find()
 def versionMajor = hasVersion ? versionMatch.group(1).toInteger() : 1
 def versionMinor = hasVersion ? versionMatch.group(2).toInteger() : 0
+def versionPatch = hasVersion && versionMatch.group(3) ? versionMatch.group(3).toInteger() : 0
 
 // Release signing comes from environment variables (see android/README.md). Without them the release APK is
 // signed with the debug key, which installs fine but cannot update an APK signed with the release key.
@@ -26,8 +27,9 @@ android {
         applicationId 'com.donefear.goodstock'
         minSdk 26
         targetSdk 34
-        versionCode versionMajor * 10000 + versionMinor * 100
-        versionName "${versionMajor}.${versionMinor}"
+        // 2.0.1 -> 20001, so every patch release can update the installed app (patch up to 99).
+        versionCode versionMajor * 10000 + versionMinor * 100 + versionPatch
+        versionName "${versionMajor}.${versionMinor}.${versionPatch}"
     }
 
     signingConfigs {

@@ -43,6 +43,52 @@ function nativeCall(method, ...args) {
   });
 }
 
+// Mealie is reached one of two ways: in the browser through the server (which keeps the API key), in the Android
+// app straight from the phone, with the connection saved on the phone.
+const MEALIE_PHONE_KEY = 'goodstock-mealie-v1';
+
+function phoneMealie() {
+  try {
+    const config = JSON.parse(localStorage.getItem(MEALIE_PHONE_KEY) || 'null');
+    return config?.url && config?.apiKey ? config : null;
+  } catch { return null; }
+}
+
+async function phoneMealieGet(path, config = phoneMealie()) {
+  if (!config) throw new Error('Mealie is not connected.');
+  let response;
+  try {
+    response = JSON.parse(await nativeCall('httpRequest', `${config.url}/api${path}`, JSON.stringify({ authorization: `Bearer ${config.apiKey}`, accept: 'application/json' })));
+  } catch {
+    throw new Error(`Could not reach Mealie at ${config.url}. Check the address and that this phone is on the same network.`);
+  }
+  if (response.status >= 400) throw new Error(window.GoodstockMealie.mealieErrorMessage(response.status, config.url));
+  try { return JSON.parse(response.body); } catch { throw new Error(`Found a website at ${config.url}, but not the Mealie API. Check the address.`); }
+}
+
+async function mealieSearch(term) {
+  if (STANDALONE) {
+    const { mealieRows, mapMealieRecipe } = window.GoodstockMealie;
+    return mealieRows(await phoneMealieGet(`/recipes?${new URLSearchParams({ search: term, perPage: '40' })}`)).map(mapMealieRecipe);
+  }
+  const response = await fetch(`/api/mealie/recipes?search=${encodeURIComponent(term)}`);
+  if (!response.ok) throw new Error('Mealie search failed.');
+  return response.json();
+}
+
+async function mealieRecipe(slug) {
+  if (STANDALONE) return window.GoodstockMealie.mapMealieRecipe(await phoneMealieGet(`/recipes/${encodeURIComponent(slug)}`));
+  const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(slug)}`);
+  if (!response.ok) throw new Error('That Mealie recipe is unavailable.');
+  return response.json();
+}
+
+function mealieOpenUrl(slug) {
+  if (!STANDALONE) return `/api/mealie/open/${encodeURIComponent(slug)}`;
+  const config = phoneMealie();
+  return config ? window.GoodstockMealie.mealieRecipePageUrl(config.publicUrl || config.url, config.groupSlug, slug) : '';
+}
+
 // Keep the screen on while cooking: the Wake Lock API in a browser, a window flag in the Android app.
 async function keepScreenOn(on) {
   if (STANDALONE) { try { nativeApp.keepScreenOn(on); } catch { /* Optional. */ } return; }
@@ -585,6 +631,8 @@ async function initialize() {
     });
     // The Android app ships its files inside the APK, so it needs no offline cache.
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  } else {
+    mealieConfigured = Boolean(phoneMealie());
   }
   checkExpiryReminders();
   setInterval(() => {
@@ -902,7 +950,7 @@ function renderRecipes() {
     ${mealieConfigured ? '<button class="button button-outline stock-search-button" data-action="search-stocked">Find with my inventory <span aria-hidden="true">↗</span></button>' : ''}
     <div class="recipe-results-heading"><div><span class="eyebrow">YOUR RECIPE BOX</span><h2>Closest to ready</h2></div><span class="muted">${sorted.length} recipes</span></div>
     <div class="recipe-grid">${sorted.length ? sorted.map((recipe) => recipeCard(recipe)).join('') : '<p class="muted">No recipes match that search.</p>'}</div>
-    ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">MEALIE LIBRARY</span><h2>${mealieResults.length ? 'From Mealie' : 'Search your recipes'}</h2></div><span class="muted">Connected</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : STANDALONE ? '' : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>Already using Mealie?</strong><br/>Connect it in your Portainer stack to search and import your recipe library here.</p><span class="integration-state">NOT CONNECTED</span></div>`}`;
+    ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">MEALIE LIBRARY</span><h2>${mealieResults.length ? 'From Mealie' : 'Search your recipes'}</h2></div><span class="muted">Connected</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>Already using Mealie?</strong><br/>Connect it in Settings to search and import your recipe library here.</p><button class="button button-small button-outline" type="button" data-action="open-settings">Connect</button></div>`}`;
 }
 
 function fillLocationSelect(select, selected) {
@@ -944,8 +992,9 @@ function openCookDialog(plan) {
 }
 
 function mealieRecipeLink(recipe, className, label) {
-  return recipe.source === 'Mealie' && recipe.slug
-    ? `<a class="${className}" href="/api/mealie/open/${encodeURIComponent(recipe.slug)}" target="_blank" rel="noopener" title="Open recipe in Mealie">${label} <span aria-hidden="true">↗</span></a>`
+  const href = recipe.source === 'Mealie' && recipe.slug ? mealieOpenUrl(recipe.slug) : '';
+  return href
+    ? `<a class="${className}" href="${escapeHtml(href)}" target="_blank" rel="noopener" title="Open recipe in Mealie">${label} <span aria-hidden="true">↗</span></a>`
     : '';
 }
 
@@ -954,8 +1003,7 @@ async function openRecipeDialog(id, isRemote, planId = '') {
   if (!recipe) return;
   if (isRemote && !recipe.ingredients?.length && recipe.slug) {
     try {
-      const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(recipe.slug)}`);
-      if (response.ok) recipe = metricRecipe(await response.json());
+      recipe = metricRecipe(await mealieRecipe(recipe.slug));
     } catch { /* Show the search-result details when Mealie is unavailable. */ }
   }
   $('#recipe-dialog-source').textContent = (recipe.source || 'Kitchen collection').toUpperCase();
@@ -1407,13 +1455,10 @@ async function startCookSteps(recipe, planId = '') {
   if (!recipe) return;
   if (recipe.source === 'Mealie' && recipe.slug && !Array.isArray(recipe.instructions)) {
     try {
-      const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(recipe.slug)}`);
-      if (response.ok) {
-        const details = metricRecipe(await response.json());
-        const saved = recipeById(recipe.id);
-        if (saved) { saved.instructions = details.instructions || []; persist(); }
-        recipe = { ...recipe, instructions: details.instructions || [] };
-      }
+      const details = metricRecipe(await mealieRecipe(recipe.slug));
+      const saved = recipeById(recipe.id);
+      if (saved) { saved.instructions = details.instructions || []; persist(); }
+      recipe = { ...recipe, instructions: details.instructions || [] };
     } catch { /* Fall back to ingredients only while Mealie is unreachable. */ }
   }
   const bites = buildCookBites(recipe);
@@ -1455,17 +1500,12 @@ async function searchMealie(query) {
     const terms = query ? [query] : [...new Set(state.inventory
       .filter((item) => item.kind !== 'Household' && Number(item.quantity) > 0)
       .map((item) => item.name))].slice(0, 6);
-    const resultSets = await Promise.all(terms.map(async (term) => {
-      const response = await fetch(`/api/mealie/recipes?search=${encodeURIComponent(term)}`);
-      if (!response.ok) return [];
-      return response.json();
-    }));
+    const resultSets = await Promise.all(terms.map((term) => mealieSearch(term).catch(() => [])));
     const unique = new Map(resultSets.flat().map((recipe) => [recipe.id || recipe.slug || recipe.name, recipe]));
     const details = await Promise.all([...unique.values()].slice(0, 20).map(async (recipe) => {
       if (recipe.ingredients?.length || !recipe.slug) return recipe;
       try {
-        const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(recipe.slug)}`);
-        return response.ok ? response.json() : recipe;
+        return await mealieRecipe(recipe.slug);
       } catch { return recipe; }
     }));
     mealieResults = details.map(metricRecipe).sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
@@ -1478,8 +1518,7 @@ async function searchMealie(query) {
 async function importMealieRecipe(id) {
   let recipe = mealieResults.find((entry) => entry.id === id || entry.slug === id);
   try {
-    const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(id)}`);
-    if (response.ok) recipe = metricRecipe(await response.json());
+    recipe = metricRecipe(await mealieRecipe(id));
   } catch { /* Keep search-result details when Mealie is temporarily unavailable. */ }
   if (!recipe) return;
   const exists = state.recipes.some((entry) => entry.id === recipe.id || entry.slug === recipe.slug);
@@ -1559,6 +1598,9 @@ document.addEventListener('click', async (event) => {
   if (action === 'show-shopping-qr') openShoppingShare();
   if (action === 'share-shopping-text') shareShoppingText();
   if (action === 'backup-data') await backupKitchen();
+  if (action === 'mealie-save') await saveMealieSettings();
+  if (action === 'mealie-disconnect') await disconnectMealie();
+  if (action === 'open-settings') $('#settings-button').click();
   if (action === 'restore-data') $('#restore-file').click();
   if (action === 'view-recipe') openRecipeDialog(id, button.dataset.remote === 'true');
   if (action === 'review-plan') {
@@ -2020,22 +2062,104 @@ $('#settings-button').addEventListener('click', async () => {
   else if (!('Notification' in window)) expiryNote.textContent = 'This browser does not support system alerts. The in-app Use soon panel remains available.';
   else if (Notification.permission === 'denied') expiryNote.textContent = 'Browser notifications are blocked. Allow them in browser settings; the in-app panel remains available.';
   else expiryNote.textContent = 'System alerts are checked daily while the app is open. The in-app Use soon panel is always available.';
+  $('#settings-dialog').showModal();
+  await loadMealieSettings();
+});
+
+function setMealieNote(text, kind = '') {
   const note = $('#mealie-note');
+  note.textContent = text;
+  note.className = `settings-note${kind ? ` is-${kind}` : ''}`;
+}
+
+async function loadMealieSettings() {
+  const form = $('#settings-form');
+  form.elements.mealieKey.value = '';
   if (STANDALONE) {
-    note.textContent = 'Recipes live on this phone. Add them with New recipe or Import on the Recipes page.';
-    $('#settings-dialog').showModal();
+    const config = phoneMealie();
+    mealieConfigured = Boolean(config);
+    form.elements.mealieUrl.value = config?.url || '';
+    form.elements.mealiePublicUrl.value = config?.publicUrl || '';
+    form.elements.mealieKey.placeholder = config ? 'Saved. Leave empty to keep it.' : 'Paste a Mealie API token';
+    $('#mealie-disconnect').hidden = !config;
+    setMealieNote(config ? `Connected to ${config.url}.` : 'Not connected. Recipes added with New recipe or Import work without it.', config ? 'connected' : '');
     return;
   }
   try {
-    const response = await fetch('/api/mealie/status');
-    const result = await response.json();
-    mealieConfigured = Boolean(result.configured);
-    note.textContent = mealieConfigured ? 'Mealie recipe search is connected.' : 'Mealie is not connected yet.';
+    const status = await (await fetch('/api/mealie/status')).json();
+    mealieConfigured = Boolean(status.configured);
+    form.elements.mealieUrl.value = status.url || '';
+    form.elements.mealiePublicUrl.value = status.publicUrl || '';
+    form.elements.mealieKey.placeholder = status.configured ? 'Saved. Leave empty to keep it.' : 'Paste a Mealie API token';
+    $('#mealie-disconnect').hidden = status.source !== 'settings';
+    setMealieNote(status.configured
+      ? `Connected to ${status.url}${status.source === 'environment' ? ' (set in Portainer)' : ''}.`
+      : 'Not connected yet.', status.configured ? 'connected' : '');
   } catch {
-    note.textContent = 'Recipe connection status is unavailable while offline.';
+    setMealieNote('Mealie status is unavailable while offline.');
   }
-  $('#settings-dialog').showModal();
-});
+}
+
+// Tests the connection first and only saves it when Mealie accepts the key. An address typed without http:// or
+// https:// tries https first, then http, which is what most home servers use.
+async function saveMealieSettings() {
+  const form = $('#settings-form');
+  const typed = form.elements.mealieUrl.value.trim();
+  if (typed && !/^https?:\/\//i.test(typed)) {
+    await connectMealie(`https://${typed}`);
+    if ($('#mealie-note').classList.contains('is-error') && /Could not reach/.test($('#mealie-note').textContent)) await connectMealie(`http://${typed}`);
+    return;
+  }
+  await connectMealie(typed);
+}
+
+async function connectMealie(address) {
+  const form = $('#settings-form');
+  const { normalizeMealieUrl } = window.GoodstockMealie;
+  const url = normalizeMealieUrl(address);
+  const apiKey = form.elements.mealieKey.value.trim();
+  const publicUrl = normalizeMealieUrl(form.elements.mealiePublicUrl.value);
+  setMealieNote('Testing the connection…');
+  try {
+    let user = '';
+    if (STANDALONE) {
+      if (!url) throw new Error('Enter the address of your Mealie server.');
+      const current = phoneMealie();
+      // A new address needs the key typed again, so a saved key is never sent to a different server.
+      const key = apiKey || (current?.url === url ? current.apiKey : '');
+      if (!key) throw new Error('Enter a Mealie API key. You can create one in Mealie under your profile → API Tokens.');
+      const config = { url, apiKey: key, publicUrl };
+      const self = await phoneMealieGet('/users/self', config);
+      user = self?.fullName || self?.username || '';
+      config.groupSlug = await phoneMealieGet('/groups/self', config).then((group) => group?.slug || '').catch(() => '');
+      localStorage.setItem(MEALIE_PHONE_KEY, JSON.stringify(config));
+    } else {
+      const response = await fetch('/api/mealie/config', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url, apiKey, publicUrl }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not connect to Mealie.');
+      user = result.user || '';
+    }
+    await loadMealieSettings();
+    setMealieNote(`Connected to ${url}${user ? ` as ${user}` : ''}.`, 'connected');
+    mealieResults = [];
+    render();
+  } catch (error) {
+    setMealieNote(error?.message || 'Could not connect to Mealie.', 'error');
+  }
+}
+
+async function disconnectMealie() {
+  if (!window.confirm('Disconnect Mealie? Recipes you already added to your library stay.')) return;
+  if (STANDALONE) localStorage.removeItem(MEALIE_PHONE_KEY);
+  else await fetch('/api/mealie/config', { method: 'DELETE' }).catch(() => {});
+  mealieResults = [];
+  await loadMealieSettings();
+  render();
+}
 
 document.addEventListener('click', (event) => {
   if (event.target.matches('[data-close]')) event.target.closest('dialog').close();
@@ -2045,6 +2169,14 @@ $('#steps-body').addEventListener('change', (event) => {
   const key = event.target.dataset.stepsItem;
   if (!key || !cookSession) return;
   if (event.target.checked) cookSession.checked.add(key); else cookSession.checked.delete(key);
+});
+
+// Enter in a Mealie field tests and saves the connection instead of closing Settings.
+$('#settings-form').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && /^mealie/.test(event.target.name || '')) {
+    event.preventDefault();
+    saveMealieSettings();
+  }
 });
 
 $('#recipe-edit-form').addEventListener('keydown', (event) => {

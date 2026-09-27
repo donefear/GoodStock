@@ -21,6 +21,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -105,9 +106,23 @@ final class NativeBridge {
     /** Fetches a web page for recipe import. Answers with JSON {status, url, body}. */
     @JavascriptInterface
     public void fetchPage(String callbackId, String address) {
+        request(callbackId, address, null);
+    }
+
+    /**
+     * A GET request with the given headers (JSON object), for talking to Mealie straight from the phone. Unlike the
+     * page's own fetch it is not limited by CORS. Answers with JSON {status, url, body}.
+     */
+    @JavascriptInterface
+    public void httpRequest(String callbackId, String address, String headersJson) {
+        request(callbackId, address, headersJson);
+    }
+
+    private void request(String callbackId, String address, String headersJson) {
         network.execute(() -> {
             try {
-                callback(callbackId, true, download(address).toString());
+                JSONObject headers = headersJson == null || headersJson.isEmpty() ? new JSONObject() : new JSONObject(headersJson);
+                callback(callbackId, true, download(address, headers).toString());
             } catch (Exception error) {
                 String message = error.getMessage();
                 callback(callbackId, false, message == null ? error.getClass().getSimpleName() : message);
@@ -115,16 +130,24 @@ final class NativeBridge {
         });
     }
 
-    private JSONObject download(String address) throws Exception {
+    private JSONObject download(String address, JSONObject headers) throws Exception {
         URL url = new URL(address);
+        String originalHost = url.getHost();
         for (int redirects = 0; redirects < 6; redirects++) {
-            if (!"http".equals(url.getProtocol()) && !"https".equals(url.getProtocol())) throw new IllegalArgumentException("Only http and https links can be imported");
+            if (!"http".equals(url.getProtocol()) && !"https".equals(url.getProtocol())) throw new IllegalArgumentException("Only http and https links are supported");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setInstanceFollowRedirects(false);
             connection.setConnectTimeout(12_000);
             connection.setReadTimeout(12_000);
             connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) GoodstockRecipeImport/1.0");
             connection.setRequestProperty("Accept", "text/html,application/xhtml+xml");
+            Iterator<String> names = headers.keys();
+            while (names.hasNext()) {
+                String name = names.next();
+                // Never forward a key (like the Mealie token) to a different host after a redirect.
+                if (name.equalsIgnoreCase("authorization") && !url.getHost().equalsIgnoreCase(originalHost)) continue;
+                connection.setRequestProperty(name, headers.optString(name));
+            }
             int status = connection.getResponseCode();
             String location = connection.getHeaderField("Location");
             if (status >= 300 && status < 400 && location != null) {

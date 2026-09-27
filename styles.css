@@ -30,6 +30,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .sidebar { position: fixed; inset: 0 auto 0 0; width: 236px; padding: 30px 18px 22px; display: flex; flex-direction: column; background: #e8eee6; border-right: 1px solid #dfe7dd; z-index: 3; }
 .brand { display: inline-flex; align-items: center; gap: 10px; width: fit-content; color: var(--ink); text-decoration: none; }
 .brand-mark { display: grid; place-items: center; width: 36px; height: 36px; background: var(--green); color: #fffefa; font: 600 23px 'Fraunces', Georgia, serif; border-radius: 50% 50% 48% 12%; transform: rotate(-4deg); }
+/* The donefear logo, as on the app icon; roughly 56% of the mark like the icon's safe zone. */
+.brand-logo { width: 58%; height: 58%; transform: rotate(4deg); }
 .brand-name { font: 600 23px 'Fraunces', Georgia, serif; letter-spacing: 0; }
 .brand-name > span { color: var(--coral); }
 .side-label, .eyebrow { color: #718078; font-size: 10px; line-height: 1.5; font-weight: 700; letter-spacing: 1.2px; }
@@ -311,6 +313,13 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .field-hint { display: block; margin-top: 4px; color: #929b93; font-size: 10px; font-weight: 400; }
 .settings-note { margin: 1px 0; }
 .settings-note code { color: #43594b; font-size: 11px; }
+.mealie-settings { margin: 4px 0; padding: 12px 14px 14px; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 12px; }
+.mealie-settings legend { padding: 0 6px; color: var(--ink); font-size: 13px; font-weight: 700; }
+.mealie-settings #mealie-note { margin: 0; font-size: 12px; }
+.mealie-settings #mealie-note.is-connected { color: var(--green); font-weight: 700; }
+.mealie-settings #mealie-note.is-error { color: #b65c48; font-weight: 700; }
+.mealie-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mealie-actions [hidden] { display: none; }
 .setting-toggle { position: relative; min-height: 55px; padding: 8px 0; display: flex !important; align-items: center; justify-content: space-between; }
 .setting-toggle strong, .setting-toggle small { display: block; }
 .setting-toggle strong { color: var(--ink); font-size: 13px; }
