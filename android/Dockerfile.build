@@ -1,0 +1,26 @@
+# Build environment for the Goodstock APK: JDK 17, Android SDK 34 and Gradle 8.7.
+# Used by android/build-apk.sh; not part of the server image.
+FROM eclipse-temurin:17-jdk-jammy
+
+ENV ANDROID_HOME=/opt/android-sdk \
+    GRADLE_HOME=/opt/gradle
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$GRADLE_HOME/bin
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends unzip wget \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p $ANDROID_HOME/cmdline-tools \
+    && wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/tools.zip \
+    && unzip -q /tmp/tools.zip -d $ANDROID_HOME/cmdline-tools \
+    && mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest \
+    && rm /tmp/tools.zip \
+    && yes | sdkmanager --licenses > /dev/null \
+    && sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null
+
+RUN wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip \
+    && unzip -q /tmp/gradle.zip -d /opt \
+    && mv /opt/gradle-8.7 $GRADLE_HOME \
+    && rm /tmp/gradle.zip
+
+WORKDIR /src/android

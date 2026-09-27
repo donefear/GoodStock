@@ -4,3 +4,13 @@ node_modules/
 CLAUDE.md
 .env
 .claude/settings.local.json
+
+# Android build output and signing keys
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+dist/
+*.keystore
+*.jks
+android/signing.env

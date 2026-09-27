@@ -23,6 +23,38 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
+// Android app: the APK's native shell injects window.GoodstockNative. There is no server then; data lives only on
+// the phone, and phone features stand in for server ones (alarms, notifications, sharing, fetching recipe pages).
+const nativeApp = window.GoodstockNative || null;
+const STANDALONE = Boolean(nativeApp);
+const nativeCallbacks = new Map();
+window.__goodstockNativeCallback = (id, ok, payload) => {
+  const callback = nativeCallbacks.get(id);
+  nativeCallbacks.delete(id);
+  callback?.(ok, payload);
+};
+
+// Calls an async native method; the shell answers through window.__goodstockNativeCallback.
+function nativeCall(method, ...args) {
+  return new Promise((resolve, reject) => {
+    const id = makeId();
+    nativeCallbacks.set(id, (ok, payload) => (ok ? resolve(payload) : reject(new Error(payload || 'The phone could not do that.'))));
+    try { nativeApp[method](id, ...args); } catch (error) { nativeCallbacks.delete(id); reject(error); }
+  });
+}
+
+// Keep the screen on while cooking: the Wake Lock API in a browser, a window flag in the Android app.
+async function keepScreenOn(on) {
+  if (STANDALONE) { try { nativeApp.keepScreenOn(on); } catch { /* Optional. */ } return; }
+  if (on) {
+    if (cookWakeLock) return;
+    try { cookWakeLock = await navigator.wakeLock?.request('screen'); } catch { cookWakeLock = null; }
+  } else {
+    cookWakeLock?.release?.().catch(() => {});
+    cookWakeLock = null;
+  }
+}
+
 function freshState() {
   return {
     inventory: [
@@ -406,7 +438,7 @@ function inventoryExpiryMarkup(item, tag) {
 function checkExpiryReminders() {
   const items = itemsNeedingExpiryAttention();
   if (!items.length || sendingExpiryReminder || localStorage.getItem(EXPIRY_REMINDERS_KEY) !== 'true') return;
-  if (!window.isSecureContext || !('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!STANDALONE && (!window.isSecureContext || !('Notification' in window) || Notification.permission !== 'granted')) return;
   const today = dateKey(new Date());
   if (localStorage.getItem(LAST_EXPIRY_REMINDER_KEY) === today) return;
   const names = items.slice(0, 3).map((item) => item.name).join(', ');
@@ -420,6 +452,7 @@ function checkExpiryReminders() {
   };
   const resetSending = () => { sendingExpiryReminder = false; };
   const showReminder = async () => {
+    if (STANDALONE) return nativeApp.notify(title, options.body);
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.getRegistration();
       if (registration?.showNotification) return registration.showNotification(title, options);
@@ -437,13 +470,19 @@ function updateSyncStatus(mode, detail) {
   const dot = $('#sync-dot');
   const label = $('#sync-label');
   const text = $('#sync-detail');
+  if (STANDALONE) {
+    dot.className = 'sync-dot online';
+    label.textContent = 'Saved on this phone';
+    text.textContent = 'Back up in Settings';
+    return;
+  }
   dot.className = `sync-dot ${mode}`;
   label.textContent = mode === 'offline' ? 'Working offline' : mode === 'pending' ? 'Changes queued' : 'Kitchen in sync';
   text.textContent = detail || (mode === 'offline' ? 'Will sync when reconnected' : 'Your kitchen, in sync');
 }
 
 async function pushPendingState() {
-  if (syncing || !navigator.onLine) return;
+  if (STANDALONE || syncing || !navigator.onLine) return;
   const pending = localStorage.getItem(PENDING_KEY);
   if (!pending) return;
   syncing = true;
@@ -468,7 +507,7 @@ async function pushPendingState() {
 function persist() {
   const snapshot = JSON.stringify(state);
   localStorage.setItem(STORAGE_KEY, snapshot);
-  localStorage.setItem(PENDING_KEY, snapshot);
+  if (!STANDALONE) localStorage.setItem(PENDING_KEY, snapshot);
   render();
   checkExpiryReminders();
   pushPendingState();
@@ -507,8 +546,9 @@ async function loadIngredientCatalog() {
 
 async function initialize() {
   applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+  document.documentElement.classList.toggle('is-standalone', STANDALONE);
   const cached = localStorage.getItem(STORAGE_KEY);
-  const pending = localStorage.getItem(PENDING_KEY);
+  const pending = STANDALONE ? 'local' : localStorage.getItem(PENDING_KEY);
   if (cached) state = normalizeState(JSON.parse(cached));
   if (!pending && navigator.onLine) {
     try {
@@ -523,26 +563,29 @@ async function initialize() {
       if (cached) updateSyncStatus('offline');
     }
   }
-  if (!cached && !pending) {
+  if (!cached && (!pending || STANDALONE)) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+    if (!STANDALONE) localStorage.setItem(PENDING_KEY, JSON.stringify(state));
   }
   await loadIngredientCatalog();
   if (backfillMissingExpirations()) {
     const snapshot = JSON.stringify(state);
     localStorage.setItem(STORAGE_KEY, snapshot);
-    localStorage.setItem(PENDING_KEY, snapshot);
+    if (!STANDALONE) localStorage.setItem(PENDING_KEY, snapshot);
   }
   inventoryMode = localStorage.getItem(INVENTORY_MODE_KEY) === 'map' ? 'map' : 'list';
   loadTimers();
   render();
   pushPendingState();
-  fetch('/api/mealie/status').then((response) => response.json()).then((result) => {
-    mealieConfigured = Boolean(result.configured);
-  }).catch(() => { mealieConfigured = false; }).finally(() => {
-    if (activeView === 'recipes' || activeView === 'week') render();
-  });
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  if (!STANDALONE) {
+    fetch('/api/mealie/status').then((response) => response.json()).then((result) => {
+      mealieConfigured = Boolean(result.configured);
+    }).catch(() => { mealieConfigured = false; }).finally(() => {
+      if (activeView === 'recipes' || activeView === 'week') render();
+    });
+    // The Android app ships its files inside the APK, so it needs no offline cache.
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
   checkExpiryReminders();
   setInterval(() => {
     if (document.visibilityState === 'visible') {
@@ -640,7 +683,10 @@ function renderWeek() {
 function renderShopping() {
   const remaining = state.shopping.filter((item) => !item.checked).length;
   const rows = state.shopping.map((item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}</span></label><span class="shopping-amount">${escapeHtml(item.quantity || '')} ${escapeHtml(item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">Put away</button>` : `<span class="shopping-source">${escapeHtml(item.source || 'Shopping list')}</span>`}</article>`).join('');
-  const actions = `<div class="shopping-heading-actions">${state.shopping.length ? '<button class="button button-outline" data-action="show-shopping-qr">Share to phone <span aria-hidden="true">▦</span></button>' : ''}<button class="button button-outline" data-action="generate-shopping">Refresh from plan <span aria-hidden="true">↻</span></button></div>`;
+  const shareButton = STANDALONE
+    ? '<button class="button button-outline" data-action="share-shopping-text">Share list <span aria-hidden="true">↗</span></button>'
+    : '<button class="button button-outline" data-action="show-shopping-qr">Share to phone <span aria-hidden="true">▦</span></button>';
+  const actions = `<div class="shopping-heading-actions">${state.shopping.length ? shareButton : ''}<button class="button button-outline" data-action="generate-shopping">Refresh from plan <span aria-hidden="true">↻</span></button></div>`;
   return `${pageHeading('OUT AND ABOUT', 'The list, in hand.', `${remaining} ${remaining === 1 ? 'thing' : 'things'} left to pick up. Check off as you go.`, actions)}
     <section class="section-block shopping-block"><div class="section-heading"><div><h2>This week’s list</h2><span class="muted">${state.shopping.length} items</span></div><div class="list-actions">${remaining ? '<button class="text-button" data-action="check-all">✓ Check all</button>' : ''}${state.shopping.some((item) => item.checked) ? '<button class="button button-small button-outline" data-action="put-all-away">Put all away</button><button class="text-button" data-action="clear-checked">Clear checked</button>' : ''}${state.shopping.length ? '<button class="text-button clear-list-button" data-action="clear-list">× Clear list</button>' : ''}</div></div>${rows ? `<div class="shopping-list">${rows}</div>` : '<div class="empty-state compact"><span class="empty-mark">☷</span><strong>Your list is nice and clear.</strong><p>Build it from the meals in your weekly plan.</p><button class="button button-primary" data-action="generate-shopping">Build from this week</button></div>'}</section>`;
 }
@@ -771,14 +817,33 @@ async function importRecipeFromUrl() {
   if (!address) { form.elements.importUrl.focus(); return; }
   status.textContent = 'Fetching the recipe…';
   try {
-    const response = await fetch(`/api/recipes/import?url=${encodeURIComponent(address)}`);
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) { status.textContent = result.error || 'That recipe could not be imported.'; return; }
+    let result;
+    if (STANDALONE) {
+      // No server in the Android app: the phone fetches the page and the shared parser reads it here.
+      if (!/^https?:\/\//i.test(address)) { status.textContent = 'Only http and https links can be imported.'; return; }
+      const page = JSON.parse(await nativeCall('fetchPage', address));
+      if (page.status >= 400) { status.textContent = `The website refused the import (HTTP ${page.status}). Some sites block this; copy the recipe text and paste it instead.`; return; }
+      result = window.GoodstockRecipeImport?.extractRecipeFromHtml(page.body, page.url || address);
+      if (!result) { status.textContent = window.GoodstockRecipeImport?.NO_RECIPE_MESSAGE || 'No recipe found on that page.'; return; }
+    } else {
+      const response = await fetch(`/api/recipes/import?url=${encodeURIComponent(address)}`);
+      result = await response.json().catch(() => ({}));
+      if (!response.ok) { status.textContent = result.error || 'That recipe could not be imported.'; return; }
+    }
     const host = (() => { try { return new URL(result.sourceUrl).hostname.replace(/^www\./, ''); } catch { return 'the website'; } })();
     fillRecipeEditor(result, `Imported from ${host}: ${result.ingredients.length} ingredients, ${result.instructions.length} steps. Check it, then save.`);
-  } catch {
-    status.textContent = navigator.onLine ? 'Could not reach the app server.' : 'You are offline. Paste the recipe text instead.';
+  } catch (error) {
+    if (STANDALONE) status.textContent = navigator.onLine ? `Could not load that page${error?.message ? ` (${error.message})` : ''}.` : 'You are offline. Paste the recipe text instead.';
+    else status.textContent = navigator.onLine ? 'Could not reach the app server.' : 'You are offline. Paste the recipe text instead.';
   }
+}
+
+// The Android app has no server for the QR link, so the list goes to the Android share sheet instead.
+function shareShoppingText() {
+  const lines = state.shopping.filter((item) => !item.checked).map((item) => `☐ ${item.name}${item.quantity ? ` · ${item.quantity}${item.unit ? ` ${item.unit}` : ''}` : ''}`);
+  if (!lines.length) return;
+  const text = `Shopping list\n${lines.join('\n')}`;
+  try { nativeApp.share(text); } catch { /* Sharing is optional. */ }
 }
 
 function saveRecipeFromEditor(form) {
@@ -837,7 +902,7 @@ function renderRecipes() {
     ${mealieConfigured ? '<button class="button button-outline stock-search-button" data-action="search-stocked">Find with my inventory <span aria-hidden="true">↗</span></button>' : ''}
     <div class="recipe-results-heading"><div><span class="eyebrow">YOUR RECIPE BOX</span><h2>Closest to ready</h2></div><span class="muted">${sorted.length} recipes</span></div>
     <div class="recipe-grid">${sorted.length ? sorted.map((recipe) => recipeCard(recipe)).join('') : '<p class="muted">No recipes match that search.</p>'}</div>
-    ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">MEALIE LIBRARY</span><h2>${mealieResults.length ? 'From Mealie' : 'Search your recipes'}</h2></div><span class="muted">Connected</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>Already using Mealie?</strong><br/>Connect it in your Portainer stack to search and import your recipe library here.</p><span class="integration-state">NOT CONNECTED</span></div>`}`;
+    ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">MEALIE LIBRARY</span><h2>${mealieResults.length ? 'From Mealie' : 'Search your recipes'}</h2></div><span class="muted">Connected</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : STANDALONE ? '' : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>Already using Mealie?</strong><br/>Connect it in your Portainer stack to search and import your recipe library here.</p><span class="integration-state">NOT CONNECTED</span></div>`}`;
 }
 
 function fillLocationSelect(select, selected) {
@@ -1071,7 +1136,8 @@ function timerAlarm(timer) {
     timerBeep();
     alarmLoopId = setInterval(timerBeep, 2000);
   }
-  if (document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
+  // The Android app posts its own alarm notification when it is in the background.
+  if (!STANDALONE && document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
     new Notification('Goodstock timer', { body: `${timerTitle(timer)}: ${timer.label} is done.`, tag: timer.id, requireInteraction: true });
   }
 }
@@ -1091,7 +1157,7 @@ function timerBeep() {
       oscillator.stop(context.currentTime + offset + 0.3);
     });
   } catch { /* Sound is optional. */ }
-  navigator.vibrate?.([300, 150, 300]);
+  if (STANDALONE) { try { nativeApp.vibrate(700); } catch { /* Optional. */ } } else navigator.vibrate?.([300, 150, 300]);
 }
 
 const timerRemaining = (timer) => (timer.endsAt - Date.now()) / 1000;
@@ -1147,11 +1213,20 @@ function saveTimers() {
     id, planId, stepIndex, label, name, endsAt, done,
     recipe: recipe && { id: recipe.id, slug: recipe.slug, name: recipe.name, source: recipe.source, ingredients: recipe.ingredients, instructions: recipe.instructions },
   }));
+  syncNativeTimers();
   try {
     const value = snapshot.length ? JSON.stringify(snapshot) : null;
     if (localStorage.getItem(TIMERS_KEY) === value) return;
     if (value) localStorage.setItem(TIMERS_KEY, value); else localStorage.removeItem(TIMERS_KEY);
   } catch { /* Timers still run; they just won't survive a reload. */ }
+}
+
+// In the Android app, every timer also gets a system alarm, so it rings with the app in the background or the
+// screen off. Timers that disappear here are cancelled there, including a notification that is still ringing.
+function syncNativeTimers() {
+  if (!STANDALONE) return;
+  const timers = cookTimers.map((timer) => ({ id: timer.id, endsAt: timer.endsAt, done: Boolean(timer.done), title: timerTitle(timer), text: timer.label }));
+  try { nativeApp.setTimers(JSON.stringify(timers)); } catch { /* In-app alarm still works while the app is open. */ }
 }
 
 function loadTimers() {
@@ -1164,6 +1239,7 @@ function loadTimers() {
     .map((timer) => ({ ...timer, done: Boolean(timer.done) }));
   // What is stored now; refreshTimers only saves if dropping old timers or finishing one changes it.
   savedTimersSignature = timersSignature(saved.filter((timer) => timer && timer.id));
+  syncNativeTimers();
   if (cookTimers.length) timerTickId ??= setInterval(refreshTimers, 1000);
   // Already-finished timers keep ringing, without sending their notification again.
   if (cookTimers.some((timer) => timer.done) && !alarmLoopId) {
@@ -1265,7 +1341,7 @@ function openTimerStep(id) {
   const dialog = $('#steps-dialog');
   if (!dialog.open) {
     dialog.showModal();
-    navigator.wakeLock?.request('screen').then((lock) => { cookWakeLock = lock; }).catch(() => {});
+    keepScreenOn(true);
   }
   refreshTimers();
 }
@@ -1347,7 +1423,7 @@ async function startCookSteps(recipe, planId = '') {
   renderCookStep();
   const dialog = $('#steps-dialog');
   if (!dialog.open) dialog.showModal();
-  try { cookWakeLock = await navigator.wakeLock?.request('screen'); } catch { cookWakeLock = null; }
+  await keepScreenOn(true);
 }
 
 function moveCookStep(direction) {
@@ -1481,6 +1557,9 @@ document.addEventListener('click', async (event) => {
     return;
   }
   if (action === 'show-shopping-qr') openShoppingShare();
+  if (action === 'share-shopping-text') shareShoppingText();
+  if (action === 'backup-data') await backupKitchen();
+  if (action === 'restore-data') $('#restore-file').click();
   if (action === 'view-recipe') openRecipeDialog(id, button.dataset.remote === 'true');
   if (action === 'review-plan') {
     const plan = state.plan.find((entry) => entry.id === id);
@@ -1625,6 +1704,12 @@ document.addEventListener('input', (event) => {
 });
 
 document.addEventListener('change', async (event) => {
+  if (event.target.id === 'restore-file') {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (file) await restoreKitchen(file);
+    return;
+  }
   if (event.target.id === 'location-filter') { inventoryLocation = event.target.value; render(); }
   if (event.target.form?.getAttribute('id') === 'item-form' && event.target.name === 'location') {
     const form = event.target.form;
@@ -1651,6 +1736,14 @@ document.addEventListener('change', async (event) => {
     if (!toggle.checked) {
       localStorage.removeItem(EXPIRY_REMINDERS_KEY);
       note.textContent = 'The in-app Use soon panel remains available.';
+      return;
+    }
+    if (STANDALONE) {
+      const allowed = await nativeCall('requestNotifications').then((result) => result === 'granted').catch(() => false);
+      toggle.checked = allowed;
+      if (allowed) localStorage.setItem(EXPIRY_REMINDERS_KEY, 'true'); else localStorage.removeItem(EXPIRY_REMINDERS_KEY);
+      note.textContent = allowed ? 'Enabled. Goodstock checks for items due soon when you open the app.' : 'Notifications are off for Goodstock. Allow them in Android settings; the in-app panel remains available.';
+      if (allowed) checkExpiryReminders();
       return;
     }
     if (!window.isSecureContext || !('Notification' in window)) {
@@ -1811,6 +1904,41 @@ function addTestRecipe() {
   render();
 }
 
+// Backup: the whole kitchen (inventory, recipes, plans, shopping list, presets) as one JSON file. In the Android
+// app the data exists only on the phone, so this is how it survives a new phone or an uninstall.
+async function backupKitchen() {
+  const fileName = `goodstock-backup-${dateKey(new Date())}.json`;
+  const content = JSON.stringify({ app: 'goodstock', backupVersion: 1, exportedAt: new Date().toISOString(), state }, null, 2);
+  const status = $('#backup-status');
+  try {
+    if (STANDALONE) {
+      await nativeCall('saveFile', fileName, content);
+    } else {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
+      link.download = fileName;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+    }
+    status.textContent = `Saved ${fileName}.`;
+  } catch (error) {
+    status.textContent = error?.message === 'cancelled' ? '' : 'The backup could not be saved.';
+  }
+}
+
+async function restoreKitchen(file) {
+  const status = $('#backup-status');
+  let parsed;
+  try { parsed = JSON.parse(await file.text()); } catch { status.textContent = 'That file is not a Goodstock backup.'; return; }
+  const restored = parsed?.state || parsed;
+  if (!restored || !Array.isArray(restored.inventory) || !Array.isArray(restored.recipes)) { status.textContent = 'That file is not a Goodstock backup.'; return; }
+  const summary = `${restored.inventory.length} inventory items and ${restored.recipes.length} recipes`;
+  if (!window.confirm(`Replace everything in this kitchen with the backup (${summary})? This cannot be undone.`)) return;
+  state = normalizeState(restored);
+  persist();
+  status.textContent = `Restored ${summary}.`;
+}
+
 function openWipeDialog() {
   const count = (list, one, many) => `<li><strong>${list.length}</strong> ${list.length === 1 ? one : many}</li>`;
   $('#wipe-summary').innerHTML = count(state.inventory, 'inventory item', 'inventory items') + count(state.recipes, 'saved recipe', 'saved recipes')
@@ -1884,14 +2012,20 @@ $('#settings-button').addEventListener('click', async () => {
   $('#dark-mode-toggle').checked = document.documentElement.dataset.theme === 'dark';
   const expiryToggle = $('#expiry-notifications-toggle');
   const expiryNote = $('#expiry-notifications-note');
-  const canNotify = window.isSecureContext && 'Notification' in window;
+  const canNotify = STANDALONE || (window.isSecureContext && 'Notification' in window);
   expiryToggle.disabled = !canNotify;
-  expiryToggle.checked = canNotify && localStorage.getItem(EXPIRY_REMINDERS_KEY) === 'true' && Notification.permission === 'granted';
-  if (!window.isSecureContext) expiryNote.textContent = 'System alerts need HTTPS. The in-app Use soon panel remains available.';
+  expiryToggle.checked = canNotify && localStorage.getItem(EXPIRY_REMINDERS_KEY) === 'true' && (STANDALONE ? nativeApp.notificationsAllowed() : Notification.permission === 'granted');
+  if (STANDALONE) expiryNote.textContent = 'A daily Android notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.';
+  else if (!window.isSecureContext) expiryNote.textContent = 'System alerts need HTTPS. The in-app Use soon panel remains available.';
   else if (!('Notification' in window)) expiryNote.textContent = 'This browser does not support system alerts. The in-app Use soon panel remains available.';
   else if (Notification.permission === 'denied') expiryNote.textContent = 'Browser notifications are blocked. Allow them in browser settings; the in-app panel remains available.';
   else expiryNote.textContent = 'System alerts are checked daily while the app is open. The in-app Use soon panel is always available.';
   const note = $('#mealie-note');
+  if (STANDALONE) {
+    note.textContent = 'Recipes live on this phone. Add them with New recipe or Import on the Recipes page.';
+    $('#settings-dialog').showModal();
+    return;
+  }
   try {
     const response = await fetch('/api/mealie/status');
     const result = await response.json();
@@ -1927,8 +2061,7 @@ $('#steps-dialog').addEventListener('keydown', (event) => {
 
 $('#steps-dialog').addEventListener('close', () => {
   saveCookProgress();
-  cookWakeLock?.release?.().catch(() => {});
-  cookWakeLock = null;
+  keepScreenOn(false);
   refreshTimers();
 });
 
@@ -1939,6 +2072,19 @@ window.addEventListener('focus', checkExpiryReminders);
 window.addEventListener('online', () => { pushPendingState(); render(); });
 // Keep timers in step across tabs of this browser.
 window.addEventListener('storage', (event) => { if (event.key === TIMERS_KEY) loadTimers(); });
+
+// Android app hooks. Back closes the top dialog, then returns to Inventory, then leaves the app.
+window.goodstockBack = () => {
+  const open = $$('dialog[open]');
+  if (open.length) { open[open.length - 1].close(); return true; }
+  if (activeView !== 'inventory') { activeView = 'inventory'; render(); return true; }
+  return false;
+};
+// Coming back to the app: catch up on timers that ended while it was paused, and on expiry reminders.
+window.goodstockResume = () => {
+  refreshTimers();
+  checkExpiryReminders();
+};
 // Browsers only allow sound after a tap, so the first touch after a reload unlocks the alarm.
 document.addEventListener('pointerdown', unlockAlarmAudio, { once: true, capture: true });
 window.addEventListener('offline', () => { updateSyncStatus('offline'); render(); });

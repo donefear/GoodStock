@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import QRCode from 'qrcode';
+import { extractRecipeFromHtml, NO_RECIPE_MESSAGE } from './recipe-import.mjs';
 
 const port = Number(process.env.PORT || 8080);
 const dataDirectory = process.env.DATA_DIR || './data';
@@ -27,6 +28,7 @@ const staticFiles = new Map([
   ['/manifest.webmanifest', ['manifest.webmanifest', 'application/manifest+json']],
   ['/ingredients.json', ['ingredients.json', 'application/json; charset=utf-8']],
   ['/kitchen-tools.js', ['kitchen-tools.js', 'text/javascript; charset=utf-8']],
+  ['/recipe-import.mjs', ['recipe-import.mjs', 'text/javascript; charset=utf-8']],
 ]);
 
 function sendJson(response, status, value) {
@@ -101,52 +103,7 @@ async function mealieRecipePageUrl(slug) {
   return `${mealiePublicUrl}/g/${encodeURIComponent(mealieGroupSlug || 'home')}/r/${encodeURIComponent(slug)}`;
 }
 
-// Recipe import from a web page. Most recipe sites embed a schema.org "Recipe" as JSON-LD, which is far more
-// reliable than scraping the visible page. No Mealie needed.
-const HTML_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', deg: '°', frac12: '½', frac14: '¼', frac34: '¾', eacute: 'é', egrave: 'è', euml: 'ë', iuml: 'ï', ouml: 'ö', uuml: 'ü' };
-
-function cleanWebText(value) {
-  return String(value ?? '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+\d*);/gi, (match, code) => {
-      if (code[0] === '#') {
-        const point = code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : Number(code.slice(1));
-        return Number.isFinite(point) && point > 0 && point < 0x110000 ? String.fromCodePoint(point) : ' ';
-      }
-      return HTML_ENTITIES[code.toLowerCase()] ?? match;
-    })
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function findJsonLdRecipe(node) {
-  if (!node || typeof node !== 'object') return null;
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      const found = findJsonLdRecipe(item);
-      if (found) return found;
-    }
-    return null;
-  }
-  const types = [].concat(node['@type'] || []).map((type) => String(type).toLowerCase());
-  if (types.includes('recipe')) return node;
-  return findJsonLdRecipe(node['@graph']) || findJsonLdRecipe(node.mainEntity) || null;
-}
-
-// Steps can be plain text, a list of HowToStep, or HowToSections with their own steps. Section names become
-// short heading lines, which cook mode shows as labels.
-function jsonLdInstructions(value) {
-  if (!value) return [];
-  if (typeof value === 'string') return value.split(/\n+|(?<=\.)\s+(?=[A-Z])/).map(cleanWebText).filter(Boolean);
-  if (Array.isArray(value)) return value.flatMap(jsonLdInstructions);
-  if (typeof value === 'object') {
-    const types = [].concat(value['@type'] || []).map((type) => String(type).toLowerCase());
-    if (types.includes('howtosection')) return [cleanWebText(value.name), ...jsonLdInstructions(value.itemListElement)].filter(Boolean);
-    return [cleanWebText(value.text || value.name || '')].filter(Boolean);
-  }
-  return [];
-}
-
+// Recipe import from a web page: fetched here, parsed by the shared recipe-import.mjs (also used by the Android app).
 async function importRecipeFromUrl(address) {
   let target;
   try { target = new URL(address); } catch { throw Object.assign(new Error('That does not look like a web address.'), { status: 400 }); }
@@ -157,24 +114,9 @@ async function importRecipeFromUrl(address) {
     signal: AbortSignal.timeout(12000),
   });
   if (!result.ok) throw Object.assign(new Error(`The website refused the import (HTTP ${result.status}). Some sites block this; copy the recipe text and paste it instead.`), { status: 502 });
-  const html = (await result.text()).slice(0, 4_000_000);
-  for (const [, body] of html.matchAll(/<script[^>]*type\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi)) {
-    let data;
-    try { data = JSON.parse(body.trim()); } catch { continue; }
-    const recipe = findJsonLdRecipe(data);
-    if (!recipe) continue;
-    const ingredients = [].concat(recipe.recipeIngredient || recipe.ingredients || []).map(cleanWebText).filter(Boolean);
-    const instructions = jsonLdInstructions(recipe.recipeInstructions);
-    if (!ingredients.length && !instructions.length) continue;
-    return {
-      name: cleanWebText(recipe.name) || 'Imported recipe',
-      description: cleanWebText(recipe.description).slice(0, 400),
-      ingredients,
-      instructions,
-      sourceUrl: result.url || target.href,
-    };
-  }
-  throw Object.assign(new Error('No recipe found on that page. Try copying the recipe text and pasting it instead.'), { status: 422 });
+  const recipe = extractRecipeFromHtml(await result.text(), result.url || target.href);
+  if (!recipe) throw Object.assign(new Error(NO_RECIPE_MESSAGE), { status: 422 });
+  return recipe;
 }
 
 function safeExportText(value, limit) {

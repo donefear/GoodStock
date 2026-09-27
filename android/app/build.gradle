@@ -1,0 +1,76 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The web app lives one folder up; the APK bundles these files so it runs with no server.
+def webRoot = rootProject.projectDir.parentFile
+def webFiles = ['index.html', 'app.js', 'kitchen-tools.js', 'recipe-import.mjs', 'styles.css', 'ingredients.json', 'manifest.webmanifest', 'logo.svg']
+def webAssetsDir = layout.buildDirectory.dir('generated/web-assets')
+
+// Version follows the "Goodstock vX.Y" label in index.html, so there is one place to bump it.
+def versionMatch = (new File(webRoot, 'index.html').text =~ /Goodstock v(\d+)\.(\d+)/)
+def hasVersion = versionMatch.find()
+def versionMajor = hasVersion ? versionMatch.group(1).toInteger() : 1
+def versionMinor = hasVersion ? versionMatch.group(2).toInteger() : 0
+
+// Release signing comes from environment variables (see android/README.md). Without them the release APK is
+// signed with the debug key, which installs fine but cannot update an APK signed with the release key.
+def keystorePath = System.getenv('GOODSTOCK_KEYSTORE')
+def hasReleaseKey = keystorePath && new File(keystorePath).exists()
+
+android {
+    namespace 'com.donefear.goodstock'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.donefear.goodstock'
+        minSdk 26
+        targetSdk 34
+        versionCode versionMajor * 10000 + versionMinor * 100
+        versionName "${versionMajor}.${versionMinor}"
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseKey) {
+                storeFile file(keystorePath)
+                storePassword System.getenv('GOODSTOCK_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('GOODSTOCK_KEY_ALIAS')
+                keyPassword System.getenv('GOODSTOCK_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += webAssetsDir
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+def copyWebAssets = tasks.register('copyWebAssets', Copy) {
+    from(webRoot) { include webFiles }
+    into webAssetsDir
+}
+preBuild.dependsOn copyWebAssets
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
