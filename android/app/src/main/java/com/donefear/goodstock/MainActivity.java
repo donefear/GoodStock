@@ -74,22 +74,40 @@ public class MainActivity extends Activity {
                 }
                 if (path.equals("/")) url = Uri.parse(APP_URL);
                 WebResourceResponse response = assetLoader.shouldInterceptRequest(url);
+                if (response == null) {
+                    // Not a bundled file (e.g. favicon.ico): answer "not found" instead of trying the internet.
+                    return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found",
+                            Collections.emptyMap(), new ByteArrayInputStream(new byte[0]));
+                }
                 // Module scripts need a JavaScript MIME type, which the asset loader does not know for .mjs.
-                if (response != null && path.endsWith(".mjs")) response.setMimeType("text/javascript");
+                if (path.endsWith(".mjs")) response.setMimeType("text/javascript");
                 return response;
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                Uri url = request.getUrl();
-                if (APP_HOST.equals(url.getHost())) return false;
-                // Links to other sites (like an imported recipe's original page) open in the browser.
-                try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, url));
-                } catch (Exception ignored) {
-                    // No browser installed; stay in the app.
+                return openOutside(request.getUrl());
+            }
+
+            // Android 5–6 call this older version instead.
+            @Override
+            @SuppressWarnings("deprecation")
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return openOutside(Uri.parse(url));
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
+                if (Build.VERSION.SDK_INT >= 23 && request.isForMainFrame()) {
+                    onPageFailed(error.getErrorCode() + " " + error.getDescription());
                 }
-                return true;
+            }
+
+            // Android 5 reports errors through this older version (main page only).
+            @Override
+            @SuppressWarnings("deprecation")
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                if (Build.VERSION.SDK_INT < 23) onPageFailed(errorCode + " " + description);
             }
         });
 
@@ -111,12 +129,121 @@ public class MainActivity extends Activity {
         bridge = new NativeBridge(this, webView);
         webView.addJavascriptInterface(bridge, "GoodstockNative");
         setContentView(webView);
-        webView.loadUrl(APP_URL);
+
+        // The page needs a reasonably recent WebView (Chrome 80+ engine). Old tablets often still have the one
+        // they shipped with; say so plainly instead of showing an empty page.
+        int engine = webViewMajorVersion();
+        if (engine > 0 && engine < MIN_WEBVIEW_VERSION) {
+            showNotice("Please update Android System WebView",
+                    "Goodstock runs inside Android System WebView, and the version on this device (" + engine
+                            + ") is too old for it. Update \"Android System WebView\" (and Chrome) in the Play Store, then open Goodstock again.",
+                    true);
+        } else {
+            webView.loadUrl(APP_URL);
+        }
 
         if (Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATIONS);
         }
+    }
+
+    /** Oldest WebView (Chrome engine) major version the web app is tested with. */
+    private static final int MIN_WEBVIEW_VERSION = 80;
+    private boolean triedDirectLoad;
+
+    // Version names look like "83.0.4103.120" or, on old Android, "39 (4174727-x86_64)"; take the leading number.
+    private static final java.util.regex.Pattern LEADING_NUMBER = java.util.regex.Pattern.compile("^\\s*(\\d+)");
+    private static final java.util.regex.Pattern CHROME_VERSION = java.util.regex.Pattern.compile("Chrome/(\\d+)");
+
+    private int webViewMajorVersion() {
+        try {
+            android.content.pm.PackageInfo info = androidx.webkit.WebViewCompat.getCurrentWebViewPackage(this);
+            java.util.regex.Matcher match = LEADING_NUMBER.matcher(info == null || info.versionName == null ? "" : info.versionName);
+            if (match.find()) return Integer.parseInt(match.group(1));
+        } catch (Exception ignored) {
+            // Fall back to the browser engine's own user agent below.
+        }
+        try {
+            java.util.regex.Matcher match = CHROME_VERSION.matcher(WebSettings.getDefaultUserAgent(this));
+            if (match.find()) return Integer.parseInt(match.group(1));
+        } catch (Exception ignored) {
+            // Unknown: try to run the app anyway.
+        }
+        return 0;
+    }
+
+    private boolean openOutside(Uri url) {
+        if (APP_HOST.equals(url.getHost())) return false;
+        // Links to other sites (like an imported recipe's original page) open in the browser.
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, url));
+        } catch (Exception ignored) {
+            // No browser installed; stay in the app.
+        }
+        return true;
+    }
+
+    /**
+     * The start page did not load. First try handing the page over directly (its files still come from the APK),
+     * then show what went wrong instead of Android's bare "Webpage not available".
+     */
+    private void onPageFailed(String reason) {
+        if (!triedDirectLoad) {
+            triedDirectLoad = true;
+            try (java.io.InputStream in = getAssets().open("index.html")) {
+                java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                byte[] chunk = new byte[8192];
+                int read;
+                while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
+                webView.loadDataWithBaseURL(APP_URL, buffer.toString("UTF-8"), "text/html", "utf-8", null);
+                return;
+            } catch (Exception ignored) {
+                // Fall through to the notice.
+            }
+        }
+        showNotice("Goodstock could not start",
+                "The app's start page did not load (" + reason + "). Android " + Build.VERSION.RELEASE
+                        + ", WebView " + webViewMajorVersion() + ". Updating \"Android System WebView\" in the Play Store usually fixes this.",
+                true);
+    }
+
+    private void showNotice(String title, String message, boolean offerUpdate) {
+        runOnUiThread(() -> {
+            android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+            layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+            int pad = (int) (32 * getResources().getDisplayMetrics().density);
+            layout.setPadding(pad, pad, pad, pad);
+            layout.setBackgroundColor(0xFFF4F5EF);
+            android.widget.TextView heading = new android.widget.TextView(this);
+            heading.setText(title);
+            heading.setTextSize(22);
+            heading.setTextColor(0xFF28342F);
+            android.widget.TextView body = new android.widget.TextView(this);
+            body.setText(message);
+            body.setTextSize(16);
+            body.setTextColor(0xFF28342F);
+            body.setPadding(0, pad / 2, 0, pad / 2);
+            layout.addView(heading);
+            layout.addView(body);
+            if (offerUpdate) {
+                android.widget.Button update = new android.widget.Button(this);
+                update.setText("Update Android System WebView");
+                update.setOnClickListener((view) -> {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.webview")));
+                    } catch (Exception noStore) {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.webview")));
+                    }
+                });
+                layout.addView(update);
+            }
+            android.widget.Button retry = new android.widget.Button(this);
+            retry.setText("Try again");
+            retry.setOnClickListener((view) -> recreate());
+            layout.addView(retry);
+            setContentView(layout);
+        });
     }
 
     @Override

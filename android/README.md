@@ -25,6 +25,10 @@ bash android/build-apk.sh debug    # debug APK   -> dist/Goodstock-vX.Y.Z-debug.
 
 The first run downloads the Android SDK and Gradle into a Docker image (about 2 GB). The version comes from the `Goodstock vX.Y.Z` label in `index.html`; every change bumps the last number.
 
+## Test in an emulator
+
+`bash android/test-apk.sh [apk] [api]` boots a headless Android emulator in Docker (needs /dev/kvm, which WSL2 has), installs the APK, opens it and saves a screenshot and log in `dist/test/`. For example `22` is Android 5.1 with its original WebView 39 (shows the update notice), `30` is Android 11 (runs the app).
+
 ## Build on GitHub
 
 `.github/workflows/android.yml` builds the APK on every push to `main` or `experiments` and on tags `v*`. Download it from the run's **Artifacts**. A tag also attaches the APK to its GitHub release.

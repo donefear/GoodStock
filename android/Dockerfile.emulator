@@ -1,0 +1,16 @@
+# Headless Android emulator for testing the APK on old and new Android versions (needs /dev/kvm).
+# Used by android/test-apk.sh; not part of the server image or the APK build.
+FROM goodstock-android-build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpulse0 libnss3 libxcomposite1 libxcursor1 libxi6 libxtst6 \
+       libasound2 libgl1 libxdamage1 libxkbfile1 libxrandr2 libfontconfig1 libdbus-1-3 libx11-xcb1 libxkbcommon0 \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG API=22
+ARG TAG=default
+RUN yes | sdkmanager --licenses > /dev/null \
+    && sdkmanager "emulator" "platform-tools" "system-images;android-${API};${TAG};x86_64" > /dev/null \
+    && echo no | avdmanager create avd -n test -k "system-images;android-${API};${TAG};x86_64" -d "pixel_c" > /dev/null
+
+ENV PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools
