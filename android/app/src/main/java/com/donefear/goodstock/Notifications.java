@@ -8,39 +8,64 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
+import android.os.Build;
 
+/** Timer and reminder notifications. Android 8+ uses channels; Android 5–7 set sound and priority per notification. */
 final class Notifications {
     private static final String TIMERS = "timers";
     private static final String REMINDERS = "reminders";
     private static final int REMINDER_ID = 1;
+    private static final long[] TIMER_VIBRATION = {0, 600, 300, 600, 300, 600};
 
     private Notifications() { }
 
+    private static NotificationManager manager(Context context) {
+        return (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+    }
+
     static void ensureChannels(Context context) {
-        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        if (Build.VERSION.SDK_INT < 26) return;
         NotificationChannel timers = new NotificationChannel(TIMERS, "Timers", NotificationManager.IMPORTANCE_HIGH);
         timers.setDescription("Rings when a cooking timer ends");
-        timers.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM), new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build());
+        timers.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM), alarmAudio());
         timers.enableVibration(true);
-        timers.setVibrationPattern(new long[]{0, 600, 300, 600, 300, 600});
+        timers.setVibrationPattern(TIMER_VIBRATION);
         NotificationChannel reminders = new NotificationChannel(REMINDERS, "Use-soon reminders", NotificationManager.IMPORTANCE_DEFAULT);
         reminders.setDescription("Daily note about food that expires soon");
-        manager.createNotificationChannel(timers);
-        manager.createNotificationChannel(reminders);
+        manager(context).createNotificationChannel(timers);
+        manager(context).createNotificationChannel(reminders);
     }
 
     static boolean allowed(Context context) {
-        return context.getSystemService(NotificationManager.class).areNotificationsEnabled();
+        return Build.VERSION.SDK_INT < 24 || manager(context).areNotificationsEnabled();
+    }
+
+    private static AudioAttributes alarmAudio() {
+        return new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+    }
+
+    @SuppressWarnings("deprecation")
+    private static Notification.Builder builder(Context context, String channel) {
+        if (Build.VERSION.SDK_INT >= 26) return new Notification.Builder(context, channel);
+        Notification.Builder builder = new Notification.Builder(context);
+        if (TIMERS.equals(channel)) {
+            builder.setPriority(Notification.PRIORITY_MAX)
+                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM), alarmAudio())
+                    .setVibrate(TIMER_VIBRATION);
+        } else {
+            builder.setPriority(Notification.PRIORITY_DEFAULT).setDefaults(Notification.DEFAULT_ALL);
+        }
+        return builder;
     }
 
     /** Rings until it is opened or dismissed (FLAG_INSISTENT), like the in-app alarm. */
     static void showTimer(Context context, String id, String title, String text) {
         if (id == null || !allowed(context)) return;
         ensureChannels(context);
-        Notification notification = new Notification.Builder(context, TIMERS)
+        Notification notification = builder(context, TIMERS)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle("⏰ Time is up: " + (title == null ? "Timer" : title))
                 .setContentText((text == null || text.isEmpty() ? "Your timer" : text) + " · tap to open Goodstock")
@@ -49,13 +74,13 @@ final class Notifications {
                 .setAutoCancel(true)
                 .build();
         notification.flags |= Notification.FLAG_INSISTENT;
-        context.getSystemService(NotificationManager.class).notify(notificationId(id), notification);
+        manager(context).notify(notificationId(id), notification);
     }
 
     static void showReminder(Context context, String title, String text) {
         if (!allowed(context)) return;
         ensureChannels(context);
-        Notification notification = new Notification.Builder(context, REMINDERS)
+        Notification notification = builder(context, REMINDERS)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(text)
@@ -63,11 +88,11 @@ final class Notifications {
                 .setContentIntent(openApp(context))
                 .setAutoCancel(true)
                 .build();
-        context.getSystemService(NotificationManager.class).notify(REMINDER_ID, notification);
+        manager(context).notify(REMINDER_ID, notification);
     }
 
     static void cancelTimer(Context context, String id) {
-        context.getSystemService(NotificationManager.class).cancel(notificationId(id));
+        manager(context).cancel(notificationId(id));
     }
 
     static void cancelTimerAlerts(Context context) {
@@ -76,7 +101,12 @@ final class Notifications {
 
     private static PendingIntent openApp(Context context) {
         Intent intent = new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | immutable());
+    }
+
+    /** FLAG_IMMUTABLE exists from Android 6; older versions don't need it. */
+    static int immutable() {
+        return Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0;
     }
 
     private static int notificationId(String id) {

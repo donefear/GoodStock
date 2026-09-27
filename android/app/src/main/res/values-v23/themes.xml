@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 5–5.1. Dark status bar text needs Android 6 (values-v23). -->
+    <!-- Android 6–8.0: light status bar with dark text. Light navigation bar needs Android 8.1 (values-v27). -->
     <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/paper</item>
-        <item name="android:statusBarColor">@color/green</item>
+        <item name="android:statusBarColor">@color/paper</item>
         <item name="android:navigationBarColor">@color/green</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

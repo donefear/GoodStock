@@ -24,7 +24,7 @@ final class TimerAlarms {
     private TimerAlarms() { }
 
     static synchronized void sync(Context context, String json) {
-        AlarmManager alarms = context.getSystemService(AlarmManager.class);
+        AlarmManager alarms = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         Set<String> previous = new HashSet<>(prefs.getStringSet(IDS, Collections.emptySet()));
         Set<String> current = new HashSet<>();
@@ -59,8 +59,11 @@ final class TimerAlarms {
     private static void schedule(AlarmManager alarms, long at, PendingIntent alarm) {
         if (Build.VERSION.SDK_INT >= 31 && !alarms.canScheduleExactAlarms()) {
             alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, alarm);
-        } else {
+        } else if (Build.VERSION.SDK_INT >= 23) {
             alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, alarm);
+        } else {
+            // Android 5 has no Doze mode, so a plain exact alarm is enough.
+            alarms.setExact(AlarmManager.RTC_WAKEUP, at, alarm);
         }
     }
 
@@ -71,6 +74,6 @@ final class TimerAlarms {
                 .putExtra("id", id)
                 .putExtra("title", title)
                 .putExtra("text", text);
-        return PendingIntent.getBroadcast(context, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        return PendingIntent.getBroadcast(context, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | Notifications.immutable());
     }
 }

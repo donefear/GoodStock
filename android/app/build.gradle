@@ -25,7 +25,8 @@ android {
 
     defaultConfig {
         applicationId 'com.donefear.goodstock'
-        minSdk 26
+        // Android 5.0 and newer, so older tablets can install it too.
+        minSdk 19
         targetSdk 34
         // 2.0.1 -> 20001, so every patch release can update the installed app (patch up to 99).
         versionCode versionMajor * 10000 + versionMinor * 100 + versionPatch
@@ -39,6 +40,9 @@ android {
                 storePassword System.getenv('GOODSTOCK_KEYSTORE_PASSWORD')
                 keyAlias System.getenv('GOODSTOCK_KEY_ALIAS')
                 keyPassword System.getenv('GOODSTOCK_KEY_PASSWORD')
+                // v1 (JAR) signing is what Android 5 and 6 check; v2 is for Android 7+.
+                enableV1Signing true
+                enableV2Signing true
             }
         }
     }

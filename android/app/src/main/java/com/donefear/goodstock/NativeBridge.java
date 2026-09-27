@@ -92,9 +92,10 @@ final class NativeBridge {
     @SuppressWarnings("deprecation")
     public void vibrate(long milliseconds) {
         Vibrator vibrator = (Vibrator) activity.getSystemService(Context.VIBRATOR_SERVICE);
-        if (vibrator != null && vibrator.hasVibrator()) {
-            vibrator.vibrate(VibrationEffect.createOneShot(Math.max(1, Math.min(milliseconds, 3000)), VibrationEffect.DEFAULT_AMPLITUDE));
-        }
+        if (vibrator == null || !vibrator.hasVibrator()) return;
+        long duration = Math.max(1, Math.min(milliseconds, 3000));
+        if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE));
+        else vibrator.vibrate(duration);
     }
 
     @JavascriptInterface

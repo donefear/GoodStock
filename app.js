@@ -591,7 +591,20 @@ async function loadIngredientCatalog() {
   }
 }
 
+// Older Chrome (before 84, e.g. the last Chrome for Android 4.4 tablets) has no gap in flex rows; styles.css then
+// spaces things with margins instead.
+function detectFlexGap() {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'display:flex;flex-direction:column;row-gap:1px;position:absolute;visibility:hidden';
+  probe.append(document.createElement('div'), document.createElement('div'));
+  document.body.append(probe);
+  const supported = probe.scrollHeight === 1;
+  probe.remove();
+  document.documentElement.classList.toggle('no-flex-gap', !supported);
+}
+
 async function initialize() {
+  detectFlexGap();
   applyTheme(localStorage.getItem(THEME_KEY) || 'light');
   document.documentElement.classList.toggle('is-standalone', STANDALONE);
   const cached = localStorage.getItem(STORAGE_KEY);
@@ -901,7 +914,7 @@ function startCustomTimer(name, seconds) {
   if (!(seconds > 0)) return;
   unlockAlarmAudio();
   cookTimers.push({ id: makeId(), recipe: null, name: name || 'Timer', label: formatDuration(seconds), endsAt: Date.now() + seconds * 1000, done: false });
-  timerTickId ??= setInterval(refreshTimers, 1000);
+  if (!timerTickId) timerTickId = setInterval(refreshTimers, 1000);
   if (activeView === 'tools' && toolsTab === 'timers') render(); else refreshTimers();
 }
 
@@ -910,7 +923,7 @@ function extendTimer(id, seconds = 60) {
   if (!timer) return;
   timer.endsAt = timer.done ? Date.now() + seconds * 1000 : timer.endsAt + seconds * 1000;
   timer.done = false;
-  timerTickId ??= setInterval(refreshTimers, 1000);
+  if (!timerTickId) timerTickId = setInterval(refreshTimers, 1000);
   refreshTimers();
 }
 
@@ -1619,7 +1632,7 @@ let alarmAudio = null;
 
 function unlockAlarmAudio() {
   try {
-    alarmAudio ??= new AudioContext();
+    if (!alarmAudio) alarmAudio = new AudioContext();
     if (alarmAudio.state === 'suspended') alarmAudio.resume().catch(() => {});
   } catch { alarmAudio = null; }
 }
@@ -1735,7 +1748,7 @@ function loadTimers() {
   // What is stored now; refreshTimers only saves if dropping old timers or finishing one changes it.
   savedTimersSignature = timersSignature(saved.filter((timer) => timer && timer.id));
   syncNativeTimers();
-  if (cookTimers.length) timerTickId ??= setInterval(refreshTimers, 1000);
+  if (cookTimers.length && !timerTickId) timerTickId = setInterval(refreshTimers, 1000);
   // Already-finished timers keep ringing, without sending their notification again.
   if (cookTimers.some((timer) => timer.done) && !alarmLoopId) {
     timerBeep();
@@ -1849,7 +1862,7 @@ function startCookTimer(minutes, label) {
   const existing = currentStepTimer();
   if (existing) cookTimers = cookTimers.filter((timer) => timer !== existing);
   cookTimers.push({ id: makeId(), recipe: cookSession.recipe, planId: cookSession.planId, stepIndex: cookSession.index, label, endsAt: Date.now() + minutes * 60_000, done: false });
-  timerTickId ??= setInterval(refreshTimers, 1000);
+  if (!timerTickId) timerTickId = setInterval(refreshTimers, 1000);
   refreshTimers();
 }
 

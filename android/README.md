@@ -2,6 +2,8 @@
 
 A standalone APK: the web app's files are bundled inside, so it runs with no server and keeps its data on the phone.
 
+Runs on Android 5.0 (2014) and newer. On Android 5–7, keep **Android System WebView** (or Chrome) up to date in the Play Store; the app runs inside it.
+
 ## What differs from the server version
 
 - **Data lives on the phone.** Nothing syncs between devices. Use **Settings → Back up** to save a file, and **Restore** to load it on another phone.
