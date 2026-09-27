@@ -746,7 +746,10 @@ const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
 let recipeDialogRecipe = null;
 let recipeDialogPlanId = '';
 let cookSession = null;
-let cookTimer = null;
+let cookTimers = [];
+let timerTickId = null;
+let alarmLoopId = null;
+let timerPanelOpen = false;
 let cookWakeLock = null;
 
 function readCookProgress() {
@@ -847,6 +850,9 @@ function buildCookBites(recipe) {
     const temperature = steps[ovenIndex].text.match(TEMPERATURE_PATTERN)[0].replace(/\s+/g, '');
     steps.unshift({ type: 'step', heading: 'Heads-up', text: `Turn the oven on to ${temperature} now. You will need it in step ${ovenIndex + 2}.` });
   }
+  for (const step of steps) step.tools = typeof kitchenToolsIn === 'function' ? kitchenToolsIn(step.text) : [];
+  const tools = [...new Set(steps.flatMap((step) => step.tools))];
+  if (tools.length) bites.push({ type: 'tools', tools });
   if (!steps.length) bites.push({ type: 'empty' });
   bites.push(...steps, { type: 'done' });
   return bites;
@@ -865,9 +871,32 @@ function formatTimer(seconds) {
   return hours ? `${hours}:${rest}` : rest;
 }
 
-function timerAlarm() {
+// One shared audio context, unlocked by the tap on "Start timer" so the alarm may play later without a gesture.
+let alarmAudio = null;
+
+function unlockAlarmAudio() {
   try {
-    const context = new AudioContext();
+    alarmAudio ??= new AudioContext();
+    if (alarmAudio.state === 'suspended') alarmAudio.resume().catch(() => {});
+  } catch { alarmAudio = null; }
+}
+
+// Timers: any number can run at once, each tied to its recipe and step. The alarm beeps every 2 seconds
+// while any timer has finished, until each finished timer is tapped or stopped.
+function timerAlarm(timer) {
+  if (!alarmLoopId) {
+    timerBeep();
+    alarmLoopId = setInterval(timerBeep, 2000);
+  }
+  if (document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
+    new Notification('Goodstock timer', { body: `${timer.recipe.name}: ${timer.label} is done.`, tag: timer.id, requireInteraction: true });
+  }
+}
+
+function timerBeep() {
+  try {
+    unlockAlarmAudio();
+    const context = alarmAudio;
     [0, 0.35, 0.7].forEach((offset) => {
       const oscillator = context.createOscillator();
       const gain = context.createGain();
@@ -880,34 +909,138 @@ function timerAlarm() {
     });
   } catch { /* Sound is optional. */ }
   navigator.vibrate?.([300, 150, 300]);
-  if (document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('Goodstock timer', { body: `${cookTimer?.label || 'Your timer'} is done.` });
-  }
 }
 
-function updateTimerChip() {
+const timerRemaining = (timer) => (timer.endsAt - Date.now()) / 1000;
+// Finished timers first, then the one that ends soonest.
+const timersByUrgency = (timers) => [...timers].sort((a, b) => Number(b.done) - Number(a.done) || a.endsAt - b.endsAt);
+const currentStepTimer = () => cookSession && cookTimers.find((timer) => timer.recipe.id === cookSession.recipe.id && timer.stepIndex === cookSession.index);
+
+function timerPillText(timer) {
+  return {
+    time: timer.done ? 'Time is up!' : formatTimer(timerRemaining(timer)),
+    label: `${timer.recipe.name} · ${timer.done ? 'tap to go back' : timer.label}`,
+  };
+}
+
+// Keyed update so the pills are not rebuilt every second (a tap mid-rebuild would get lost).
+function syncTimerList(container, timers) {
+  const wanted = new Set(timers.map((timer) => timer.id));
+  for (const pill of [...container.children]) if (!wanted.has(pill.dataset.timerId)) pill.remove();
+  timers.forEach((timer, position) => {
+    let pill = container.querySelector(`[data-timer-id="${timer.id}"]`);
+    if (!pill) {
+      pill = document.createElement('div');
+      pill.className = 'timer-pill';
+      pill.dataset.timerId = timer.id;
+      pill.innerHTML = `<button class="timer-pill-open" type="button" data-action="timer-open" data-timer="${escapeHtml(timer.id)}"><span class="timer-pill-icon" aria-hidden="true">⏱</span><span><strong></strong><small></small></span></button><button class="timer-pill-stop" type="button" data-action="timer-stop" data-timer="${escapeHtml(timer.id)}" aria-label="Stop timer">×</button>`;
+    }
+    if (container.children[position] !== pill) container.insertBefore(pill, container.children[position] || null);
+    const text = timerPillText(timer);
+    pill.classList.toggle('is-done', timer.done);
+    pill.querySelector('strong').textContent = text.time;
+    pill.querySelector('small').textContent = text.label;
+  });
+}
+
+const APP_TITLE = document.title;
+let titleFlashId = null;
+
+function refreshTimers() {
+  for (const timer of cookTimers) {
+    if (!timer.done && timerRemaining(timer) <= 0) {
+      timer.done = true;
+      timerAlarm(timer);
+    }
+  }
+  if (alarmLoopId && !cookTimers.some((timer) => timer.done)) {
+    clearInterval(alarmLoopId);
+    alarmLoopId = null;
+    navigator.vibrate?.(0);
+  }
+  if (!cookTimers.length && timerTickId) {
+    clearInterval(timerTickId);
+    timerTickId = null;
+  }
+  const stepsOpen = $('#steps-dialog').open;
+  const here = stepsOpen ? currentStepTimer() : null;
+  const others = timersByUrgency(cookTimers.filter((timer) => timer !== here));
+
+  // Big countdown under this step's Start button.
+  const inline = $('#steps-timer-inline');
+  if (inline) {
+    inline.hidden = !here;
+    inline.classList.toggle('is-done', Boolean(here?.done));
+    if (here) {
+      inline.dataset.timer = here.id;
+      inline.innerHTML = here.done ? '<strong>Time is up</strong><span>Tap to clear</span>' : `<strong>${formatTimer(timerRemaining(here))}</strong><span>Tap to stop</span>`;
+    }
+  }
+
+  // Top-bar chip in step-by-step: the most urgent other timer and how many more. Tap to list them all.
   const chip = $('#steps-timer-chip');
-  if (!cookTimer) { chip.hidden = true; return; }
-  const remaining = (cookTimer.endsAt - Date.now()) / 1000;
-  if (remaining <= 0 && !cookTimer.done) {
-    cookTimer.done = true;
-    timerAlarm();
+  chip.hidden = !others.length;
+  if (!others.length) timerPanelOpen = false;
+  if (others.length) {
+    const first = others[0];
+    chip.classList.toggle('is-done', first.done);
+    chip.textContent = `${first.done ? '⏰ Time is up' : `⏱ ${formatTimer(timerRemaining(first))}`}${others.length > 1 ? ` · +${others.length - 1} more` : ` · ${first.recipe.name}`}`;
+    chip.setAttribute('aria-expanded', String(timerPanelOpen));
   }
-  chip.hidden = false;
-  chip.classList.toggle('is-done', cookTimer.done);
-  chip.textContent = cookTimer.done ? '⏰ Time is up · tap to clear' : `⏱ ${formatTimer(remaining)} · tap to stop`;
+  const panel = $('#steps-timer-panel');
+  panel.hidden = !stepsOpen || !timerPanelOpen;
+  if (!panel.hidden) syncTimerList(panel, others);
+
+  // Stacked pills on the main screen while step-by-step is closed.
+  const floating = $('#floating-timers');
+  floating.hidden = stepsOpen || !cookTimers.length;
+  if (!floating.hidden) syncTimerList(floating, timersByUrgency(cookTimers));
+
+  const flash = cookTimers.some((timer) => timer.done);
+  if (flash && !titleFlashId) {
+    titleFlashId = setInterval(() => { document.title = document.title === APP_TITLE ? '⏰ Time is up!' : APP_TITLE; }, 1000);
+  } else if (!flash && titleFlashId) {
+    clearInterval(titleFlashId);
+    titleFlashId = null;
+    document.title = APP_TITLE;
+  }
 }
 
+// Jump to the recipe and step a timer belongs to, switching recipes if needed. Tapping a finished timer also clears it.
+function openTimerStep(id) {
+  const timer = cookTimers.find((entry) => entry.id === id);
+  if (!timer) return;
+  if (timer.done) cookTimers = cookTimers.filter((entry) => entry !== timer);
+  if (cookSession?.recipe.id === timer.recipe.id) {
+    cookSession.index = timer.stepIndex;
+  } else {
+    if (cookSession) saveCookProgress();
+    cookSession = { recipe: timer.recipe, bites: buildCookBites(timer.recipe), index: timer.stepIndex, planId: timer.planId, checked: new Set(), resumed: false };
+  }
+  timerPanelOpen = false;
+  renderCookStep();
+  const dialog = $('#steps-dialog');
+  if (!dialog.open) {
+    dialog.showModal();
+    navigator.wakeLock?.request('screen').then((lock) => { cookWakeLock = lock; }).catch(() => {});
+  }
+  refreshTimers();
+}
+
+// Starting a step's timer again restarts it rather than adding a duplicate.
 function startCookTimer(minutes, label) {
-  clearInterval(cookTimer?.intervalId);
-  cookTimer = { endsAt: Date.now() + minutes * 60_000, label, done: false, intervalId: setInterval(updateTimerChip, 1000) };
-  updateTimerChip();
+  if (!cookSession) return;
+  unlockAlarmAudio();
+  const existing = currentStepTimer();
+  if (existing) cookTimers = cookTimers.filter((timer) => timer !== existing);
+  cookTimers.push({ id: makeId(), recipe: cookSession.recipe, planId: cookSession.planId, stepIndex: cookSession.index, label, endsAt: Date.now() + minutes * 60_000, done: false });
+  timerTickId ??= setInterval(refreshTimers, 1000);
+  refreshTimers();
 }
 
-function stopCookTimer() {
-  clearInterval(cookTimer?.intervalId);
-  cookTimer = null;
-  updateTimerChip();
+function stopCookTimer(id) {
+  cookTimers = cookTimers.filter((timer) => timer.id !== id);
+  refreshTimers();
 }
 
 function renderCookStep() {
@@ -916,7 +1049,7 @@ function renderCookStep() {
   const stepCount = bites.filter((entry) => entry.type === 'step').length;
   const stepNumber = bites.slice(0, index + 1).filter((entry) => entry.type === 'step').length;
   $('#steps-recipe-name').textContent = recipe.name;
-  $('#steps-counter').textContent = bite.type === 'gather' ? 'GET READY' : bite.type === 'done' ? 'FINISHED' : bite.type === 'empty' ? 'NO STEPS' : `STEP ${stepNumber} OF ${stepCount}`;
+  $('#steps-counter').textContent = bite.type === 'gather' || bite.type === 'tools' ? 'GET READY' : bite.type === 'done' ? 'FINISHED' : bite.type === 'empty' ? 'NO STEPS' : `STEP ${stepNumber} OF ${stepCount}`;
   $('#steps-progress-bar').style.width = `${Math.round((index / Math.max(1, bites.length - 1)) * 100)}%`;
   const resume = cookSession.resumed && index > 0 ? '<button class="text-button steps-restart" type="button" data-action="steps-restart">Resumed where you left off · start over</button>' : '';
   let body = '';
@@ -926,11 +1059,19 @@ function renderCookStep() {
       const stocked = matchingInventory(item);
       return `<label class="ingredient-check"><input type="checkbox" data-steps-item="${escapeHtml(key)}" ${checked.has(key) ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span><span>${escapeHtml(item)}</span><small>${stocked ? escapeHtml(stocked.location) : 'not in inventory'}</small></label>`;
     }).join('')}</div>`;
+  } else if (bite.type === 'tools') {
+    body = `<h3 class="steps-heading">Tools you'll need</h3><p class="steps-hint">Tap each one once it's out and ready.</p><div class="steps-gather">${bite.tools.map((tool) => {
+      const key = `${index}:${tool.id}`;
+      return `<label class="ingredient-check tool-check"><input type="checkbox" data-steps-item="${escapeHtml(key)}" ${checked.has(key) ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span>${kitchenToolIcon(tool)}<span><strong>${escapeHtml(tool.name)}</strong><small>${escapeHtml(tool.description)}</small></span></label>`;
+    }).join('')}</div>`;
   } else if (bite.type === 'step') {
     const timer = bite.timer
-      ? `<button class="button button-outline steps-timer-button" type="button" data-action="steps-timer-start" data-minutes="${bite.timer.minutes}" data-label="${escapeHtml(bite.timer.label)}">⏱ Start ${escapeHtml(bite.timer.label)} timer</button>`
+      ? `<button class="button button-outline steps-timer-button" type="button" data-action="steps-timer-start" data-minutes="${bite.timer.minutes}" data-label="${escapeHtml(bite.timer.label)}">⏱ Start ${escapeHtml(bite.timer.label)} timer</button><button class="steps-timer-inline" id="steps-timer-inline" type="button" data-action="timer-stop" aria-live="polite" hidden><strong>0:00</strong><span>Tap to stop</span></button>`
       : '';
-    body = `${bite.heading ? `<span class="steps-step-heading">${escapeHtml(bite.heading)}</span>` : ''}<p class="steps-text">${highlightStepText(bite.text)}</p>${timer}`;
+    const tools = bite.tools?.length
+      ? `<ul class="steps-tools" aria-label="Tools for this step">${bite.tools.map((tool) => `<li title="${escapeHtml(tool.description)}">${kitchenToolIcon(tool)}<span>${escapeHtml(tool.name)}</span></li>`).join('')}</ul>`
+      : '';
+    body = `${bite.heading ? `<span class="steps-step-heading">${escapeHtml(bite.heading)}</span>` : ''}<p class="steps-text">${highlightStepText(bite.text)}</p>${tools}${timer}`;
   } else if (bite.type === 'empty') {
     body = `<h3 class="steps-heading">No steps saved for this recipe</h3><p class="steps-hint">The ingredients are ready above. ${mealieRecipeLink(recipe, 'mealie-link', 'Check the full recipe in Mealie') || 'Add instructions to the recipe to get small steps here.'}</p>`;
   } else {
@@ -940,7 +1081,7 @@ function renderCookStep() {
   $('#steps-body').innerHTML = `${resume}${body}`;
   $('.steps-back').disabled = index === 0;
   $('.steps-next').textContent = index === bites.length - 1 ? 'Close' : index === bites.length - 2 ? 'Finish ›' : 'Next ›';
-  updateTimerChip();
+  refreshTimers();
 }
 
 async function startCookSteps(recipe, planId = '') {
@@ -1114,7 +1255,10 @@ document.addEventListener('click', async (event) => {
   if (action === 'steps-back') moveCookStep(-1);
   if (action === 'steps-restart') moveCookStep(-cookSession.index);
   if (action === 'steps-timer-start') startCookTimer(Number(button.dataset.minutes), button.dataset.label);
-  if (action === 'steps-timer-toggle') stopCookTimer();
+  if (action === 'timer-stop') stopCookTimer(button.dataset.timer);
+  if (action === 'timer-open') openTimerStep(button.dataset.timer);
+  if (action === 'timer-panel-toggle') { timerPanelOpen = !timerPanelOpen; refreshTimers(); }
+  if (action === 'add-test-recipe') addTestRecipe();
   if (action === 'steps-review') {
     $('#steps-dialog').close();
     openCookDialog(state.plan.find((entry) => entry.id === id));
@@ -1357,6 +1501,56 @@ function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration,
   state.shopping = state.shopping.filter((entry) => entry.id !== shoppingItem.id);
 }
 
+// A throwaway recipe that exercises cook mode: headings, short timers, °F and imperial amounts, tools and amounts in steps.
+// Each click shuffles in a different mix of extra steps, then plans it for today.
+const TEST_RECIPE_ID = 'goodstock-test';
+const TEST_RECIPE_EXTRAS = [
+  { ingredient: '8 oz cheddar', step: 'Grate the cheddar on a box grater.' },
+  { ingredient: '1 lb potatoes', step: 'Peel the potatoes, then cut them into chunks with a sharp knife.' },
+  { ingredient: '2 cups milk', step: 'Warm the milk in a saucepan for 20 seconds.' },
+  { ingredient: '1 pint cream', step: 'Blend the cream with a stick blender until smooth.' },
+  { ingredient: '3 tablespoon olive oil', step: 'Heat the olive oil in a large skillet.' },
+  { ingredient: '200 g pasta', step: 'Boil the pasta in a large pot for 1 minute, then drain in a colander.' },
+  { ingredient: '1 banana', step: 'Mash the banana with a fork in a mixing bowl.' },
+  { ingredient: '2 fl oz lemon juice', step: 'Add the lemon juice, cover with a lid and wait 10 seconds.' },
+  { ingredient: '1 onion', step: 'Chop the onion on a cutting board.' },
+  { ingredient: '100 g rolled oats', step: 'Sift the rolled oats through a sieve.' },
+  { ingredient: '1/2 tsp salt', step: 'Weigh everything on the kitchen scale, then add the salt.' },
+  { ingredient: '250 ml vegetable stock', step: 'Heat the vegetable stock in the microwave for 30 seconds, then ladle it over.' },
+];
+
+function addTestRecipe() {
+  const extras = [...TEST_RECIPE_EXTRAS].sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 3));
+  const recipe = {
+    id: TEST_RECIPE_ID,
+    name: `Test kitchen #${Math.floor(Math.random() * 900) + 100}`,
+    description: 'A random test recipe for trying out step-by-step cook mode.',
+    source: 'Goodstock test',
+    ingredients: ['2 eggs', ...extras.map((extra) => extra.ingredient)],
+    instructions: [
+      'Warm up',
+      'Crack the eggs into a bowl and whisk them for 15 seconds.',
+      ...extras.map((extra) => extra.step),
+      'Into the oven',
+      'Spread everything on a baking tray lined with baking paper.',
+      'Bake in the oven at 350°F for 1 minute.',
+      'Flip everything with a spatula and let it rest for 15 seconds.',
+    ],
+  };
+  state.recipes = [metricRecipe(recipe), ...state.recipes.filter((entry) => entry.id !== TEST_RECIPE_ID)];
+  state.plan = state.plan.filter((entry) => entry.recipeId !== TEST_RECIPE_ID || entry.cooked);
+  state.plan.push({ id: makeId(), date: dateKey(new Date()), recipeId: TEST_RECIPE_ID, cooked: false });
+  const progress = readCookProgress();
+  delete progress[TEST_RECIPE_ID];
+  try { localStorage.setItem(COOK_PROGRESS_KEY, JSON.stringify(progress)); } catch { /* Progress is a convenience only. */ }
+  persist();
+  $('#settings-dialog').close();
+  selectedDate = new Date();
+  weekStart = startOfWeek(selectedDate);
+  activeView = 'week';
+  render();
+}
+
 function openWipeDialog() {
   const count = (list, one, many) => `<li><strong>${list.length}</strong> ${list.length === 1 ? one : many}</li>`;
   $('#wipe-summary').innerHTML = count(state.inventory, 'inventory item', 'inventory items') + count(state.recipes, 'saved recipe', 'saved recipes')
@@ -1450,6 +1644,7 @@ $('#steps-dialog').addEventListener('close', () => {
   saveCookProgress();
   cookWakeLock?.release?.().catch(() => {});
   cookWakeLock = null;
+  refreshTimers();
 });
 
 document.addEventListener('visibilitychange', () => {

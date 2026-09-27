@@ -66,9 +66,10 @@
     <dialog id="steps-dialog" class="app-dialog steps-dialog" aria-labelledby="steps-recipe-name">
       <div class="steps-top">
         <div><span class="eyebrow" id="steps-counter">STEP 1</span><strong id="steps-recipe-name">Recipe</strong></div>
-        <button class="steps-timer-chip" id="steps-timer-chip" type="button" data-action="steps-timer-toggle" hidden></button>
+        <button class="steps-timer-chip" id="steps-timer-chip" type="button" data-action="timer-panel-toggle" aria-expanded="false" aria-controls="steps-timer-panel" hidden></button>
         <button class="icon-button close-button" type="button" data-close aria-label="Close step-by-step">×</button>
       </div>
+      <div class="steps-timer-panel timer-list" id="steps-timer-panel" aria-label="Other running timers" hidden></div>
       <div class="steps-progress" aria-hidden="true"><span id="steps-progress-bar"></span></div>
       <div class="steps-body" id="steps-body" aria-live="polite"></div>
       <div class="steps-nav">
@@ -115,6 +116,7 @@
         <label>Storage locations <span class="field-hint">Separate with commas</span><input name="locations" /></label>
         <p class="settings-note" id="mealie-note">Recipe library: checking…</p>
         <p class="settings-note">To connect Mealie, set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack environment.</p>
+        <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v1.5 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
@@ -130,6 +132,9 @@
       </form>
     </dialog>
 
+    <div class="floating-timers timer-list" id="floating-timers" aria-label="Running timers" aria-live="polite" hidden></div>
+
+    <script src="kitchen-tools.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

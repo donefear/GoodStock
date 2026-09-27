@@ -50,7 +50,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .sync-card small { margin-top: 3px; color: var(--muted); font-size: 11px; }
 .side-foot { display: block; margin: 16px 10px 0; color: #818d83; font: italic 13px 'Fraunces', Georgia, serif; }
 .made-by { display: flex; align-items: center; gap: 6px; margin: 6px 10px 0; color: var(--muted); font-size: 11px; letter-spacing: .3px; }
-.made-by-logo { width: 13px; height: 15px; flex: 0 0 auto; opacity: .75; }
+.made-by-logo { width: 17px; height: 20px; flex: 0 0 auto; opacity: .75; }
 .settings-actions { align-items: center; }
 .settings-actions .made-by { margin: 0 auto 0 0; }
 .main-area { min-height: 100vh; margin-left: 236px; }
@@ -306,6 +306,11 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .setting-toggle input:checked + .toggle-track::after { transform: translateX(20px); }
 .setting-toggle input:focus-visible + .toggle-track { outline: 3px solid #80ad94; outline-offset: 2px; }
 .setting-toggle input:disabled + .toggle-track { opacity: .45; }
+.test-zone { margin-top: 4px; padding: 14px 12px; border: 1px dashed var(--line); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.test-zone strong, .test-zone span { display: block; }
+.test-zone strong { color: var(--green); font-size: 12px; }
+.test-zone span { max-width: 250px; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.test-zone .button { flex: 0 0 auto; }
 .danger-zone { margin-top: 4px; padding: 14px 12px; border: 1px solid #efd2c9; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fcf4f0; }
 .danger-zone strong, .danger-zone span { display: block; }
 .danger-zone strong { color: #984b3b; font-size: 12px; }
@@ -490,11 +495,33 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 /* Step-by-step cook mode */
 .steps-dialog { width: min(640px, calc(100% - 20px)); height: min(640px, calc(100% - 20px)); max-height: none; padding: 20px 22px; flex-direction: column; gap: 14px; }
 .steps-dialog[open] { display: flex; }
-.steps-top { display: flex; align-items: center; gap: 10px; }
+.steps-top { min-height: 44px; display: flex; align-items: center; gap: 10px; }
 .steps-top > div { min-width: 0; flex: 1; }
 .steps-top strong { display: block; overflow: hidden; margin-top: 3px; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .steps-timer-chip { min-height: 40px; padding: 0 12px; border: 1px solid var(--green); border-radius: 20px; background: var(--mint); color: var(--green); font: inherit; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; }
-.steps-timer-chip.is-done { border-color: var(--coral); background: var(--coral-pale); color: var(--coral); animation: steps-pulse 1s ease-in-out infinite; }
+.steps-timer-inline { align-self: flex-start; min-width: 220px; padding: 12px 20px; border: 2px solid var(--green); border-radius: 14px; display: grid; justify-items: center; gap: 2px; background: var(--mint); color: var(--green); font: inherit; cursor: pointer; }
+/* Keep the space reserved while hidden, so starting the timer doesn't shift the step. */
+.steps-timer-inline[hidden] { display: grid; visibility: hidden; }
+.steps-timer-inline strong { font-size: 44px; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.steps-timer-inline span { font-size: 12px; font-weight: 700; opacity: .8; }
+.steps-timer-inline.is-done { border-color: var(--coral); background: var(--coral-pale); color: var(--coral); animation: steps-pulse 1s ease-in-out infinite; }
+/* Timer pills: stacked in the corner while step-by-step is closed, and in a drop-down panel inside it. */
+.timer-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; overscroll-behavior: contain; }
+.timer-list[hidden] { display: none; }
+.floating-timers { position: fixed; right: 20px; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 20; width: min(300px, calc(100vw - 24px)); max-height: calc(100vh - 40px); padding: 8px; margin: -8px; }
+.steps-timer-panel { position: absolute; top: 72px; right: 22px; z-index: 5; width: min(320px, calc(100% - 44px)); max-height: 60%; padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); box-shadow: 0 14px 34px rgba(28, 48, 37, .22); }
+.timer-pill { flex: 0 0 auto; display: flex; align-items: stretch; overflow: hidden; border: 2px solid var(--green); border-radius: 16px; background: var(--mint); color: var(--green); box-shadow: 0 8px 22px rgba(28, 48, 37, .18); }
+.timer-pill button { border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.timer-pill-open { min-width: 0; min-height: 56px; flex: 1; padding: 8px 12px; display: flex; align-items: center; gap: 10px; text-align: left; }
+.timer-pill-open > span:last-child { min-width: 0; }
+.timer-pill-icon { font-size: 20px; }
+.timer-pill-open strong, .timer-pill-open small { display: block; }
+.timer-pill-open strong { font-size: 21px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.timer-pill-open small { overflow: hidden; font-size: 11px; font-weight: 700; opacity: .8; text-overflow: ellipsis; white-space: nowrap; }
+.timer-pill .timer-pill-stop { width: 44px; flex: 0 0 auto; border-left: 1px solid currentColor; font-size: 20px; opacity: .8; }
+.timer-pill.is-done { border-color: var(--coral); background: var(--coral-pale); color: var(--coral); animation: timer-pill-alert 1s ease-in-out infinite; }
+@keyframes timer-pill-alert { 50% { box-shadow: 0 0 0 6px rgba(213, 105, 78, .28), 0 8px 22px rgba(28, 48, 37, .18); } }
+.steps-timer-chip.is-done {border-color: var(--coral); background: var(--coral-pale); color: var(--coral); animation: steps-pulse 1s ease-in-out infinite; }
 @keyframes steps-pulse { 50% { transform: scale(1.05); } }
 .steps-progress { height: 6px; overflow: hidden; border-radius: 3px; background: var(--line); }
 .steps-progress span { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--green); transition: width .25s ease; }
@@ -508,7 +535,15 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .steps-gather { display: grid; gap: 8px; }
 .steps-gather .ingredient-check { min-height: 52px; font-size: 15px; }
 .steps-gather .ingredient-check > span:nth-of-type(2) { font-size: 15px; }
-.steps-timer-button { align-self: flex-start; min-height: 52px; font-size: 15px; }
+.tool-icon { width: 24px; height: 24px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.tool-check .tool-icon { width: 40px; height: 40px; color: var(--green); }
+.tool-check > span:nth-of-type(2) { display: grid; gap: 2px; }
+.tool-check strong { font-size: 15px; }
+.steps-gather .tool-check small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.steps-tools { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+.steps-tools li { min-height: 40px; padding: 6px 12px 6px 8px; border: 1px solid var(--line); border-radius: 20px; display: flex; align-items: center; gap: 8px; color: var(--green); font-size: 14px; font-weight: 600; }
+.steps-tools li span { color: var(--ink); }
+.steps-timer-button {align-self: flex-start; min-height: 52px; font-size: 15px; }
 .steps-restart { align-self: flex-start; padding: 0; min-height: 30px; }
 .steps-done { display: grid; justify-items: center; gap: 14px; text-align: center; }
 .steps-done > span { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: var(--green); font-size: 30px; font-weight: 700; }
@@ -522,4 +557,6 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 @media (max-width: 720px) {
   .steps-dialog { width: 100%; height: 100%; max-width: 100%; max-height: 100%; margin: 0; border-radius: 0; padding: 16px; }
   @supports (height: 100dvh) { .steps-dialog { height: 100dvh; max-height: 100dvh; } }
+  .floating-timers { right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 150px); }
+  .steps-timer-panel { top: 66px; right: 12px; left: 12px; width: auto; }
 }
