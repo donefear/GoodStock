@@ -804,7 +804,7 @@ function extendTimer(id, seconds = 60) {
 function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
   const form = $('#recipe-edit-form');
   form.reset();
-  form.elements.id.value = recipe?.id || '';
+  form.elements.recipeId.value = recipe?.id || '';
   form.elements.sourceUrl.value = recipe?.sourceUrl || '';
   form.elements.name.value = recipe?.name || '';
   form.elements.description.value = recipe?.description || '';
@@ -848,6 +848,15 @@ function parseRecipeText(text) {
   return result;
 }
 
+// Imported steps often arrive as one paragraph per step. Split them the way cook mode does: one sentence per step
+// (very short sentences stay with the one before), keeping short heading lines like "Sauce" as they are.
+function tidyImportedSteps(instructions = []) {
+  return instructions
+    .map((text) => String(text || '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .flatMap((text) => (isStepHeading(text) ? [text] : splitIntoBites(text)));
+}
+
 function fillRecipeEditor(recipe, message) {
   const form = $('#recipe-edit-form');
   if (recipe.name) form.elements.name.value = recipe.name;
@@ -879,6 +888,7 @@ async function importRecipeFromUrl() {
       if (!response.ok) { status.textContent = result.error || 'That recipe could not be imported.'; return; }
     }
     const host = (() => { try { return new URL(result.sourceUrl).hostname.replace(/^www\./, ''); } catch { return 'the website'; } })();
+    result.instructions = tidyImportedSteps(result.instructions);
     fillRecipeEditor(result, `Imported from ${host}: ${result.ingredients.length} ingredients, ${result.instructions.length} steps. Check it, then save.`);
   } catch (error) {
     if (STANDALONE) status.textContent = navigator.onLine ? `Could not load that page${error?.message ? ` (${error.message})` : ''}.` : 'You are offline. Paste the recipe text instead.';
@@ -896,7 +906,7 @@ function shareShoppingText() {
 
 function saveRecipeFromEditor(form) {
   const lines = (value) => value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const existing = state.recipes.find((recipe) => recipe.id === form.elements.id.value);
+  const existing = state.recipes.find((recipe) => recipe.id === form.elements.recipeId.value);
   const sourceUrl = form.elements.sourceUrl.value.trim();
   const recipe = metricRecipe({
     ...(existing || {}),
@@ -1713,6 +1723,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'recipe-import-url') await importRecipeFromUrl();
   if (action === 'recipe-import-text') {
     const parsed = parseRecipeText($('#recipe-edit-form').elements.importText.value);
+    parsed.instructions = tidyImportedSteps(parsed.instructions);
     fillRecipeEditor(parsed, parsed.ingredients.length || parsed.instructions.length
       ? `Found ${parsed.ingredients.length} ingredients and ${parsed.instructions.length} steps. Check them, then save.`
       : 'Nothing recognisable in that text yet.');
@@ -2023,12 +2034,14 @@ $('#settings-form').addEventListener('submit', (event) => {
 });
 
 document.addEventListener('submit', (event) => {
-  if (event.target.id === 'recipe-edit-form') {
+  // Read the id attribute: a field named "id" or "name" inside a form shadows form.id in real browsers.
+  const formId = event.target.getAttribute('id');
+  if (formId === 'recipe-edit-form') {
     event.preventDefault();
     saveRecipeFromEditor(event.target);
     return;
   }
-  if (event.target.id === 'custom-timer-form') {
+  if (formId === 'custom-timer-form') {
     event.preventDefault();
     const form = event.target;
     const name = form.elements.name.value.trim();
@@ -2041,7 +2054,7 @@ document.addEventListener('submit', (event) => {
     startCustomTimer(name || formatDuration(seconds), seconds);
     return;
   }
-  if (event.target.id !== 'recipe-search-form') return;
+  if (formId !== 'recipe-search-form') return;
   event.preventDefault();
   recipeQuery = $('#recipe-search').value.trim();
   searchMealie(recipeQuery);

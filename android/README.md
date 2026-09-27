@@ -41,7 +41,9 @@ Android only installs an update over an existing app if both are signed with the
 
 - **On GitHub:** add the repository secrets `GOODSTOCK_KEYSTORE_BASE64` (the `.jks` file, base64-encoded), `GOODSTOCK_KEYSTORE_PASSWORD`, `GOODSTOCK_KEY_ALIAS` and `GOODSTOCK_KEY_PASSWORD`.
 
-Without a key, builds are signed with a throwaway debug key: they install, but a later build cannot update them without uninstalling first, which deletes the app's data. Back up first.
+With the key in place, debug and release builds are both signed with it, so any newer build installs straight over the app on the phone and keeps its data. Every change bumps the patch version (`vX.Y.Z` in `index.html`), which raises the APK's version code too.
+
+Without a key, builds are signed with a debug key: they install, but an APK signed differently cannot update them without uninstalling first, which deletes the app's data. Back up first.
 
 Never commit the `.jks` file or `signing.env`. If the key is lost, installed copies can't be updated any more.
 

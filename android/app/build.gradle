@@ -44,6 +44,11 @@ android {
     }
 
     buildTypes {
+        // With the release key available, debug builds use it too: every APK from this machine then shares one
+        // signature and can update the installed app instead of needing an uninstall.
+        debug {
+            if (hasReleaseKey) signingConfig signingConfigs.release
+        }
         release {
             minifyEnabled false
             signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug

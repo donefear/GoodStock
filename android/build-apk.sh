@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the Goodstock APK inside Docker, so nothing but Docker is needed on this machine.
 # Usage from the repository root (Linux, WSL or macOS):  bash android/build-apk.sh [release|debug]
-# The APK lands in dist/. If android/signing.env exists, the release APK is signed with that key.
+# The APK lands in dist/. If android/signing.env exists, both debug and release APKs are signed with that key.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -10,7 +10,9 @@ IMAGE=goodstock-android-build
 docker build -q -t "$IMAGE" -f android/Dockerfile.build android > /dev/null
 
 SIGNING=()
-if [ "$TYPE" = release ] && [ -f android/signing.env ]; then
+# Debug and release builds are both signed with the release key when it is available, so any build can update
+# the app already on the phone.
+if [ -f android/signing.env ]; then
   # shellcheck disable=SC1091
   source android/signing.env
   SIGNING=(
@@ -22,9 +24,11 @@ if [ "$TYPE" = release ] && [ -f android/signing.env ]; then
 fi
 
 TASK="assemble$(tr '[:lower:]' '[:upper:]' <<< "${TYPE:0:1}")${TYPE:1}"
+# goodstock-android-home keeps Android's fallback debug key between builds (used only without signing.env).
 docker run --rm \
   -v "$PWD":/src \
   -v goodstock-gradle-cache:/root/.gradle \
+  -v goodstock-android-home:/root/.android \
   "${SIGNING[@]}" \
   "$IMAGE" gradle --no-daemon --quiet "$TASK"
 
