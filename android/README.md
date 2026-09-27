@@ -9,6 +9,7 @@ A standalone APK: the web app's files are bundled inside, so it runs with no ser
 - **Use-soon reminders** are Android notifications.
 - **Recipe links** are fetched by the phone itself. Some sites block this; pasting the recipe text always works.
 - **The shopping list** is shared through the Android share sheet instead of a QR code.
+- **Translation** uses DeepL: add your DeepL API key in **Settings** (saved on the phone).
 - **Mealie is optional.** Connect it in **Settings**; the connection is saved on the phone, and the phone must be able to reach your Mealie server. Without it, add recipes with **New recipe** or **Import** on the Recipes page.
 
 ## Build locally (Docker)

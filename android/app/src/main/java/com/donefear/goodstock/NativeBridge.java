@@ -106,7 +106,7 @@ final class NativeBridge {
     /** Fetches a web page for recipe import. Answers with JSON {status, url, body}. */
     @JavascriptInterface
     public void fetchPage(String callbackId, String address) {
-        request(callbackId, address, null);
+        request(callbackId, "GET", address, null, null);
     }
 
     /**
@@ -115,14 +115,20 @@ final class NativeBridge {
      */
     @JavascriptInterface
     public void httpRequest(String callbackId, String address, String headersJson) {
-        request(callbackId, address, headersJson);
+        request(callbackId, "GET", address, headersJson, null);
     }
 
-    private void request(String callbackId, String address, String headersJson) {
+    /** A request with a body (like a DeepL translation), answered as JSON {status, url, body}. */
+    @JavascriptInterface
+    public void httpSend(String callbackId, String method, String address, String headersJson, String body) {
+        request(callbackId, method, address, headersJson, body);
+    }
+
+    private void request(String callbackId, String method, String address, String headersJson, String body) {
         network.execute(() -> {
             try {
                 JSONObject headers = headersJson == null || headersJson.isEmpty() ? new JSONObject() : new JSONObject(headersJson);
-                callback(callbackId, true, download(address, headers).toString());
+                callback(callbackId, true, download(address, headers, method, body).toString());
             } catch (Exception error) {
                 String message = error.getMessage();
                 callback(callbackId, false, message == null ? error.getClass().getSimpleName() : message);
@@ -131,14 +137,20 @@ final class NativeBridge {
     }
 
     private JSONObject download(String address, JSONObject headers) throws Exception {
+        return download(address, headers, "GET", null);
+    }
+
+    private JSONObject download(String address, JSONObject headers, String method, String body) throws Exception {
         URL url = new URL(address);
         String originalHost = url.getHost();
+        String verb = method == null || method.isEmpty() ? "GET" : method.toUpperCase();
         for (int redirects = 0; redirects < 6; redirects++) {
             if (!"http".equals(url.getProtocol()) && !"https".equals(url.getProtocol())) throw new IllegalArgumentException("Only http and https links are supported");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setInstanceFollowRedirects(false);
             connection.setConnectTimeout(12_000);
-            connection.setReadTimeout(12_000);
+            connection.setReadTimeout(20_000);
+            connection.setRequestMethod(verb);
             connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) GoodstockRecipeImport/1.0");
             connection.setRequestProperty("Accept", "text/html,application/xhtml+xml");
             Iterator<String> names = headers.keys();
@@ -148,9 +160,16 @@ final class NativeBridge {
                 if (name.equalsIgnoreCase("authorization") && !url.getHost().equalsIgnoreCase(originalHost)) continue;
                 connection.setRequestProperty(name, headers.optString(name));
             }
+            if (body != null) {
+                connection.setDoOutput(true);
+                try (OutputStream out = connection.getOutputStream()) {
+                    out.write(body.getBytes(StandardCharsets.UTF_8));
+                }
+            }
             int status = connection.getResponseCode();
             String location = connection.getHeaderField("Location");
-            if (status >= 300 && status < 400 && location != null) {
+            // Requests with a body are not re-sent to another address.
+            if (status >= 300 && status < 400 && location != null && body == null) {
                 // Follow redirects ourselves, including http to https, which HttpURLConnection will not do.
                 url = new URL(url, location);
                 connection.disconnect();

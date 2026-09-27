@@ -4,7 +4,7 @@ plugins {
 
 // The web app lives one folder up; the APK bundles these files so it runs with no server.
 def webRoot = rootProject.projectDir.parentFile
-def webFiles = ['index.html', 'app.js', 'kitchen-tools.js', 'kitchen-reference.js', 'recipe-import.mjs', 'mealie.mjs', 'styles.css', 'ingredients.json', 'manifest.webmanifest', 'logo.svg']
+def webFiles = ['index.html', 'app.js', 'kitchen-tools.js', 'kitchen-reference.js', 'recipe-import.mjs', 'mealie.mjs', 'deepl.mjs', 'styles.css', 'ingredients.json', 'manifest.webmanifest', 'logo.svg']
 def webAssetsDir = layout.buildDirectory.dir('generated/web-assets')
 
 // Version follows the "Goodstock vX.Y.Z" label in index.html (patch optional), so there is one place to bump it.

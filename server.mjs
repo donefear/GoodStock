@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import QRCode from 'qrcode';
 import { extractRecipeFromHtml, NO_RECIPE_MESSAGE } from './recipe-import.mjs';
 import { mapMealieRecipe, mealieErrorMessage, mealieRecipePageUrl, mealieRows, normalizeMealieUrl } from './mealie.mjs';
+import { deeplChunks, deeplErrorMessage, deeplHeaders, deeplRequestBody, deeplUrl, deeplUsageText } from './deepl.mjs';
 
 const port = Number(process.env.PORT || 8080);
 const dataDirectory = process.env.DATA_DIR || './data';
@@ -57,6 +58,7 @@ const staticFiles = new Map([
   ['/kitchen-reference.js', ['kitchen-reference.js', 'text/javascript; charset=utf-8']],
   ['/recipe-import.mjs', ['recipe-import.mjs', 'text/javascript; charset=utf-8']],
   ['/mealie.mjs', ['mealie.mjs', 'text/javascript; charset=utf-8']],
+  ['/deepl.mjs', ['deepl.mjs', 'text/javascript; charset=utf-8']],
 ]);
 
 function sendJson(response, status, value) {
@@ -157,6 +159,77 @@ function safeExportText(value, limit) {
   return String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, limit);
 }
 
+// DeepL translation: the key is set in the app's Settings (saved to /data/deepl.json) or the DEEPL_API_KEY
+// environment variable. Like the Mealie key, it never goes back to the browser.
+const deeplConfigPath = join(dataDirectory, 'deepl.json');
+const envDeepl = { key: process.env.DEEPL_API_KEY || '', source: 'environment' };
+let deepl = { ...envDeepl };
+
+async function loadDeeplConfig() {
+  try {
+    const saved = JSON.parse(await readFile(deeplConfigPath, 'utf8'));
+    if (saved?.key) deepl = { key: saved.key, source: 'settings' };
+  } catch (error) {
+    if (error.code !== 'ENOENT') console.error('Could not read the saved DeepL settings:', error.message);
+  }
+}
+
+async function callDeepl(path, key, body) {
+  let result;
+  try {
+    result = await fetch(deeplUrl(key, path), {
+      method: body ? 'POST' : 'GET',
+      headers: deeplHeaders(key),
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch (error) {
+    const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    throw Object.assign(new Error(timedOut ? 'DeepL took too long to answer.' : 'Could not reach DeepL. Check that the server has internet access.'), { status: 502 });
+  }
+  if (!result.ok) throw Object.assign(new Error(deeplErrorMessage(result.status)), { status: 502 });
+  return result.json();
+}
+
+async function deeplStatus() {
+  if (!deepl.key) return { configured: false, source: '' };
+  const usage = await callDeepl('/usage', deepl.key).catch(() => null);
+  return { configured: true, source: deepl.source, usage: deeplUsageText(usage) };
+}
+
+// Tests the key with DeepL's usage call before saving it.
+async function connectDeepl(body) {
+  const key = String(body?.apiKey || '').trim();
+  if (!key) throw Object.assign(new Error('Paste your DeepL API key. You find it in your DeepL account under API Keys.'), { status: 400 });
+  const usage = await callDeepl('/usage', key);
+  await mkdir(dataDirectory, { recursive: true });
+  const temporaryPath = `${deeplConfigPath}.tmp`;
+  await writeFile(temporaryPath, JSON.stringify({ key }), { encoding: 'utf8', mode: 0o600 });
+  await rename(temporaryPath, deeplConfigPath);
+  deepl = { key, source: 'settings' };
+  return { configured: true, source: 'settings', usage: deeplUsageText(usage) };
+}
+
+async function disconnectDeepl() {
+  try { await unlink(deeplConfigPath); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  deepl = { ...envDeepl };
+  return { configured: Boolean(deepl.key), source: deepl.key ? deepl.source : '' };
+}
+
+// Translates a list of texts, keeping their order.
+async function translateTexts(body) {
+  if (!deepl.key) throw Object.assign(new Error('Add a DeepL API key in Settings to translate recipes.'), { status: 503 });
+  const texts = Array.isArray(body?.texts) ? body.texts.map((text) => String(text ?? '')) : [];
+  const target = body?.target === 'nl' ? 'nl' : 'en';
+  if (!texts.length || texts.length > 400 || texts.join('').length > 60000) throw Object.assign(new Error('Nothing to translate, or too much at once.'), { status: 400 });
+  const translated = [];
+  for (const chunk of deeplChunks(texts)) {
+    const result = await callDeepl('/translate', deepl.key, deeplRequestBody(chunk, target, body?.source === 'nl' || body?.source === 'en' ? body.source : ''));
+    translated.push(...(result.translations || []).map((entry) => entry.text));
+  }
+  return { texts: translated };
+}
+
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
@@ -180,6 +253,18 @@ const server = createServer(async (request, response) => {
       } catch (error) {
         const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
         sendJson(response, error?.status || 502, { error: timedOut ? 'The website took too long to answer.' : error?.status ? error.message : 'Could not reach that website.' });
+      }
+      return;
+    }
+    if (url.pathname === '/api/translate/status' || url.pathname === '/api/translate/config' || url.pathname === '/api/translate') {
+      try {
+        if (request.method === 'GET' && url.pathname === '/api/translate/status') sendJson(response, 200, await deeplStatus());
+        else if (request.method === 'POST' && url.pathname === '/api/translate/config') sendJson(response, 200, await connectDeepl(await requestBody(request)));
+        else if (request.method === 'DELETE' && url.pathname === '/api/translate/config') sendJson(response, 200, await disconnectDeepl());
+        else if (request.method === 'POST' && url.pathname === '/api/translate') sendJson(response, 200, await translateTexts(await requestBody(request)));
+        else sendJson(response, 405, { error: 'Method not allowed' });
+      } catch (error) {
+        sendJson(response, error?.status || 502, { error: error?.status ? error.message : 'Translation failed.' });
       }
       return;
     }
@@ -316,6 +401,7 @@ const server = createServer(async (request, response) => {
 });
 
 await loadMealieConfig();
+await loadDeeplConfig();
 server.listen(port, '0.0.0.0', () => {
   console.log(`Goodstock listening on port ${port}`);
 });

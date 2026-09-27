@@ -235,6 +235,20 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .recipe-page-ingredients li { font-size: 14px; }
 .recipe-page-ingredients small { font-size: 11px; }
 .recipe-page-main .recipe-page-tools { margin-bottom: 22px; }
+.translation-panel { margin: 4px 0 28px; padding: 18px 20px; border: 1px solid var(--green); border-radius: var(--radius); background: var(--mint); }
+.translation-panel.is-error { border-color: #d9a597; background: var(--coral-pale); }
+.translation-status { margin: 0; color: var(--ink); font-size: 14px; font-weight: 600; }
+.translation-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.translation-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.translation-panel.is-error .translation-actions { margin-top: 12px; }
+.translation-panel h2 { margin: 10px 0 4px; font-size: 24px; }
+.translation-columns { margin-top: 14px; display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr); gap: 24px; }
+.translation-columns h3 { margin: 0 0 8px; font-size: 14px; }
+.translation-columns h4 { margin: 14px 0 6px; color: var(--green); font-size: 12px; letter-spacing: .8px; text-transform: uppercase; }
+.translation-columns ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; }
+.translation-columns p { margin: 0 0 8px; font-size: 14px; line-height: 1.55; }
+.translation-panel > .field-hint { margin-top: 12px; }
+@media (max-width: 860px) { .translation-columns { grid-template-columns: 1fr; } }
 .recipe-method { display: grid; gap: 4px; }
 .recipe-method-heading { margin: 18px 0 6px; color: var(--green); font-size: 13px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
 .recipe-method-heading:first-child { margin-top: 0; }
@@ -339,10 +353,21 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .settings-note code { color: #43594b; font-size: 11px; }
 .mealie-settings { margin: 4px 0; padding: 12px 14px 14px; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 12px; }
 .mealie-settings legend { padding: 0 6px; color: var(--ink); font-size: 13px; font-weight: 700; }
-.mealie-settings #mealie-note { margin: 0; font-size: 12px; }
-.mealie-settings #mealie-note.is-connected { color: var(--green); font-weight: 700; }
-.mealie-settings #mealie-note.is-error { color: #b65c48; font-weight: 700; }
+.mealie-settings .settings-note { margin: 0; font-size: 12px; }
+.mealie-settings .settings-note.is-connected { color: var(--green); font-weight: 700; }
+.mealie-settings .settings-note.is-error { color: #b65c48; font-weight: 700; }
 .mealie-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.deepl-help-links { margin-top: -4px; display: flex; flex-wrap: wrap; gap: 2px 16px; }
+.deepl-help-links a.text-button { display: inline-flex; align-items: center; text-decoration: none; }
+.deepl-help-dialog { width: min(560px, calc(100% - 20px)); }
+.help-steps { margin: 4px 0 16px; padding: 0; list-style: none; counter-reset: help-step; display: grid; gap: 14px; }
+.help-steps li { counter-increment: help-step; position: relative; padding-left: 42px; display: grid; gap: 3px; }
+.help-steps li::before { content: counter(help-step); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: var(--green); font-size: 13px; font-weight: 700; }
+.help-steps strong { color: var(--ink); font-size: 14px; }
+.help-steps span { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.help-steps a { color: var(--green); font-weight: 700; }
+.help-steps code { padding: 0 4px; border-radius: 3px; background: var(--mint); color: var(--green-dark); }
+.deepl-help-dialog .dialog-actions a.button { text-decoration: none; }
 .mealie-actions [hidden] { display: none; }
 .setting-toggle { position: relative; min-height: 55px; padding: 8px 0; display: flex !important; align-items: center; justify-content: space-between; }
 .setting-toggle strong, .setting-toggle small { display: block; }

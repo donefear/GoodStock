@@ -144,11 +144,32 @@
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="mealie-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="mealie-disconnect" id="mealie-disconnect" hidden>Disconnect</button></div>
           <p class="field-hint server-only">You can also set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack; settings saved here take priority.</p>
         </fieldset>
+        <fieldset class="mealie-settings deepl-settings" id="deepl-settings">
+          <legend>Translation (DeepL)</legend>
+          <p class="settings-note" id="deepl-note">Checking…</p>
+          <label>DeepL API key<input name="deeplKey" type="password" autocomplete="off" placeholder="Paste your DeepL API key" /><span class="field-hint">A free DeepL API key lets Goodstock translate recipes between Dutch and English.</span></label>
+          <div class="deepl-help-links"><a class="text-button" href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Get a free key ↗</a><a class="text-button" href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener noreferrer">Where do I find my key? ↗</a><button class="text-button" type="button" data-action="deepl-help">How to get a key</button></div>
+          <div class="mealie-actions"><button class="button button-outline" type="button" data-action="deepl-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="deepl-disconnect" id="deepl-disconnect" hidden>Remove key</button></div>
+        </fieldset>
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the Android app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.0.5 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.0.7 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
+    </dialog>
+
+    <dialog id="deepl-help-dialog" class="app-dialog deepl-help-dialog">
+      <div class="dialog-heading"><div><span class="eyebrow">TRANSLATION</span><h2>Get a free DeepL key</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+      <p class="dialog-copy">DeepL translates recipes between Dutch and English. The free plan allows 500,000 characters a month; a recipe is about 1,000 to 3,000.</p>
+      <ol class="help-steps">
+        <li><strong>Open the DeepL API page</strong><span>Go to <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">deepl.com/pro-api</a> and choose <b>DeepL API Free</b> (not the paid Pro plan, and not the regular DeepL app subscription).</span></li>
+        <li><strong>Create your account</strong><span>Sign up with your email. DeepL may ask for a card to check you are a real person; the Free plan is not charged.</span></li>
+        <li><strong>Copy your key</strong><span>In your account, open <a href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener noreferrer">API Keys</a> and copy the key. Free keys end in <code>:fx</code>.</span></li>
+        <li><strong>Paste it in Goodstock</strong><span>Back in <b>Settings → Translation (DeepL)</b>, paste the key and tap <b>Save &amp; test</b>. You should see how many characters you have used this month.</span></li>
+        <li><strong>Translate a recipe</strong><span>Open any recipe and tap <b>Translate to English</b> or <b>Translate to Nederlands</b> next to Edit.</span></li>
+      </ol>
+      <p class="field-hint">The key is saved on the Goodstock server (or on the phone in the Android app) and is never shown again. Recipe text is sent to DeepL to be translated.</p>
+      <div class="dialog-actions"><a class="button button-outline" href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Open DeepL ↗</a><button class="button button-primary" type="button" data-close>Got it</button></div>
     </dialog>
 
     <dialog id="wipe-dialog" class="app-dialog wipe-dialog">
@@ -167,6 +188,7 @@
     <script src="kitchen-reference.js" defer></script>
     <script type="module" src="recipe-import.mjs"></script>
     <script type="module" src="mealie.mjs"></script>
+    <script type="module" src="deepl.mjs"></script>
     <script src="app.js" defer></script>
   </body>
 </html>

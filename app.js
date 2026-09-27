@@ -1106,6 +1106,7 @@ function renderRecipePage() {
   const links = [
     safeSourceUrl ? `<a class="text-button" href="${escapeHtml(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">Original recipe ↗</a>` : '',
     mealieRecipeLink(recipe, 'text-button', 'Open in Mealie'),
+    renderRecipeTranslation(recipe),
     `<button class="text-button" type="button" data-action="edit-recipe" data-id="${escapeHtml(recipe.id)}">Edit</button>`,
     `<button class="text-button recipe-delete-button" type="button" data-action="delete-recipe" data-id="${escapeHtml(recipe.id)}">Delete</button>`,
   ].filter(Boolean).join('');
@@ -1125,10 +1126,209 @@ function renderRecipePage() {
   return `<button class="text-button recipe-back" type="button" data-action="back-to-recipes">‹ All recipes</button>
     ${pageHeading(escapeHtml((recipe.source || 'Kitchen collection').toUpperCase()), escapeHtml(recipe.name), escapeHtml(recipe.description || ''), actions)}
     <div class="recipe-page-links">${links}</div>
+    ${renderTranslationPanel(recipe)}
     <div class="recipe-page">
       <section class="section-block recipe-page-side"><div class="section-heading"><div><h2>Ingredients</h2><span class="muted">${ingredients.length ? (missing.length ? `${missing.length} missing` : 'All in stock') : ''}</span></div></div>${ingredientList}</section>
       <section class="section-block recipe-page-main"><div class="section-heading"><div><h2>Method</h2><span class="muted">${number ? `${number} steps` : ''}</span></div></div>${toolRow}${method}</section>
     </div>`;
+}
+
+// Translating recipes between Dutch and English with DeepL. In the browser the server calls DeepL (it blocks
+// direct browser calls and keeps the key); in the Android app the phone calls DeepL with the key saved on it.
+// A translation is shown first and can then be saved as a new recipe, so the original stays as it was.
+const DEEPL_PHONE_KEY = 'goodstock-deepl-v1';
+let recipeTranslation = null; // { recipeId, target, loading, error, result }
+
+function phoneDeeplKey() {
+  try { return localStorage.getItem(DEEPL_PHONE_KEY) || ''; } catch { return ''; }
+}
+
+async function phoneDeepl(path, key, body) {
+  const { deeplUrl, deeplHeaders, deeplErrorMessage } = window.GoodstockDeepl;
+  let response;
+  try {
+    const answer = body
+      ? await nativeCall('httpSend', 'POST', deeplUrl(key, path), JSON.stringify(deeplHeaders(key)), JSON.stringify(body))
+      : await nativeCall('httpRequest', deeplUrl(key, path), JSON.stringify(deeplHeaders(key)));
+    response = JSON.parse(answer);
+  } catch {
+    throw new Error('Could not reach DeepL. Check that the phone is online.');
+  }
+  if (response.status >= 400) throw new Error(deeplErrorMessage(response.status));
+  return JSON.parse(response.body);
+}
+
+async function translateTexts(texts, target, source = '') {
+  if (STANDALONE) {
+    const key = phoneDeeplKey();
+    if (!key) throw new Error('Add a DeepL API key in Settings to translate recipes.');
+    const { deeplChunks, deeplRequestBody } = window.GoodstockDeepl;
+    const translated = [];
+    for (const chunk of deeplChunks(texts)) {
+      const result = await phoneDeepl('/translate', key, deeplRequestBody(chunk, target, source));
+      translated.push(...(result.translations || []).map((entry) => entry.text));
+    }
+    return translated;
+  }
+  const response = await fetch('/api/translate', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ texts, target, source }),
+  }).catch(() => { throw new Error('Could not reach the app server.'); });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'Translation failed.');
+  return result.texts || [];
+}
+
+// Dutch or English, judged by common small words in the recipe.
+function recipeLanguage(recipe) {
+  const text = ` ${[recipe.name, recipe.description, ...(recipe.ingredients || []), ...recipeInstructions(recipe)].join(' ').toLowerCase()} `;
+  const count = (pattern) => (text.match(pattern) || []).length;
+  const dutch = count(/\s(?:de|het|een|en|van|met|voeg|toe|snijd|bak|kook|minuten|tot|op|je|zout|peper|ui|eieren|melk|boter|in de)\s/g);
+  const english = count(/\s(?:the|and|of|with|add|until|minutes|into|to|your|salt|pepper|onion|eggs|milk|butter|in the)\s/g);
+  return dutch > english ? 'nl' : 'en';
+}
+
+async function startRecipeTranslation(id) {
+  const recipe = recipeById(id);
+  if (!recipe) return;
+  const source = recipeLanguage(recipe);
+  const target = source === 'nl' ? 'en' : 'nl';
+  const ingredients = recipe.ingredients || [];
+  const steps = recipeInstructions(recipe).map((text) => String(text).trim()).filter(Boolean);
+  const texts = [recipe.name, recipe.description || '', ...ingredients, ...steps];
+  recipeTranslation = { recipeId: recipe.id, target, loading: true };
+  render();
+  try {
+    const translated = await translateTexts(texts, target, source);
+    if (translated.length !== texts.length) throw new Error('DeepL returned an incomplete translation.');
+    recipeTranslation = {
+      recipeId: recipe.id,
+      target,
+      result: {
+        name: translated[0],
+        description: translated[1],
+        ingredients: translated.slice(2, 2 + ingredients.length),
+        instructions: translated.slice(2 + ingredients.length),
+      },
+    };
+  } catch (error) {
+    recipeTranslation = { recipeId: recipe.id, target, error: error?.message || 'Translation failed.' };
+  }
+  if (activeView === 'recipe' && recipePageId === recipe.id) render();
+}
+
+function saveRecipeTranslation() {
+  const original = recipeById(recipeTranslation?.recipeId);
+  const result = recipeTranslation?.result;
+  if (!original || !result) return;
+  const copy = metricRecipe({
+    id: `my-${makeId()}`,
+    name: result.name || original.name,
+    description: result.description || '',
+    ingredients: result.ingredients,
+    instructions: result.instructions,
+    source: 'Translated',
+    sourceUrl: original.sourceUrl || '',
+    language: recipeTranslation.target,
+    translatedFrom: original.id,
+  });
+  state.recipes.unshift(copy);
+  recipeTranslation = null;
+  persist();
+  openRecipePage(copy.id);
+}
+
+function renderRecipeTranslation(recipe) {
+  const language = recipeLanguage(recipe);
+  const targetName = language === 'nl' ? 'English' : 'Nederlands';
+  const current = recipeTranslation?.recipeId === recipe.id ? recipeTranslation : null;
+  if (!current) {
+    return `<button class="text-button" type="button" data-action="translate-recipe" data-id="${escapeHtml(recipe.id)}">Translate to ${targetName} ⇄</button>`;
+  }
+  return '';
+}
+
+function renderTranslationPanel(recipe) {
+  const current = recipeTranslation?.recipeId === recipe.id ? recipeTranslation : null;
+  if (!current) return '';
+  const label = current.target === 'en' ? 'English' : 'Nederlands';
+  if (current.loading) return `<section class="translation-panel"><p class="translation-status">Translating to ${label}…</p></section>`;
+  if (current.error) {
+    const needsKey = /API key|DeepL API/.test(current.error);
+    return `<section class="translation-panel is-error"><p class="translation-status">${escapeHtml(current.error)}</p><div class="translation-actions">${needsKey ? '<button class="button button-small button-outline" type="button" data-action="deepl-help">How to get a key</button><button class="button button-small button-outline" type="button" data-action="open-settings">Open Settings</button>' : ''}<button class="button button-small button-outline" type="button" data-action="translate-recipe" data-id="${escapeHtml(recipe.id)}">Try again</button><button class="button button-small button-quiet" type="button" data-action="translation-discard">Close</button></div></section>`;
+  }
+  const { name, description, ingredients, instructions } = current.result;
+  let number = 0;
+  return `<section class="translation-panel">
+      <div class="translation-heading"><span class="eyebrow">TRANSLATION · ${label.toUpperCase()}</span><div class="translation-actions"><button class="button button-small button-primary" type="button" data-action="translation-save">Save as a new recipe</button><button class="button button-small button-quiet" type="button" data-action="translation-discard">Discard</button></div></div>
+      <h2>${escapeHtml(name)}</h2>
+      ${description ? `<p class="muted">${escapeHtml(description)}</p>` : ''}
+      <div class="translation-columns">
+        <div><h3>Ingredients</h3><ul>${ingredients.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>
+        <div><h3>Method</h3>${instructions.map((line) => (isStepHeading(line) ? `<h4>${escapeHtml(line)}</h4>` : `<p><b>${++number}.</b> ${escapeHtml(line)}</p>`)).join('')}</div>
+      </div>
+      <p class="field-hint">Translated by DeepL. Amounts and steps keep their order; check it, then save it as a new recipe. The original stays as it is.</p>
+    </section>`;
+}
+
+// Settings: the DeepL key, tested before it is saved.
+function setDeeplNote(text, kind = '') {
+  const note = $('#deepl-note');
+  note.textContent = text;
+  note.className = `settings-note${kind ? ` is-${kind}` : ''}`;
+}
+
+async function loadDeeplSettings() {
+  const form = $('#settings-form');
+  form.elements.deeplKey.value = '';
+  if (STANDALONE) {
+    const key = phoneDeeplKey();
+    form.elements.deeplKey.placeholder = key ? 'Saved. Leave empty to keep it.' : 'Paste your DeepL API key';
+    $('#deepl-disconnect').hidden = !key;
+    setDeeplNote(key ? 'Connected. Recipes can be translated between Dutch and English.' : 'Not set up. Needed to translate recipes.', key ? 'connected' : '');
+    return;
+  }
+  try {
+    const status = await (await fetch('/api/translate/status')).json();
+    form.elements.deeplKey.placeholder = status.configured ? 'Saved. Leave empty to keep it.' : 'Paste your DeepL API key';
+    $('#deepl-disconnect').hidden = status.source !== 'settings';
+    setDeeplNote(status.configured ? `Connected${status.usage ? `: ${status.usage}` : ''}${status.source === 'environment' ? ' (set in Portainer)' : ''}.` : 'Not set up. Needed to translate recipes.', status.configured ? 'connected' : '');
+  } catch {
+    setDeeplNote('Translation status is unavailable while offline.');
+  }
+}
+
+async function saveDeeplSettings() {
+  const form = $('#settings-form');
+  const apiKey = form.elements.deeplKey.value.trim();
+  if (!apiKey) { setDeeplNote('Paste your DeepL API key first.', 'error'); form.elements.deeplKey.focus(); return; }
+  setDeeplNote('Testing the key…');
+  try {
+    let usage = '';
+    if (STANDALONE) {
+      usage = window.GoodstockDeepl.deeplUsageText(await phoneDeepl('/usage', apiKey));
+      localStorage.setItem(DEEPL_PHONE_KEY, apiKey);
+    } else {
+      const response = await fetch('/api/translate/config', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ apiKey }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not save the DeepL key.');
+      usage = result.usage || '';
+    }
+    await loadDeeplSettings();
+    setDeeplNote(`Connected${usage ? `: ${usage}` : ''}.`, 'connected');
+    // A "no key" error on the recipe page no longer applies.
+    if (recipeTranslation?.error) { recipeTranslation = null; render(); }
+  } catch (error) {
+    setDeeplNote(error?.message || 'Could not save the DeepL key.', 'error');
+  }
+}
+
+async function disconnectDeepl() {
+  if (!window.confirm('Remove the DeepL key? Recipes you already translated stay.')) return;
+  if (STANDALONE) localStorage.removeItem(DEEPL_PHONE_KEY);
+  else await fetch('/api/translate/config', { method: 'DELETE' }).catch(() => {});
+  await loadDeeplSettings();
 }
 
 function recipeCard(recipe, isRemote = false) {
@@ -1847,6 +2047,12 @@ document.addEventListener('click', async (event) => {
   if (action === 'share-shopping-text') shareShoppingText();
   if (action === 'backup-data') await backupKitchen();
   if (action === 'mealie-save') await saveMealieSettings();
+  if (action === 'deepl-save') await saveDeeplSettings();
+  if (action === 'deepl-help') $('#deepl-help-dialog').showModal();
+  if (action === 'deepl-disconnect') await disconnectDeepl();
+  if (action === 'translate-recipe') await startRecipeTranslation(id);
+  if (action === 'translation-save') saveRecipeTranslation();
+  if (action === 'translation-discard') { recipeTranslation = null; render(); }
   if (action === 'mealie-disconnect') await disconnectMealie();
   if (action === 'open-settings') $('#settings-button').click();
   if (action === 'restore-data') $('#restore-file').click();
@@ -2330,7 +2536,7 @@ $('#settings-button').addEventListener('click', async () => {
   else if (Notification.permission === 'denied') expiryNote.textContent = 'Browser notifications are blocked. Allow them in browser settings; the in-app panel remains available.';
   else expiryNote.textContent = 'System alerts are checked daily while the app is open. The in-app Use soon panel is always available.';
   $('#settings-dialog').showModal();
-  await loadMealieSettings();
+  await Promise.all([loadMealieSettings(), loadDeeplSettings()]);
 });
 
 function setMealieNote(text, kind = '') {
@@ -2443,6 +2649,10 @@ $('#settings-form').addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && /^mealie/.test(event.target.name || '')) {
     event.preventDefault();
     saveMealieSettings();
+  }
+  if (event.key === 'Enter' && event.target.name === 'deeplKey') {
+    event.preventDefault();
+    saveDeeplSettings();
   }
 });
 
