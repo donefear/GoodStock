@@ -6,6 +6,8 @@ const INVENTORY_MODE_KEY = 'goodstock-inventory-mode-v1';
 const EXPIRY_REMINDERS_KEY = 'goodstock-expiry-reminders-v1';
 const LAST_EXPIRY_REMINDER_KEY = 'goodstock-last-expiry-reminder-v1';
 const COOK_PROGRESS_KEY = 'goodstock-cook-progress-v1';
+const TIMERS_KEY = 'goodstock-timers-v1';
+const TIMER_RESTORE_LIMIT_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPIRY_WINDOW_DAYS = 3;
 const defaultLocations = ['Pantry', 'Fridge', 'Freezer', 'Cleaning shelf'];
@@ -532,6 +534,7 @@ async function initialize() {
     localStorage.setItem(PENDING_KEY, snapshot);
   }
   inventoryMode = localStorage.getItem(INVENTORY_MODE_KEY) === 'map' ? 'map' : 'list';
+  loadTimers();
   render();
   pushPendingState();
   fetch('/api/mealie/status').then((response) => response.json()).then((result) => {
@@ -1013,6 +1016,47 @@ function syncTimerList(container, timers, { extend = false } = {}) {
 const APP_TITLE = document.title;
 let titleFlashId = null;
 
+// Timers are kept per browser, so a reload or closed tab picks up where it left off.
+// Timers that ended more than an hour before the app opens again are dropped instead of ringing.
+// Only writes when something changed, and never rewrites identical data: another tab reloads on every write,
+// so an unconditional save would bounce between tabs forever.
+let savedTimersSignature = '';
+const timersSignature = (timers) => JSON.stringify(timers.map((timer) => [timer.id, timer.endsAt, Boolean(timer.done)]));
+
+function saveTimers() {
+  const signature = timersSignature(cookTimers);
+  if (signature === savedTimersSignature) return;
+  savedTimersSignature = signature;
+  const snapshot = cookTimers.map(({ id, recipe, planId, stepIndex, label, name, endsAt, done }) => ({
+    id, planId, stepIndex, label, name, endsAt, done,
+    recipe: recipe && { id: recipe.id, slug: recipe.slug, name: recipe.name, source: recipe.source, ingredients: recipe.ingredients, instructions: recipe.instructions },
+  }));
+  try {
+    const value = snapshot.length ? JSON.stringify(snapshot) : null;
+    if (localStorage.getItem(TIMERS_KEY) === value) return;
+    if (value) localStorage.setItem(TIMERS_KEY, value); else localStorage.removeItem(TIMERS_KEY);
+  } catch { /* Timers still run; they just won't survive a reload. */ }
+}
+
+function loadTimers() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(TIMERS_KEY) || '[]'); } catch { saved = []; }
+  const now = Date.now();
+  saved = Array.isArray(saved) ? saved : [];
+  cookTimers = saved
+    .filter((timer) => timer && timer.id && Number.isFinite(timer.endsAt) && now - timer.endsAt < TIMER_RESTORE_LIMIT_MS)
+    .map((timer) => ({ ...timer, done: Boolean(timer.done) }));
+  // What is stored now; refreshTimers only saves if dropping old timers or finishing one changes it.
+  savedTimersSignature = timersSignature(saved.filter((timer) => timer && timer.id));
+  if (cookTimers.length) timerTickId ??= setInterval(refreshTimers, 1000);
+  // Already-finished timers keep ringing, without sending their notification again.
+  if (cookTimers.some((timer) => timer.done) && !alarmLoopId) {
+    timerBeep();
+    alarmLoopId = setInterval(timerBeep, 2000);
+  }
+  refreshTimers();
+}
+
 function refreshTimers() {
   for (const timer of cookTimers) {
     if (!timer.done && timerRemaining(timer) <= 0) {
@@ -1020,6 +1064,7 @@ function refreshTimers() {
       timerAlarm(timer);
     }
   }
+  saveTimers();
   if (alarmLoopId && !cookTimers.some((timer) => timer.done)) {
     clearInterval(alarmLoopId);
     alarmLoopId = null;
@@ -1753,6 +1798,10 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('focus', checkExpiryReminders);
 window.addEventListener('online', () => { pushPendingState(); render(); });
+// Keep timers in step across tabs of this browser.
+window.addEventListener('storage', (event) => { if (event.key === TIMERS_KEY) loadTimers(); });
+// Browsers only allow sound after a tap, so the first touch after a reload unlocks the alarm.
+document.addEventListener('pointerdown', unlockAlarmAudio, { once: true, capture: true });
 window.addEventListener('offline', () => { updateSyncStatus('offline'); render(); });
 
 initialize();
