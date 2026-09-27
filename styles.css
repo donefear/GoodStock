@@ -29,9 +29,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .app-shell { min-height: 100vh; }
 .sidebar { position: fixed; inset: 0 auto 0 0; width: 236px; padding: 30px 18px 22px; display: flex; flex-direction: column; background: #e8eee6; border-right: 1px solid #dfe7dd; z-index: 3; }
 .brand { display: inline-flex; align-items: center; gap: 10px; width: fit-content; color: var(--ink); text-decoration: none; }
-.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; background: var(--green); color: #fffefa; font: 600 23px 'Fraunces', Georgia, serif; border-radius: 50% 50% 48% 12%; transform: rotate(-4deg); }
-/* The donefear logo, as on the app icon; roughly 56% of the mark like the icon's safe zone. */
-.brand-logo { width: 58%; height: 58%; transform: rotate(4deg); }
+.brand-mark { display: grid; place-items: center; width: 40px; height: 40px; color: var(--green); }
+/* The Goodstock mark: a G with the donefear logo in its centre. */
+.brand-logo { width: 100%; height: 100%; }
 .brand-name { font: 600 23px 'Fraunces', Georgia, serif; letter-spacing: 0; }
 .brand-name > span { color: var(--coral); }
 .side-label, .eyebrow { color: #718078; font-size: 10px; line-height: 1.5; font-weight: 700; letter-spacing: 1.2px; }
@@ -394,7 +394,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
   .main-area { margin-left: 0; padding-bottom: 70px; }
   .topbar { height: 60px; padding: 0 17px; }
   .mobile-brand { display: inline-flex; align-items: center; gap: 7px; }
-  .mobile-brand .brand-mark { width: 30px; height: 30px; font-size: 19px; }
+  .mobile-brand .brand-mark { width: 34px; height: 34px; }
   .mobile-brand .brand-name { font-size: 19px; }
   .breadcrumb { display: none; }
   .top-actions { gap: 10px; }
