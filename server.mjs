@@ -70,7 +70,7 @@ async function requestBody(request) {
   let body = '';
   for await (const chunk of request) {
     body += chunk;
-    if (body.length > 1_000_000) throw new Error('Request body is too large');
+    if (body.length > 8_000_000) throw new Error('Request body is too large');
   }
   return JSON.parse(body || '{}');
 }
@@ -89,6 +89,73 @@ async function saveState(state) {
   const temporaryPath = `${statePath}.tmp`;
   await writeFile(temporaryPath, JSON.stringify(state), 'utf8');
   await rename(temporaryPath, statePath);
+}
+
+// The shared kitchen (Docker/server version): one state for everyone who opens this server, with a revision number.
+// A save must say which revision it started from; a save based on an older revision is refused (409) and gets the
+// current state back, so the device merges its changes in and tries again. Every open page hears about new
+// revisions straight away through Server-Sent Events (/api/events), which also report how many devices are live.
+let kitchen = { revision: 0, state: null };
+let kitchenWrites = Promise.resolve();
+const liveClients = new Set();
+
+async function loadKitchen() {
+  const saved = await readState();
+  if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+    const { _revision: revision, ...state } = saved;
+    kitchen = { revision: Number(revision) || 1, state };
+  }
+}
+
+// Writes go one after another, so a slow disk can never put an older state on top of a newer one.
+function writeKitchen() {
+  const snapshot = { ...kitchen.state, _revision: kitchen.revision };
+  kitchenWrites = kitchenWrites.then(() => saveState(snapshot)).catch((error) => console.error('Could not save the kitchen:', error.message));
+  return kitchenWrites;
+}
+
+function broadcast(event, data) {
+  const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const client of liveClients) client.write(message);
+}
+
+const broadcastPresence = () => broadcast('presence', { devices: liveClients.size });
+
+// Keeps idle connections open through proxies and phones that drop silent streams.
+setInterval(() => { for (const client of liveClients) client.write(': ping\n\n'); }, 25_000).unref();
+
+function openLiveStream(request, response) {
+  response.writeHead(200, {
+    'content-type': 'text/event-stream; charset=utf-8',
+    'cache-control': 'no-store',
+    connection: 'keep-alive',
+    'x-accel-buffering': 'no',
+  });
+  response.write('retry: 3000\n\n');
+  response.write(`event: state\ndata: ${JSON.stringify({ revision: kitchen.revision, origin: '' })}\n\n`);
+  liveClients.add(response);
+  broadcastPresence();
+  request.on('close', () => {
+    liveClients.delete(response);
+    broadcastPresence();
+  });
+}
+
+async function receiveKitchen(payload) {
+  // New pages send { state, baseRevision, client }; older cached pages send the bare state and simply overwrite.
+  const tracked = payload && typeof payload === 'object' && payload.state && Object.hasOwn(payload, 'baseRevision');
+  const state = tracked ? payload.state : payload;
+  if (!state || typeof state !== 'object' || Array.isArray(state) || !Array.isArray(state.inventory) || !Array.isArray(state.recipes)) {
+    return { status: 400, body: { error: 'Invalid kitchen state' } };
+  }
+  if (tracked && kitchen.state && Number(payload.baseRevision) !== kitchen.revision) {
+    return { status: 409, body: { error: 'The kitchen changed on another device.', revision: kitchen.revision, state: kitchen.state } };
+  }
+  const { _revision, ...clean } = state;
+  kitchen = { revision: kitchen.revision + 1, state: clean };
+  await writeKitchen();
+  broadcast('state', { revision: kitchen.revision, origin: tracked ? String(payload.client || '') : '' });
+  return { status: 200, body: { saved: true, revision: kitchen.revision } };
 }
 
 async function fetchMealie(path, config = mealie) {
@@ -234,17 +301,20 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
     if (request.method === 'GET' && url.pathname === '/api/state') {
-      sendJson(response, 200, await readState());
+      sendJson(response, 200, kitchen.state ? { ...kitchen.state, _revision: kitchen.revision } : null);
+      return;
+    }
+    if (request.method === 'GET' && url.pathname === '/api/state/revision') {
+      sendJson(response, 200, { revision: kitchen.revision, devices: liveClients.size });
+      return;
+    }
+    if (request.method === 'GET' && url.pathname === '/api/events') {
+      openLiveStream(request, response);
       return;
     }
     if (request.method === 'POST' && url.pathname === '/api/state') {
-      const state = await requestBody(request);
-      if (!state || typeof state !== 'object' || Array.isArray(state) || !Array.isArray(state.inventory) || !Array.isArray(state.recipes)) {
-        sendJson(response, 400, { error: 'Invalid kitchen state' });
-        return;
-      }
-      await saveState(state);
-      sendJson(response, 200, { saved: true });
+      const result = await receiveKitchen(await requestBody(request));
+      sendJson(response, result.status, result.body);
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/recipes/import') {
@@ -386,6 +456,18 @@ const server = createServer(async (request, response) => {
       sendJson(response, 200, mapMealieRecipe(recipe));
       return;
     }
+    // Bundled fonts: only plain names from the fonts folder, never other paths.
+    const fontFile = /^\/fonts\/([a-z0-9-]+\.(woff2|css))$/.exec(url.pathname);
+    if (request.method === 'GET' && fontFile) {
+      try {
+        const contents = await readFile(join(process.cwd(), 'fonts', fontFile[1]));
+        response.writeHead(200, { 'content-type': fontFile[2] === 'css' ? 'text/css; charset=utf-8' : 'font/woff2', 'cache-control': 'public, max-age=604800' });
+        response.end(contents);
+      } catch {
+        sendJson(response, 404, { error: 'Not found' });
+      }
+      return;
+    }
     if (request.method === 'GET' && staticFiles.has(url.pathname)) {
       const [file, contentType] = staticFiles.get(url.pathname);
       const contents = await readFile(join(process.cwd(), file));
@@ -400,6 +482,7 @@ const server = createServer(async (request, response) => {
   }
 });
 
+await loadKitchen();
 await loadMealieConfig();
 await loadDeeplConfig();
 server.listen(port, '0.0.0.0', () => {

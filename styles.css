@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+@import url('fonts/fonts.css');
 
 :root {
   font-family: 'DM Sans', 'Trebuchet MS', sans-serif;
@@ -357,6 +357,9 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .mealie-settings .settings-note.is-connected { color: var(--green); font-weight: 700; }
 .mealie-settings .settings-note.is-error { color: #b65c48; font-weight: 700; }
 .mealie-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.settings-mode { margin-bottom: 6px; padding: 12px 14px; border-radius: 8px; display: grid; gap: 3px; background: var(--mint); }
+.settings-mode strong { color: var(--green-dark); font-size: 13px; }
+.settings-mode span { color: var(--ink); font-size: 12px; line-height: 1.5; }
 .deepl-help-links { margin-top: -4px; display: flex; flex-wrap: wrap; gap: 2px 16px; }
 .deepl-help-links a.text-button { display: inline-flex; align-items: center; text-decoration: none; }
 .deepl-help-dialog { width: min(560px, calc(100% - 20px)); }

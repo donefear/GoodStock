@@ -524,30 +524,48 @@ function updateSyncStatus(mode, detail) {
     return;
   }
   dot.className = `sync-dot ${mode}`;
-  label.textContent = mode === 'offline' ? 'Working offline' : mode === 'pending' ? 'Changes queued' : 'Kitchen in sync';
-  text.textContent = detail || (mode === 'offline' ? 'Will sync when reconnected' : 'Your kitchen, in sync');
+  label.textContent = mode === 'offline' ? 'Working offline' : mode === 'pending' ? 'Changes queued' : 'Shared kitchen, in sync';
+  const live = liveSync.connected
+    ? (liveSync.devices > 1 ? `Live · ${liveSync.devices} devices connected` : 'Live · only this device right now')
+    : 'Synced with the server';
+  text.textContent = detail || (mode === 'offline' ? 'Will sync when reconnected' : live);
 }
 
+// Sends this device's changes, saying which server revision they build on. If another device saved first, the
+// server answers 409 with its kitchen; merge into it and send again. Failures retry after a pause.
 async function pushPendingState() {
   if (STANDALONE || syncing || !navigator.onLine) return;
   const pending = localStorage.getItem(PENDING_KEY);
   if (!pending) return;
   syncing = true;
-  updateSyncStatus('pending', 'Sending saved changes');
+  clearTimeout(retryTimer);
+  updateSyncStatus('pending', 'Sending changes');
+  let again = false;
   try {
     const response = await fetch('/api/state', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: pending,
+      body: JSON.stringify({ state: JSON.parse(pending), baseRevision: readSyncBase()?.revision || 0, client: CLIENT_ID }),
     });
-    if (!response.ok) throw new Error('Save failed');
-    if (localStorage.getItem(PENDING_KEY) === pending) localStorage.removeItem(PENDING_KEY);
-    updateSyncStatus('online');
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 409 && result.state) {
+      applyRemoteKitchen({ revision: result.revision, state: result.state });
+      again = true;
+    } else if (!response.ok) {
+      throw new Error('Save failed');
+    } else {
+      writeSyncBase({ revision: result.revision, state: JSON.parse(pending) });
+      if (localStorage.getItem(PENDING_KEY) === pending) localStorage.removeItem(PENDING_KEY);
+      else again = true;
+      showSyncStatus();
+    }
   } catch {
-    updateSyncStatus('pending', 'Will retry when reconnected');
+    updateSyncStatus('pending', 'Will retry in a moment');
+    retryTimer = setTimeout(pushPendingState, 5000);
   } finally {
     syncing = false;
-    if (localStorage.getItem(PENDING_KEY) && navigator.onLine) queueMicrotask(pushPendingState);
+    if (again && navigator.onLine) queueMicrotask(pushPendingState);
+    if (pullAfterSync) { pullAfterSync = false; pullRemoteKitchen(); }
   }
 }
 
@@ -558,6 +576,137 @@ function persist() {
   render();
   checkExpiryReminders();
   pushPendingState();
+}
+
+// Shared kitchen sync (Docker/server version only; the Android app keeps everything on the phone).
+// The server keeps one kitchen with a revision number. This page remembers the last revision it saw ("base"), sends
+// its changes with that revision, and when someone else saved first it merges item by item and sends again. A live
+// event stream tells it about other devices' saves straight away, so every open page stays in step.
+const SYNC_BASE_KEY = 'goodstock-synced-v1';
+const CLIENT_ID = makeId();
+const liveSync = { connected: false, devices: 0 };
+let pullAfterSync = false;
+let retryTimer = null;
+let renderDeferred = false;
+
+function readSyncBase() {
+  try { return JSON.parse(localStorage.getItem(SYNC_BASE_KEY) || 'null'); } catch { return null; }
+}
+
+function writeSyncBase(base) {
+  try { localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(base)); } catch { /* Merging then treats everything as changed. */ }
+}
+
+async function fetchRemoteKitchen() {
+  const response = await fetch('/api/state', { cache: 'no-store' });
+  if (!response.ok) throw new Error('Kitchen unavailable');
+  const body = await response.json();
+  if (!body) return { revision: 0, state: null };
+  const { _revision: revision, ...remoteState } = body;
+  return { revision: Number(revision) || 0, state: remoteState };
+}
+
+// Three-way merge of lists of items with an id: changes made here since the last sync win over the server's copy,
+// everything else takes the server's version. A delete does not beat an edit made elsewhere.
+function mergeById(base = [], local = [], remote = []) {
+  const idOf = (item) => (item && item.id != null ? String(item.id) : null);
+  const baseById = new Map(base.map((item) => [idOf(item), JSON.stringify(item)]));
+  const localById = new Map(local.map((item) => [idOf(item), item]));
+  const remoteById = new Map(remote.map((item) => [idOf(item), item]));
+  const changed = (item, id) => (item ? !baseById.has(id) || JSON.stringify(item) !== baseById.get(id) : baseById.has(id));
+  const pick = (id) => {
+    const mine = localById.get(id);
+    const theirs = remoteById.get(id);
+    const mineChanged = changed(mine, id);
+    const theirsChanged = changed(theirs, id);
+    if (mineChanged && !theirsChanged) return mine;
+    if (theirsChanged && !mineChanged) return theirs;
+    if (mineChanged && theirsChanged) return mine || theirs;
+    return theirs || mine;
+  };
+  // Items new on this device go first (new things are added at the top), then the server's order.
+  const newHere = local.filter((item) => idOf(item) && !remoteById.has(idOf(item)) && !baseById.has(idOf(item)));
+  const rest = remote.map((item) => pick(idOf(item))).filter(Boolean);
+  const deletedElsewhereButEditedHere = local.filter((item) => {
+    const id = idOf(item);
+    return id && !remoteById.has(id) && baseById.has(id) && changed(item, id);
+  });
+  return [...newHere, ...rest, ...deletedElsewhereButEditedHere];
+}
+
+function mergeStates(base, local, remote) {
+  const merged = { ...remote };
+  for (const key of ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets']) {
+    merged[key] = mergeById(base?.[key] || [], local?.[key] || [], remote?.[key] || []);
+  }
+  merged.locations = JSON.stringify(local?.locations) !== JSON.stringify(base?.locations) ? local.locations : remote.locations;
+  return merged;
+}
+
+// Redraw after a sync, but not while someone is typing in the page; wait until they leave the field.
+function renderWhenIdle() {
+  const active = document.activeElement;
+  if (active && active.closest && active.closest('#view-container') && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) {
+    if (!renderDeferred) {
+      renderDeferred = true;
+      active.addEventListener('blur', () => { renderDeferred = false; render(); }, { once: true });
+    }
+    return;
+  }
+  render();
+}
+
+function applyRemoteKitchen(remote) {
+  const hasLocalChanges = Boolean(localStorage.getItem(PENDING_KEY));
+  state = normalizeState(hasLocalChanges ? mergeStates(readSyncBase()?.state, state, remote.state) : remote.state);
+  writeSyncBase(remote);
+  const snapshot = JSON.stringify(state);
+  localStorage.setItem(STORAGE_KEY, snapshot);
+  if (hasLocalChanges) localStorage.setItem(PENDING_KEY, snapshot);
+  renderWhenIdle();
+}
+
+async function pullRemoteKitchen() {
+  if (STANDALONE || !navigator.onLine) return;
+  if (syncing) { pullAfterSync = true; return; }
+  try {
+    const remote = await fetchRemoteKitchen();
+    if (!remote.state || remote.revision <= (readSyncBase()?.revision || 0)) return;
+    applyRemoteKitchen(remote);
+    if (localStorage.getItem(PENDING_KEY)) pushPendingState();
+  } catch { /* The next event or check tries again. */ }
+}
+
+function currentSyncMode() {
+  if (!navigator.onLine) return 'offline';
+  return localStorage.getItem(PENDING_KEY) ? 'pending' : 'online';
+}
+
+const showSyncStatus = () => updateSyncStatus(currentSyncMode());
+
+function connectLiveSync() {
+  if (STANDALONE || typeof EventSource === 'undefined') return;
+  const source = new EventSource(`/api/events?client=${encodeURIComponent(CLIENT_ID)}`);
+  source.addEventListener('open', () => { liveSync.connected = true; showSyncStatus(); });
+  source.addEventListener('error', () => { liveSync.connected = false; showSyncStatus(); });
+  source.addEventListener('presence', (event) => {
+    try { liveSync.devices = JSON.parse(event.data).devices || 0; } catch { liveSync.devices = 0; }
+    showSyncStatus();
+  });
+  source.addEventListener('state', (event) => {
+    let data = {};
+    try { data = JSON.parse(event.data); } catch { return; }
+    if (data.origin === CLIENT_ID) return;
+    if (data.revision > (readSyncBase()?.revision || 0)) pullRemoteKitchen();
+  });
+  // Backup for networks that block event streams: look for a newer revision every 30 seconds.
+  setInterval(async () => {
+    if (liveSync.connected || !navigator.onLine || document.visibilityState !== 'visible') return;
+    try {
+      const { revision } = await (await fetch('/api/state/revision', { cache: 'no-store' })).json();
+      if (revision > (readSyncBase()?.revision || 0)) pullRemoteKitchen();
+    } catch { /* Offline for now. */ }
+  }, 30_000);
 }
 
 function applyTheme(theme) {
@@ -610,15 +759,19 @@ async function initialize() {
   const cached = localStorage.getItem(STORAGE_KEY);
   const pending = STANDALONE ? 'local' : localStorage.getItem(PENDING_KEY);
   if (cached) state = normalizeState(JSON.parse(cached));
-  if (!pending && navigator.onLine) {
+  // Shared kitchen: start from the server's copy, folding in anything this device changed while away.
+  if (!STANDALONE && navigator.onLine) {
     try {
-      const response = await fetch('/api/state', { cache: 'no-store' });
-      if (response.ok) {
-        const remote = await response.json();
-        if (remote) state = normalizeState(remote);
-        else localStorage.setItem(PENDING_KEY, JSON.stringify(state));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const remote = await fetchRemoteKitchen();
+      if (remote.state) {
+        state = normalizeState(pending ? mergeStates(readSyncBase()?.state, JSON.parse(pending), remote.state) : remote.state);
+        writeSyncBase(remote);
+        if (pending) localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+      } else {
+        // An empty server: this device's kitchen becomes the shared one.
+        localStorage.setItem(PENDING_KEY, JSON.stringify(state));
       }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       if (cached) updateSyncStatus('offline');
     }
@@ -637,6 +790,7 @@ async function initialize() {
   loadTimers();
   render();
   pushPendingState();
+  connectLiveSync();
   if (!STANDALONE) {
     fetch('/api/mealie/status').then((response) => response.json()).then((result) => {
       mealieConfigured = Boolean(result.configured);
@@ -2548,6 +2702,10 @@ $('#settings-button').addEventListener('click', async () => {
   else if (!('Notification' in window)) expiryNote.textContent = 'This browser does not support system alerts. The in-app Use soon panel remains available.';
   else if (Notification.permission === 'denied') expiryNote.textContent = 'Browser notifications are blocked. Allow them in browser settings; the in-app panel remains available.';
   else expiryNote.textContent = 'System alerts are checked daily while the app is open. The in-app Use soon panel is always available.';
+  $('#settings-mode-title').textContent = STANDALONE ? 'Kept on this device' : 'Shared kitchen';
+  $('#settings-mode-text').textContent = STANDALONE
+    ? 'The Android app keeps everything on this device and works without a server. Use Back up below to save a copy.'
+    : `Everyone who opens Goodstock on this server sees the same kitchen, updated live${liveSync.connected ? ` (${liveSync.devices} ${liveSync.devices === 1 ? 'device' : 'devices'} connected now)` : ''}.`;
   $('#settings-dialog').showModal();
   await Promise.all([loadMealieSettings(), loadDeeplSettings()]);
 });
@@ -2691,7 +2849,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') checkExpiryReminders();
 });
 window.addEventListener('focus', checkExpiryReminders);
-window.addEventListener('online', () => { pushPendingState(); render(); });
+window.addEventListener('online', () => { pushPendingState(); pullRemoteKitchen(); render(); });
 // Keep timers in step across tabs of this browser.
 window.addEventListener('storage', (event) => { if (event.key === TIMERS_KEY) loadTimers(); });
 

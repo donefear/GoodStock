@@ -1,5 +1,5 @@
-const CACHE_NAME = 'goodstock-shell-v38';
-const APP_SHELL = ['/', '/index.html', '/app.js', '/kitchen-tools.js', '/kitchen-reference.js', '/recipe-import.mjs', '/mealie.mjs', '/deepl.mjs', '/styles.css', '/manifest.webmanifest', '/ingredients.json'];
+const CACHE_NAME = 'goodstock-shell-v40';
+const APP_SHELL = ['/', '/index.html', '/app.js', '/kitchen-tools.js', '/kitchen-reference.js', '/recipe-import.mjs', '/mealie.mjs', '/deepl.mjs', '/styles.css', '/manifest.webmanifest', '/ingredients.json', '/fonts/fonts.css', '/fonts/dm-sans-latin.woff2', '/fonts/dm-sans-latin-ext.woff2', '/fonts/fraunces-latin.woff2', '/fonts/fraunces-latin-ext.woff2'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
