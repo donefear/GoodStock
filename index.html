@@ -23,7 +23,7 @@
           <button class="nav-item" data-view="week"><span class="nav-icon" aria-hidden="true">▦</span>This week</button>
           <button class="nav-item" data-view="shopping"><span class="nav-icon" aria-hidden="true">☷</span>Shopping <span class="nav-count" id="shopping-count">0</span></button>
           <button class="nav-item" data-view="recipes"><span class="nav-icon" aria-hidden="true">⌘</span>Recipes</button>
-          <button class="nav-item" data-view="timers"><span class="nav-icon" aria-hidden="true">⏱</span>Timers <span class="nav-count" id="timer-count"></span></button>
+          <button class="nav-item" data-view="tools"><span class="nav-icon" aria-hidden="true">⚒</span>Tools <span class="nav-count" id="timer-count"></span></button>
         </nav>
         <div class="sidebar-bottom">
           <div class="sync-card"><span class="sync-dot" id="sync-dot"></span><div><strong id="sync-label">Checking sync</strong><small id="sync-detail">Your kitchen, in sync</small></div></div>
@@ -147,7 +147,7 @@
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the Android app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.0.2 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.0.4 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 
@@ -164,6 +164,7 @@
     <div class="floating-timers timer-list" id="floating-timers" aria-label="Running timers" aria-live="polite" hidden></div>
 
     <script src="kitchen-tools.js" defer></script>
+    <script src="kitchen-reference.js" defer></script>
     <script type="module" src="recipe-import.mjs"></script>
     <script type="module" src="mealie.mjs"></script>
     <script src="app.js" defer></script>

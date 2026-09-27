@@ -45,15 +45,48 @@ function jsonLdInstructions(value) {
   return [];
 }
 
+// Some sites put only part of the method in their recipe data (dagelijksekost.vrt.be lists 2 of 12 steps), while
+// the page itself shows every step as a number followed by a paragraph. This reads those numbered steps, keeping
+// the nearest heading of each part ("De chocolademelk") as a section line. Returns the longest 1, 2, 3… run.
+function numberedPageSteps(html) {
+  const pattern = />\s*(\d{1,2})\s*<\/(?:span|div|strong|b|h[1-6])>[\s\S]{0,400}?<p[^>]*>([\s\S]*?)<\/p>/g;
+  const runs = [];
+  let run = null;
+  for (const match of html.matchAll(pattern)) {
+    const number = Number(match[1]);
+    const text = cleanWebText(match[2]);
+    if (!text || text.length < 12) continue;
+    if (number === 1 || !run || number !== run.last + 1) {
+      run = { last: 0, lines: [], heading: '' };
+      runs.push(run);
+      if (number !== 1) continue;
+    }
+    const before = html.slice(Math.max(0, match.index - 3000), match.index);
+    const headings = [...before.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi)];
+    const heading = headings.length ? cleanWebText(headings[headings.length - 1][1]) : '';
+    if (heading && heading !== run.heading && heading.length <= 40 && !/[.!?:]$/.test(heading)) {
+      run.lines.push(heading);
+      run.heading = heading;
+    }
+    run.lines.push(text);
+    run.last = number;
+  }
+  return runs.reduce((best, current) => (current.last > best.last ? current : best), { last: 0, lines: [] });
+}
+
 // Returns { name, description, ingredients, instructions, sourceUrl }, or null when the page has no usable recipe.
 export function extractRecipeFromHtml(html, sourceUrl = '') {
-  for (const [, body] of String(html || '').slice(0, 4_000_000).matchAll(/<script[^>]*type\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi)) {
+  const page = String(html || '').slice(0, 4_000_000);
+  for (const [, body] of page.matchAll(/<script[^>]*type\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi)) {
     let data;
     try { data = JSON.parse(body.trim()); } catch { continue; }
     const recipe = findJsonLdRecipe(data);
     if (!recipe) continue;
     const ingredients = [].concat(recipe.recipeIngredient || recipe.ingredients || []).map(cleanWebText).filter(Boolean);
-    const instructions = jsonLdInstructions(recipe.recipeInstructions);
+    let instructions = jsonLdInstructions(recipe.recipeInstructions);
+    // Prefer the page's own numbered steps when they are clearly more complete than the recipe data.
+    const pageSteps = numberedPageSteps(page);
+    if (pageSteps.last >= 3 && pageSteps.last > instructions.filter((line) => /[.!?]$/.test(line)).length) instructions = pageSteps.lines;
     if (!ingredients.length && !instructions.length) continue;
     return {
       name: cleanWebText(recipe.name) || 'Imported recipe',

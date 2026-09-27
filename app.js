@@ -151,6 +151,7 @@ let selectedDate = new Date();
 let inventoryQuery = '';
 let inventoryLocation = 'All locations';
 let recipeQuery = '';
+let recipePageId = '';
 let mealieResults = [];
 let mealieConfigured = false;
 let syncing = false;
@@ -224,13 +225,13 @@ const IMPERIAL_PATTERN = new RegExp(String.raw`(?<![\d.,/])(${AMOUNT_SOURCE})(?:
 const FAHRENHEIT_PATTERN = /(\d{3})\s*(?:°\s*F|degrees?\s+F(?:ahrenheit)?|F)\b/g;
 const UNIT_ALIASES = {
   g: /^(?:g|gr|grams?|grammes?)$/, kg: /^(?:kg|kilos?|kilograms?)$/, mg: /^(?:mg|milligrams?)$/,
-  ml: /^(?:ml|millilit(?:er|re)s?)$/, cl: /^cl$/, dl: /^dl$/, l: /^(?:l|lit(?:er|re)s?)$/,
+  ml: /^(?:ml|millilit(?:er|re)s?)$/, cl: /^(?:cl|centilit(?:er|re)s?)$/, dl: /^(?:dl|decilit(?:er|re)s?)$/, l: /^(?:l|lit(?:er|re)s?)$/,
   oz: /^(?:oz|ounces?)$/, lb: /^(?:lbs?|pounds?)$/, 'fl oz': /^(?:fl\.?\s*oz|fluid\s+ounces?)$/,
   pint: /^(?:pints?|pt)$/, quart: /^(?:quarts?|qt)$/, gallon: /^(?:gallons?|gal)$/, inch: /^inch(?:es)?$/, cm: /^(?:cm|centimet(?:er|re)s?)$/,
   cup: /^(?:cups?|kopjes?)$/, tbsp: /^(?:tbsps?|tbs|tablespoons?|el|eetlepels?)$/, tsp: /^(?:tsps?|teaspoons?|tl|theelepels?)$/,
   can: /^(?:cans?|tins?|blikj?e?s?)$/, jar: /^(?:jars?|potj?e?s?)$/, bag: /^(?:bags?|zakj?e?s?)$/, bottle: /^(?:bottles?|flessen|fles)$/,
   pack: /^(?:packs?|packets?|packages?|pakj?e?s?)$/, clove: /^(?:cloves?|teentjes?|tenen)$/, bunch: /^(?:bunch(?:es)?|bosj?e?s?)$/,
-  pinch: /^(?:pinch(?:es)?|snufjes?|snuf)$/, slice: /^(?:slices?|plakj?e?s?)$/, sprig: /^(?:sprigs?|takjes?)$/, handful: /^(?:handfuls?|handjes?)$/,
+  pinch: /^(?:pinch(?:es)?|snufjes?|snuifjes?|snuf)$/, splash: /^(?:splash(?:es)?|dash(?:es)?|scheutjes?|scheut)$/, slice: /^(?:slices?|plakj?e?s?)$/, sprig: /^(?:sprigs?|takjes?)$/, handful: /^(?:handfuls?|handjes?)$/,
   stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|stuks?|st|x|whole|items?)$/,
 };
 const TO_METRIC = { oz: [28.3495, 'g'], lb: [453.592, 'g'], 'fl oz': [29.5735, 'ml'], pint: [473.176, 'ml'], quart: [946.353, 'ml'], gallon: [3785.41, 'ml'], inch: [2.54, 'cm'] };
@@ -644,15 +645,17 @@ async function initialize() {
 }
 
 function render() {
-  const names = { inventory: 'INVENTORY', week: 'THIS WEEK', shopping: 'SHOPPING LIST', recipes: 'RECIPES', timers: 'TIMERS' };
+  const names = { inventory: 'INVENTORY', week: 'THIS WEEK', shopping: 'SHOPPING LIST', recipes: 'RECIPES', tools: 'TOOLS', recipe: 'RECIPE' };
   $('#page-crumb').textContent = names[activeView];
   $('#today-label').textContent = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date());
-  $$('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === activeView));
+  const navView = activeView === 'recipe' ? 'recipes' : activeView;
+  $$('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === navView));
   const unchecked = state.shopping.filter((item) => !item.checked).length;
   $('#shopping-count').textContent = unchecked ? String(unchecked) : '';
-  const views = { inventory: renderInventory, week: renderWeek, shopping: renderShopping, recipes: renderRecipes, timers: renderTimers };
+  const views = { inventory: renderInventory, week: renderWeek, shopping: renderShopping, recipes: renderRecipes, tools: renderTools, recipe: renderRecipePage };
   $('#view-container').innerHTML = views[activeView]();
   refreshTimers();
+  if (activeView === 'tools') afterToolsRender();
   updateSyncStatus(navigator.onLine ? (localStorage.getItem(PENDING_KEY) ? 'pending' : 'online') : 'offline');
 }
 
@@ -717,8 +720,7 @@ function renderWeek() {
   const planned = selectedPlans.length ? selectedPlans.map((entry) => {
     const recipe = recipeById(entry.recipeId);
     if (!recipe) return '';
-    const title = mealieRecipeLink(recipe, 'mealie-link', escapeHtml(recipe.name))
-      || `<button class="mealie-link recipe-title-link" type="button" data-action="view-recipe" data-id="${escapeHtml(recipe.id)}" title="Show recipe">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`;
+    const title = `<button class="mealie-link recipe-title-link" type="button" data-action="view-recipe" data-id="${escapeHtml(recipe.id)}" title="Show recipe">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`;
     return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? 'Cooked and confirmed' : `${recipe.ingredients.length} ingredients`}</span></div>${entry.cooked ? '<span class="cooked-label">DONE</span>' : `<div class="planned-actions"><button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="Cook it step by step">Steps <span aria-hidden="true">▶</span></button><button class="button button-small button-quiet" data-action="review-plan" data-id="${escapeHtml(entry.id)}" title="See what this needs and what you have">Review</button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}" title="Mark as cooked and remove the ingredients from stock">Cooked <span aria-hidden="true">✓</span></button></div>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="Remove meal">×</button></article>`;
   }).join('') : '<div class="day-empty"><span aria-hidden="true">✳</span><p>No meal planned for this day.</p><small>Pick a recipe below to give the day a little shape.</small></div>';
   const recipeOptions = [...state.recipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
@@ -767,11 +769,123 @@ function timerPresetButton(preset, saved = false) {
     : start;
 }
 
+// Tools tab: timers, a unit converter and cooking terms explained, as sub-tabs. The chosen sub-tab is remembered
+// per browser.
+const TOOLS_TAB_KEY = 'goodstock-tools-tab-v1';
+const TOOLS_TABS = [['timers', 'Timers'], ['convert', 'Converter'], ['terms', 'Cooking terms']];
+let toolsTab = (() => { try { return localStorage.getItem(TOOLS_TAB_KEY) || 'timers'; } catch { return 'timers'; } })();
+const converterInput = { amount: '1', unit: 'cup', ingredient: 'flour' };
+const temperatureInput = { value: '180', unit: 'c' };
+let termsQuery = '';
+
+function renderTools() {
+  if (!TOOLS_TABS.some(([id]) => id === toolsTab)) toolsTab = 'timers';
+  const subtitles = {
+    timers: cookTimers.length ? `${cookTimers.length} ${cookTimers.length === 1 ? 'timer' : 'timers'} going. Tap one to stop it or add a minute.` : 'Tea, eggs, pasta or anything else. Tap a preset or make your own.',
+    convert: 'Grams, cups, spoons and ounces, and oven temperatures, converted as you type.',
+    terms: 'What sauté, blanch or fold actually mean, in plain words, with a video.',
+  };
+  const tabs = `<div class="inventory-mode-switch tools-tabs" role="tablist" aria-label="Tools">${TOOLS_TABS.map(([id, label]) => `<button role="tab" class="${toolsTab === id ? 'active' : ''}" data-action="tools-tab" data-tab="${id}" aria-selected="${toolsTab === id}">${label}</button>`).join('')}</div>`;
+  const body = toolsTab === 'convert' ? renderConverter() : toolsTab === 'terms' ? renderCookingTerms() : renderTimers();
+  return `${pageHeading('HANDY IN THE KITCHEN', 'Kitchen tools.', subtitles[toolsTab])}${tabs}${body}`;
+}
+
+// After the Tools page is on screen, fill in the live parts (converter results, term list).
+function afterToolsRender() {
+  if (toolsTab === 'convert') { updateConverter(); updateTemperature(); }
+  if (toolsTab === 'terms') updateCookingTerms();
+}
+
+function renderConverter() {
+  const unitOptions = (kind) => CONVERTER_UNITS.filter((unit) => unit.kind === kind).map((unit) => `<option value="${unit.id}" ${converterInput.unit === unit.id ? 'selected' : ''}>${escapeHtml(unit.label)}</option>`).join('');
+  return `<section class="section-block converter">
+      <div class="section-heading"><div><h2>Amounts</h2><span class="muted">Weight and volume</span></div></div>
+      <div class="converter-form">
+        <label>Amount<input id="conv-amount" type="text" inputmode="decimal" value="${escapeHtml(converterInput.amount)}" autocomplete="off" /></label>
+        <label>Unit<select id="conv-unit"><optgroup label="Weight">${unitOptions('mass')}</optgroup><optgroup label="Volume">${unitOptions('volume')}</optgroup></select></label>
+        <label>Ingredient <span class="field-hint">For weight ↔ volume</span><select id="conv-ingredient">${CONVERTER_INGREDIENTS.map((item) => `<option value="${item.id}" ${converterInput.ingredient === item.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>`).join('')}</select></label>
+      </div>
+      <div class="converter-results" id="conv-results" aria-live="polite"></div>
+    </section>
+    <section class="section-block converter">
+      <div class="section-heading"><div><h2>Oven temperature</h2><span class="muted">°C, °F and gas mark</span></div></div>
+      <div class="converter-form">
+        <label>Temperature<input id="temp-value" type="text" inputmode="decimal" value="${escapeHtml(temperatureInput.value)}" autocomplete="off" /></label>
+        <label>Unit<select id="temp-unit"><option value="c" ${temperatureInput.unit === 'c' ? 'selected' : ''}>°C</option><option value="f" ${temperatureInput.unit === 'f' ? 'selected' : ''}>°F</option><option value="gas" ${temperatureInput.unit === 'gas' ? 'selected' : ''}>Gas mark</option></select></label>
+      </div>
+      <div class="converter-results" id="temp-results" aria-live="polite"></div>
+    </section>`;
+}
+
+// Spoon and cup amounts round to the nearest ⅛ and show as fractions; weights and millilitres as whole numbers.
+function formatConverted(value, unitId) {
+  if (!Number.isFinite(value)) return '–';
+  if (['cup', 'tbsp', 'tsp'].includes(unitId)) return formatAmount(Math.round(value * 8) / 8 || 0.125, unitId === 'cup' ? 'cup' : unitId);
+  if (['kg', 'l', 'lb', 'pint'].includes(unitId)) return String(Math.round(value * 100) / 100);
+  if (['oz', 'floz', 'dl', 'cl'].includes(unitId) || value < 10) return String(Math.round(value * 10) / 10);
+  return String(Math.round(value));
+}
+
+function updateConverter() {
+  const results = $('#conv-results');
+  if (!results) return;
+  const amount = parseAmount(converterInput.amount.replace(',', '.'));
+  const from = CONVERTER_UNITS.find((unit) => unit.id === converterInput.unit);
+  const ingredient = CONVERTER_INGREDIENTS.find((item) => item.id === converterInput.ingredient) || CONVERTER_INGREDIENTS[0];
+  if (!amount || !from) { results.innerHTML = '<p class="muted">Type an amount, like 250, 1.5 or 1 1/2.</p>'; return; }
+  const base = amount * from.factor;
+  const other = from.kind === 'mass' ? 'volume' : 'mass';
+  const otherBase = from.kind === 'mass' ? base / ingredient.density : base * ingredient.density;
+  const card = (unit, value) => `<div class="converter-result ${unit.id === from.id ? 'is-source' : ''}"><strong>${formatConverted(value / unit.factor, unit.id)}</strong><span>${escapeHtml(unit.label)}</span></div>`;
+  const group = (kind, value, title) => `<h3 class="converter-group">${title}</h3><div class="converter-grid">${CONVERTER_UNITS.filter((unit) => unit.kind === kind).map((unit) => card(unit, value)).join('')}</div>`;
+  results.innerHTML = group(from.kind, base, from.kind === 'mass' ? 'Weight' : 'Volume')
+    + group(other, otherBase, `${other === 'mass' ? 'Weight' : 'Volume'} of ${escapeHtml(ingredient.label.toLowerCase())} <span class="muted">(approximate)</span>`);
+}
+
+function updateTemperature() {
+  const results = $('#temp-results');
+  if (!results) return;
+  const value = parseAmount(temperatureInput.value.replace(',', '.').replace(/[°\s]|gas/gi, ''));
+  if (value === null || !Number.isFinite(value)) { results.innerHTML = '<p class="muted">Type a temperature, like 180.</p>'; return; }
+  let celsius = value;
+  if (temperatureInput.unit === 'f') celsius = ((value - 32) * 5) / 9;
+  if (temperatureInput.unit === 'gas') {
+    const exact = GAS_MARKS.find(([mark]) => mark === value);
+    celsius = exact ? exact[1] : 140 + (value - 1) * 12.5;
+  }
+  const gas = GAS_MARKS.reduce((best, entry) => (Math.abs(entry[1] - celsius) < Math.abs(best[1] - celsius) ? entry : best));
+  const heat = celsius < 150 ? 'very low' : celsius < 170 ? 'low' : celsius < 190 ? 'moderate' : celsius < 210 ? 'moderately hot' : celsius < 235 ? 'hot' : 'very hot';
+  const round5 = (number) => Math.round(number / 5) * 5;
+  const gasLabel = gas[0] < 1 ? (gas[0] === 0.25 ? '¼' : '½') : String(gas[0]);
+  results.innerHTML = `<div class="converter-grid">
+      <div class="converter-result ${temperatureInput.unit === 'c' ? 'is-source' : ''}"><strong>${round5(celsius)} °C</strong><span>Celsius</span></div>
+      <div class="converter-result ${temperatureInput.unit === 'f' ? 'is-source' : ''}"><strong>${round5((celsius * 9) / 5 + 32)} °F</strong><span>Fahrenheit</span></div>
+      <div class="converter-result ${temperatureInput.unit === 'gas' ? 'is-source' : ''}"><strong>Gas ${gasLabel}</strong><span>Gas mark</span></div>
+      <div class="converter-result"><strong>${round5(celsius - 20)} °C</strong><span>Fan oven</span></div>
+    </div><p class="converter-note">A ${heat} oven. Fan (hot-air) ovens run hotter, so set them about 20 °C lower.</p>`;
+}
+
+function renderCookingTerms() {
+  return `<section class="section-block cooking-terms">
+      <form class="recipe-search terms-search" onsubmit="return false"><span aria-hidden="true">⌕</span><input id="terms-search" value="${escapeHtml(termsQuery)}" placeholder="Search a term, like blanch or sudderen" aria-label="Search cooking terms" autocomplete="off" /></form>
+      <div class="terms-list" id="terms-list"></div>
+    </section>`;
+}
+
+function updateCookingTerms() {
+  const list = $('#terms-list');
+  if (!list) return;
+  const query = cleanIngredient(termsQuery);
+  const terms = COOKING_TERMS.filter((term) => !query || cleanIngredient(`${term.en} ${term.nl} ${term.what}`).includes(query));
+  list.innerHTML = terms.length
+    ? terms.map((term) => `<article class="term-card"><h3>${escapeHtml(term.en)}${term.nl && term.nl !== term.en ? ` <span>${escapeHtml(term.nl)}</span>` : ''}</h3><p>${escapeHtml(term.what)}</p><a class="button button-small button-outline" href="${escapeHtml(cookingTermVideoUrl(term))}" target="_blank" rel="noopener noreferrer">▶ Watch a video</a></article>`).join('')
+    : '<p class="muted">No term matches that. Try another word.</p>';
+}
+
 function renderTimers() {
   const running = cookTimers.length;
   const saved = state.timerPresets || [];
-  return `${pageHeading('ON THE CLOCK', 'Timers for anything.', running ? `${running} ${running === 1 ? 'timer' : 'timers'} going. Tap one to stop it or add a minute.` : 'Tea, eggs, pasta or anything else. Tap a preset or make your own.')}
-    <section class="section-block"><div class="section-heading"><div><h2>Running</h2><span class="muted" id="timer-view-count">${running || 'None yet'}</span></div></div><div class="timer-list timer-view-list" id="timer-view-list"></div><p class="timer-view-empty" id="timer-view-empty"${running ? ' hidden' : ''}>Nothing running. Start one below.</p></section>
+  return `<section class="section-block"><div class="section-heading"><div><h2>Running</h2><span class="muted" id="timer-view-count">${running || 'None yet'}</span></div></div><div class="timer-list timer-view-list" id="timer-view-list"></div><p class="timer-view-empty" id="timer-view-empty"${running ? ' hidden' : ''}>Nothing running. Start one below.</p></section>
     <section class="section-block"><div class="section-heading"><div><h2>Quick start</h2><span class="muted">One tap</span></div></div><div class="timer-presets">${saved.map((preset) => timerPresetButton(preset, true)).join('')}${BUILT_IN_TIMER_PRESETS.map((preset) => timerPresetButton(preset)).join('')}</div></section>
     <section class="section-block"><div class="section-heading"><div><h2>Custom timer</h2></div></div>
       <form class="custom-timer-form" id="custom-timer-form">
@@ -788,7 +902,7 @@ function startCustomTimer(name, seconds) {
   unlockAlarmAudio();
   cookTimers.push({ id: makeId(), recipe: null, name: name || 'Timer', label: formatDuration(seconds), endsAt: Date.now() + seconds * 1000, done: false });
   timerTickId ??= setInterval(refreshTimers, 1000);
-  if (activeView === 'timers') render(); else refreshTimers();
+  if (activeView === 'tools' && toolsTab === 'timers') render(); else refreshTimers();
 }
 
 function extendTimer(id, seconds = 60) {
@@ -927,7 +1041,8 @@ function saveRecipeFromEditor(form) {
   persist();
   $('#recipe-edit-dialog').close();
   if ($('#recipe-dialog').open) openRecipeDialog(recipe.id, false, recipeDialogPlanId);
-  activeView = 'recipes';
+  // Stay on the recipe's own page when editing from there; otherwise show the recipe list.
+  if (activeView === 'recipe') recipePageId = recipe.id; else activeView = 'recipes';
   render();
 }
 
@@ -939,6 +1054,81 @@ function deleteRecipe(id) {
   persist();
   $('#recipe-dialog').close();
   render();
+}
+
+// A recipe as a normal page: ingredients with what is in stock, tools, and numbered steps with the amounts written
+// in. Step by step (cook mode) is one button away.
+function openRecipePage(id) {
+  const recipe = recipeById(id);
+  if (!recipe) return;
+  recipePageId = recipe.id;
+  activeView = 'recipe';
+  if ($('#recipe-dialog').open) $('#recipe-dialog').close();
+  render();
+  window.scrollTo?.(0, 0);
+  ensureMealieInstructions(recipe);
+}
+
+// Mealie recipes in the library may not have their steps yet; fetch them once, then show them.
+const fetchingInstructions = new Set();
+async function ensureMealieInstructions(recipe) {
+  if (recipe.source !== 'Mealie' || !recipe.slug || Array.isArray(recipe.instructions) || fetchingInstructions.has(recipe.id)) return;
+  fetchingInstructions.add(recipe.id);
+  try {
+    const details = metricRecipe(await mealieRecipe(recipe.slug));
+    recipe.instructions = details.instructions || [];
+    persist();
+  } catch { /* Shown as "no steps" while Mealie is unreachable. */ } finally {
+    fetchingInstructions.delete(recipe.id);
+  }
+}
+
+function recipePageSteps(recipe) {
+  const lines = recipeInstructions(recipe).map((text) => metricText(String(text).trim())).filter(Boolean);
+  const steps = lines.map((text) => ({ heading: isStepHeading(text), text }));
+  addStepAmounts(steps.filter((step) => !step.heading), recipe.ingredients || []);
+  return { lines, steps };
+}
+
+function renderRecipePage() {
+  const recipe = recipeById(recipePageId);
+  if (!recipe) { activeView = 'recipes'; return renderRecipes(); }
+  const ingredients = recipe.ingredients || [];
+  const missing = missingIngredients(recipe);
+  const { lines, steps } = recipePageSteps(recipe);
+  const tools = typeof kitchenToolsIn === 'function' ? kitchenToolsIn(lines.join(' ')) : [];
+  const planned = currentWeekPlans().some((entry) => entry.recipeId === recipe.id);
+  const safeSourceUrl = /^https?:\/\//i.test(recipe.sourceUrl || '') ? recipe.sourceUrl : '';
+  const actions = `<div class="recipe-page-actions">
+      <button class="button button-primary" type="button" data-action="start-steps" data-id="${escapeHtml(recipe.id)}">Step by step <span aria-hidden="true">▶</span></button>
+      <button class="button ${planned ? 'button-outline' : 'button-dark'}" type="button" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${planned ? 'Plan another day' : 'Plan this week'}</button>
+    </div>`;
+  const links = [
+    safeSourceUrl ? `<a class="text-button" href="${escapeHtml(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">Original recipe ↗</a>` : '',
+    mealieRecipeLink(recipe, 'text-button', 'Open in Mealie'),
+    `<button class="text-button" type="button" data-action="edit-recipe" data-id="${escapeHtml(recipe.id)}">Edit</button>`,
+    `<button class="text-button recipe-delete-button" type="button" data-action="delete-recipe" data-id="${escapeHtml(recipe.id)}">Delete</button>`,
+  ].filter(Boolean).join('');
+  const ingredientList = ingredients.length
+    ? `<ul class="recipe-ingredient-list recipe-page-ingredients">${ingredients.map((ingredient) => {
+      const item = matchingInventory(ingredient);
+      return `<li class="${item ? 'in-stock' : 'not-stocked'}"><span aria-hidden="true">${item ? '✓' : '○'}</span><span>${escapeHtml(ingredient)}</span><small>${item ? `in ${escapeHtml(item.location)}` : 'not in inventory'}</small></li>`;
+    }).join('')}</ul>`
+    : '<p class="muted">No ingredients listed.</p>';
+  let number = 0;
+  const method = steps.length
+    ? `<div class="recipe-method">${steps.map((step) => (step.heading
+      ? `<h3 class="recipe-method-heading">${escapeHtml(step.text)}</h3>`
+      : `<div class="recipe-method-step"><span class="recipe-step-number" aria-hidden="true">${++number}</span><p>${highlightStepText(step.text)}</p></div>`)).join('')}</div>`
+    : `<p class="muted">${recipe.source === 'Mealie' && !Array.isArray(recipe.instructions) ? 'Loading the steps from Mealie…' : 'No steps saved for this recipe yet. Add them with Edit.'}</p>`;
+  const toolRow = tools.length ? `<ul class="steps-tools recipe-page-tools" aria-label="Tools">${tools.map((tool) => `<li title="${escapeHtml(tool.description)}">${kitchenToolIcon(tool)}<span>${escapeHtml(tool.name)}</span></li>`).join('')}</ul>` : '';
+  return `<button class="text-button recipe-back" type="button" data-action="back-to-recipes">‹ All recipes</button>
+    ${pageHeading(escapeHtml((recipe.source || 'Kitchen collection').toUpperCase()), escapeHtml(recipe.name), escapeHtml(recipe.description || ''), actions)}
+    <div class="recipe-page-links">${links}</div>
+    <div class="recipe-page">
+      <section class="section-block recipe-page-side"><div class="section-heading"><div><h2>Ingredients</h2><span class="muted">${ingredients.length ? (missing.length ? `${missing.length} missing` : 'All in stock') : ''}</span></div></div>${ingredientList}</section>
+      <section class="section-block recipe-page-main"><div class="section-heading"><div><h2>Method</h2><span class="muted">${number ? `${number} steps` : ''}</span></div></div>${toolRow}${method}</section>
+    </div>`;
 }
 
 function recipeCard(recipe, isRemote = false) {
@@ -1039,7 +1229,7 @@ async function openRecipeDialog(id, isRemote, planId = '') {
   recipeDialogRecipe = recipe;
   recipeDialogPlanId = planId;
   const safeSourceUrl = /^https?:\/\//i.test(recipe.sourceUrl || '') ? recipe.sourceUrl : '';
-  const manage = isRemote ? '' : `<button class="button button-quiet" type="button" data-action="edit-recipe" data-id="${escapeHtml(recipe.id)}">Edit</button><button class="button button-quiet recipe-delete-button" type="button" data-action="delete-recipe" data-id="${escapeHtml(recipe.id)}">Delete</button>`;
+  const manage = isRemote ? '' : `<button class="button button-quiet" type="button" data-action="view-recipe" data-id="${escapeHtml(recipe.id)}">Full recipe</button><button class="button button-quiet" type="button" data-action="edit-recipe" data-id="${escapeHtml(recipe.id)}">Edit</button><button class="button button-quiet recipe-delete-button" type="button" data-action="delete-recipe" data-id="${escapeHtml(recipe.id)}">Delete</button>`;
   const original = safeSourceUrl ? `<a class="button button-quiet" href="${escapeHtml(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">Original <span aria-hidden="true">↗</span></a>` : '';
   $('#recipe-dialog-actions').innerHTML = `${manage}${original}${mealieRecipeLink(recipe, 'button button-quiet mealie-button', 'Open in Mealie')}<button class="button button-outline" type="button" data-action="start-steps" data-source="recipe-dialog">Step by step <span aria-hidden="true">▶</span></button>${planAction}`;
   const dialog = $('#recipe-dialog');
@@ -1104,30 +1294,77 @@ function unitLabel(unitText, amount) {
   return /(?:ch|sh)$/i.test(unitText) ? `${unitText}es` : `${unitText}s`;
 }
 
-// Puts each ingredient's amount in front of its first mention: "Add the sesame oil" → "Add 1 tbsp of sesame oil".
+// Word stem for matching ingredient names in step text: drops plural and Dutch diminutive endings and a doubled
+// last consonant, so eggs/egg, eieren, kaneelstokje/kaneelstok and vanillestokken/vanillestokjes line up.
+function wordStem(word) {
+  const lower = word.toLowerCase();
+  const stripped = lower.replace(/(?:tjes|tje|jes|je|es|en|s)$/, '');
+  return (stripped.length >= 3 ? stripped : lower).replace(/([^aeiou])\1$/, '$1');
+}
+
+const STEP_DETERMINERS = new Set(['the', 'a', 'an', 'de', 'het', 'een']);
+const isPrepWord = (word) => /^\p{L}{2,}ed$/u.test(word) || /^ge\p{L}+(?:en|de|te)$/iu.test(word);
+
+// Puts each ingredient's amount in front of its first mention in the steps:
+// "Add the sesame oil" → "Add 1 tbsp of sesame oil", "Weeg de bloem" → "Weeg 200 gram bloem",
+// "Meet de hoeveelheid melk af" → "Meet 5 deciliter melk af", "the crushed garlic" → "3 cloves of crushed garlic".
+// Exact names match anywhere; looser matches (compound words like patisseriebloem ↔ bloem or nootjeschocolade ↔
+// chocolade, or only the last word of a longer name) need "the/de/het/een/a" right before them.
 function addStepAmounts(steps, ingredients) {
-  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const stem = (word) => escapeRegExp(word.replace(/(?:es|s)$/i, ''));
+  const markerRanges = (text) => [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
   for (const target of ingredients.map(parseIngredient).filter((entry) => entry.amount)) {
-    const full = target.name.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim().toLowerCase();
-    if (full.length < 2) continue;
-    const words = full.split(' ');
-    const head = words.length > 1 && words[words.length - 1].length > 3 ? words[words.length - 1] : '';
-    // An article is dropped ("the oil" → "1 tbsp of oil"); a prep word stays after the amount ("3 cloves of crushed garlic").
-    const prep = String.raw`\p{L}{2,}ed|ge\p{L}+(?:en|de|te)`;
-    const prefix = String.raw`(?:(?:the|de|het)\s+)?(?:(${prep})\s+)?`;
-    const patterns = [new RegExp(String.raw`\b${prefix}(${stem(full)}(?:e?s)?)\b`, 'iu')];
-    if (head) patterns.push(new RegExp(String.raw`\b(?=(?:the|de|het|${prep})\s)${prefix}(${stem(head)}(?:e?s)?)\b`, 'iu'));
+    const name = target.name.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim().toLowerCase();
+    const core = name.split(/\s+(?:met|with|zonder|without|voor|for)\s+/)[0].trim();
+    const coreWords = core.split(' ').filter(Boolean);
+    if (!coreWords.length || core.length < 2) continue;
+    const phrases = [...new Set([name, core])].map((phrase) => phrase.split(' ').filter(Boolean).map(wordStem));
+    const lastWord = coreWords[coreWords.length - 1];
+    const loose = coreWords.length === 1 ? wordStem(coreWords[0]) : (lastWord.length > 3 ? wordStem(lastWord) : '');
+    let placed = false;
     for (const step of steps) {
-      const match = patterns.map((pattern) => pattern.exec(step.text)).find(Boolean);
-      if (!match) continue;
-      const before = step.text.slice(0, match.index);
-      if (/[\d¼½¾⅓⅔⅛⅜⅝⅞]\s*[\p{L}.]*\s*(?:of\s+|van\s+)?$/u.test(before)) break;
-      const dutch = /\b(?:de|het|een|en|met|voeg|toe|snijd|bak|kook|minuten)\b/i.test(step.text);
+      if (placed) break;
+      const skip = markerRanges(step.text);
+      const words = [...step.text.matchAll(/[\p{L}’'-]+/gu)]
+        .filter((match) => !skip.some(([from, to]) => match.index >= from && match.index < to))
+        .map((match) => ({ text: match[0], start: match.index, end: match.index + match[0].length, stem: wordStem(match[0]) }));
+      let found = null;
+      for (let index = 0; index < words.length && !found; index++) {
+        // Exact: the whole name (or its core) word for word.
+        for (const phrase of phrases) {
+          if (phrase.every((stem, offset) => words[index + offset]?.stem === stem)) { found = { first: index, last: index + phrase.length - 1, exact: true }; break; }
+        }
+        if (found || !loose) continue;
+        const stem = words[index].stem;
+        const similar = stem === loose || (loose.length >= 4 && stem.endsWith(loose)) || (stem.length >= 4 && loose.endsWith(stem));
+        if (!similar) continue;
+        // Loose matches need an article (or a prep word after one) right before them.
+        const previous = words[index - 1]?.text.toLowerCase();
+        const beforePrep = words[index - 2]?.text.toLowerCase();
+        if (STEP_DETERMINERS.has(previous) || previous === 'hoeveelheid' || (isPrepWord(words[index - 1]?.text || '') && STEP_DETERMINERS.has(beforePrep))) {
+          found = { first: index, last: index, exact: false };
+        }
+      }
+      if (!found) continue;
+      // Words just before the name: a prep word stays after the amount, and an article (or "de hoeveelheid",
+      // "the amount of") is replaced by the amount.
+      let from = found.first;
+      let prep = '';
+      if (from > 0 && isPrepWord(words[from - 1].text)) { prep = words[from - 1].text; from -= 1; }
+      let dropFrom = from;
+      const previous = (offset) => words[from - offset]?.text.toLowerCase();
+      if (previous(1) === 'hoeveelheid' && STEP_DETERMINERS.has(previous(2))) dropFrom = from - 2;
+      else if (previous(1) === 'of' && previous(2) === 'amount' && STEP_DETERMINERS.has(previous(3))) dropFrom = from - 3;
+      else if (STEP_DETERMINERS.has(previous(1))) dropFrom = from - 1;
+      const insertAt = words[dropFrom].start;
+      const before = step.text.slice(0, insertAt);
+      // Already has an amount right there ("2 tbsp milk"): leave it.
+      if (/[\d¼½¾⅓⅔⅛⅜⅝⅞]\s*[\p{L}.]*\s*(?:of\s+|van\s+)?$/u.test(before)) { placed = true; break; }
+      const dutch = /\b(?:de|het|een|en|met|voeg|toe|snijd|bak|kook|minuten|giet|weeg|meet)\b/i.test(step.text);
       const unit = target.unitText ? ` ${unitLabel(target.unitText, target.amount)}${dutch ? '' : ' of'}` : '';
-      const words = `${match[1] ? `${match[1]} ` : ''}${match[2]}`;
-      step.text = `${before}\u0001${formatAmount(target.amount, target.unit)}${unit}\u0002 ${match.index === 0 ? words.toLowerCase() : words}${step.text.slice(match.index + match[0].length)}`;
-      break;
+      const named = step.text.slice(words[found.first].start, words[found.last].end);
+      const moved = `${prep ? `${prep} ` : ''}${named}`;
+      step.text = `${before}\u0001${formatAmount(target.amount, target.unit)}${unit}\u0002 ${insertAt === 0 ? moved.toLowerCase() : moved}${step.text.slice(words[found.last].end)}`;
+      placed = true;
     }
   }
 }
@@ -1364,7 +1601,7 @@ function refreshTimers() {
 
   // Stacked pills on the main screen while step-by-step is closed (the Timers tab already lists them).
   const floating = $('#floating-timers');
-  floating.hidden = stepsOpen || !cookTimers.length || activeView === 'timers';
+  floating.hidden = stepsOpen || !cookTimers.length || (activeView === 'tools' && toolsTab === 'timers');
   if (!floating.hidden) syncTimerList(floating, timersByUrgency(cookTimers));
 
   const flash = cookTimers.some((timer) => timer.done);
@@ -1384,7 +1621,8 @@ function openTimerStep(id) {
   if (timer.done) cookTimers = cookTimers.filter((entry) => entry !== timer);
   if (!timer.recipe) {
     if ($('#steps-dialog').open) $('#steps-dialog').close();
-    activeView = 'timers';
+    activeView = 'tools';
+    toolsTab = 'timers';
     render();
     return;
   }
@@ -1612,7 +1850,16 @@ document.addEventListener('click', async (event) => {
   if (action === 'mealie-disconnect') await disconnectMealie();
   if (action === 'open-settings') $('#settings-button').click();
   if (action === 'restore-data') $('#restore-file').click();
-  if (action === 'view-recipe') openRecipeDialog(id, button.dataset.remote === 'true');
+  if (action === 'view-recipe') {
+    if (button.dataset.remote === 'true') openRecipeDialog(id, true);
+    else openRecipePage(id);
+  }
+  if (action === 'back-to-recipes') { activeView = 'recipes'; render(); }
+  if (action === 'tools-tab') {
+    toolsTab = button.dataset.tab;
+    try { localStorage.setItem(TOOLS_TAB_KEY, toolsTab); } catch { /* A per-browser convenience only. */ }
+    render();
+  }
   if (action === 'review-plan') {
     const plan = state.plan.find((entry) => entry.id === id);
     if (plan) openRecipeDialog(plan.recipeId, false, plan.id);
@@ -1736,6 +1983,13 @@ document.addEventListener('click', async (event) => {
 });
 
 document.addEventListener('input', (event) => {
+  // Tools tab: update results in place so the field keeps focus while typing.
+  if (event.target.id === 'conv-amount') { converterInput.amount = event.target.value; updateConverter(); return; }
+  if (event.target.id === 'conv-unit') { converterInput.unit = event.target.value; updateConverter(); return; }
+  if (event.target.id === 'conv-ingredient') { converterInput.ingredient = event.target.value; updateConverter(); return; }
+  if (event.target.id === 'temp-value') { temperatureInput.value = event.target.value; updateTemperature(); return; }
+  if (event.target.id === 'temp-unit') { temperatureInput.unit = event.target.value; updateTemperature(); return; }
+  if (event.target.id === 'terms-search') { termsQuery = event.target.value; updateCookingTerms(); return; }
   if (event.target.id === 'inventory-search') {
     const cursor = event.target.selectionStart;
     inventoryQuery = event.target.value;
@@ -2222,6 +2476,7 @@ window.addEventListener('storage', (event) => { if (event.key === TIMERS_KEY) lo
 window.goodstockBack = () => {
   const open = $$('dialog[open]');
   if (open.length) { open[open.length - 1].close(); return true; }
+  if (activeView === 'recipe') { activeView = 'recipes'; render(); return true; }
   if (activeView !== 'inventory') { activeView = 'inventory'; render(); return true; }
   return false;
 };

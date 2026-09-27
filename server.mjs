@@ -54,6 +54,7 @@ const staticFiles = new Map([
   ['/manifest.webmanifest', ['manifest.webmanifest', 'application/manifest+json']],
   ['/ingredients.json', ['ingredients.json', 'application/json; charset=utf-8']],
   ['/kitchen-tools.js', ['kitchen-tools.js', 'text/javascript; charset=utf-8']],
+  ['/kitchen-reference.js', ['kitchen-reference.js', 'text/javascript; charset=utf-8']],
   ['/recipe-import.mjs', ['recipe-import.mjs', 'text/javascript; charset=utf-8']],
   ['/mealie.mjs', ['mealie.mjs', 'text/javascript; charset=utf-8']],
 ]);
