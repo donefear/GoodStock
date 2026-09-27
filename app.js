@@ -33,6 +33,7 @@ function freshState() {
     plan: [],
     shopping: [],
     locations: [...defaultLocations],
+    timerPresets: [],
   };
 }
 
@@ -59,6 +60,7 @@ function normalizeState(value) {
     plan: Array.isArray(value.plan) ? value.plan : [],
     shopping: Array.isArray(value.shopping) ? value.shopping.map(metricInventoryItem) : [],
     locations: Array.isArray(value.locations) && value.locations.length ? value.locations : defaults.locations,
+    timerPresets: Array.isArray(value.timerPresets) ? value.timerPresets : [],
   };
 }
 
@@ -548,14 +550,15 @@ async function initialize() {
 }
 
 function render() {
-  const names = { inventory: 'INVENTORY', week: 'THIS WEEK', shopping: 'SHOPPING LIST', recipes: 'RECIPES' };
+  const names = { inventory: 'INVENTORY', week: 'THIS WEEK', shopping: 'SHOPPING LIST', recipes: 'RECIPES', timers: 'TIMERS' };
   $('#page-crumb').textContent = names[activeView];
   $('#today-label').textContent = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(new Date());
   $$('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === activeView));
   const unchecked = state.shopping.filter((item) => !item.checked).length;
   $('#shopping-count').textContent = unchecked ? String(unchecked) : '';
-  const views = { inventory: renderInventory, week: renderWeek, shopping: renderShopping, recipes: renderRecipes };
+  const views = { inventory: renderInventory, week: renderWeek, shopping: renderShopping, recipes: renderRecipes, timers: renderTimers };
   $('#view-container').innerHTML = views[activeView]();
+  refreshTimers();
   updateSyncStatus(navigator.onLine ? (localStorage.getItem(PENDING_KEY) ? 'pending' : 'online') : 'offline');
 }
 
@@ -637,6 +640,67 @@ function renderShopping() {
   const actions = `<div class="shopping-heading-actions">${state.shopping.length ? '<button class="button button-outline" data-action="show-shopping-qr">Share to phone <span aria-hidden="true">▦</span></button>' : ''}<button class="button button-outline" data-action="generate-shopping">Refresh from plan <span aria-hidden="true">↻</span></button></div>`;
   return `${pageHeading('OUT AND ABOUT', 'The list, in hand.', `${remaining} ${remaining === 1 ? 'thing' : 'things'} left to pick up. Check off as you go.`, actions)}
     <section class="section-block shopping-block"><div class="section-heading"><div><h2>This week’s list</h2><span class="muted">${state.shopping.length} items</span></div><div class="list-actions">${remaining ? '<button class="text-button" data-action="check-all">✓ Check all</button>' : ''}${state.shopping.some((item) => item.checked) ? '<button class="button button-small button-outline" data-action="put-all-away">Put all away</button><button class="text-button" data-action="clear-checked">Clear checked</button>' : ''}${state.shopping.length ? '<button class="text-button clear-list-button" data-action="clear-list">× Clear list</button>' : ''}</div></div>${rows ? `<div class="shopping-list">${rows}</div>` : '<div class="empty-state compact"><span class="empty-mark">☷</span><strong>Your list is nice and clear.</strong><p>Build it from the meals in your weekly plan.</p><button class="button button-primary" data-action="generate-shopping">Build from this week</button></div>'}</section>`;
+}
+
+// Timers tab: one-tap presets, a custom timer, and every running timer (recipe timers included).
+const BUILT_IN_TIMER_PRESETS = [
+  { name: 'Black tea', seconds: 240, icon: '☕' },
+  { name: 'Green tea', seconds: 150, icon: '🍵' },
+  { name: 'Herbal tea', seconds: 360, icon: '🌿' },
+  { name: 'Soft-boiled egg', seconds: 360, icon: '🥚' },
+  { name: 'Jammy egg', seconds: 450, icon: '🥚' },
+  { name: 'Hard-boiled egg', seconds: 600, icon: '🥚' },
+  { name: 'Pasta', seconds: 600, icon: '🍝' },
+  { name: 'Rice', seconds: 720, icon: '🍚' },
+  { name: 'French press', seconds: 240, icon: '☕' },
+  { name: 'Frozen pizza', seconds: 720, icon: '🍕' },
+];
+
+function formatDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds % 60);
+  if (!minutes) return `${rest} sec`;
+  return rest ? `${minutes} min ${rest} sec` : `${minutes} min`;
+}
+
+function timerPresetButton(preset, saved = false) {
+  const start = `<button class="timer-preset" type="button" data-action="timer-preset" data-name="${escapeHtml(preset.name)}" data-seconds="${preset.seconds}"><span class="timer-preset-icon" aria-hidden="true">${escapeHtml(preset.icon || '⏱')}</span><strong>${escapeHtml(preset.name)}</strong><small>${formatDuration(preset.seconds)}</small></button>`;
+  return saved
+    ? `<div class="timer-preset-saved">${start}<button class="timer-preset-remove" type="button" data-action="timer-preset-remove" data-id="${escapeHtml(preset.id)}" aria-label="Remove ${escapeHtml(preset.name)} preset">×</button></div>`
+    : start;
+}
+
+function renderTimers() {
+  const running = cookTimers.length;
+  const saved = state.timerPresets || [];
+  return `${pageHeading('ON THE CLOCK', 'Timers for anything.', running ? `${running} ${running === 1 ? 'timer' : 'timers'} going. Tap one to stop it or add a minute.` : 'Tea, eggs, pasta or anything else. Tap a preset or make your own.')}
+    <section class="section-block"><div class="section-heading"><div><h2>Running</h2><span class="muted" id="timer-view-count">${running || 'None yet'}</span></div></div><div class="timer-list timer-view-list" id="timer-view-list"></div><p class="timer-view-empty" id="timer-view-empty"${running ? ' hidden' : ''}>Nothing running. Start one below.</p></section>
+    <section class="section-block"><div class="section-heading"><div><h2>Quick start</h2><span class="muted">One tap</span></div></div><div class="timer-presets">${saved.map((preset) => timerPresetButton(preset, true)).join('')}${BUILT_IN_TIMER_PRESETS.map((preset) => timerPresetButton(preset)).join('')}</div></section>
+    <section class="section-block"><div class="section-heading"><div><h2>Custom timer</h2></div></div>
+      <form class="custom-timer-form" id="custom-timer-form">
+        <label>What's it for?<input name="name" placeholder="e.g. Oat milk porridge" maxlength="40" autocomplete="off" /></label>
+        <div class="custom-timer-time"><label>Minutes<input name="minutes" type="number" min="0" max="999" step="1" value="5" inputmode="numeric" /></label><label>Seconds<input name="seconds" type="number" min="0" max="59" step="1" value="0" inputmode="numeric" /></label></div>
+        <label class="custom-timer-save"><input name="save" type="checkbox" /> Save as a quick-start preset</label>
+        <button class="button button-primary" type="submit">Start timer ⏱</button>
+      </form>
+    </section>`;
+}
+
+function startCustomTimer(name, seconds) {
+  if (!(seconds > 0)) return;
+  unlockAlarmAudio();
+  cookTimers.push({ id: makeId(), recipe: null, name: name || 'Timer', label: formatDuration(seconds), endsAt: Date.now() + seconds * 1000, done: false });
+  timerTickId ??= setInterval(refreshTimers, 1000);
+  if (activeView === 'timers') render(); else refreshTimers();
+}
+
+function extendTimer(id, seconds = 60) {
+  const timer = cookTimers.find((entry) => entry.id === id);
+  if (!timer) return;
+  timer.endsAt = timer.done ? Date.now() + seconds * 1000 : timer.endsAt + seconds * 1000;
+  timer.done = false;
+  timerTickId ??= setInterval(refreshTimers, 1000);
+  refreshTimers();
 }
 
 function recipeCard(recipe, isRemote = false) {
@@ -889,7 +953,7 @@ function timerAlarm(timer) {
     alarmLoopId = setInterval(timerBeep, 2000);
   }
   if (document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('Goodstock timer', { body: `${timer.recipe.name}: ${timer.label} is done.`, tag: timer.id, requireInteraction: true });
+    new Notification('Goodstock timer', { body: `${timerTitle(timer)}: ${timer.label} is done.`, tag: timer.id, requireInteraction: true });
   }
 }
 
@@ -914,17 +978,19 @@ function timerBeep() {
 const timerRemaining = (timer) => (timer.endsAt - Date.now()) / 1000;
 // Finished timers first, then the one that ends soonest.
 const timersByUrgency = (timers) => [...timers].sort((a, b) => Number(b.done) - Number(a.done) || a.endsAt - b.endsAt);
-const currentStepTimer = () => cookSession && cookTimers.find((timer) => timer.recipe.id === cookSession.recipe.id && timer.stepIndex === cookSession.index);
+const currentStepTimer = () => cookSession && cookTimers.find((timer) => timer.recipe?.id === cookSession.recipe.id && timer.stepIndex === cookSession.index);
+
+const timerTitle = (timer) => timer.recipe?.name || timer.name || 'Timer';
 
 function timerPillText(timer) {
   return {
     time: timer.done ? 'Time is up!' : formatTimer(timerRemaining(timer)),
-    label: `${timer.recipe.name} · ${timer.done ? 'tap to go back' : timer.label}`,
+    label: `${timerTitle(timer)} · ${timer.done ? (timer.recipe ? 'tap to go back' : 'tap to clear') : timer.label}`,
   };
 }
 
 // Keyed update so the pills are not rebuilt every second (a tap mid-rebuild would get lost).
-function syncTimerList(container, timers) {
+function syncTimerList(container, timers, { extend = false } = {}) {
   const wanted = new Set(timers.map((timer) => timer.id));
   for (const pill of [...container.children]) if (!wanted.has(pill.dataset.timerId)) pill.remove();
   timers.forEach((timer, position) => {
@@ -934,6 +1000,7 @@ function syncTimerList(container, timers) {
       pill.className = 'timer-pill';
       pill.dataset.timerId = timer.id;
       pill.innerHTML = `<button class="timer-pill-open" type="button" data-action="timer-open" data-timer="${escapeHtml(timer.id)}"><span class="timer-pill-icon" aria-hidden="true">⏱</span><span><strong></strong><small></small></span></button><button class="timer-pill-stop" type="button" data-action="timer-stop" data-timer="${escapeHtml(timer.id)}" aria-label="Stop timer">×</button>`;
+      if (extend) pill.querySelector('.timer-pill-stop').insertAdjacentHTML('beforebegin', `<button class="timer-pill-extend" type="button" data-action="timer-extend" data-timer="${escapeHtml(timer.id)}" aria-label="Add one minute">+1 min</button>`);
     }
     if (container.children[position] !== pill) container.insertBefore(pill, container.children[position] || null);
     const text = timerPillText(timer);
@@ -984,16 +1051,25 @@ function refreshTimers() {
   if (others.length) {
     const first = others[0];
     chip.classList.toggle('is-done', first.done);
-    chip.textContent = `${first.done ? '⏰ Time is up' : `⏱ ${formatTimer(timerRemaining(first))}`}${others.length > 1 ? ` · +${others.length - 1} more` : ` · ${first.recipe.name}`}`;
+    chip.textContent = `${first.done ? '⏰ Time is up' : `⏱ ${formatTimer(timerRemaining(first))}`}${others.length > 1 ? ` · +${others.length - 1} more` : ` · ${timerTitle(first)}`}`;
     chip.setAttribute('aria-expanded', String(timerPanelOpen));
   }
   const panel = $('#steps-timer-panel');
   panel.hidden = !stepsOpen || !timerPanelOpen;
   if (!panel.hidden) syncTimerList(panel, others);
 
-  // Stacked pills on the main screen while step-by-step is closed.
+  // Every timer on the Timers tab, with +1 min.
+  const viewList = $('#timer-view-list');
+  if (viewList) {
+    syncTimerList(viewList, timersByUrgency(cookTimers), { extend: true });
+    $('#timer-view-empty').hidden = cookTimers.length > 0;
+    $('#timer-view-count').textContent = cookTimers.length ? String(cookTimers.length) : 'None yet';
+  }
+  $('#timer-count').textContent = cookTimers.length ? String(cookTimers.length) : '';
+
+  // Stacked pills on the main screen while step-by-step is closed (the Timers tab already lists them).
   const floating = $('#floating-timers');
-  floating.hidden = stepsOpen || !cookTimers.length;
+  floating.hidden = stepsOpen || !cookTimers.length || activeView === 'timers';
   if (!floating.hidden) syncTimerList(floating, timersByUrgency(cookTimers));
 
   const flash = cookTimers.some((timer) => timer.done);
@@ -1011,6 +1087,12 @@ function openTimerStep(id) {
   const timer = cookTimers.find((entry) => entry.id === id);
   if (!timer) return;
   if (timer.done) cookTimers = cookTimers.filter((entry) => entry !== timer);
+  if (!timer.recipe) {
+    if ($('#steps-dialog').open) $('#steps-dialog').close();
+    activeView = 'timers';
+    render();
+    return;
+  }
   if (cookSession?.recipe.id === timer.recipe.id) {
     cookSession.index = timer.stepIndex;
   } else {
@@ -1257,6 +1339,12 @@ document.addEventListener('click', async (event) => {
   if (action === 'steps-timer-start') startCookTimer(Number(button.dataset.minutes), button.dataset.label);
   if (action === 'timer-stop') stopCookTimer(button.dataset.timer);
   if (action === 'timer-open') openTimerStep(button.dataset.timer);
+  if (action === 'timer-extend') extendTimer(button.dataset.timer);
+  if (action === 'timer-preset') startCustomTimer(button.dataset.name, Number(button.dataset.seconds));
+  if (action === 'timer-preset-remove') {
+    state.timerPresets = (state.timerPresets || []).filter((preset) => preset.id !== button.dataset.id);
+    persist();
+  }
   if (action === 'timer-panel-toggle') { timerPanelOpen = !timerPanelOpen; refreshTimers(); }
   if (action === 'add-test-recipe') addTestRecipe();
   if (action === 'steps-review') {
@@ -1572,7 +1660,7 @@ $('#wipe-form').addEventListener('submit', (event) => {
   if (event.currentTarget.elements.confirmation.value.trim().toUpperCase() !== 'WIPE') return;
   $('#wipe-dialog').close();
   $('#settings-dialog').close();
-  state = { inventory: [], recipes: [], plan: [], shopping: [], locations: [...defaultLocations] };
+  state = { inventory: [], recipes: [], plan: [], shopping: [], locations: [...defaultLocations], timerPresets: [] };
   activeView = 'inventory';
   inventoryQuery = '';
   inventoryLocation = 'All locations';
@@ -1593,6 +1681,19 @@ $('#settings-form').addEventListener('submit', (event) => {
 });
 
 document.addEventListener('submit', (event) => {
+  if (event.target.id === 'custom-timer-form') {
+    event.preventDefault();
+    const form = event.target;
+    const name = form.elements.name.value.trim();
+    const seconds = Math.max(0, Number(form.elements.minutes.value) || 0) * 60 + Math.max(0, Number(form.elements.seconds.value) || 0);
+    if (!seconds) { form.elements.minutes.focus(); return; }
+    if (form.elements.save.checked) {
+      state.timerPresets = [...(state.timerPresets || []), { id: makeId(), name: name || formatDuration(seconds), seconds, icon: '⏱' }];
+      persist();
+    }
+    startCustomTimer(name || formatDuration(seconds), seconds);
+    return;
+  }
   if (event.target.id !== 'recipe-search-form') return;
   event.preventDefault();
   recipeQuery = $('#recipe-search').value.trim();

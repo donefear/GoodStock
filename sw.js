@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goodstock-shell-v21';
+const CACHE_NAME = 'goodstock-shell-v22';
 const APP_SHELL = ['/', '/index.html', '/app.js', '/kitchen-tools.js', '/styles.css', '/manifest.webmanifest', '/ingredients.json'];
 
 self.addEventListener('install', (event) => {
