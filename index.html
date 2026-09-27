@@ -88,6 +88,26 @@
       </form>
     </dialog>
 
+    <dialog id="recipe-edit-dialog" class="app-dialog recipe-edit-dialog">
+      <form id="recipe-edit-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow" id="recipe-edit-eyebrow">YOUR RECIPE</span><h2 id="recipe-edit-title">New recipe</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <details class="recipe-import" id="recipe-import">
+          <summary>Import from a website or pasted text</summary>
+          <label>Recipe link<span class="recipe-import-row"><input name="importUrl" type="url" inputmode="url" placeholder="https://…" autocomplete="off" /><button class="button button-outline" type="button" data-action="recipe-import-url">Fetch</button></span><span class="field-hint">Works with most recipe websites. The app host needs internet access.</span></label>
+          <label>Or paste the recipe<textarea name="importText" rows="5" placeholder="Paste the title, the ingredients and the steps. Headings like “Ingredients” and “Instructions” help."></textarea></label>
+          <button class="button button-outline" type="button" data-action="recipe-import-text">Fill in from text</button>
+          <p class="recipe-import-status" id="recipe-import-status" role="status" aria-live="polite"></p>
+        </details>
+        <input type="hidden" name="id" />
+        <input type="hidden" name="sourceUrl" />
+        <label>Name<input name="name" required maxlength="120" placeholder="e.g. Grandma's pea soup" /></label>
+        <label>Short description<input name="description" maxlength="400" placeholder="Optional" /></label>
+        <label>Ingredients <span class="field-hint">One per line, amount first: “200 g pasta”, “2 eggs”, “1 tbsp olive oil”.</span><textarea name="ingredients" rows="7" placeholder="200 g pasta&#10;2 eggs&#10;1 tbsp olive oil"></textarea></label>
+        <label>Steps <span class="field-hint">One step per line. A short line without a full stop, like “Sauce”, becomes a section heading.</span><textarea name="instructions" rows="8" placeholder="Bring a big pot of salted water to the boil.&#10;Cook the pasta for 10 minutes."></textarea></label>
+        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save recipe</button></div>
+      </form>
+    </dialog>
+
     <dialog id="putaway-dialog" class="app-dialog">
       <form id="putaway-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">GROCERIES</span><h2>Put it away</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>

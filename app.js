@@ -706,6 +706,118 @@ function extendTimer(id, seconds = 60) {
   refreshTimers();
 }
 
+// Your own recipes: write one, import it from a recipe website, or paste its text. No Mealie needed.
+function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
+  const form = $('#recipe-edit-form');
+  form.reset();
+  form.elements.id.value = recipe?.id || '';
+  form.elements.sourceUrl.value = recipe?.sourceUrl || '';
+  form.elements.name.value = recipe?.name || '';
+  form.elements.description.value = recipe?.description || '';
+  form.elements.ingredients.value = (recipe?.ingredients || []).join('\n');
+  form.elements.instructions.value = recipeInstructions(recipe || {}).join('\n');
+  $('#recipe-edit-title').textContent = recipe ? `Edit ${recipe.name}` : 'New recipe';
+  $('#recipe-edit-eyebrow').textContent = recipe ? 'EDIT RECIPE' : 'YOUR RECIPE';
+  $('#recipe-import').hidden = Boolean(recipe);
+  $('#recipe-import').open = importFirst;
+  $('#recipe-import-status').textContent = '';
+  $('#recipe-edit-dialog').showModal();
+  (importFirst ? form.elements.importUrl : form.elements.name).focus();
+}
+
+// Splits pasted recipe text into name, ingredients and steps. Headings ("Ingredients", "Method", "Bereiding") help;
+// without them, short lines that start with an amount count as ingredients and everything else as steps.
+function parseRecipeText(text) {
+  const ingredientHeading = /^(?:ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden)\s*:?$/i;
+  const stepHeading = /^(?:instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze)\s*:?$/i;
+  const clean = (line) => line.replace(/^(?:[-–•*▢☐□✓]\s*|(?:step\s*)?\d+[.)]\s+)/i, '').trim();
+  const lines = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const hasHeadings = lines.some((line) => ingredientHeading.test(line) || stepHeading.test(line));
+  const result = { name: '', description: '', ingredients: [], instructions: [] };
+  const before = [];
+  let section = null;
+  for (const line of lines) {
+    if (ingredientHeading.test(line)) { section = 'ingredients'; continue; }
+    if (stepHeading.test(line)) { section = 'instructions'; continue; }
+    if (section) { result[section].push(clean(line)); continue; }
+    if (!result.name) { result.name = line; continue; }
+    before.push(line);
+  }
+  if (hasHeadings) {
+    result.description = before.join(' ').slice(0, 400);
+  } else {
+    for (const line of before) {
+      const looksLikeIngredient = line.length < 80 && !/[.!?]$/.test(line) && /^(?:[-–•*]\s*)?(?:[\d¼½¾⅓⅔⅛]|(?:a|an|one|two|three|pinch|handful|some)\b)/i.test(line);
+      (looksLikeIngredient ? result.ingredients : result.instructions).push(clean(line));
+    }
+  }
+  return result;
+}
+
+function fillRecipeEditor(recipe, message) {
+  const form = $('#recipe-edit-form');
+  if (recipe.name) form.elements.name.value = recipe.name;
+  if (recipe.description) form.elements.description.value = recipe.description;
+  if (recipe.ingredients?.length) form.elements.ingredients.value = recipe.ingredients.join('\n');
+  if (recipe.instructions?.length) form.elements.instructions.value = recipe.instructions.join('\n');
+  if (recipe.sourceUrl) form.elements.sourceUrl.value = recipe.sourceUrl;
+  $('#recipe-import-status').textContent = message;
+}
+
+async function importRecipeFromUrl() {
+  const form = $('#recipe-edit-form');
+  const address = form.elements.importUrl.value.trim();
+  const status = $('#recipe-import-status');
+  if (!address) { form.elements.importUrl.focus(); return; }
+  status.textContent = 'Fetching the recipe…';
+  try {
+    const response = await fetch(`/api/recipes/import?url=${encodeURIComponent(address)}`);
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) { status.textContent = result.error || 'That recipe could not be imported.'; return; }
+    const host = (() => { try { return new URL(result.sourceUrl).hostname.replace(/^www\./, ''); } catch { return 'the website'; } })();
+    fillRecipeEditor(result, `Imported from ${host}: ${result.ingredients.length} ingredients, ${result.instructions.length} steps. Check it, then save.`);
+  } catch {
+    status.textContent = navigator.onLine ? 'Could not reach the app server.' : 'You are offline. Paste the recipe text instead.';
+  }
+}
+
+function saveRecipeFromEditor(form) {
+  const lines = (value) => value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const existing = state.recipes.find((recipe) => recipe.id === form.elements.id.value);
+  const sourceUrl = form.elements.sourceUrl.value.trim();
+  const recipe = metricRecipe({
+    ...(existing || {}),
+    id: existing?.id || `my-${makeId()}`,
+    name: form.elements.name.value.trim(),
+    description: form.elements.description.value.trim(),
+    ingredients: lines(form.elements.ingredients.value),
+    instructions: lines(form.elements.instructions.value),
+    source: existing?.source || (sourceUrl ? 'Imported' : 'My recipes'),
+    sourceUrl: sourceUrl || existing?.sourceUrl || '',
+  });
+  if (!recipe.name) return;
+  if (existing) Object.assign(existing, recipe); else state.recipes.unshift(recipe);
+  // Steps may have changed, so a saved cook-mode position no longer lines up.
+  const progress = readCookProgress();
+  delete progress[recipe.id];
+  try { localStorage.setItem(COOK_PROGRESS_KEY, JSON.stringify(progress)); } catch { /* Progress is a convenience only. */ }
+  persist();
+  $('#recipe-edit-dialog').close();
+  if ($('#recipe-dialog').open) openRecipeDialog(recipe.id, false, recipeDialogPlanId);
+  activeView = 'recipes';
+  render();
+}
+
+function deleteRecipe(id) {
+  const recipe = recipeById(id);
+  if (!recipe || !window.confirm(`Delete “${recipe.name}” from your recipes? Meals planned with it are removed too.`)) return;
+  state.recipes = state.recipes.filter((entry) => entry.id !== recipe.id);
+  state.plan = state.plan.filter((entry) => entry.recipeId !== recipe.id);
+  persist();
+  $('#recipe-dialog').close();
+  render();
+}
+
 function recipeCard(recipe, isRemote = false) {
   const missing = missingIngredients(recipe);
   const status = missing.length === 0 ? 'You have everything' : `${missing.length} missing: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''}`;
@@ -719,7 +831,8 @@ function recipeCard(recipe, isRemote = false) {
 function renderRecipes() {
   const localRecipes = state.recipes.filter((recipe) => `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`.toLowerCase().includes(recipeQuery.toLowerCase()));
   const sorted = [...localRecipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
-  return `${pageHeading('FROM YOUR SHELF', 'What sounds good?', 'Find something to make with what you have, or a few things you could grab.', '')}
+  const actions = '<div class="recipe-heading-actions"><button class="button button-primary" data-action="new-recipe">＋ New recipe</button><button class="button button-outline" data-action="open-recipe-import">Import <span aria-hidden="true">↓</span></button></div>';
+  return `${pageHeading('FROM YOUR SHELF', 'What sounds good?', 'Find something to make with what you have, or a few things you could grab.', actions)}
     <form class="recipe-search" id="recipe-search-form"><span aria-hidden="true">⌕</span><input id="recipe-search" value="${escapeHtml(recipeQuery)}" placeholder="Search recipes or ingredients" aria-label="Search recipes or ingredients"/><button class="button button-primary" type="submit">Search</button></form>
     ${mealieConfigured ? '<button class="button button-outline stock-search-button" data-action="search-stocked">Find with my inventory <span aria-hidden="true">↗</span></button>' : ''}
     <div class="recipe-results-heading"><div><span class="eyebrow">YOUR RECIPE BOX</span><h2>Closest to ready</h2></div><span class="muted">${sorted.length} recipes</span></div>
@@ -802,7 +915,10 @@ async function openRecipeDialog(id, isRemote, planId = '') {
   }
   recipeDialogRecipe = recipe;
   recipeDialogPlanId = planId;
-  $('#recipe-dialog-actions').innerHTML = `${mealieRecipeLink(recipe, 'button button-quiet mealie-button', 'Open in Mealie')}<button class="button button-outline" type="button" data-action="start-steps" data-source="recipe-dialog">Step by step <span aria-hidden="true">▶</span></button>${planAction}`;
+  const safeSourceUrl = /^https?:\/\//i.test(recipe.sourceUrl || '') ? recipe.sourceUrl : '';
+  const manage = isRemote ? '' : `<button class="button button-quiet" type="button" data-action="edit-recipe" data-id="${escapeHtml(recipe.id)}">Edit</button><button class="button button-quiet recipe-delete-button" type="button" data-action="delete-recipe" data-id="${escapeHtml(recipe.id)}">Delete</button>`;
+  const original = safeSourceUrl ? `<a class="button button-quiet" href="${escapeHtml(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">Original <span aria-hidden="true">↗</span></a>` : '';
+  $('#recipe-dialog-actions').innerHTML = `${manage}${original}${mealieRecipeLink(recipe, 'button button-quiet mealie-button', 'Open in Mealie')}<button class="button button-outline" type="button" data-action="start-steps" data-source="recipe-dialog">Step by step <span aria-hidden="true">▶</span></button>${planAction}`;
   const dialog = $('#recipe-dialog');
   if (!dialog.open) dialog.showModal();
 }
@@ -1469,6 +1585,17 @@ document.addEventListener('click', async (event) => {
     if (item) openPutawayDialog(item);
   }
   if (action === 'import-recipe') await importMealieRecipe(id);
+  if (action === 'new-recipe') openRecipeEditor();
+  if (action === 'open-recipe-import') openRecipeEditor(null, { importFirst: true });
+  if (action === 'edit-recipe') openRecipeEditor(recipeById(id));
+  if (action === 'delete-recipe') deleteRecipe(id);
+  if (action === 'recipe-import-url') await importRecipeFromUrl();
+  if (action === 'recipe-import-text') {
+    const parsed = parseRecipeText($('#recipe-edit-form').elements.importText.value);
+    fillRecipeEditor(parsed, parsed.ingredients.length || parsed.instructions.length
+      ? `Found ${parsed.ingredients.length} ingredients and ${parsed.instructions.length} steps. Check them, then save.`
+      : 'Nothing recognisable in that text yet.');
+  }
   if (action === 'wipe-data') openWipeDialog();
   if (action === 'clear-list' && state.shopping.length && window.confirm('Clear every item from the shopping list?')) {
     state.shopping = [];
@@ -1726,6 +1853,11 @@ $('#settings-form').addEventListener('submit', (event) => {
 });
 
 document.addEventListener('submit', (event) => {
+  if (event.target.id === 'recipe-edit-form') {
+    event.preventDefault();
+    saveRecipeFromEditor(event.target);
+    return;
+  }
   if (event.target.id === 'custom-timer-form') {
     event.preventDefault();
     const form = event.target;
@@ -1779,6 +1911,13 @@ $('#steps-body').addEventListener('change', (event) => {
   const key = event.target.dataset.stepsItem;
   if (!key || !cookSession) return;
   if (event.target.checked) cookSession.checked.add(key); else cookSession.checked.delete(key);
+});
+
+$('#recipe-edit-form').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && event.target.name === 'importUrl') {
+    event.preventDefault();
+    importRecipeFromUrl();
+  }
 });
 
 $('#steps-dialog').addEventListener('keydown', (event) => {

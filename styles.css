@@ -221,6 +221,21 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .match-tag.has-missing { color: #a66c24; }
 .shopping-block { margin-top: 4px; }
 .shopping-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.recipe-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.recipe-edit-dialog { width: min(640px, calc(100% - 20px)); }
+.recipe-edit-dialog form { display: grid; gap: 14px; }
+.app-dialog label > textarea { width: 100%; margin-top: 7px; padding: 10px 11px; border: 1px solid #dbe2d9; border-radius: 5px; background: white; color: var(--ink); font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
+.recipe-import { padding: 12px 14px; border: 1px dashed var(--line); border-radius: 8px; }
+.recipe-import[hidden] { display: none; }
+.recipe-import summary { color: var(--green); font-size: 13px; font-weight: 700; cursor: pointer; }
+.recipe-import[open] { display: grid; gap: 12px; }
+.recipe-import[open] summary { margin-bottom: 4px; }
+.recipe-import-row { margin-top: 7px; display: flex; gap: 8px; }
+.recipe-import-row input { min-width: 0; height: 45px; flex: 1; padding: 0 11px; border: 1px solid #dbe2d9; border-radius: 5px; background: white; color: var(--ink); font-size: 13px; }
+.recipe-import > .button { justify-self: start; }
+.recipe-import-status { margin: 0; color: var(--green); font-size: 12px; font-weight: 600; }
+.recipe-import-status:empty { display: none; }
+.recipe-delete-button { color: #b65c48; }
 .shopping-list { border-top: 1px solid var(--line); }
 .shopping-row { min-height: 67px; padding: 10px 8px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; }
 .shopping-row.checked .shopping-name { color: #9ba39b; text-decoration: line-through; }
@@ -483,6 +498,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 :root[data-theme="dark"] .app-dialog { border-color: #3a4b3e; background: #202a24; color: var(--ink); }
 :root[data-theme="dark"] .app-dialog label:not(.ingredient-check) { color: #becbbf; }
 :root[data-theme="dark"] .app-dialog label > input, :root[data-theme="dark"] .app-dialog label > select { border-color: #3b4b40; background: #18221c; color: var(--ink); }
+:root[data-theme="dark"] .app-dialog label > textarea, :root[data-theme="dark"] .recipe-import-row input { border-color: #3b4b40; background: #18221c; color: var(--ink); }
 :root[data-theme="dark"] .dialog-copy, :root[data-theme="dark"] .settings-note { color: #aab6ac; }
 :root[data-theme="dark"] .share-expiry { color: #aab6ac; }
 :root[data-theme="dark"] .ingredient-check { border-color: #3a4b3f; }
