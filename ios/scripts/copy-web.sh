@@ -9,7 +9,7 @@ DEST="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/web"
 
 rm -rf "$DEST"
 mkdir -p "$DEST/fonts" "$DEST/lang"
-for file in index.html i18n.js app.js kitchen-tools.js kitchen-reference.js recipe-import.mjs mealie.mjs deepl.mjs styles.css ingredients.json manifest.webmanifest logo.svg; do
+for file in index.html i18n.js app.js kitchen-tools.js kitchen-reference.js recipe-import.mjs mealie.mjs deepl.mjs styles.css ingredients.json manifest.webmanifest logo.svg icon.svg; do
   cp "$ROOT/$file" "$DEST/"
 done
 cp "$ROOT"/fonts/*.woff2 "$ROOT/fonts/fonts.css" "$DEST/fonts/"

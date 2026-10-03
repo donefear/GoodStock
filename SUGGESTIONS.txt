@@ -78,8 +78,8 @@ a Spanish or German recipe works less well than a Dutch one.
 --------------
 
 3.1 Missing favicon.
-    Browsers ask for /favicon.ico and get a 404 (harmless, but it shows in logs). Add
-    <link rel="icon" href="logo.svg"> and serve it.
+    DONE (v2.1.31): new icon.svg (the green Goodstock icon, same as the iPhone app) is linked as the favicon, served
+    by the server, cached for offline use and bundled in both phone apps. Page loads no longer produce any 404.
 
 3.2 Home-screen icon for the server version on iPhones.
     The web version has no apple-touch-icon, so "Add to Home Screen" on an iPhone shows a blank square.

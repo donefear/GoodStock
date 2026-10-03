@@ -60,6 +60,7 @@ const staticFiles = new Map([
   ['/mealie.mjs', ['mealie.mjs', 'text/javascript; charset=utf-8']],
   ['/deepl.mjs', ['deepl.mjs', 'text/javascript; charset=utf-8']],
   ['/i18n.js', ['i18n.js', 'text/javascript; charset=utf-8']],
+  ['/icon.svg', ['icon.svg', 'image/svg+xml']],
   ...TRANSLATION_LANGUAGES.filter((code) => code !== 'en').map((code) => [`/lang/${code}.js`, [`lang/${code}.js`, 'text/javascript; charset=utf-8']]),
 ]);
 
