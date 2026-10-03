@@ -742,3 +742,11 @@ html:not(.is-standalone) .phone-only { display: none; }
 .shopping-group { margin: 18px 0 0; padding: 0 8px 6px; border-bottom: 1px solid var(--line); color: var(--muted); font: 700 11px/1.4 'DM Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; }
 .shopping-group span { font-weight: 600; letter-spacing: 0; }
 .shopping-list > .shopping-group:first-child { margin-top: 6px; }
+
+/* Undo bar after deleting or clearing. */
+.undo-bar { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 30; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: 10px 12px 10px 18px; border-radius: 10px; background: #1f2b24; color: #fff; box-shadow: 0 8px 24px #0003; display: flex; align-items: center; gap: 16px; font-size: 14px; }
+.undo-bar[hidden] { display: none; }
+.undo-bar span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.undo-bar .text-button { flex: 0 0 auto; color: #9fe0bf; font-weight: 700; }
+.no-flex-gap .undo-bar > * + * { margin-left: 16px; }
+@media (max-width: 760px) { .undo-bar { bottom: calc(76px + env(safe-area-inset-bottom)); } }

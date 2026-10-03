@@ -1575,12 +1575,44 @@ function saveRecipeFromEditor(form) {
   render();
 }
 
+// Undo instead of "are you sure?": the change happens straight away and an Undo bar stays for 10 seconds. Only the
+// parts of the kitchen the change touched are put back, so what other devices did meanwhile stays.
+const UNDO_SECONDS = 10;
+let undoSnapshot = null;
+let undoTimer = null;
+
+function withUndo(message, keys, change) {
+  const before = Object.fromEntries(keys.map((key) => [key, JSON.stringify(state[key])]));
+  change();
+  persist();
+  undoSnapshot = before;
+  clearTimeout(undoTimer);
+  const bar = $('#undo-bar');
+  bar.querySelector('span').textContent = message;
+  bar.hidden = false;
+  undoTimer = setTimeout(hideUndo, UNDO_SECONDS * 1000);
+}
+
+function hideUndo() {
+  clearTimeout(undoTimer);
+  undoSnapshot = null;
+  $('#undo-bar').hidden = true;
+}
+
+function undoLastChange() {
+  if (!undoSnapshot) return;
+  for (const [key, value] of Object.entries(undoSnapshot)) state[key] = JSON.parse(value);
+  hideUndo();
+  persist();
+}
+
 function deleteRecipe(id) {
   const recipe = recipeById(id);
-  if (!recipe || !window.confirm(t('Delete “{name}” from your recipes? Meals planned with it are removed too.', { name: recipe.name }))) return;
-  state.recipes = state.recipes.filter((entry) => entry.id !== recipe.id);
-  state.plan = state.plan.filter((entry) => entry.recipeId !== recipe.id);
-  persist();
+  if (!recipe) return;
+  withUndo(t('Deleted “{name}”', { name: recipe.name }), ['recipes', 'plan'], () => {
+    state.recipes = state.recipes.filter((entry) => entry.id !== recipe.id);
+    state.plan = state.plan.filter((entry) => entry.recipeId !== recipe.id);
+  });
   $('#recipe-dialog').close();
   render();
 }
@@ -2983,7 +3015,8 @@ document.addEventListener('click', async (event) => {
     activeView = 'week';
     render();
   }
-  if (action === 'remove-plan') { state.plan = state.plan.filter((entry) => entry.id !== id); persist(); }
+  if (action === 'remove-plan') withUndo(t('Meal removed from the plan'), ['plan'], () => { state.plan = state.plan.filter((entry) => entry.id !== id); });
+  if (action === 'undo') undoLastChange();
   if (action === 'cook') openCookDialog(state.plan.find((entry) => entry.id === id));
   if (action === 'generate-shopping') generateShopping();
   if (action === 'search-stocked') {
@@ -2992,16 +3025,21 @@ document.addEventListener('click', async (event) => {
     searchMealie('');
     render();
   }
-  if (action === 'clear-checked') { state.shopping = state.shopping.filter((entry) => !entry.checked); persist(); }
+  if (action === 'clear-checked') {
+    const count = state.shopping.filter((entry) => entry.checked).length;
+    withUndo(tp(count, '{count} checked item cleared', '{count} checked items cleared'), ['shopping'], () => { state.shopping = state.shopping.filter((entry) => !entry.checked); });
+  }
   if (action === 'check-all') { for (const entry of state.shopping) entry.checked = true; persist(); }
   if (action === 'put-all-away') {
     const checked = state.shopping.filter((entry) => entry.checked);
-    if (checked.length && window.confirm(tp(checked.length, 'Put {count} checked item away? It goes to its usual spot with an estimated expiry date. You can edit it in Inventory afterwards.', 'Put {count} checked items away? Each goes to its usual spot with an estimated expiry date. You can edit them in Inventory afterwards.'))) {
-      for (const entry of checked) {
-        const location = defaultStorageLocation(entry.name);
-        storeShoppingItem(entry, { quantity: Number(entry.quantity) || 1, unit: String(entry.unit || '').trim(), location, expiration: resolvedExpiration(entry.name, location, { value: '', dataset: {} }), packageDate: false });
-      }
-      persist();
+    // Each goes to its usual spot with an estimated expiry date; they can be edited in Inventory afterwards.
+    if (checked.length) {
+      withUndo(tp(checked.length, '{count} item put away', '{count} items put away'), ['shopping', 'inventory'], () => {
+        for (const entry of checked) {
+          const location = defaultStorageLocation(entry.name);
+          storeShoppingItem(entry, { quantity: Number(entry.quantity) || 1, unit: String(entry.unit || '').trim(), location, expiration: resolvedExpiration(entry.name, location, { value: '', dataset: {} }), packageDate: false });
+        }
+      });
     }
   }
   if (action === 'put-away') {
@@ -3022,10 +3060,7 @@ document.addEventListener('click', async (event) => {
       : t('Nothing recognisable in that text yet.'));
   }
   if (action === 'wipe-data') openWipeDialog();
-  if (action === 'clear-list' && state.shopping.length && window.confirm(t('Clear every item from the shopping list?'))) {
-    state.shopping = [];
-    persist();
-  }
+  if (action === 'clear-list' && state.shopping.length) withUndo(t('Shopping list cleared'), ['shopping'], () => { state.shopping = []; });
 });
 
 document.addEventListener('input', (event) => {

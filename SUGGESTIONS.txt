@@ -156,7 +156,11 @@ a Spanish or German recipe works less well than a Dutch one.
     yet.
 
 4.7 Undo instead of "are you sure?".
-    Deleting an item or recipe could show an "Undo" bar for a few seconds, which is friendlier on a touch screen.
+    DONE (v2.1.47): deleting a recipe, clearing the shopping list, Put all away, Clear checked and removing a
+    planned meal now happen straight away, with an Undo bar for 10 seconds instead of a confirmation box. Undo
+    restores only the parts of the kitchen the action touched, so changes from other devices in those seconds stay.
+    The bigger, rarer actions (Restore a backup, Wipe all data, disconnecting Mealie/DeepL/home server) still ask
+    first.
 
 4.8 Bigger text option for the kitchen tablet.
     A text-size setting (normal / large / extra large) for reading from across the kitchen.
