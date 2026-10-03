@@ -61,6 +61,9 @@ const staticFiles = new Map([
   ['/deepl.mjs', ['deepl.mjs', 'text/javascript; charset=utf-8']],
   ['/i18n.js', ['i18n.js', 'text/javascript; charset=utf-8']],
   ['/icon.svg', ['icon.svg', 'image/svg+xml']],
+  ['/apple-touch-icon.png', ['apple-touch-icon.png', 'image/png']],
+  ['/icon-192.png', ['icon-192.png', 'image/png']],
+  ['/icon-512.png', ['icon-512.png', 'image/png']],
   ...TRANSLATION_LANGUAGES.filter((code) => code !== 'en').map((code) => [`/lang/${code}.js`, [`lang/${code}.js`, 'text/javascript; charset=utf-8']]),
 ]);
 

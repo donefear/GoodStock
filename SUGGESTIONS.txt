@@ -82,7 +82,10 @@ a Spanish or German recipe works less well than a Dutch one.
     by the server, cached for offline use and bundled in both phone apps. Page loads no longer produce any 404.
 
 3.2 Home-screen icon for the server version on iPhones.
-    The web version has no apple-touch-icon, so "Add to Home Screen" on an iPhone shows a blank square.
+    DONE (v2.1.32): apple-touch-icon.png (180 px) for iPhone/iPad "Add to Home Screen", plus 192/512 px icons in the
+    web manifest, which had none, for Android's "Add to Home screen". It also opens full-screen like an app
+    (apple-mobile-web-app-capable). Also fixed: icon.svg from v2.1.31 was not valid XML (browsers drew it inline
+    but not as an image file).
 
 3.3 Some server error messages are still English.
     Most are translated, but messages that include an address (e.g. "Could not reach Mealie at ...") are built
