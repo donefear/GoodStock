@@ -133,8 +133,11 @@ a Spanish or German recipe works less well than a Dutch one.
     reminds while open.
 
 4.4 Hands-free cook mode.
-    Say "next" or "back" while cooking with messy hands (Web Speech API in Chrome; speech recognition on the
-    phones). Reading each step out loud would pair well with this.
+    DONE (v2.1.44): cook mode has 🔊 Read aloud, which speaks each step as you reach it: labels in the app's
+    language, the recipe text in the recipe's language, amounts included. It works in browsers, on the iPhone, and
+    on Android through the phone's own text-to-speech. 🎤 Voice commands understand "next", "back", "repeat",
+    "timer" and "stop" in all ten languages. Limit: browsers only allow the microphone over HTTPS, so on the http
+    home server and inside the phone apps the 🎤 button stays hidden. Read aloud works everywhere.
 
 4.5 Recipe servings / scaling.
     "Make it for 6 instead of 4" with all amounts recalculated. The amount parser is already there.

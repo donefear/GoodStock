@@ -772,4 +772,6 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Scan barcode": "Сканировать штрихкод",
   "Enabled. You get a notification at 9:00 on mornings when something is due soon.": "Включено. Утром в 9:00 придёт уведомление, если что-то скоро истекает.",
   "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Уведомление на телефоне каждое утро в 9:00 о продуктах, срок которых истекает в течение 3 дней, даже когда приложение закрыто. Панель «Использовать скоро» всегда доступна.",
+  "Read the steps aloud": "Читать шаги вслух",
+  "Voice commands: say next, back, repeat or timer": "Голосовые команды: скажи «дальше», «назад», «повтори» или «таймер»",
 };

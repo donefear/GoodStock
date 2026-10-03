@@ -2502,6 +2502,114 @@ function stopCookTimer(id) {
   refreshTimers();
 }
 
+// Hands-free cooking. Read aloud speaks each step as you reach it: the browser's speech, or the phone's own
+// text-to-speech in the Android app (its web view has none). Voice commands listen for "next", "back", "repeat",
+// "timer" and "stop" in the app's languages; browsers allow the microphone only over HTTPS, so it shows only there.
+const READ_ALOUD_KEY = 'goodstock-read-aloud-v1';
+let readAloud = (() => { try { return localStorage.getItem(READ_ALOUD_KEY) === 'true'; } catch { return false; } })();
+let voiceRecognition = null;
+let listening = false;
+const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+const VOICE_COMMANDS = {
+  // \b only knows Latin letters, so Russian, Chinese and Japanese words stand outside it.
+  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte)\b|дальше|далее|следующ|下一步|下一个|次へ|次/i,
+  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar)\b|назад|上一步|戻る|前へ/i,
+  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete)\b|повтори|重复|もう一度/i,
+  timer: /\b(?:timer|minuteur|temporizador|cronometro)\b|cronômetro|таймер|计时|タイマー/i,
+  stop: /\b(?:stop|stopp|para|ferma|pare)\b|arrête|стоп|停止|止めて/i,
+};
+
+const canSpeak = () => (STANDALONE && nativeApp.canSpeak ? Boolean(nativeApp.canSpeak()) : 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function');
+const canListen = () => Boolean(SpeechRecognitionApi) && window.isSecureContext;
+
+function speak(parts) {
+  stopSpeaking();
+  const clean = parts.map((part) => ({ ...part, text: String(part.text || '').replace(/[\u0001\u0002]/g, '').trim() })).filter((part) => part.text);
+  if (!clean.length) return;
+  if (STANDALONE && nativeApp.speak) { try { nativeApp.speak(JSON.stringify(clean)); } catch { /* Optional. */ } return; }
+  for (const part of clean) {
+    const utterance = new window.SpeechSynthesisUtterance(part.text);
+    utterance.lang = part.lang;
+    window.speechSynthesis.speak(utterance);
+  }
+}
+
+function stopSpeaking() {
+  if (STANDALONE && nativeApp.stopSpeaking) { try { nativeApp.stopSpeaking(); } catch { /* Optional. */ } return; }
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+// The step in the recipe's language; the short label before it in the app's language.
+function speakCookStep() {
+  if (!readAloud || !cookSession) return;
+  const bite = cookSession.bites[cookSession.index];
+  const app = languageLocale();
+  const recipe = (LANGUAGES.find((language) => language.code === recipeLanguage(cookSession.recipe)) || LANGUAGES[0]).locale;
+  if (bite.type === 'gather') speak([{ text: t('Get these out'), lang: app }, { text: bite.items.join(', '), lang: recipe }]);
+  else if (bite.type === 'tools') speak([{ text: t("Tools you'll need"), lang: app }, { text: bite.tools.map((tool) => t(tool.name)).join(', '), lang: app }]);
+  else if (bite.type === 'step') speak([{ text: bite.heading, lang: recipe }, { text: bite.text, lang: recipe }]);
+  else if (bite.type === 'done') speak([{ text: t('You did it.'), lang: app }]);
+}
+
+function updateVoiceButtons() {
+  const aloud = $('#steps-read-aloud');
+  const listen = $('#steps-listen');
+  aloud.hidden = !canSpeak();
+  aloud.setAttribute('aria-pressed', String(readAloud));
+  listen.hidden = !canListen();
+  listen.setAttribute('aria-pressed', String(listening));
+}
+
+function toggleReadAloud() {
+  readAloud = !readAloud;
+  try { localStorage.setItem(READ_ALOUD_KEY, String(readAloud)); } catch { /* For this visit only. */ }
+  if (readAloud) speakCookStep(); else stopSpeaking();
+  updateVoiceButtons();
+}
+
+function voiceCommand(transcript) {
+  const said = String(transcript || '').trim();
+  if (VOICE_COMMANDS.stop.test(said)) {
+    stopSpeaking();
+    const ringing = cookTimers.find((timer) => timer.done);
+    if (ringing) stopCookTimer(ringing.id);
+    return 'stop';
+  }
+  if (VOICE_COMMANDS.next.test(said)) { moveCookStep(1); return 'next'; }
+  if (VOICE_COMMANDS.back.test(said)) { moveCookStep(-1); return 'back'; }
+  if (VOICE_COMMANDS.repeat.test(said)) { speakCookStep(); return 'repeat'; }
+  if (VOICE_COMMANDS.timer.test(said)) {
+    const bite = cookSession && cookSession.bites[cookSession.index];
+    if (bite && bite.timer) startCookTimer(bite.timer.minutes, bite.timer.label);
+    return 'timer';
+  }
+  return '';
+}
+
+function toggleListening(on = !listening) {
+  if (!canListen()) return;
+  listening = on;
+  if (on) {
+    voiceRecognition = new SpeechRecognitionApi();
+    voiceRecognition.lang = languageLocale();
+    voiceRecognition.continuous = true;
+    voiceRecognition.interimResults = false;
+    voiceRecognition.onresult = (event) => {
+      const result = event.results[event.results.length - 1];
+      if (result && result.isFinal) voiceCommand(result[0].transcript);
+    };
+    // Listening stops by itself after a pause; keep it going while cook mode is open.
+    voiceRecognition.onend = () => { if (listening && $('#steps-dialog').open) { try { voiceRecognition.start(); } catch { /* Already running. */ } } };
+    voiceRecognition.onerror = (event) => { if (event.error === 'not-allowed' || event.error === 'service-not-allowed') { listening = false; updateVoiceButtons(); } };
+    try { voiceRecognition.start(); } catch { listening = false; }
+  } else if (voiceRecognition) {
+    voiceRecognition.onend = null;
+    try { voiceRecognition.stop(); } catch { /* Not running. */ }
+    voiceRecognition = null;
+  }
+  updateVoiceButtons();
+}
+
 function renderCookStep() {
   const { recipe, bites, index, checked } = cookSession;
   const bite = bites[index];
@@ -2541,6 +2649,8 @@ function renderCookStep() {
   $('.steps-back').disabled = index === 0;
   $('.steps-next').textContent = index === bites.length - 1 ? t('Close') : index === bites.length - 2 ? `${t('Finish')} ›` : `${t('Next')} ›`;
   refreshTimers();
+  updateVoiceButtons();
+  speakCookStep();
 }
 
 async function startCookSteps(recipe, planId = '') {
@@ -2701,6 +2811,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'home-server-connect') await connectHomeServer();
   if (action === 'home-server-disconnect') disconnectHomeServer();
   if (action === 'scan-barcode') await scanBarcode();
+  if (action === 'steps-read-aloud') toggleReadAloud();
+  if (action === 'steps-listen') toggleListening();
   if (action === 'open-settings') $('#settings-button').click();
   if (action === 'restore-data') $('#restore-file').click();
   if (action === 'view-recipe') {
@@ -3350,6 +3462,8 @@ $('#steps-dialog').addEventListener('keydown', (event) => {
 });
 
 $('#steps-dialog').addEventListener('close', () => {
+  stopSpeaking();
+  toggleListening(false);
   saveCookProgress();
   keepScreenOn(false);
   refreshTimers();

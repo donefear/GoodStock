@@ -772,4 +772,6 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Scan barcode": "Barcode scannen",
   "Enabled. You get a notification at 9:00 on mornings when something is due soon.": "Aan. Je krijgt om 9:00 een melding op ochtenden waarop iets bijna over datum is.",
   "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Elke ochtend om 9:00 een melding op je telefoon voor items die binnen 3 dagen over datum gaan, ook als de app dicht is. Het paneel Snel opmaken in de app is altijd beschikbaar.",
+  "Read the steps aloud": "Stappen voorlezen",
+  "Voice commands: say next, back, repeat or timer": "Spraakbediening: zeg volgende, terug, herhaal of timer",
 };

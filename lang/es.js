@@ -772,4 +772,6 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "Scan barcode": "Escanear código de barras",
   "Enabled. You get a notification at 9:00 on mornings when something is due soon.": "Activado. Recibirás una notificación a las 9:00 las mañanas en que algo venza pronto.",
   "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Una notificación en el teléfono cada mañana a las 9:00 para los artículos que vencen en 3 días, también con la app cerrada. El panel Usar pronto de la app siempre está disponible.",
+  "Read the steps aloud": "Leer los pasos en voz alta",
+  "Voice commands: say next, back, repeat or timer": "Comandos de voz: di siguiente, atrás, repite o temporizador",
 };

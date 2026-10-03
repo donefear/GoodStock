@@ -725,3 +725,8 @@ html:not(.is-standalone) .phone-only { display: none; }
 .barcode-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: -4px 0 12px; }
 .barcode-row .field-hint:empty { display: none; }
 .barcode-dialog video { width: 100%; max-height: 50vh; border-radius: 8px; background: #000; object-fit: cover; }
+
+/* Hands-free cook mode: read aloud and voice commands. */
+.steps-voice { flex: 0 0 auto; font-size: 17px; }
+.steps-voice[aria-pressed="true"] { border-color: var(--green); background: var(--green); color: #fff; }
+.no-flex-gap .steps-top > * + * { margin-left: 10px; }

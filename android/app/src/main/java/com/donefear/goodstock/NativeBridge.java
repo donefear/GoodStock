@@ -41,6 +41,9 @@ final class NativeBridge {
     private String pendingSaveId;
     private String pendingSaveContent;
     private String pendingPermissionId;
+    private android.speech.tts.TextToSpeech speech;
+    private boolean speechReady;
+    private String pendingSpeech;
 
     NativeBridge(Activity activity, WebView webView) {
         this.activity = activity;
@@ -241,6 +244,52 @@ final class NativeBridge {
                 callback(id, false, "The backup could not be written");
             }
         });
+    }
+
+    /** Read aloud in cook mode: Android's web view has no speech of its own, so the phone's text-to-speech does it. */
+    @JavascriptInterface
+    public boolean canSpeak() {
+        return Build.VERSION.SDK_INT >= 21;
+    }
+
+    /** Speaks [{text, lang}] in order, each in its own language (a step in the recipe's, a label in the app's). */
+    @JavascriptInterface
+    public void speak(String json) {
+        if (!canSpeak()) return;
+        activity.runOnUiThread(() -> {
+            if (speech == null) {
+                pendingSpeech = json;
+                speech = new android.speech.tts.TextToSpeech(activity, status -> {
+                    speechReady = status == android.speech.tts.TextToSpeech.SUCCESS;
+                    if (speechReady && pendingSpeech != null) speakNow(pendingSpeech);
+                    pendingSpeech = null;
+                });
+            } else if (speechReady) {
+                speakNow(json);
+            } else {
+                pendingSpeech = json;
+            }
+        });
+    }
+
+    @android.annotation.TargetApi(21)
+    private void speakNow(String json) {
+        try {
+            org.json.JSONArray parts = new org.json.JSONArray(json);
+            speech.stop();
+            for (int i = 0; i < parts.length(); i++) {
+                org.json.JSONObject part = parts.getJSONObject(i);
+                speech.setLanguage(java.util.Locale.forLanguageTag(part.optString("lang", "en")));
+                speech.speak(part.optString("text", ""), android.speech.tts.TextToSpeech.QUEUE_ADD, null, "goodstock-" + i);
+            }
+        } catch (org.json.JSONException ignored) {
+            // Nothing to say.
+        }
+    }
+
+    @JavascriptInterface
+    public void stopSpeaking() {
+        activity.runOnUiThread(() -> { if (speech != null) speech.stop(); });
     }
 
     /** True when the phone can scan barcodes (Google's code scanner needs Android 5.0 and Play services). */
