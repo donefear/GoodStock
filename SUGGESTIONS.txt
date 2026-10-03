@@ -55,8 +55,10 @@ a Spanish or German recipe works less well than a Dutch one.
     "pancakes" is not "pan" (bread). Matching results are cached, so the old kitchen tablet stays fast.
 
 2.4 Kitchen-tool detection.
-    kitchen-tools.js recognises tools in English/Dutch text only. Add the words for "pan", "oven", "whisk"...
-    in the other languages.
+    DONE (v2.1.24): all 37 tools are recognised in recipe steps in all ten languages (KITCHEN_TOOL_WORDS in
+    kitchen-tools.js), e.g. "Backofen vorheizen", "fouettez", "varillas", "взбейте венчиком", "打蛋器", "泡立て器".
+    Ambiguous words are guarded: "fourchette" is not an oven, "tagliatelle" not a knife, "tomate pelado" not a
+    peeler, "ножки" not a knife, "tapas" not a lid.
 
 2.5 New kitchens start in the chosen language.
     The default storage places (Pantry, Fridge, Freezer, Cleaning shelf) and the four starter recipes are always

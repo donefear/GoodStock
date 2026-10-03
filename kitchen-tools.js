@@ -116,18 +116,76 @@ const KITCHEN_TOOLS = [
     svg: '<path d="M3 16h18M4 16a8 7 0 0 1 16 0"/><rect x="10.5" y="6.5" width="3" height="2.5" rx="1"/>' },
 ];
 
+// The same tools in recipes written in German, French, Spanish, Italian, Portuguese, Russian, Chinese and
+// Japanese. Each entry is a regular expression for the start of a word (the pattern above covers English and
+// Dutch); "(?!\p{L})" makes it a whole word where a prefix would catch other words (French "four" vs "fourchette").
+// Chinese and Japanese words are found anywhere, since those languages put no spaces between words.
+const KITCHEN_TOOL_WORDS = {
+  'air-fryer': ['heißluftfritteuse', 'friteuse (?:à air|sans huile)', 'freidora de aire', 'friggitrice ad aria', 'fritadeira (?:elétrica|sem óleo)', 'аэрогрил', '空气炸锅', 'エアフライヤー', 'ノンフライヤー'],
+  'stick-blender': ['stabmixer', 'pürierstab', 'mixeur plongeant', 'batidora de (?:mano|inmersión)', 'minipimer', '(?:frullatore|mixer) a immersione', 'mixer de mão', 'погружн\\p{L}* блендер', '手持搅拌', '料理棒', 'ハンドブレンダー'],
+  'food-processor': ['küchenmaschine', 'robot (?:culinaire|ménager|de cocina|da cucina)', 'procesador de alimentos', 'processador de alimentos', 'кухонн\\p{L}* комбайн', '料理机', 'フードプロセッサー'],
+  'blender': ['pürier', 'mixeur', 'mixe(?:r|z)(?!\\p{L})', 'licuadora', 'tritur', 'frull', 'liquidificador', 'блендер', 'пюрир', '搅拌机', '破壁机', 'ミキサー', 'ブレンダー'],
+  'hand-mixer': ['handrührgerät', 'rührgerät', 'batteur', 'batidora', 'sbattitore', 'fruste elettriche', 'batedeira', 'миксер', '电动打蛋器', 'ハンドミキサー'],
+  'whisk': ['schneebesen', 'verquirl', 'fouet', 'varillas', 'batidor', 'frusta', 'sbatt', 'batedor', 'венчик', 'взбе\\p{L}*', 'взбив', 'взбить', '打蛋器', '搅打', '打发', '泡立て'],
+  'grill-pan': ['grillpfanne', 'poêle à griller', 'plancha', 'sartén (?:grill|de rayas)', 'bistecchiera', 'frigideira grill', 'сковород\\p{L}*-гриль', '横纹煎锅', 'グリルパン'],
+  'wok': ['wok', 'вок(?!\\p{L})', '炒锅', '中華鍋'],
+  'dutch-oven': ['schmortopf', 'bräter', 'gusseisern', 'cocotte', '(?:olla|cacerola) de hierro', '(?:pentola|casseruola) di ghisa', 'panela de ferro', 'чугунн', 'казан', '铸铁锅', '炖锅', 'ダッチオーブン', '鋳物'],
+  'stock-pot': ['kochtopf', 'topf(?!\\p{L})', 'marmite', 'faitout', 'olla', 'pentola', 'panela', 'кастрюл', '汤锅', '大锅', '煮锅', '深锅', '寸胴', '(?<!片手)鍋'],
+  'saucepan': ['stieltopf', 'kasserolle', 'casserole', 'cazo', 'cacerola', 'casseruola', 'pentolino', 'leiteira', 'сотейник', 'ковш', '奶锅', '小锅', '片手鍋', '小鍋'],
+  'skillet': ['bratpfanne', 'pfanne', 'poêle', 'sartén', 'padella', 'frigideira', 'сковород', '平底锅', '煎锅', 'フライパン'],
+  'baking-dish': ['auflaufform', 'ofenform', 'plat (?:à gratin|allant au four)', 'fuente (?:de|para) horno', 'pirofila', 'refratário', 'forma refratária', 'форм\\p{L}* для запекания', '焗盘', '烤碗', 'グラタン皿', '耐熱皿'],
+  'cake-tin': ['kuchenform', 'springform', 'kastenform', 'moule (?:à gâteau|à manqué|à cake|à charnière)', 'molde (?:para|de) (?:tarta|bizcocho|pastel)', 'molde desmontable', 'tortiera', 'stampo per (?:torte|dolci)', 'forma (?:de|para) bolo', 'форм\\p{L}* для (?:торта|кекса|выпечки)', '蛋糕模', 'ケーキ型', 'パウンド型'],
+  'muffin-tin': ['muffinform', 'moule à muffins', 'molde (?:para|de) (?:magdalenas|muffins|cupcakes)', 'stampo (?:per|da) muffin', 'forma (?:de|para) (?:muffins?|cupcakes?)', 'форм\\p{L}* для маффинов', '松饼模', 'マフィン型'],
+  'baking-tray': ['backblech', 'plaque (?:de cuisson|du four|à pâtisserie)', 'bandeja (?:de|del) horno', 'teglia', 'leccarda', 'assadeira', 'tabuleiro', 'противень', '烤盘', '天板'],
+  'baking-paper': ['backpapier', 'alufolie', 'papier (?:sulfurisé|cuisson|aluminium)', 'papel (?:de horno|vegetal|sulfurizado|de aluminio|de alumínio|manteiga)', 'carta (?:forno|stagnola|da forno)', 'alluminio', 'пергамент', 'фольг', '烘焙纸', '油纸', '锡纸', 'クッキングシート', 'アルミホイル'],
+  'microwave': ['mikrowelle', 'micro-?ondes?', 'microondas', 'microonde', 'микроволнов', 'свч', '微波炉', '電子レンジ'],
+  'oven': ['backofen', 'ofen(?!\\p{L})', 'vorheiz', 'four(?!\\p{L})', 'préchauff', 'horno', 'precalient', 'forno(?!\\p{L})', 'preriscald', 'preaqueç', 'духовк', '烤箱', '预热', 'オーブン', '予熱'],
+  'kettle': ['wasserkocher', 'bouilloire', 'hervidor', 'bollitore', 'chaleira', 'чайник', '电热水壶', '烧水壶', 'ケトル', 'やかん'],
+  'colander': ['nudelsieb', 'durchschlag', 'abtropf', 'abgie(?:ß|ss)', 'passoire', 'égoutt', 'escurr', 'scolapasta', 'scola', 'escorr', 'дуршлаг', 'откинь', 'откиньте', '沥水', '滤水', 'ザル', 'ざる', '湯切り'],
+  'sieve': ['sieb(?!\\p{L})', 'sieben', 'tamis', 'tamiser', 'tamiz', 'colador', 'setacci', 'colino', 'peneir', 'сито', 'просе', '过筛', '筛', 'ふるい', 'こし器', '漉'],
+  'ladle': ['schöpfkelle', 'kelle', 'louche', 'cucharón', 'mestolo', 'concha', 'половник', '汤勺', 'お玉', 'おたま'],
+  'spoon': ['kochlöffel', 'holzlöffel', 'cuillère en bois', 'cuchara de madera', 'cucchiaio di legno', 'colher de pau', 'деревянн\\p{L}* ложк', '木勺', '木べら'],
+  'spatula': ['pfannenwender', 'teigschaber', 'spatel', 'wenden', 'spatule', 'retourn', 'espátula', 'da(?:r|le) (?:la )?vuelta', 'spatola', 'vir(?:ar|e)(?!\\p{L})', 'лопатк', 'перевер', '锅铲', '铲子', '翻面', 'フライ返し', 'ヘラ', 'へら', '裏返'],
+  'tongs': ['grillzange', 'küchenzange', 'zange', 'pince', 'pinzas?(?!\\p{L})', 'pinze', 'pegador', 'pinça', 'щипц', '夹子', '食物夹', 'トング'],
+  'knife': ['messer', 'schneid', 'hacken', 'würfel(?:n|t)?(?!\\p{L})', 'couteau', 'coupe(?:r|z)(?!\\p{L})', 'émincer', 'hacher', 'cuchillo', 'cort(?:a|ar|e|ad[oa]s?)(?!\\p{L})', 'pica(?:r|d[oa]s?)?(?!\\p{L})', 'coltello', 'tagli(?:a|are|ate|ato|ata|ati|ando)(?!\\p{L})', 'trit', 'faca', 'pique(?!\\p{L})', 'нож(?:ом|а|и)?(?!\\p{L})', 'нареж', 'нарез', 'пореж', '刀', '切', '包丁', '刻'],
+  'cutting-board': ['schneidebrett', 'brett(?!\\p{L})', 'planche à découper', 'tabla de cortar', 'tagliere', 'tábua', 'разделочн\\p{L}* доск', '砧板', '案板', 'まな板'],
+  'grater': ['reibe', 'reiben', 'gerieben', 'râpe', 'râper', 'râpé', 'rallador', 'ralla', 'grattugi', 'ralador', 'ralad', 'rale(?!\\p{L})', 'терк', 'натр\\p{L}*', 'натере', '擦丝', '擦成丝', 'おろし', 'すりおろ'],
+  'peeler': ['sparschäler', 'schäl', 'éplucheur', 'éplucher', 'épluch', 'pelador', 'pelar?(?!\\p{L})', 'pelapatate', 'sbucci', 'descascador', 'descasc', 'овощечистк', 'очист', '削皮', '去皮', 'ピーラー', '皮をむ'],
+  'masher': ['stampfer', 'zerstampf', 'zerdrück', 'presse-purée', 'écras', 'pisapapas', 'machac', 'aplast', 'schiacciapatate', 'schiacci', 'amass', 'толкушк', 'разомн', 'размять', '压泥', '捣成泥', '压成泥', 'マッシャー', 'つぶ'],
+  'mortar': ['mörser', 'mortier', 'mortero', 'mortaio', 'pilão', 'almofariz', 'ступк', '研钵', '捣臼', 'すり鉢'],
+  'rolling-pin': ['nudelholz', 'teigrolle', 'ausroll', 'rouleau', 'étale(?:r|z) la pâte', 'rodillo', 'estir(?:a|ar) la masa', 'mattarello', 'stend', 'rolo', 'abr(?:a|ir) a massa', 'скалк', 'раскатай', 'раскатать', '擀面杖', '擀', 'めん棒', '麺棒'],
+  'bowl': ['rührschüssel', 'schüssel', 'saladier', 'cul-de-poule', 'bol(?:es)?(?!\\p{L})', 'cuenco', 'recipiente', 'ciotola', 'terrina', 'tigela', 'bacia', 'миск', '碗', 'ボウル'],
+  'measuring-jug': ['messbecher', 'verre doseur', 'jarra medidora', 'vaso medidor', 'misurino', 'caraffa graduata', 'copo medidor', 'мерн\\p{L}* стакан', '量杯', '計量カップ'],
+  'scale': ['küchenwaage', 'waage', 'abwieg', 'wieg', 'pes(?:er|ez)(?!\\p{L})', 'báscula', 'balanza', 'pes(?:a|ar|e|are)(?!\\p{L})', 'bilancia', 'balança', 'весы', 'взвес', '电子秤', '秤', '称', 'はかり', 'スケール', '量る', '計る'],
+  'lid': ['deckel', 'zudeck', 'abdeck', 'couvercle', 'couvr', 'tapa(?:r|d[oa])?(?!\\p{L})', 'tape(?!\\p{L})', 'coperchio', 'copri', 'tampa', 'tampe', 'крышк', 'накро', '锅盖', '盖上', '盖', '蓋', 'ふた'],
+};
+const CJK_TOOL_WORD = /^[぀-ヿ㐀-鿿(]/;
+const kitchenToolWords = {};
+
+function kitchenToolWordPattern(id) {
+  if (!(id in kitchenToolWords)) {
+    const words = KITCHEN_TOOL_WORDS[id] || [];
+    kitchenToolWords[id] = words.length
+      ? new RegExp(words.map((word) => (CJK_TOOL_WORD.test(word) ? word : `(?<!\\p{L})${word}`)).join('|'), 'giu')
+      : null;
+  }
+  return kitchenToolWords[id];
+}
+
 // Tools mentioned in a piece of recipe text, in the order they first appear.
 function kitchenToolsIn(text) {
   let remaining = String(text || '');
   const found = [];
   for (const tool of KITCHEN_TOOLS) {
-    const pattern = new RegExp(tool.pattern.source, 'gi');
     let first = -1;
-    remaining = remaining.replace(pattern, (match, ...rest) => {
+    const blank = (match, ...rest) => {
       const offset = rest[rest.length - 2];
-      if (first < 0) first = offset;
+      if (first < 0 || offset < first) first = offset;
       return ' '.repeat(match.length);
-    });
+    };
+    remaining = remaining.replace(new RegExp(tool.pattern.source, 'gi'), blank);
+    const words = kitchenToolWordPattern(tool.id);
+    if (words) remaining = remaining.replace(words, blank);
     if (first >= 0) found.push({ tool, first });
   }
   const replaced = new Set(found.flatMap((entry) => entry.tool.replaces || []));
