@@ -789,4 +789,12 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Normal": "Обычный",
   "Large": "Крупный",
   "Extra large": "Очень крупный",
+  "Change folder": "Сменить папку",
+  "Choose folder": "Выбрать папку",
+  "Weekly to “{folder}”. Last backup: {date}.": "Каждую неделю в «{folder}». Последняя копия: {date}.",
+  "Weekly to “{folder}”. The first backup is made now.": "Каждую неделю в «{folder}». Первая копия создаётся сейчас.",
+  "Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.": "Раз в неделю резервная копия сохраняется в выбранную папку (например, в Google Drive или iCloud Drive). Хранятся четыре последние.",
+  "That folder cannot be used. Choose another one.": "Эту папку нельзя использовать. Выбери другую.",
+  "Automatic weekly backup": "Автоматическая еженедельная копия",
+  "Turn off": "Выключить",
 };

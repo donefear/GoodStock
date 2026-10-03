@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0E2B58ED7B2533909F63FBE6 /* PhoneHTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DD7680AD032FE36F1E524D2 /* PhoneHTTP.swift */; };
+		77BD9F2AF4BC960B96CDB08D /* AutoBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9A167147E247A370478EEF /* AutoBackup.swift */; };
 		914C724C497F730728F42987 /* NativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6026D9F5F5413DE531668B76 /* NativeBridge.swift */; };
 		960547D1016AF454A26C46FF /* BarcodeScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90AB1F5913DC452D2828014 /* BarcodeScanner.swift */; };
 		AA4378F66CB933B84159A498 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 91EE6891C1C512648E07AAED /* Assets.xcassets */; };
@@ -22,6 +23,7 @@
 		5DD7680AD032FE36F1E524D2 /* PhoneHTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHTTP.swift; sourceTree = "<group>"; };
 		6026D9F5F5413DE531668B76 /* NativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeBridge.swift; sourceTree = "<group>"; };
 		6D408670C5A24D5C48835014 /* WebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewController.swift; sourceTree = "<group>"; };
+		7B9A167147E247A370478EEF /* AutoBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoBackup.swift; sourceTree = "<group>"; };
 		91EE6891C1C512648E07AAED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		98A39EA8295F55AAA76CD664 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
 		A90AB1F5913DC452D2828014 /* BarcodeScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScanner.swift; sourceTree = "<group>"; };
@@ -34,6 +36,7 @@
 			children = (
 				C9B8656CC080618853C61D62 /* AppDelegate.swift */,
 				91EE6891C1C512648E07AAED /* Assets.xcassets */,
+				7B9A167147E247A370478EEF /* AutoBackup.swift */,
 				A90AB1F5913DC452D2828014 /* BarcodeScanner.swift */,
 				1E5BFE2630759204533BD62B /* Info.plist */,
 				6026D9F5F5413DE531668B76 /* NativeBridge.swift */,
@@ -152,6 +155,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA8E4D99C0162BFE821970C6 /* AppDelegate.swift in Sources */,
+				77BD9F2AF4BC960B96CDB08D /* AutoBackup.swift in Sources */,
 				960547D1016AF454A26C46FF /* BarcodeScanner.swift in Sources */,
 				914C724C497F730728F42987 /* NativeBridge.swift in Sources */,
 				E9CC9F110DF42B850B8FF5F8 /* Notifications.swift in Sources */,

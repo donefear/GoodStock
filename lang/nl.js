@@ -789,4 +789,12 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Normal": "Normaal",
   "Large": "Groot",
   "Extra large": "Extra groot",
+  "Change folder": "Andere map",
+  "Choose folder": "Map kiezen",
+  "Weekly to “{folder}”. Last backup: {date}.": "Wekelijks naar „{folder}”. Laatste back-up: {date}.",
+  "Weekly to “{folder}”. The first backup is made now.": "Wekelijks naar „{folder}”. De eerste back-up wordt nu gemaakt.",
+  "Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.": "Eén keer per week gaat er een back-up naar een map die je kiest (bijvoorbeeld in Google Drive of iCloud Drive). De nieuwste vier blijven bewaard.",
+  "That folder cannot be used. Choose another one.": "Die map kan niet gebruikt worden. Kies een andere.",
+  "Automatic weekly backup": "Automatische wekelijkse back-up",
+  "Turn off": "Uitzetten",
 };

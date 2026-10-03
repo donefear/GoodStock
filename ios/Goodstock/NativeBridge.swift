@@ -45,7 +45,11 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         httpSend: function (id, method, url, headers, body) { post('httpSend', [id, String(method), String(url), String(headers || '{}'), String(body)]); },
         saveFile: function (id, name, content) { post('saveFile', [id, String(name), String(content)]); },
         canScanBarcodes: function () { return __CAN_SCAN__; },
-        scanBarcode: function (id) { post('scanBarcode', [id]); }
+        scanBarcode: function (id) { post('scanBarcode', [id]); },
+        canAutoBackup: function () { return true; },
+        chooseBackupFolder: function (id) { post('chooseBackupFolder', [id]); },
+        forgetBackupFolder: function () { post('forgetBackupFolder', []); },
+        writeBackup: function (id, name, content) { post('writeBackup', [id, String(name), String(content)]); }
       };
       // Tell the app the page's language (i18n.js sets html lang), for the confirm dialog buttons.
       function sendLanguage() { post('language', [document.documentElement.lang || 'en']); }
@@ -83,6 +87,23 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             request(id: arg(0), method: "GET", address: arg(1), headers: arg(2), body: nil)
         case "httpSend":
             request(id: arg(0), method: arg(1), address: arg(2), headers: arg(3), body: arg(4))
+        case "chooseBackupFolder":
+            guard let controller else { return callback(arg(0), ok: false, payload: "cancelled") }
+            AutoBackup.shared.chooseFolder(from: controller) { result in
+                switch result {
+                case .success(let name): self.callback(arg(0), ok: true, payload: name)
+                case .failure(let error): self.callback(arg(0), ok: false, payload: error.localizedDescription)
+                }
+            }
+        case "forgetBackupFolder":
+            AutoBackup.shared.forgetFolder()
+        case "writeBackup":
+            AutoBackup.shared.write(fileName: arg(1), content: arg(2)) { result in
+                switch result {
+                case .success: self.callback(arg(0), ok: true, payload: "saved")
+                case .failure(let error): self.callback(arg(0), ok: false, payload: error.localizedDescription)
+                }
+            }
         case "scanBarcode":
             scanBarcode(id: arg(0))
         case "saveFile":

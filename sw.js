@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goodstock-shell-v64';
+const CACHE_NAME = 'goodstock-shell-v65';
 const APP_SHELL = ['/', '/index.html', '/i18n.js', '/app.js', '/kitchen-tools.js', '/kitchen-reference.js', '/recipe-import.mjs', '/mealie.mjs', '/deepl.mjs', '/styles.css', '/manifest.webmanifest', '/icon.svg', '/apple-touch-icon.png', '/icon-192.png', '/ingredients.json', '/fonts/fonts.css', '/fonts/dm-sans-latin.woff2', '/fonts/dm-sans-latin-ext.woff2', '/fonts/fraunces-latin.woff2', '/fonts/fraunces-latin-ext.woff2'];
 
 self.addEventListener('install', (event) => {

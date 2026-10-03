@@ -789,4 +789,12 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Normal": "标准",
   "Large": "大",
   "Extra large": "特大",
+  "Change folder": "更换文件夹",
+  "Choose folder": "选择文件夹",
+  "Weekly to “{folder}”. Last backup: {date}.": "每周备份到“{folder}”。上次备份：{date}。",
+  "Weekly to “{folder}”. The first backup is made now.": "每周备份到“{folder}”。现在进行第一次备份。",
+  "Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.": "每周一次，把备份保存到你选择的文件夹（例如 Google Drive 或 iCloud Drive）。保留最新的四份。",
+  "That folder cannot be used. Choose another one.": "无法使用该文件夹。请另选一个。",
+  "Automatic weekly backup": "每周自动备份",
+  "Turn off": "关闭",
 };

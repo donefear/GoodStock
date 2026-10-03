@@ -1135,6 +1135,7 @@ async function initialize() {
     mealieConfigured = Boolean(phoneMealie());
   }
   checkExpiryReminders();
+  runAutoBackup();
   setInterval(() => {
     if (document.visibilityState === 'visible') {
       if (activeView === 'inventory') render();
@@ -2929,6 +2930,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'home-server-disconnect') disconnectHomeServer();
   if (action === 'scan-barcode') await scanBarcode();
   if (action === 'steps-read-aloud') toggleReadAloud();
+  if (action === 'auto-backup-folder') await chooseAutoBackupFolder();
+  if (action === 'auto-backup-off') turnOffAutoBackup();
   if (action === 'steps-listen') toggleListening();
   if (action === 'open-settings') $('#settings-button').click();
   if (action === 'restore-data') $('#restore-file').click();
@@ -3318,9 +3321,69 @@ function addTestRecipe() {
 
 // Backup: the whole kitchen (inventory, recipes, plans, shopping list, presets) as one JSON file. In the Android
 // app the data exists only on the phone, so this is how it survives a new phone or an uninstall.
+const backupContent = () => JSON.stringify({ app: 'goodstock', backupVersion: 1, exportedAt: new Date().toISOString(), state }, null, 2);
+
+// Automatic weekly backups (phone apps): a folder chosen once, then a backup there whenever the app is opened and
+// the last one is a week old. The phone keeps writing access to that folder; the newest four are kept.
+const AUTO_BACKUP_KEY = 'goodstock-auto-backup-v1';
+const AUTO_BACKUP_DAYS = 7;
+const canAutoBackup = () => STANDALONE && Boolean(nativeApp.canAutoBackup && nativeApp.canAutoBackup());
+
+function autoBackupSettings() {
+  try { return JSON.parse(localStorage.getItem(AUTO_BACKUP_KEY) || 'null'); } catch { return null; }
+}
+
+function fillAutoBackup() {
+  const zone = $('#auto-backup-zone');
+  zone.hidden = !canAutoBackup();
+  if (zone.hidden) return;
+  const settings = autoBackupSettings();
+  $('#auto-backup-off').hidden = !settings;
+  $('#auto-backup-folder').textContent = settings ? t('Change folder') : t('Choose folder');
+  $('#auto-backup-text').textContent = settings
+    ? (settings.last
+      ? t('Weekly to “{folder}”. Last backup: {date}.', { folder: settings.folder, date: formatDate(new Date(settings.last), { day: 'numeric', month: 'short', year: 'numeric' }) })
+      : t('Weekly to “{folder}”. The first backup is made now.', { folder: settings.folder }))
+    : t('Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.');
+}
+
+async function chooseAutoBackupFolder() {
+  try {
+    const folder = await nativeCall('chooseBackupFolder');
+    localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify({ folder, last: null }));
+    await runAutoBackup(true);
+  } catch (error) {
+    if (error?.message !== 'cancelled') $('#backup-status').textContent = t('That folder cannot be used. Choose another one.');
+  }
+  fillAutoBackup();
+}
+
+function turnOffAutoBackup() {
+  try { nativeApp.forgetBackupFolder(); } catch { /* Nothing kept. */ }
+  localStorage.removeItem(AUTO_BACKUP_KEY);
+  fillAutoBackup();
+}
+
+let autoBackupRunning = false;
+async function runAutoBackup(force = false) {
+  const settings = canAutoBackup() && autoBackupSettings();
+  if (!settings || autoBackupRunning) return;
+  if (!force && settings.last && Date.now() - new Date(settings.last).getTime() < AUTO_BACKUP_DAYS * DAY_MS) return;
+  autoBackupRunning = true;
+  try {
+    await nativeCall('writeBackup', `goodstock-auto-backup-${dateKey(new Date())}.json`, backupContent());
+    localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify({ ...settings, last: new Date().toISOString(), error: '' }));
+  } catch (error) {
+    localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify({ ...settings, error: String(error?.message || 'failed') }));
+  } finally {
+    autoBackupRunning = false;
+  }
+  if ($('#settings-dialog').open) fillAutoBackup();
+}
+
 async function backupKitchen() {
   const fileName = `goodstock-backup-${dateKey(new Date())}.json`;
-  const content = JSON.stringify({ app: 'goodstock', backupVersion: 1, exportedAt: new Date().toISOString(), state }, null, 2);
+  const content = backupContent();
   const status = $('#backup-status');
   try {
     if (STANDALONE) {
@@ -3444,6 +3507,7 @@ async function fillSettings() {
   else expiryNote.textContent = t('System alerts are checked daily while the app is open. The in-app Use soon panel is always available.');
   fillSettingsMode();
   fillHomeServerSettings();
+  fillAutoBackup();
   await Promise.all([loadMealieSettings(), loadDeeplSettings()]);
 }
 
@@ -3622,6 +3686,7 @@ window.goodstockBack = () => {
 // Coming back to the app: catch up on timers that ended while it was paused, and on expiry reminders.
 window.goodstockResume = () => {
   checkRemoteRevision();
+  runAutoBackup();
   refreshTimers();
   checkExpiryReminders();
 };

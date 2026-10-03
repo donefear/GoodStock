@@ -41,6 +41,7 @@ final class NativeBridge {
     private String pendingSaveId;
     private String pendingSaveContent;
     private String pendingPermissionId;
+    private String pendingFolderId;
     private android.speech.tts.TextToSpeech speech;
     private boolean speechReady;
     private String pendingSpeech;
@@ -242,6 +243,50 @@ final class NativeBridge {
                 callback(id, true, "saved");
             } catch (Exception error) {
                 callback(id, false, "The backup could not be written");
+            }
+        });
+    }
+
+    /** Automatic backups need a folder the app may keep writing to (Android 5.0+). */
+    @JavascriptInterface
+    public boolean canAutoBackup() {
+        return Build.VERSION.SDK_INT >= 21;
+    }
+
+    /** Lets the user pick the folder for automatic backups; answers with the folder's name. */
+    @JavascriptInterface
+    public void chooseBackupFolder(String callbackId) {
+        if (!canAutoBackup()) { callback(callbackId, false, "unsupported"); return; }
+        pendingFolderId = callbackId;
+        activity.runOnUiThread(() -> activity.startActivityForResult(AutoBackup.chooseFolderIntent(), MainActivity.REQUEST_BACKUP_FOLDER));
+    }
+
+    void onBackupFolderResult(int resultCode, Intent data) {
+        String id = pendingFolderId;
+        pendingFolderId = null;
+        if (id == null) return;
+        try {
+            String name = resultCode == Activity.RESULT_OK && data != null ? AutoBackup.rememberFolder(activity, data.getData()) : null;
+            callback(id, name != null, name != null ? name : "cancelled");
+        } catch (Exception error) {
+            callback(id, false, "That folder cannot be used");
+        }
+    }
+
+    @JavascriptInterface
+    public void forgetBackupFolder() {
+        if (canAutoBackup()) AutoBackup.forgetFolder(activity);
+    }
+
+    /** Writes an automatic backup into the chosen folder, keeping the newest four. */
+    @JavascriptInterface
+    public void writeBackup(String callbackId, String fileName, String content) {
+        network.execute(() -> {
+            try {
+                AutoBackup.write(activity, fileName, content);
+                callback(callbackId, true, "saved");
+            } catch (Exception error) {
+                callback(callbackId, false, error.getMessage() == null ? "The backup could not be written" : error.getMessage());
             }
         });
     }

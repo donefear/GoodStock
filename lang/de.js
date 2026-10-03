@@ -789,4 +789,12 @@ window.GOODSTOCK_TRANSLATIONS.de = {
   "Normal": "Normal",
   "Large": "Groß",
   "Extra large": "Sehr groß",
+  "Change folder": "Ordner ändern",
+  "Choose folder": "Ordner wählen",
+  "Weekly to “{folder}”. Last backup: {date}.": "Wöchentlich nach „{folder}“. Letzte Sicherung: {date}.",
+  "Weekly to “{folder}”. The first backup is made now.": "Wöchentlich nach „{folder}“. Die erste Sicherung wird jetzt erstellt.",
+  "Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.": "Einmal pro Woche geht eine Sicherung in einen Ordner deiner Wahl (zum Beispiel in Google Drive oder iCloud Drive). Die neuesten vier bleiben erhalten.",
+  "That folder cannot be used. Choose another one.": "Dieser Ordner kann nicht verwendet werden. Wähl einen anderen.",
+  "Automatic weekly backup": "Automatische wöchentliche Sicherung",
+  "Turn off": "Ausschalten",
 };

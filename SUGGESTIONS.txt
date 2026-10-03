@@ -169,8 +169,12 @@ a Spanish or German recipe works less well than a Dutch one.
     screen.
 
 4.9 Automatic backups for the phone apps.
-    Today the phone apps rely on remembering to press Back up. A weekly automatic backup to iCloud Drive /
-    Google Drive (or to the home server, see 4.1) would avoid losing a kitchen with a lost phone.
+    DONE (v2.1.49): Settings → Automatic weekly backup in both phone apps. Choose a folder once (Google Drive,
+    iCloud Drive, Downloads, On My iPhone…) and a backup is written right away, then again whenever the app is
+    opened and the last one is a week old; the newest four are kept. Android keeps write access to the folder
+    (Android 5.0+); iPhone remembers it as a security-scoped bookmark, which also works for iCloud Drive folders.
+    Change folder / Turn off are in the same place. A phone connected to the home server (4.1) has its data on the
+    server as well.
 
 
 5. SAFETY

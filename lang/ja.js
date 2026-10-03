@@ -789,4 +789,12 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Normal": "標準",
   "Large": "大",
   "Extra large": "特大",
+  "Change folder": "フォルダを変更",
+  "Choose folder": "フォルダを選ぶ",
+  "Weekly to “{folder}”. Last backup: {date}.": "毎週「{folder}」へ。前回のバックアップ：{date}。",
+  "Weekly to “{folder}”. The first backup is made now.": "毎週「{folder}」へ。最初のバックアップを今作成します。",
+  "Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.": "週に一度、選んだフォルダ（Google Drive や iCloud Drive など）にバックアップを保存します。新しい 4 つが残ります。",
+  "That folder cannot be used. Choose another one.": "そのフォルダは使えません。別のフォルダを選んでください。",
+  "Automatic weekly backup": "毎週の自動バックアップ",
+  "Turn off": "オフにする",
 };
