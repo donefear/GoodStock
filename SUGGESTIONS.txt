@@ -15,8 +15,8 @@ Ordered roughly by how much I'd recommend doing them first. Each item says why.
     confirm dialogs (delete recipe, clear list) work.
 
 1.2 Push the standalone branch, then merge it into main.
-    Pushing runs the iOS build check on GitHub. Portainer deploys from main, so the server only gets the new
-    languages after the merge.
+    DONE (v2.1.12): standalone pushed; main fast-forwarded to it and pushed. Redeploy the stack in Portainer to
+    pick it up. Later versions are merged into main the same way at the end of this round.
 
 1.3 Have a native speaker read a few languages.
     The nine translations are machine-written. They pass every automatic check, but wording can still be stiff.
