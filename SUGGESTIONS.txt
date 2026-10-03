@@ -19,8 +19,13 @@ Ordered roughly by how much I'd recommend doing them first. Each item says why.
     pick it up. Later versions are merged into main the same way at the end of this round.
 
 1.3 Have a native speaker read a few languages.
-    The nine translations are machine-written. They pass every automatic check, but wording can still be stiff.
-    Start with the languages people in your household actually use.
+    DONE (v2.1.13) as a proofreading pass: each language was reread line by line as a native-speaker editor
+    would, and 17–71 lines per language were improved. Examples: consistent expiry wording (nl houdbaar,
+    es vencer); Italian Inventory = Scorte everywhere; German "Ort: {location}" instead of "im {location}", which
+    was wrong for some names; Russian "винегрет" (a beet salad) → "заправка"; clashing cooking-term names fixed in
+    fr/ru. All languages still pass the checker.
+    STILL WORTH DOING: a real person reading the languages your household uses. A machine proofread can't replace
+    that.
 
 
 2. MAKE THE LANGUAGES WORK BEYOND THE BUTTONS
