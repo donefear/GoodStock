@@ -780,4 +780,5 @@ window.GOODSTOCK_TRANSLATIONS.fr = {
   "More": "Plus",
   "{count} servings": {"one": "{count} portion", "other": "{count} portions"},
   "How many people the amounts are for. Optional; lets you scale the recipe.": "Pour combien de personnes sont les quantités. Facultatif ; permet d’adapter la recette.",
+  "Other": "Autres",
 };

@@ -780,4 +780,5 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "More": "Больше",
   "{count} servings": {"one": "{count} порция", "few": "{count} порции", "many": "{count} порций", "other": "{count} порции"},
   "How many people the amounts are for. Optional; lets you scale the recipe.": "На сколько человек рассчитаны количества. Необязательно; позволяет пересчитать рецепт.",
+  "Other": "Другое",
 };

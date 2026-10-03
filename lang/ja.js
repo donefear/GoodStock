@@ -780,4 +780,5 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "More": "増やす",
   "{count} servings": "{count} 人分",
   "How many people the amounts are for. Optional; lets you scale the recipe.": "分量が何人分か。任意です。入力するとレシピの分量を調整できます。",
+  "Other": "その他",
 };

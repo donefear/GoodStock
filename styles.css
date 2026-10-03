@@ -737,3 +737,8 @@ html:not(.is-standalone) .phone-only { display: none; }
 .servings-control .icon-button { width: 34px; height: 34px; }
 .servings-control span { min-width: 92px; text-align: center; font-size: 13px; font-weight: 600; }
 .no-flex-gap .servings-control > * + * { margin-left: 8px; }
+
+/* Shopping list groups. */
+.shopping-group { margin: 18px 0 0; padding: 0 8px 6px; border-bottom: 1px solid var(--line); color: var(--muted); font: 700 11px/1.4 'DM Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; }
+.shopping-group span { font-weight: 600; letter-spacing: 0; }
+.shopping-list > .shopping-group:first-child { margin-top: 6px; }

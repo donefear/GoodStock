@@ -780,4 +780,5 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "More": "增加",
   "{count} servings": "{count} 人份",
   "How many people the amounts are for. Optional; lets you scale the recipe.": "用量对应的人数。可选；填写后可以按份数调整食谱。",
+  "Other": "其他",
 };

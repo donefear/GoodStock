@@ -780,4 +780,5 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "More": "Meer",
   "{count} servings": {"one": "{count} portie", "other": "{count} porties"},
   "How many people the amounts are for. Optional; lets you scale the recipe.": "Voor hoeveel personen de hoeveelheden zijn. Optioneel; zo kun je het recept omrekenen.",
+  "Other": "Overig",
 };

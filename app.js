@@ -1221,9 +1221,29 @@ function renderWeek() {
     <section class="section-block recipe-picker"><div class="section-heading"><div><span class="eyebrow">${t('PICK SOMETHING GOOD')}</span><h2>${t('Add a recipe to this day')}</h2></div><button class="text-button" data-view="recipes">${t('Browse all recipes')} <span aria-hidden="true">→</span></button></div><div class="picker-grid">${recipeOptions.slice(0, 3).map((recipe) => `<article class="picker-item"><span class="recipe-number">${tp(recipe.ingredients.length, '{count} INGREDIENT', '{count} INGREDIENTS', { count: String(recipe.ingredients.length).padStart(2, '0') })}</span><strong>${escapeHtml(recipe.name)}</strong><p>${escapeHtml(recipe.description || t('An idea from your recipe shelf.'))}</p><div class="picker-foot"><span class="match-tag ${missingIngredients(recipe).length ? 'has-missing' : ''}">${missingIngredients(recipe).length ? tp(missingIngredients(recipe).length, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</span><button class="button button-small button-dark" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${t('Add')} <span aria-hidden="true">＋</span></button></div></article>`).join('') || `<p class="muted">${t('Add recipes in your recipe library first.')}</p>`}</div></section>`;
 }
 
+// The shopping list in groups, roughly in the order of a supermarket walk: fresh produce first, things that need
+// the fridge or freezer near the end. Anything the ingredient catalog does not know goes under Other.
+const SHOPPING_GROUPS = ['Vegetables', 'Fruit', 'Herbs', 'Bakery', 'Pantry', 'Baking', 'Seasoning', 'Dairy', 'Meat and fish'];
+N_('Other');
+
+function shoppingGroups(items) {
+  const groups = new Map();
+  for (const item of items) {
+    const category = ingredientRecord(item.name)?.category;
+    const key = SHOPPING_GROUPS.includes(category) ? category : 'Other';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  return [...SHOPPING_GROUPS, 'Other'].filter((key) => groups.has(key)).map((key) => ({ key, items: groups.get(key) }));
+}
+
 function renderShopping() {
   const remaining = state.shopping.filter((item) => !item.checked).length;
-  const rows = state.shopping.map((item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}</span></label><span class="shopping-amount">${escapeHtml(item.quantity || '')} ${escapeHtml(item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">${t('Put away')}</button>` : `<span class="shopping-source">${escapeHtml(item.source || t('Shopping list'))}</span>`}</article>`).join('');
+  const row = (item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}</span></label><span class="shopping-amount">${escapeHtml(item.quantity || '')} ${escapeHtml(item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">${t('Put away')}</button>` : `<span class="shopping-source">${escapeHtml(item.source || t('Shopping list'))}</span>`}</article>`;
+  const groups = shoppingGroups(state.shopping);
+  const rows = groups.length > 1
+    ? groups.map((group) => `<h3 class="shopping-group">${escapeHtml(t(group.key))} <span>${group.items.filter((item) => !item.checked).length || '✓'}</span></h3>${group.items.map(row).join('')}`).join('')
+    : state.shopping.map(row).join('');
   const shareButton = STANDALONE
     ? `<button class="button button-outline" data-action="share-shopping-text">${t('Share list')} <span aria-hidden="true">↗</span></button>`
     : `<button class="button button-outline" data-action="show-shopping-qr">${t('Share to phone')} <span aria-hidden="true">▦</span></button>`;

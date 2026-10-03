@@ -149,7 +149,11 @@ a Spanish or German recipe works less well than a Dutch one.
     whose first argument had a comma in it.
 
 4.6 Shopping list grouped by category.
-    Fruit & veg together, dairy together, using the categories in ingredients.json. Shopping goes faster.
+    DONE (v2.1.46): the shopping list is grouped roughly in supermarket order: Vegetables, Fruit, Herbs, Bakery,
+    Pantry, Baking, Seasoning, then Dairy and Meat and fish last, and finally Other for anything the catalog doesn't
+    know. Each group heading shows how many are left (✓ when done). It works for items named in any of the ten
+    languages, and a list with only one group stays a plain list. The shared/downloaded text list is not grouped
+    yet.
 
 4.7 Undo instead of "are you sure?".
     Deleting an item or recipe could show an "Undo" bar for a few seconds, which is friendlier on a touch screen.
