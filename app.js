@@ -1172,7 +1172,7 @@ function updateCookingTerms() {
     ? terms.map((term) => {
       const name = local(term) || term.en;
       const second = currentLanguage === 'en' ? term.nl : term.en;
-      return `<article class="term-card"><h3>${escapeHtml(name)}${second && second !== name ? ` <span>${escapeHtml(second)}</span>` : ''}</h3><p>${escapeHtml(t(term.what))}</p><a class="button button-small button-outline" href="${escapeHtml(cookingTermVideoUrl(term))}" target="_blank" rel="noopener noreferrer">▶ ${t('Watch a video')}</a></article>`;
+      return `<article class="term-card"><h3>${escapeHtml(name)}${second && second !== name ? ` <span>${escapeHtml(second)}</span>` : ''}</h3><p>${escapeHtml(t(term.what))}</p><a class="button button-small button-outline" href="${escapeHtml(cookingTermVideoUrl(term, currentLanguage === 'en' ? '' : t('{term} cooking technique', { term: name.replace(/\s*[(（].*$/, '') })))}" target="_blank" rel="noopener noreferrer">▶ ${t('Watch a video')}</a></article>`;
     }).join('')
     : `<p class="muted">${t('No term matches that. Try another word.')}</p>`;
 }

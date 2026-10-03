@@ -70,7 +70,8 @@ a Spanish or German recipe works less well than a Dutch one.
     can be written grammatically.
 
 2.6 Cooking-term videos in your language.
-    The "Watch a video" button searches YouTube in English. Search in the app's language instead.
+    DONE (v2.1.26): "Watch a video" searches YouTube in the app's language with the term's local name
+    ("Blanchieren Kochtechnik", "湯通し 調理法"); English stays "how to … cooking technique".
 
 
 3. SMALL FIXES

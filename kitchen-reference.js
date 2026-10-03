@@ -79,6 +79,9 @@ const COOKING_TERMS = [
   { en: 'Zest', nl: 'Zesten / raspen', what: 'Finely grating the coloured outer skin of citrus fruit. Stop before the bitter white part.' },
 ];
 
-function cookingTermVideoUrl(term) {
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`how to ${term.en.replace(/\s*\(.*\)$/, '')} cooking technique`)}`;
+// A YouTube search for the technique. The page passes a search in the app's language ("Blanchieren Kochtechnik");
+// without one it searches in English.
+function cookingTermVideoUrl(term, search) {
+  const query = search || `how to ${term.en.replace(/\s*\(.*\)$/, '')} cooking technique`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 }
