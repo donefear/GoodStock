@@ -213,7 +213,10 @@ a Spanish or German recipe works less well than a Dutch one.
     all list the new files. Checked with the full test suite (17/17), Chromium 80 and an APK build.
 
 6.3 Health check in docker-compose.yml.
-    Let Docker/Portainer restart the container automatically if the server stops answering.
+    DONE (v2.1.63): the Dockerfile has a HEALTHCHECK on /api/health (every 30 s, open even with a household PIN), so
+    both Compose files and Portainer show the container as healthy/unhealthy. Verified: a fresh container reports
+    "healthy". Note: Docker itself only restarts a container that exits (restart: unless-stopped), not one that is
+    merely unhealthy. For that, add an "autoheal" container or let Portainer alert you.
 
 6.4 Add languages on request.
     Adding a language is now: copy a lang file, translate, run the checker. Right-to-left languages (Arabic,
