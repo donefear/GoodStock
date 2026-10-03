@@ -765,3 +765,8 @@ html:not(.is-standalone) .phone-only { display: none; }
 @media (max-width: 760px) {
   :root[data-text-size="large"] .steps-dialog, :root[data-text-size="xlarge"] .steps-dialog { height: calc(100vh / var(--text-zoom)); max-height: calc(100vh / var(--text-zoom)); }
 }
+
+/* Dialog headings (title and ×) stay at the top while the dialog scrolls. The heading stretches over the dialog's
+   25px padding and has its background, so content scrolls underneath it. */
+.app-dialog .dialog-heading { position: sticky; top: -25px; z-index: 3; margin: -25px -25px 3px; padding: 25px 25px 10px; background: var(--white); }
+:root[data-theme="dark"] .app-dialog .dialog-heading { background: #202a24; }
