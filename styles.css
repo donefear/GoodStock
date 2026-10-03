@@ -770,3 +770,20 @@ html:not(.is-standalone) .phone-only { display: none; }
    25px padding and has its background, so content scrolls underneath it. */
 .app-dialog .dialog-heading { position: sticky; top: -25px; z-index: 3; margin: -25px -25px 3px; padding: 25px 25px 10px; background: var(--white); }
 :root[data-theme="dark"] .app-dialog .dialog-heading { background: #202a24; }
+
+/* Recipe ideas from the web (Recipes page). */
+.ideas-panel { margin: 22px 0 8px; }
+.ideas-status { margin: 4px 0 0; }
+.ideas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.idea-card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); display: flex; flex-direction: column; }
+.idea-photo { width: 100%; height: 140px; object-fit: cover; background: #e8ece4; }
+.idea-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.idea-body h3 { margin: 0; font-size: 17px; }
+.idea-reasons { margin: 0; padding-left: 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.idea-actions { margin-top: auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.idea-body .match-tag { align-self: flex-start; }
+:root[data-theme="dark"] .idea-card { background: #1b2620; }
+.no-flex-gap .idea-body > * + * { margin-top: 8px; }
+.ideas-panel .recipe-results-heading { flex-wrap: wrap; gap: 10px; }
+.ideas-panel .recipe-results-heading > div { min-width: 0; }
+.no-flex-gap .ideas-panel .recipe-results-heading > * + * { margin-left: 0; margin-top: 10px; }

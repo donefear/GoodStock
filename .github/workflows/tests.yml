@@ -4,7 +4,7 @@ name: Tests
 # server for each (sync, household PIN, phone features, all languages on tablet and phone).
 on:
   push:
-    branches: [main, standalone]
+    branches: [main, standalone, experiments]
   pull_request:
   workflow_dispatch:
 

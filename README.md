@@ -27,6 +27,10 @@ Recipes keep the language they were written in. A recipe in another language sho
 
 Translations live in `lang/<code>.js`, keyed by the English text. After changing or adding interface text, run `node lang/check-translations.mjs` to list what each language is missing.
 
+## Recipe ideas from the web
+
+Recipes → Ideas for you → **Find recipes for me** suggests recipes from [TheMealDB](https://www.themealdb.com), a free recipe collection, based on what you cooked or planned in the last 90 days and what you have (soon-expiring items count extra). Each idea says why it was picked; recipes you already have are skipped, and **Add to my recipes** saves one as your own. The recipes are in English; the recipe page can translate them with DeepL. The browser version asks TheMealDB through the server, the phone apps directly.
+
 ## Expiration reminders
 
 Set an optional expiration date when adding or editing inventory. Common perishables get a storage-specific shelf-life estimate when added; dates are marked as estimates and the package date can override them. Stable pantry items are left blank. Items due within three days (and overdue items) appear in the Inventory **Use soon** panel with saved recipes that use them. Browser notifications are optional, require HTTPS and permission, and are checked daily while Goodstock is open; the in-app panel works without notifications. Estimates are general guidance, not food-safety guarantees.

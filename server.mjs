@@ -53,6 +53,7 @@ const staticFiles = new Map([
   ['/app/sync.js', ['app/sync.js', 'text/javascript; charset=utf-8']],
   ['/app/views.js', ['app/views.js', 'text/javascript; charset=utf-8']],
   ['/app/cook.js', ['app/cook.js', 'text/javascript; charset=utf-8']],
+  ['/app/ideas.js', ['app/ideas.js', 'text/javascript; charset=utf-8']],
   ['/app/actions.js', ['app/actions.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/sw.js', ['sw.js', 'text/javascript; charset=utf-8']],
@@ -453,6 +454,19 @@ const server = createServer(async (request, response) => {
     if (request.method === 'POST' && url.pathname === '/api/state') {
       const result = await receiveKitchen(await requestBody(request));
       sendJson(response, result.status, result.body);
+      return;
+    }
+    // Recipe ideas: TheMealDB (a free recipe database, public test key "1"), for the Recipes page's suggestions.
+    const mealDbMatch = /^\/api\/mealdb\/(filter|lookup|search|random)\.php$/.exec(url.pathname);
+    if (request.method === 'GET' && mealDbMatch) {
+      const query = new URLSearchParams();
+      for (const name of ['i', 's', 'c', 'a']) if (url.searchParams.has(name)) query.set(name, url.searchParams.get(name).slice(0, 80));
+      try {
+        const result = await fetch(`https://www.themealdb.com/api/json/v1/1/${mealDbMatch[1]}.php?${query}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
+        sendJson(response, result.ok ? 200 : 502, await result.json().catch(() => ({ meals: null })));
+      } catch {
+        sendJson(response, 502, { error: 'Could not reach TheMealDB.' });
+      }
       return;
     }
     // Product barcodes: looked up in Open Food Facts (a free, open product database) for the add-item dialog.

@@ -4,7 +4,7 @@ name: iOS app
 # simulator without signing. Installing on a phone happens from Xcode on a Mac (see ios/README.md).
 on:
   push:
-    branches: [main, standalone]
+    branches: [main, standalone, experiments]
     paths:
       - 'ios/**'
       - '*.js'

@@ -133,6 +133,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'steps-read-aloud') toggleReadAloud();
   if (action === 'auto-backup-folder') await chooseAutoBackupFolder();
   if (action === 'auto-backup-off') turnOffAutoBackup();
+  if (action === 'find-ideas') await findIdeas();
+  if (action === 'add-idea') addIdea(id);
   if (action === 'pin-save') await savePin();
   if (action === 'pin-remove') await removePin();
   if (action === 'steps-listen') toggleListening();
