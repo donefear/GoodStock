@@ -774,4 +774,10 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Uma notificação no celular toda manhã às 9:00 para itens que vencem em até 3 dias, mesmo com o app fechado. O painel Usar logo no app está sempre disponível.",
   "Read the steps aloud": "Ler os passos em voz alta",
   "Voice commands: say next, back, repeat or timer": "Comandos de voz: diga próximo, voltar, repete ou timer",
+  "Original amounts": "Quantidades originais",
+  "Servings": "Porções",
+  "Fewer": "Menos",
+  "More": "Mais",
+  "{count} servings": {"one": "{count} porção", "other": "{count} porções"},
+  "How many people the amounts are for. Optional; lets you scale the recipe.": "Para quantas pessoas são as quantidades. Opcional; permite ajustar a receita.",
 };

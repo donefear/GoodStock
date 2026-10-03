@@ -774,4 +774,10 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "期限まで 3 日以内の品目を、毎朝 9:00 にスマートフォンへ通知します（アプリを閉じていても届きます）。アプリ内の「早めに使う」パネルはいつでも使えます。",
   "Read the steps aloud": "手順を読み上げる",
   "Voice commands: say next, back, repeat or timer": "音声コマンド：「次へ」「戻る」「もう一度」「タイマー」と言ってください",
+  "Original amounts": "元の分量",
+  "Servings": "人数",
+  "Fewer": "減らす",
+  "More": "増やす",
+  "{count} servings": "{count} 人分",
+  "How many people the amounts are for. Optional; lets you scale the recipe.": "分量が何人分か。任意です。入力するとレシピの分量を調整できます。",
 };

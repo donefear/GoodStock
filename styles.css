@@ -730,3 +730,10 @@ html:not(.is-standalone) .phone-only { display: none; }
 .steps-voice { flex: 0 0 auto; font-size: 17px; }
 .steps-voice[aria-pressed="true"] { border-color: var(--green); background: var(--green); color: #fff; }
 .no-flex-gap .steps-top > * + * { margin-left: 10px; }
+
+/* Servings on the recipe page. */
+.recipe-page-side .section-heading { flex-wrap: wrap; }
+.servings-control { display: inline-flex; align-items: center; gap: 8px; }
+.servings-control .icon-button { width: 34px; height: 34px; }
+.servings-control span { min-width: 92px; text-align: center; font-size: 13px; font-weight: 600; }
+.no-flex-gap .servings-control > * + * { margin-left: 8px; }

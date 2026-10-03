@@ -140,7 +140,13 @@ a Spanish or German recipe works less well than a Dutch one.
     home server and inside the phone apps the 🎤 button stays hidden. Read aloud works everywhere.
 
 4.5 Recipe servings / scaling.
-    "Make it for 6 instead of 4" with all amounts recalculated. The amount parser is already there.
+    DONE (v2.1.45): recipes have an optional Servings field. You can fill it in the editor; website imports
+    (schema.org recipeYield) and Mealie (recipeServings/recipeYield) fill it automatically. The recipe page has
+    − / + next to Ingredients, by servings ("6 servings") or, without a servings number, by ×½ ×1½ ×2… All amounts
+    are recalculated, fractions, ranges and "1 1/2" included (amounts written inside the steps too). Planning a
+    scaled recipe remembers its scale, and cook mode, the shopping list, Review and "Cooked ✓" use the scaled
+    amounts. The week view shows it ("· 6 servings"). Also fixed: the translation checker missed counted texts
+    whose first argument had a comma in it.
 
 4.6 Shopping list grouped by category.
     Fruit & veg together, dairy together, using the categories in ingredients.json. Shopping goes faster.

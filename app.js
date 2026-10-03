@@ -401,6 +401,49 @@ function metricIngredient(text) {
   return decimal && amount && ['cup', 'tbsp', 'tsp'].includes(unit) ? `${formatAmount(amount, unit)}${converted.slice(decimal[1].length)}` : converted;
 }
 
+// Servings. A recipe may say how many it serves; its page can scale it, and a planned meal remembers its scale, so
+// cook mode, the shopping list and "Cooked" use the scaled amounts. Only the amount at the start of an ingredient
+// line changes ("2–3 cloves garlic" → "4–6 cloves garlic").
+const AMOUNT_AT_START = new RegExp(String.raw`^(${AMOUNT_SOURCE})(?:(\s*(?:-|–|to|tot)\s*)(${AMOUNT_SOURCE}))?`);
+const recipeScales = new Map(); // recipe id → scale chosen on its page during this visit
+
+function scaleIngredientLine(line, factor) {
+  const text = String(line || '').trim();
+  if (!factor || factor === 1) return text;
+  const match = AMOUNT_AT_START.exec(text);
+  if (!match) return text;
+  const { unit } = parseIngredient(text);
+  const scale = (amountText) => {
+    const value = parseAmount(amountText.trim());
+    return value ? `${formatAmount(Math.round(value * factor * 100) / 100, unit)}${/\s*$/.exec(amountText)[0]}` : amountText;
+  };
+  return `${scale(match[1])}${match[3] ? `${match[2]}${scale(match[3])}` : ''}${text.slice(match[0].length)}`;
+}
+
+function scaledRecipe(recipe, factor = 1) {
+  if (!recipe || !factor || factor === 1) return recipe;
+  return { ...recipe, ingredients: (recipe.ingredients || []).map((line) => scaleIngredientLine(line, factor)), scale: factor };
+}
+
+const planScale = (plan) => (plan && Number(plan.scale) > 0 ? Number(plan.scale) : 1);
+
+// "6 servings" when the recipe says how many it serves, otherwise "×2" (or "Original amounts").
+function scaleLabel(recipe, factor) {
+  if (recipe.servings) return tp(Math.max(1, Math.round(recipe.servings * factor)), '{count} serving', '{count} servings');
+  return factor === 1 ? t('Original amounts') : `×${formatAmount(factor, '')}`;
+}
+
+const SCALE_STEPS = [0.25, 0.5, 1, 1.5, 2, 3, 4, 6, 8];
+
+function nextScale(recipe, factor, direction) {
+  if (recipe.servings) {
+    const servings = Math.min(100, Math.max(1, Math.round(recipe.servings * factor) + direction));
+    return servings / recipe.servings;
+  }
+  const index = SCALE_STEPS.findIndex((step) => step >= factor - 0.001);
+  return SCALE_STEPS[Math.min(SCALE_STEPS.length - 1, Math.max(0, (index < 0 ? 2 : index) + direction))];
+}
+
 function metricRecipe(recipe) {
   if (!recipe || typeof recipe !== 'object') return recipe;
   return {
@@ -1169,7 +1212,7 @@ function renderWeek() {
     const recipe = recipeById(entry.recipeId);
     if (!recipe) return '';
     const title = `<button class="mealie-link recipe-title-link" type="button" data-action="view-recipe" data-id="${escapeHtml(recipe.id)}" title="${t('Show recipe')}">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`;
-    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? t('Cooked and confirmed') : tp(recipe.ingredients.length, '{count} ingredient', '{count} ingredients')}</span></div>${entry.cooked ? `<span class="cooked-label">${t('DONE')}</span>` : `<div class="planned-actions"><button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="${t('Cook it step by step')}">${t('Steps')} <span aria-hidden="true">▶</span></button><button class="button button-small button-quiet" data-action="review-plan" data-id="${escapeHtml(entry.id)}" title="${t('See what this needs and what you have')}">${t('Review')}</button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}" title="${t('Mark as cooked and remove the ingredients from stock')}">${t('Cooked')} <span aria-hidden="true">✓</span></button></div>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="${t('Remove meal')}">×</button></article>`;
+    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? t('Cooked and confirmed') : tp(recipe.ingredients.length, '{count} ingredient', '{count} ingredients')}${planScale(entry) !== 1 ? ` · ${escapeHtml(scaleLabel(recipe, planScale(entry)))}` : ''}</span></div>${entry.cooked ? `<span class="cooked-label">${t('DONE')}</span>` : `<div class="planned-actions"><button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="${t('Cook it step by step')}">${t('Steps')} <span aria-hidden="true">▶</span></button><button class="button button-small button-quiet" data-action="review-plan" data-id="${escapeHtml(entry.id)}" title="${t('See what this needs and what you have')}">${t('Review')}</button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}" title="${t('Mark as cooked and remove the ingredients from stock')}">${t('Cooked')} <span aria-hidden="true">✓</span></button></div>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="${t('Remove meal')}">×</button></article>`;
   }).join('') : `<div class="day-empty"><span aria-hidden="true">✳</span><p>${t('No meal planned for this day.')}</p><small>${t('Pick a recipe below to give the day a little shape.')}</small></div>`;
   const recipeOptions = [...state.recipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   return `${pageHeading(t('A GOOD WEEK STARTS HERE'), t('Make room for dinner.'), t('Plan meals at your own pace. Your list will follow along.'), `<button class="button button-outline" data-action="generate-shopping">${t('Build shopping list')} <span aria-hidden="true">↗</span></button>`)}
@@ -1385,6 +1428,7 @@ function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
   form.elements.sourceUrl.value = recipe?.sourceUrl || '';
   form.elements.name.value = recipe?.name || '';
   form.elements.description.value = recipe?.description || '';
+  form.elements.servings.value = recipe?.servings || '';
   form.elements.ingredients.value = (recipe?.ingredients || []).join('\n');
   form.elements.instructions.value = recipeInstructions(recipe || {}).join('\n');
   $('#recipe-edit-title').textContent = recipe ? t('Edit {name}', { name: recipe.name }) : t('New recipe');
@@ -1438,6 +1482,7 @@ function fillRecipeEditor(recipe, message) {
   const form = $('#recipe-edit-form');
   if (recipe.name) form.elements.name.value = recipe.name;
   if (recipe.description) form.elements.description.value = recipe.description;
+  if (recipe.servings) form.elements.servings.value = recipe.servings;
   if (recipe.ingredients?.length) form.elements.ingredients.value = recipe.ingredients.join('\n');
   if (recipe.instructions?.length) form.elements.instructions.value = recipe.instructions.join('\n');
   if (recipe.sourceUrl) form.elements.sourceUrl.value = recipe.sourceUrl;
@@ -1490,6 +1535,7 @@ function saveRecipeFromEditor(form) {
     id: existing?.id || `my-${makeId()}`,
     name: form.elements.name.value.trim(),
     description: form.elements.description.value.trim(),
+    servings: Math.round(Number(form.elements.servings.value)) >= 1 ? Math.min(100, Math.round(Number(form.elements.servings.value))) : null,
     ingredients: lines(form.elements.ingredients.value),
     instructions: lines(form.elements.instructions.value),
     source: existing?.source || (sourceUrl ? 'Imported' : 'My recipes'),
@@ -1559,9 +1605,12 @@ const sourceLabel = (source) => (SOURCE_LABELS[source || 'Kitchen collection'] ?
 const inStockText = (item) => (item ? t('in {location}', { location: escapeHtml(item.location) }) : t('not in inventory'));
 
 function renderRecipePage() {
-  const recipe = recipeById(recipePageId);
-  if (!recipe) { activeView = 'recipes'; return renderRecipes(); }
+  const saved = recipeById(recipePageId);
+  if (!saved) { activeView = 'recipes'; return renderRecipes(); }
+  const factor = recipeScales.get(saved.id) || 1;
+  const recipe = scaledRecipe(saved, factor);
   const ingredients = recipe.ingredients || [];
+  const servingsControl = `<div class="servings-control" role="group" aria-label="${t('Servings')}"><button class="icon-button" type="button" data-action="scale-recipe" data-id="${escapeHtml(saved.id)}" data-step="-1" aria-label="${t('Fewer')}">−</button><span>${escapeHtml(scaleLabel(saved, factor))}</span><button class="icon-button" type="button" data-action="scale-recipe" data-id="${escapeHtml(saved.id)}" data-step="1" aria-label="${t('More')}">＋</button></div>`;
   const missing = missingIngredients(recipe);
   const { lines, steps } = recipePageSteps(recipe);
   const tools = typeof kitchenToolsIn === 'function' ? kitchenToolsIn(lines.join(' ')) : [];
@@ -1596,7 +1645,7 @@ function renderRecipePage() {
     <div class="recipe-page-links">${links}</div>
     ${renderTranslationPanel(recipe)}
     <div class="recipe-page">
-      <section class="section-block recipe-page-side"><div class="section-heading"><div><h2>${t('Ingredients')}</h2><span class="muted">${ingredients.length ? (missing.length ? tp(missing.length, '{count} missing', '{count} missing') : t('All in stock')) : ''}</span></div></div>${ingredientList}</section>
+      <section class="section-block recipe-page-side"><div class="section-heading"><div><h2>${t('Ingredients')}</h2><span class="muted">${ingredients.length ? (missing.length ? tp(missing.length, '{count} missing', '{count} missing') : t('All in stock')) : ''}</span></div>${ingredients.length ? servingsControl : ''}</div>${ingredientList}</section>
       <section class="section-block recipe-page-main"><div class="section-heading"><div><h2>${t('Method')}</h2><span class="muted">${number ? tp(number, '{count} step', '{count} steps') : ''}</span></div></div>${toolRow}${method}</section>
     </div>`;
 }
@@ -1990,7 +2039,7 @@ function openItemDialog(item) {
 }
 
 function openCookDialog(plan) {
-  const recipe = recipeById(plan.recipeId);
+  const recipe = scaledRecipe(recipeById(plan.recipeId), planScale(plan));
   if (!recipe) return;
   $('#cook-title').textContent = t('Cooked {name}?', { name: recipe.name });
   $('#cook-form').elements.planId.value = plan.id;
@@ -2012,6 +2061,7 @@ function mealieRecipeLink(recipe, className, label) {
 async function openRecipeDialog(id, isRemote, planId = '') {
   let recipe = isRemote ? mealieResults.find((entry) => entry.id === id || entry.slug === id) : recipeById(id);
   if (!recipe) return;
+  if (planId) recipe = scaledRecipe(recipe, planScale(state.plan.find((entry) => entry.id === planId)));
   if (isRemote && !recipe.ingredients?.length && recipe.slug) {
     try {
       recipe = metricRecipe(await mealieRecipe(recipe.slug));
@@ -2663,6 +2713,8 @@ async function startCookSteps(recipe, planId = '') {
       recipe = { ...recipe, instructions: details.instructions || [] };
     } catch { /* Fall back to ingredients only while Mealie is unreachable. */ }
   }
+  const plan = planId && state.plan.find((entry) => entry.id === planId);
+  recipe = scaledRecipe(recipe, plan ? planScale(plan) : (recipeScales.get(recipe.id) || 1));
   const bites = buildCookBites(recipe);
   const saved = readCookProgress()[recipe.id];
   const index = Number.isInteger(saved) && saved > 0 && saved < bites.length - 1 ? saved : 0;
@@ -2733,7 +2785,7 @@ async function importMealieRecipe(id) {
 function generateShopping() {
   const additions = [];
   for (const plan of currentWeekPlans()) {
-    const recipe = recipeById(plan.recipeId);
+    const recipe = scaledRecipe(recipeById(plan.recipeId), planScale(plan));
     if (!recipe || plan.cooked) continue;
     for (const ingredient of recipe.ingredients || []) {
       if (matchingInventory(ingredient)) continue;
@@ -2894,9 +2946,18 @@ document.addEventListener('click', async (event) => {
     weekStart = startOfWeek(selectedDate);
     render();
   }
+  if (action === 'scale-recipe') {
+    const recipe = recipeById(id);
+    if (recipe) {
+      const next = nextScale(recipe, recipeScales.get(id) || 1, Number(button.dataset.step));
+      if (Math.abs(next - 1) < 0.001) recipeScales.delete(id); else recipeScales.set(id, next);
+      render();
+    }
+  }
   if (action === 'plan-recipe') {
     if (!currentWeekPlans().some((entry) => entry.date === dateKey(selectedDate) && entry.recipeId === id)) {
-      state.plan.push({ id: makeId(), date: dateKey(selectedDate), recipeId: id, cooked: false });
+      const scale = recipeScales.get(id) || 1;
+      state.plan.push({ id: makeId(), date: dateKey(selectedDate), recipeId: id, cooked: false, ...(scale !== 1 ? { scale } : {}) });
       persist();
     }
     activeView = 'week';

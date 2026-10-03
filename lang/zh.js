@@ -774,4 +774,10 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "每天早上 9:00 发送手机通知，提醒 3 天内到期的物品，应用关闭时也会提醒。应用内的“尽快用掉”面板随时可用。",
   "Read the steps aloud": "朗读步骤",
   "Voice commands: say next, back, repeat or timer": "语音指令：说“下一步”“上一步”“重复”或“计时”",
+  "Original amounts": "原始用量",
+  "Servings": "份数",
+  "Fewer": "减少",
+  "More": "增加",
+  "{count} servings": "{count} 人份",
+  "How many people the amounts are for. Optional; lets you scale the recipe.": "用量对应的人数。可选；填写后可以按份数调整食谱。",
 };

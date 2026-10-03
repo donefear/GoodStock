@@ -110,6 +110,7 @@
         <input type="hidden" name="sourceUrl" />
         <label>Name<input name="name" required maxlength="120" placeholder="e.g. Grandma's pea soup" /></label>
         <label>Short description<input name="description" maxlength="400" placeholder="Optional" /></label>
+        <label>Servings <span class="field-hint">How many people the amounts are for. Optional; lets you scale the recipe.</span><input name="servings" type="number" min="1" max="100" step="1" inputmode="numeric" placeholder="Optional" /></label>
         <label>Ingredients <span class="field-hint">One per line, amount first: “200 g pasta”, “2 eggs”, “1 tbsp olive oil”.</span><textarea name="ingredients" rows="7" placeholder="200 g pasta&#10;2 eggs&#10;1 tbsp olive oil"></textarea></label>
         <label>Steps <span class="field-hint">One step per line. A short line without a full stop, like “Sauce”, becomes a section heading.</span><textarea name="instructions" rows="8" placeholder="Bring a big pot of salted water to the boil.&#10;Cook the pasta for 10 minutes."></textarea></label>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save recipe</button></div>
@@ -170,7 +171,7 @@
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the phone app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.44 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.45 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

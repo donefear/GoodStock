@@ -774,4 +774,10 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Уведомление на телефоне каждое утро в 9:00 о продуктах, срок которых истекает в течение 3 дней, даже когда приложение закрыто. Панель «Использовать скоро» всегда доступна.",
   "Read the steps aloud": "Читать шаги вслух",
   "Voice commands: say next, back, repeat or timer": "Голосовые команды: скажи «дальше», «назад», «повтори» или «таймер»",
+  "Original amounts": "Исходные количества",
+  "Servings": "Порции",
+  "Fewer": "Меньше",
+  "More": "Больше",
+  "{count} servings": {"one": "{count} порция", "few": "{count} порции", "many": "{count} порций", "other": "{count} порции"},
+  "How many people the amounts are for. Optional; lets you scale the recipe.": "На сколько человек рассчитаны количества. Необязательно; позволяет пересчитать рецепт.",
 };

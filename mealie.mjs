@@ -26,6 +26,7 @@ export function mapMealieRecipe(recipe) {
     name: recipe.name || 'Untitled recipe',
     description: recipe.description || '',
     image: recipe.image || recipe.recipeImage || '',
+    servings: Number(recipe.recipeServings) >= 1 ? Math.round(Number(recipe.recipeServings)) : (Number(/\d+/.exec(String(recipe.recipeYield || ''))?.[0]) || null),
     ingredients,
     instructions,
     source: 'Mealie',

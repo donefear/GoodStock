@@ -21,8 +21,9 @@ function collectKeys() {
   const keys = new Map(); // key → English text, or { one, other } for counted text
   const app = read('app.js');
   for (const match of app.matchAll(new RegExp(String.raw`\b(?:t|N_)\(\s*${STRING}`, 'g'))) keys.set(unquote(match[1]), unquote(match[1]));
-  for (const match of app.matchAll(new RegExp(String.raw`\btp\([^,]+,\s*${STRING},\s*${STRING}`, 'g'))) {
-    keys.set(unquote(match[2]), { one: unquote(match[1]), other: unquote(match[2]) });
+  for (const args of callArguments(app, 'tp')) {
+    if (args.length < 3 || !/^['"]/.test(args[1]) || !/^['"]/.test(args[2])) continue;
+    keys.set(unquote(args[2]), { one: unquote(args[1]), other: unquote(args[2]) });
   }
 
   const data = {};
@@ -39,6 +40,39 @@ function collectKeys() {
 // Fixed text in index.html that is not translated: icons and numbers, the brand, the version label, and
 // placeholders that app.js replaces straight away.
 const IGNORED_HTML_TEXT = [/^[^\p{L}]*$/u, /^goodstock$/, /Goodstock v\d/, /^STEP 1$/, /^https:\/\/…$/, /^Recipe$/];
+
+// The arguments of every call to name(…), split at top-level commas: the first argument of tp() is any expression,
+// possibly with brackets and commas of its own ("Math.max(1, n)").
+function callArguments(source, name) {
+  const calls = [];
+  const start = new RegExp(String.raw`\b${name}\(`, 'g');
+  let match;
+  while ((match = start.exec(source))) {
+    const args = [];
+    let depth = 0;
+    let quote = '';
+    let current = '';
+    for (let i = start.lastIndex; i < source.length; i++) {
+      const char = source[i];
+      if (quote) {
+        current += char;
+        if (char === '\\') { current += source[++i]; continue; }
+        if (char === quote) quote = '';
+        continue;
+      }
+      if (char === '\'' || char === '"' || char === '`') { quote = char; current += char; continue; }
+      if (char === '(' || char === '[' || char === '{') depth++;
+      if (char === ')' || char === ']' || char === '}') {
+        if (depth === 0) { args.push(current.trim()); break; }
+        depth--;
+      }
+      if (char === ',' && depth === 0) { args.push(current.trim()); current = ''; continue; }
+      current += char;
+    }
+    calls.push(args);
+  }
+  return calls;
+}
 
 // A small reader for index.html, mirroring translatePage in i18n.js.
 const VOID = new Set(['input', 'br', 'img', 'meta', 'link', 'hr', 'source', 'use', 'path', 'circle', 'rect']);

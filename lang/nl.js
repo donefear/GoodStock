@@ -774,4 +774,10 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Elke ochtend om 9:00 een melding op je telefoon voor items die binnen 3 dagen over datum gaan, ook als de app dicht is. Het paneel Snel opmaken in de app is altijd beschikbaar.",
   "Read the steps aloud": "Stappen voorlezen",
   "Voice commands: say next, back, repeat or timer": "Spraakbediening: zeg volgende, terug, herhaal of timer",
+  "Original amounts": "Originele hoeveelheden",
+  "Servings": "Porties",
+  "Fewer": "Minder",
+  "More": "Meer",
+  "{count} servings": {"one": "{count} portie", "other": "{count} porties"},
+  "How many people the amounts are for. Optional; lets you scale the recipe.": "Voor hoeveel personen de hoeveelheden zijn. Optioneel; zo kun je het recept omrekenen.",
 };

@@ -90,11 +90,22 @@ export function extractRecipeFromHtml(html, sourceUrl = '') {
     if (!ingredients.length && !instructions.length) continue;
     return {
       name: cleanWebText(recipe.name) || 'Imported recipe',
+      servings: servingsFrom(recipe.recipeYield),
       description: cleanWebText(recipe.description).slice(0, 400),
       ingredients,
       instructions,
       sourceUrl,
     };
+  }
+  return null;
+}
+
+// "4", 4, "4 servings", "Serves 4-6", ["4", "4 people"]: the first whole number, when it is a sensible count.
+export function servingsFrom(value) {
+  for (const entry of [].concat(value ?? [])) {
+    const match = /(\d+)/.exec(String(entry));
+    const count = match ? Number(match[1]) : 0;
+    if (count >= 1 && count <= 100) return count;
   }
   return null;
 }
