@@ -335,6 +335,22 @@ const server = createServer(async (request, response) => {
       sendJson(response, result.status, result.body);
       return;
     }
+    // Product barcodes: looked up in Open Food Facts (a free, open product database) for the add-item dialog.
+    const productMatch = /^\/api\/product\/(\d{8,14})$/.exec(url.pathname);
+    if (request.method === 'GET' && productMatch) {
+      try {
+        const fields = url.searchParams.get('fields') || 'product_name,quantity';
+        const result = await fetch(`https://world.openfoodfacts.org/api/v2/product/${productMatch[1]}?fields=${encodeURIComponent(fields)}`, {
+          headers: { 'user-agent': 'Goodstock/2 (home kitchen inventory; https://github.com/donefear/GoodStock)', accept: 'application/json' },
+          signal: AbortSignal.timeout(8000),
+        });
+        const body = await result.json().catch(() => ({}));
+        sendJson(response, result.ok && body?.status === 1 ? 200 : 404, body);
+      } catch {
+        sendJson(response, 502, { error: 'Could not reach Open Food Facts.' });
+      }
+      return;
+    }
     if (request.method === 'GET' && url.pathname === '/api/recipes/import') {
       try {
         sendJson(response, 200, await importRecipeFromUrl(url.searchParams.get('url') || ''));

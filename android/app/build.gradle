@@ -84,4 +84,6 @@ preBuild.dependsOn copyWebAssets
 
 dependencies {
     implementation 'androidx.webkit:webkit:1.11.0'
+    // Barcode scanning through Google Play services: no camera permission, the scanner UI comes from Google.
+    implementation 'com.google.android.gms:play-services-code-scanner:16.1.0'
 }

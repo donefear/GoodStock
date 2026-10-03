@@ -20,7 +20,8 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
 
     func install(in content: WKUserContentController) {
         content.add(WeakMessageHandler(self), name: "goodstock")
-        content.addUserScript(WKUserScript(source: Self.shim, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        let shim = Self.shim.replacingOccurrences(of: "__CAN_SCAN__", with: UIImagePickerController.isSourceTypeAvailable(.camera) ? "true" : "false")
+        content.addUserScript(WKUserScript(source: shim, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         refreshNotificationPermission()
     }
 
@@ -41,7 +42,9 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         fetchPage: function (id, url) { post('fetchPage', [id, String(url)]); },
         httpRequest: function (id, url, headers) { post('httpRequest', [id, String(url), String(headers || '{}')]); },
         httpSend: function (id, method, url, headers, body) { post('httpSend', [id, String(method), String(url), String(headers || '{}'), String(body)]); },
-        saveFile: function (id, name, content) { post('saveFile', [id, String(name), String(content)]); }
+        saveFile: function (id, name, content) { post('saveFile', [id, String(name), String(content)]); },
+        canScanBarcodes: function () { return __CAN_SCAN__; },
+        scanBarcode: function (id) { post('scanBarcode', [id]); }
       };
       // Tell the app the page's language (i18n.js sets html lang), for the confirm dialog buttons.
       function sendLanguage() { post('language', [document.documentElement.lang || 'en']); }
@@ -77,6 +80,8 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             request(id: arg(0), method: "GET", address: arg(1), headers: arg(2), body: nil)
         case "httpSend":
             request(id: arg(0), method: arg(1), address: arg(2), headers: arg(3), body: arg(4))
+        case "scanBarcode":
+            scanBarcode(id: arg(0))
         case "saveFile":
             saveFile(id: arg(0), name: arg(1), content: arg(2))
         default:
@@ -115,6 +120,18 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         sheet.popoverPresentationController?.sourceRect = CGRect(x: controller.view.bounds.midX, y: controller.view.bounds.midY, width: 1, height: 1)
         sheet.popoverPresentationController?.permittedArrowDirections = []
         controller.present(sheet, animated: true)
+    }
+
+    /// A product barcode from the camera, for adding groceries. Answers with the number, or "cancelled".
+    private func scanBarcode(id: String) {
+        guard let controller else { return callback(id, ok: false, payload: "cancelled") }
+        let scanner = BarcodeScannerViewController(cancelTitle: DialogLabels.cancel(controller.pageLanguage)) { result in
+            switch result {
+            case .success(let code): self.callback(id, ok: true, payload: code)
+            case .failure(let error): self.callback(id, ok: false, payload: error.localizedDescription)
+            }
+        }
+        controller.present(scanner, animated: true)
     }
 
     /// The kitchen backup: written to a temporary file, then the user picks where to keep it (Files, iCloud Drive…).

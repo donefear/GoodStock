@@ -46,6 +46,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Goodstock uses the camera to scan product barcodes when you add groceries.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Goodstock connects to your Mealie recipe server on your home network.</string>
 	<key>UILaunchScreen</key>

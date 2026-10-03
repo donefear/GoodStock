@@ -116,8 +116,13 @@ a Spanish or German recipe works less well than a Dutch one.
     real server: connect, phone→server, server→phone, disconnect.
 
 4.2 Barcode scanning to add groceries.
-    The phone apps have a camera. Scan a product and fill in the name (Open Food Facts is a free database). This
-    makes "Put away" after shopping much faster.
+    DONE (v2.1.42): "Scan barcode" in the Add item dialog of both phone apps (Android: Google's code scanner, no
+    camera permission, Android 5.0+; iPhone: the system camera reader) and in Chrome on a phone over HTTPS. Product
+    name (in your language when the database has it) and pack size come from Open Food Facts, a free, open product
+    database; the expiry estimate follows. Everywhere, including the kitchen tablet, typing or pasting a barcode
+    number into the name field looks it up too (the server version asks Open Food Facts through the server).
+    Tested with a real product (Nutella → "Nutella, 400 g") through the server and through the phone path.
+    Not added to "Put away" yet: shopping-list items already have a name.
 
 4.3 Daily use-soon reminder that doesn't need the app open.
     On the phone apps the expiry reminder only happens when you open the app. Schedule a real daily notification

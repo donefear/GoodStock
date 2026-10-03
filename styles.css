@@ -720,3 +720,8 @@ html:not(.is-standalone) .phone-only { display: none; }
 .no-flex-gap .recipe-step-number { margin-right: 14px; }
 .no-flex-gap .recipe-search > span:first-child, .no-flex-gap .today-label { margin-right: 10px; }
 .no-flex-gap .breadcrumb > * + * { margin-left: 8px; }
+
+/* Barcode scanning in the add-item dialog. */
+.barcode-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: -4px 0 12px; }
+.barcode-row .field-hint:empty { display: none; }
+.barcode-dialog video { width: 100%; max-height: 50vh; border-radius: 8px; background: #000; object-fit: cover; }

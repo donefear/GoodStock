@@ -1834,9 +1834,110 @@ function fillLocationSelect(select, selected) {
   select.innerHTML = state.locations.map((location) => `<option value="${escapeHtml(location)}" ${location === selected ? 'selected' : ''}>${escapeHtml(location)}</option>`).join('');
 }
 
+// Product barcodes. Open Food Facts (a free, open product database) gives the name, in the app's language when it has
+// it, and the pack size. Phone apps ask it straight from the phone; the browser version through the server. The
+// phone apps scan with the camera; Chrome on a phone can too (BarcodeDetector, needs HTTPS); and everywhere a
+// barcode number typed or pasted into the name field is looked up.
+const OPEN_FOOD_FACTS_FIELDS = ['product_name', 'generic_name', 'quantity', ...LANGUAGES.map((language) => `product_name_${language.code}`)].join(',');
+const BARCODE = /^\d{8}$|^\d{12,14}$/;
+
+async function lookupBarcode(code) {
+  let data = null;
+  if (STANDALONE) {
+    const answer = JSON.parse(await nativeCall('httpRequest', `https://world.openfoodfacts.org/api/v2/product/${code}?fields=${OPEN_FOOD_FACTS_FIELDS}`,
+      JSON.stringify({ accept: 'application/json', 'user-agent': 'Goodstock/2 (home kitchen inventory app)' })));
+    data = answer.status === 200 ? JSON.parse(answer.body || 'null') : null;
+  } else {
+    const response = await fetch(`/api/product/${code}?fields=${OPEN_FOOD_FACTS_FIELDS}`);
+    if (response.status === 502) throw new Error('unreachable');
+    data = response.ok ? await response.json() : null;
+  }
+  const product = data && data.status === 1 ? data.product : null;
+  if (!product) return null;
+  const name = String(product[`product_name_${currentLanguage}`] || product.product_name || product.product_name_en || product.generic_name || '').trim();
+  if (!name) return null;
+  // "500 g", "1 L", "6 x 1,5 l": the first amount and unit, when they make sense.
+  const size = parseIngredient(`${String(product.quantity || '').replace(/^\d+\s*[x×]\s*/i, '')} pack`);
+  return { name, amount: size.amount && size.unit ? size.amount : null, unit: size.amount && size.unit ? size.unitText : '' };
+}
+
+async function fillFromBarcode(code) {
+  const form = $('#item-form');
+  const status = $('#barcode-status');
+  status.textContent = t('Looking up the product…');
+  try {
+    const product = await lookupBarcode(code);
+    if (!product) {
+      status.textContent = t('Product not found. Type its name.');
+      if (form.elements.name.value === code) form.elements.name.value = '';
+      return;
+    }
+    form.elements.name.value = product.name;
+    if (product.amount) { form.elements.quantity.value = product.amount; form.elements.unit.value = product.unit; }
+    status.textContent = t('Found: {name}', { name: product.name });
+    updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'));
+  } catch {
+    status.textContent = t('Could not look up the barcode. Type the name instead.');
+  }
+}
+
+function canScanBarcodes() {
+  if (STANDALONE) { try { return Boolean(nativeApp.canScanBarcodes && nativeApp.canScanBarcodes()); } catch { return false; } }
+  return 'BarcodeDetector' in window && Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && window.isSecureContext;
+}
+
+async function scanBarcode() {
+  const status = $('#barcode-status');
+  try {
+    const code = STANDALONE ? await nativeCall('scanBarcode') : await scanBarcodeInPage();
+    if (code && BARCODE.test(code)) await fillFromBarcode(code);
+    else if (code) status.textContent = t('That is not a product barcode.');
+  } catch (error) {
+    status.textContent = error?.message === 'cancelled' ? '' : t('The camera could not scan. Type the name or the barcode number instead.');
+  }
+}
+
+// Chrome on Android (over HTTPS): the camera in a dialog, read with the browser's BarcodeDetector.
+function scanBarcodeInPage() {
+  return new Promise((resolve, reject) => {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'app-dialog barcode-dialog';
+    dialog.innerHTML = `<video playsinline muted></video><p class="dialog-copy">${t('Point the camera at the barcode')}</p><div class="dialog-actions"><button class="button button-quiet" type="button">${t('Cancel')}</button></div>`;
+    document.body.append(dialog);
+    const video = dialog.querySelector('video');
+    let stream = null;
+    let done = false;
+    const finish = (error, code) => {
+      if (done) return;
+      done = true;
+      if (stream) stream.getTracks().forEach((track) => track.stop());
+      dialog.close();
+      dialog.remove();
+      if (error) reject(error); else resolve(code);
+    };
+    dialog.querySelector('button').addEventListener('click', () => finish(new Error('cancelled')));
+    dialog.addEventListener('cancel', () => finish(new Error('cancelled')));
+    dialog.showModal();
+    const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then((camera) => {
+      stream = camera;
+      video.srcObject = camera;
+      return video.play();
+    }).then(() => {
+      const look = () => {
+        if (done) return;
+        detector.detect(video).then((codes) => (codes.length ? finish(null, codes[0].rawValue) : setTimeout(look, 250))).catch(() => setTimeout(look, 500));
+      };
+      look();
+    }).catch((error) => finish(error));
+  });
+}
+
 function openItemDialog(item) {
   const dialog = $('#item-dialog');
   const form = $('#item-form');
+  $('#scan-barcode-button').hidden = Boolean(item) || !canScanBarcodes();
+  $('#barcode-status').textContent = '';
   $('#item-dialog-title').textContent = item ? t('Edit item') : t('Add an item');
   form.elements.id.value = item?.id || '';
   form.elements.name.value = item?.name || '';
@@ -2566,6 +2667,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'mealie-disconnect') await disconnectMealie();
   if (action === 'home-server-connect') await connectHomeServer();
   if (action === 'home-server-disconnect') disconnectHomeServer();
+  if (action === 'scan-barcode') await scanBarcode();
   if (action === 'open-settings') $('#settings-button').click();
   if (action === 'restore-data') $('#restore-file').click();
   if (action === 'view-recipe') {
@@ -2736,6 +2838,10 @@ document.addEventListener('change', async (event) => {
     return;
   }
   if (event.target.id === 'location-filter') { inventoryLocation = event.target.value; render(); }
+  if (event.target.form?.getAttribute('id') === 'item-form' && event.target.name === 'name' && BARCODE.test(event.target.value.trim())) {
+    await fillFromBarcode(event.target.value.trim());
+    return;
+  }
   if (event.target.form?.getAttribute('id') === 'item-form' && event.target.name === 'location') {
     const form = event.target.form;
     updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'));

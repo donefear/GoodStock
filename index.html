@@ -51,7 +51,8 @@
       <form id="item-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">INVENTORY</span><h2 id="item-dialog-title">Add an item</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <input type="hidden" name="id" />
-        <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients, in your language and in English</span></label>
+        <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients, in your language and in English. A barcode number works too.</span></label>
+        <div class="barcode-row"><button class="button button-outline button-small" type="button" data-action="scan-barcode" id="scan-barcode-button" hidden>Scan barcode</button><span class="field-hint" id="barcode-status" role="status" aria-live="polite"></span></div>
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
         <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label>
         <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option value="Food">Food</option><option value="Household">Household</option></select></label></div>
@@ -167,7 +168,7 @@
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the phone app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.41 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.42 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

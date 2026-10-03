@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Barcode scanning needs Android 5.0; on Android 4.4 the app runs without it (NativeBridge.canScanBarcodes). -->
+    <uses-sdk tools:overrideLibrary="com.google.mlkit.vision.codescanner" />
 
     <!-- Recipe-link import and Google Fonts. -->
     <uses-permission android:name="android.permission.INTERNET" />

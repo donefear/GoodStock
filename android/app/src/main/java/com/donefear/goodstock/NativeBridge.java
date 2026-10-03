@@ -237,6 +237,22 @@ final class NativeBridge {
         });
     }
 
+    /** True when the phone can scan barcodes (Google's code scanner needs Android 5.0 and Play services). */
+    @JavascriptInterface
+    public boolean canScanBarcodes() {
+        return Build.VERSION.SDK_INT >= 21;
+    }
+
+    /** Opens Google's barcode scanner and answers with the number of the scanned product barcode. */
+    @JavascriptInterface
+    public void scanBarcode(String callbackId) {
+        if (!canScanBarcodes()) {
+            callback(callbackId, false, "unsupported");
+            return;
+        }
+        activity.runOnUiThread(() -> BarcodeScan.start(activity, (ok, value) -> callback(callbackId, ok, value)));
+    }
+
     private void callback(String id, boolean ok, String payload) {
         String script = "window.__goodstockNativeCallback && window.__goodstockNativeCallback("
                 + JSONObject.quote(id) + "," + ok + "," + JSONObject.quote(payload == null ? "" : payload) + ")";
