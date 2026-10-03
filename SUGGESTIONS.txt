@@ -125,8 +125,12 @@ a Spanish or German recipe works less well than a Dutch one.
     Not added to "Put away" yet: shopping-list items already have a name.
 
 4.3 Daily use-soon reminder that doesn't need the app open.
-    On the phone apps the expiry reminder only happens when you open the app. Schedule a real daily notification
-    (e.g. 9:00) with the list of items expiring soon.
+    DONE (v2.1.43): with Expiration notifications on, the phone apps schedule a notification for each of the next
+    seven mornings at 9:00, each listing what will be due that day, so it arrives while the app is closed
+    (Android: system alarms; iPhone: local notifications). The schedule is redone whenever the kitchen changes or
+    the app opens, and turning the setting off cancels it. Note: after a phone restart, Android forgets the
+    schedule until Goodstock is opened once. The browser version can't do this without a push server; it still
+    reminds while open.
 
 4.4 Hands-free cook mode.
     Say "next" or "back" while cooking with messy hands (Web Speech API in Chrome; speech recognition on the

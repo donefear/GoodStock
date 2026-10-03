@@ -337,7 +337,6 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Clear every item from the shopping list?": "買い物リストの品目をすべて削除しますか？",
   "Leaving blank will use an estimate for supported products.": "空欄にすると、対応する品目では目安の日付を使います。",
   "The in-app Use soon panel remains available.": "アプリ内の「早めに使う」パネルは引き続き使えます。",
-  "Enabled. Goodstock checks for items due soon when you open the app.": "有効です。アプリを開いたときに Goodstock が期限の近い品目を確認します。",
   "Notifications are off for Goodstock. Allow them in the phone's settings; the in-app panel remains available.": "Goodstock の通知がオフです。スマートフォンの設定で許可してください。アプリ内のパネルは引き続き使えます。",
   "System alerts need HTTPS and browser notification support. The in-app Use soon panel remains available.": "システム通知には HTTPS とブラウザの通知機能が必要です。アプリ内の「早めに使う」パネルは引き続き使えます。",
   "Enabled. Goodstock checks for items due soon while the app is open.": "有効です。アプリを開いている間、Goodstock が期限の近い品目を確認します。",
@@ -349,7 +348,6 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "{items} inventory items and {recipes} recipes": "在庫 {items} 件とレシピ {recipes} 件",
   "Replace everything in this kitchen with the backup ({summary})? This cannot be undone.": "このキッチンの内容をすべてバックアップ（{summary}）で置き換えますか？元に戻せません。",
   "Restored {summary}.": "{summary} を復元しました。",
-  "A daily phone notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.": "期限まで 3 日以内の品目を毎日スマートフォンに通知します（アプリを開いたときに確認）。アプリ内の「早めに使う」パネルはいつでも使えます。",
   "System alerts need HTTPS. The in-app Use soon panel remains available.": "システム通知には HTTPS が必要です。アプリ内の「早めに使う」パネルは引き続き使えます。",
   "This browser does not support system alerts. The in-app Use soon panel remains available.": "このブラウザはシステム通知に対応していません。アプリ内の「早めに使う」パネルは引き続き使えます。",
   "System alerts are checked daily while the app is open. The in-app Use soon panel is always available.": "システム通知はアプリを開いている間に毎日確認されます。アプリ内の「早めに使う」パネルはいつでも使えます。",
@@ -772,4 +770,6 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Point the camera at the barcode": "カメラをバーコードに向けてください",
   "Common ingredients, in your language and in English. A barcode number works too.": "よく使う材料（あなたの言語と英語）。バーコードの番号でも入力できます。",
   "Scan barcode": "バーコードをスキャン",
+  "Enabled. You get a notification at 9:00 on mornings when something is due soon.": "オンにしました。期限が近い品目がある朝の 9:00 に通知が届きます。",
+  "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "期限まで 3 日以内の品目を、毎朝 9:00 にスマートフォンへ通知します（アプリを閉じていても届きます）。アプリ内の「早めに使う」パネルはいつでも使えます。",
 };

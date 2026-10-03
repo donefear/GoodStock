@@ -477,13 +477,45 @@ function expiryClass(value) {
   return days !== null && days < 0 ? 'expired' : days !== null && days <= EXPIRY_WINDOW_DAYS ? 'expiring' : 'expiry-normal';
 }
 
-function itemsNeedingExpiryAttention() {
+// Items due within the window, as seen on a given day (today by default): days ahead shift every countdown.
+function itemsNeedingExpiryAttention(daysAhead = 0) {
   return state.inventory
     .filter((item) => {
       const days = expiryDaysRemaining(item.expiresOn);
-      return Number(item.quantity) > 0 && days !== null && days <= EXPIRY_WINDOW_DAYS;
+      return Number(item.quantity) > 0 && days !== null && days - daysAhead <= EXPIRY_WINDOW_DAYS;
     })
     .sort((first, second) => first.expiresOn.localeCompare(second.expiresOn));
+}
+
+function expiryReminderText(items) {
+  const names = items.slice(0, 3).map((item) => item.name).join(', ');
+  const rest = items.length > 3 ? tp(items.length - 3, ', and {count} more', ', and {count} more') : '';
+  return { title: tp(items.length, '{count} kitchen item to use soon', '{count} kitchen items to use soon'), body: `${names}${rest}` };
+}
+
+// Phone apps schedule the reminder for the next seven mornings at 9:00, each with what will be due that day, so it
+// comes while the app is closed. Redone whenever the kitchen changes or the app opens; an empty list cancels them.
+const REMINDER_HOUR = 9;
+let scheduledRemindersSignature = '';
+
+function scheduleExpiryReminders() {
+  if (!STANDALONE || !nativeApp.setReminders) return;
+  const reminders = [];
+  if (localStorage.getItem(EXPIRY_REMINDERS_KEY) === 'true') {
+    const now = new Date();
+    for (let day = 0; day < 7; day++) {
+      const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, REMINDER_HOUR);
+      if (at <= now) continue;
+      const items = itemsNeedingExpiryAttention(day);
+      if (!items.length) continue;
+      const { title, body } = expiryReminderText(items);
+      reminders.push({ id: dateKey(at), at: at.getTime(), title, text: body });
+    }
+  }
+  const signature = JSON.stringify(reminders);
+  if (signature === scheduledRemindersSignature) return;
+  scheduledRemindersSignature = signature;
+  try { nativeApp.setReminders(signature); } catch { /* The in-app panel still shows them. */ }
 }
 
 function recipesUsingInventoryItem(item) {
@@ -577,15 +609,16 @@ function inventoryExpiryMarkup(item, tag) {
 }
 
 function checkExpiryReminders() {
+  scheduleExpiryReminders();
   const items = itemsNeedingExpiryAttention();
   if (!items.length || sendingExpiryReminder || localStorage.getItem(EXPIRY_REMINDERS_KEY) !== 'true') return;
+  // Phones with scheduled reminders get today's at 9:00; only after 9:00 does opening the app send it straight away.
+  if (STANDALONE && nativeApp.setReminders && new Date().getHours() < REMINDER_HOUR) return;
   if (!STANDALONE && (!window.isSecureContext || !('Notification' in window) || Notification.permission !== 'granted')) return;
   const today = dateKey(new Date());
   if (localStorage.getItem(LAST_EXPIRY_REMINDER_KEY) === today) return;
-  const names = items.slice(0, 3).map((item) => item.name).join(', ');
-  const rest = items.length > 3 ? tp(items.length - 3, ', and {count} more', ', and {count} more') : '';
-  const title = tp(items.length, '{count} kitchen item to use soon', '{count} kitchen items to use soon');
-  const options = { body: `${names}${rest}`, tag: 'goodstock-expiration-reminder' };
+  const { title, body } = expiryReminderText(items);
+  const options = { body, tag: 'goodstock-expiration-reminder' };
   sendingExpiryReminder = true;
   const markSent = () => {
     localStorage.setItem(LAST_EXPIRY_REMINDER_KEY, today);
@@ -2868,14 +2901,15 @@ document.addEventListener('change', async (event) => {
     if (!toggle.checked) {
       localStorage.removeItem(EXPIRY_REMINDERS_KEY);
       note.textContent = t('The in-app Use soon panel remains available.');
+      scheduleExpiryReminders();
       return;
     }
     if (STANDALONE) {
       const allowed = await nativeCall('requestNotifications').then((result) => result === 'granted').catch(() => false);
       toggle.checked = allowed;
       if (allowed) localStorage.setItem(EXPIRY_REMINDERS_KEY, 'true'); else localStorage.removeItem(EXPIRY_REMINDERS_KEY);
-      note.textContent = allowed ? t('Enabled. Goodstock checks for items due soon when you open the app.') : t("Notifications are off for Goodstock. Allow them in the phone's settings; the in-app panel remains available.");
-      if (allowed) checkExpiryReminders();
+      note.textContent = allowed ? t('Enabled. You get a notification at 9:00 on mornings when something is due soon.') : t("Notifications are off for Goodstock. Allow them in the phone's settings; the in-app panel remains available.");
+      if (allowed) checkExpiryReminders(); else scheduleExpiryReminders();
       return;
     }
     if (!window.isSecureContext || !('Notification' in window)) {
@@ -3157,7 +3191,7 @@ async function fillSettings() {
   const canNotify = STANDALONE || (window.isSecureContext && 'Notification' in window);
   expiryToggle.disabled = !canNotify;
   expiryToggle.checked = canNotify && localStorage.getItem(EXPIRY_REMINDERS_KEY) === 'true' && (STANDALONE ? nativeApp.notificationsAllowed() : Notification.permission === 'granted');
-  if (STANDALONE) expiryNote.textContent = t('A daily phone notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.');
+  if (STANDALONE) expiryNote.textContent = t('A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.');
   else if (!window.isSecureContext) expiryNote.textContent = t('System alerts need HTTPS. The in-app Use soon panel remains available.');
   else if (!('Notification' in window)) expiryNote.textContent = t('This browser does not support system alerts. The in-app Use soon panel remains available.');
   else if (Notification.permission === 'denied') expiryNote.textContent = t('Browser notifications are blocked. Allow them in browser settings; the in-app panel remains available.');

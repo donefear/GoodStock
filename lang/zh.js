@@ -337,7 +337,6 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Clear every item from the shopping list?": "清空购物清单中的所有项目？",
   "Leaving blank will use an estimate for supported products.": "留空则对支持的产品使用估算日期。",
   "The in-app Use soon panel remains available.": "应用内的“尽快用掉”面板仍可使用。",
-  "Enabled. Goodstock checks for items due soon when you open the app.": "已开启。打开应用时，Goodstock 会检查即将到期的物品。",
   "Notifications are off for Goodstock. Allow them in the phone's settings; the in-app panel remains available.": "Goodstock 的通知已关闭。请在手机设置中允许；应用内面板仍可使用。",
   "System alerts need HTTPS and browser notification support. The in-app Use soon panel remains available.": "系统提醒需要 HTTPS 和浏览器通知支持。应用内的“尽快用掉”面板仍可使用。",
   "Enabled. Goodstock checks for items due soon while the app is open.": "已开启。应用打开期间，Goodstock 会检查即将到期的物品。",
@@ -349,7 +348,6 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "{items} inventory items and {recipes} recipes": "{items} 件库存物品和 {recipes} 份食谱",
   "Replace everything in this kitchen with the backup ({summary})? This cannot be undone.": "用备份（{summary}）替换这个厨房的全部内容？此操作无法撤销。",
   "Restored {summary}.": "已恢复 {summary}。",
-  "A daily phone notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.": "每天一条手机通知，提醒 3 天内到期的物品，在打开应用时检查。应用内的“尽快用掉”面板随时可用。",
   "System alerts need HTTPS. The in-app Use soon panel remains available.": "系统提醒需要 HTTPS。应用内的“尽快用掉”面板仍可使用。",
   "This browser does not support system alerts. The in-app Use soon panel remains available.": "此浏览器不支持系统提醒。应用内的“尽快用掉”面板仍可使用。",
   "System alerts are checked daily while the app is open. The in-app Use soon panel is always available.": "应用打开期间每天检查一次系统提醒。应用内的“尽快用掉”面板随时可用。",
@@ -772,4 +770,6 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Point the camera at the barcode": "将相机对准条形码",
   "Common ingredients, in your language and in English. A barcode number works too.": "常见食材（你的语言和英语）。也可以输入条形码数字。",
   "Scan barcode": "扫描条形码",
+  "Enabled. You get a notification at 9:00 on mornings when something is due soon.": "已开启。在有物品即将到期的早上 9:00，你会收到一条通知。",
+  "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "每天早上 9:00 发送手机通知，提醒 3 天内到期的物品，应用关闭时也会提醒。应用内的“尽快用掉”面板随时可用。",
 };

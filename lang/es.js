@@ -337,7 +337,6 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "Clear every item from the shopping list?": "¿Quitar todos los artículos de la lista de compras?",
   "Leaving blank will use an estimate for supported products.": "Si lo dejas vacío, se usará una estimación para los productos compatibles.",
   "The in-app Use soon panel remains available.": "El panel Usar pronto de la app sigue disponible.",
-  "Enabled. Goodstock checks for items due soon when you open the app.": "Activado. Goodstock busca artículos a punto de vencer al abrir la app.",
   "Notifications are off for Goodstock. Allow them in the phone's settings; the in-app panel remains available.": "Las notificaciones de Goodstock están desactivadas. Permítelas en los ajustes del teléfono; el panel de la app sigue disponible.",
   "System alerts need HTTPS and browser notification support. The in-app Use soon panel remains available.": "Las alertas del sistema necesitan HTTPS y un navegador con notificaciones. El panel Usar pronto de la app sigue disponible.",
   "Enabled. Goodstock checks for items due soon while the app is open.": "Activado. Goodstock busca artículos a punto de vencer mientras la app está abierta.",
@@ -349,7 +348,6 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "{items} inventory items and {recipes} recipes": "{items} artículos del inventario y {recipes} recetas",
   "Replace everything in this kitchen with the backup ({summary})? This cannot be undone.": "¿Reemplazar todo lo de esta cocina con la copia ({summary})? No se puede deshacer.",
   "Restored {summary}.": "Se restauró: {summary}.",
-  "A daily phone notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.": "Una notificación diaria en el teléfono para artículos que vencen en los próximos 3 días, revisada al abrir la app. El panel Usar pronto de la app siempre está disponible.",
   "System alerts need HTTPS. The in-app Use soon panel remains available.": "Las alertas del sistema necesitan HTTPS. El panel Usar pronto de la app sigue disponible.",
   "This browser does not support system alerts. The in-app Use soon panel remains available.": "Este navegador no admite alertas del sistema. El panel Usar pronto de la app sigue disponible.",
   "System alerts are checked daily while the app is open. The in-app Use soon panel is always available.": "Las alertas del sistema se revisan a diario mientras la app está abierta. El panel Usar pronto de la app siempre está disponible.",
@@ -772,4 +770,6 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "Point the camera at the barcode": "Apunta la cámara al código de barras",
   "Common ingredients, in your language and in English. A barcode number works too.": "Ingredientes comunes, en tu idioma y en inglés. También sirve un número de código de barras.",
   "Scan barcode": "Escanear código de barras",
+  "Enabled. You get a notification at 9:00 on mornings when something is due soon.": "Activado. Recibirás una notificación a las 9:00 las mañanas en que algo venza pronto.",
+  "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Una notificación en el teléfono cada mañana a las 9:00 para los artículos que vencen en 3 días, también con la app cerrada. El panel Usar pronto de la app siempre está disponible.",
 };

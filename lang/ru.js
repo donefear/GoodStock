@@ -337,7 +337,6 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Clear every item from the shopping list?": "Убрать всё из списка покупок?",
   "Leaving blank will use an estimate for supported products.": "Если оставить пустым, для известных продуктов будет оценка.",
   "The in-app Use soon panel remains available.": "Панель «Пора использовать» в приложении остаётся доступной.",
-  "Enabled. Goodstock checks for items due soon when you open the app.": "Включено. Goodstock проверяет сроки при открытии приложения.",
   "Notifications are off for Goodstock. Allow them in the phone's settings; the in-app panel remains available.": "Уведомления Goodstock выключены. Разреши их в настройках телефона; панель в приложении остаётся доступной.",
   "System alerts need HTTPS and browser notification support. The in-app Use soon panel remains available.": "Системным уведомлениям нужен HTTPS и поддержка уведомлений в браузере. Панель «Пора использовать» остаётся доступной.",
   "Enabled. Goodstock checks for items due soon while the app is open.": "Включено. Goodstock проверяет сроки, пока приложение открыто.",
@@ -349,7 +348,6 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "{items} inventory items and {recipes} recipes": "продуктов в запасах: {items}, рецептов: {recipes}",
   "Replace everything in this kitchen with the backup ({summary})? This cannot be undone.": "Заменить всё на этой кухне резервной копией ({summary})? Это нельзя отменить.",
   "Restored {summary}.": "Восстановлено: {summary}.",
-  "A daily phone notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.": "Ежедневное уведомление на телефоне о продуктах, срок которых истекает в течение 3 дней; проверка при открытии приложения. Панель «Пора использовать» всегда доступна.",
   "System alerts need HTTPS. The in-app Use soon panel remains available.": "Системным уведомлениям нужен HTTPS. Панель «Пора использовать» остаётся доступной.",
   "This browser does not support system alerts. The in-app Use soon panel remains available.": "Этот браузер не поддерживает системные уведомления. Панель «Пора использовать» остаётся доступной.",
   "System alerts are checked daily while the app is open. The in-app Use soon panel is always available.": "Системные уведомления проверяются раз в день, пока приложение открыто. Панель «Пора использовать» всегда доступна.",
@@ -772,4 +770,6 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Point the camera at the barcode": "Наведи камеру на штрихкод",
   "Common ingredients, in your language and in English. A barcode number works too.": "Частые продукты — на твоём языке и на английском. Можно ввести и номер штрихкода.",
   "Scan barcode": "Сканировать штрихкод",
+  "Enabled. You get a notification at 9:00 on mornings when something is due soon.": "Включено. Утром в 9:00 придёт уведомление, если что-то скоро истекает.",
+  "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Уведомление на телефоне каждое утро в 9:00 о продуктах, срок которых истекает в течение 3 дней, даже когда приложение закрыто. Панель «Использовать скоро» всегда доступна.",
 };

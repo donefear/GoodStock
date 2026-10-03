@@ -337,7 +337,6 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Clear every item from the shopping list?": "Alle items van de boodschappenlijst wissen?",
   "Leaving blank will use an estimate for supported products.": "Laat je dit leeg, dan wordt een schatting gebruikt voor bekende producten.",
   "The in-app Use soon panel remains available.": "Het paneel Snel opmaken in de app blijft beschikbaar.",
-  "Enabled. Goodstock checks for items due soon when you open the app.": "Aan. Goodstock zoekt naar items die bijna over datum zijn als je de app opent.",
   "Notifications are off for Goodstock. Allow them in the phone's settings; the in-app panel remains available.": "Meldingen staan uit voor Goodstock. Sta ze toe in de instellingen van je telefoon; het paneel in de app blijft beschikbaar.",
   "System alerts need HTTPS and browser notification support. The in-app Use soon panel remains available.": "Systeemmeldingen hebben HTTPS en browsermeldingen nodig. Het paneel Snel opmaken in de app blijft beschikbaar.",
   "Enabled. Goodstock checks for items due soon while the app is open.": "Aan. Goodstock zoekt naar items die bijna over datum zijn zolang de app open is.",
@@ -349,7 +348,6 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "{items} inventory items and {recipes} recipes": "{items} voorraaditems en {recipes} recepten",
   "Replace everything in this kitchen with the backup ({summary})? This cannot be undone.": "Alles in deze keuken vervangen door de back-up ({summary})? Dit kan niet ongedaan worden gemaakt.",
   "Restored {summary}.": "{summary} teruggezet.",
-  "A daily phone notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.": "Een dagelijkse melding op je telefoon voor items die binnen 3 dagen over datum gaan, gecontroleerd als je de app opent. Het paneel Snel opmaken in de app is altijd beschikbaar.",
   "System alerts need HTTPS. The in-app Use soon panel remains available.": "Systeemmeldingen hebben HTTPS nodig. Het paneel Snel opmaken in de app blijft beschikbaar.",
   "This browser does not support system alerts. The in-app Use soon panel remains available.": "Deze browser ondersteunt geen systeemmeldingen. Het paneel Snel opmaken in de app blijft beschikbaar.",
   "System alerts are checked daily while the app is open. The in-app Use soon panel is always available.": "Systeemmeldingen worden dagelijks gecontroleerd zolang de app open is. Het paneel Snel opmaken in de app is altijd beschikbaar.",
@@ -772,4 +770,6 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Point the camera at the barcode": "Richt de camera op de barcode",
   "Common ingredients, in your language and in English. A barcode number works too.": "Gangbare ingrediënten, in je eigen taal en in het Engels. Een barcodenummer werkt ook.",
   "Scan barcode": "Barcode scannen",
+  "Enabled. You get a notification at 9:00 on mornings when something is due soon.": "Aan. Je krijgt om 9:00 een melding op ochtenden waarop iets bijna over datum is.",
+  "A phone notification every morning at 9:00 for items due within 3 days, also when the app is closed. The in-app Use soon panel is always available.": "Elke ochtend om 9:00 een melding op je telefoon voor items die binnen 3 dagen over datum gaan, ook als de app dicht is. Het paneel Snel opmaken in de app is altijd beschikbaar.",
 };

@@ -34,6 +34,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         platform: 'ios',
         setTimers: function (json) { post('setTimers', [String(json)]); },
         notify: function (title, text) { post('notify', [String(title), String(text)]); },
+        setReminders: function (json) { post('setReminders', [String(json)]); },
         notificationsAllowed: function () { return state.notificationsAllowed; },
         requestNotifications: function (id) { post('requestNotifications', [id]); },
         keepScreenOn: function (on) { post('keepScreenOn', [on ? 'true' : 'false']); },
@@ -61,6 +62,8 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             controller?.pageLanguage = arg(0)
         case "setTimers":
             Notifications.shared.syncTimers(json: arg(0))
+        case "setReminders":
+            Notifications.shared.syncReminders(json: arg(0))
         case "notify":
             Notifications.shared.showReminder(title: arg(0), text: arg(1))
         case "requestNotifications":

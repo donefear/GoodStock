@@ -35,6 +35,10 @@
         </activity>
 
         <receiver
+            android:name=".ReminderReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".TimerAlarmReceiver"
             android:exported="false" />
     </application>

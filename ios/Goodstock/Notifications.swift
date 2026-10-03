@@ -9,6 +9,7 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
     static let shared = Notifications()
     private let center = UNUserNotificationCenter.current()
     private static let timerPrefix = "goodstock-timer-"
+    private static let reminderPrefix = "goodstock-daily-"
 
     func isAllowed(_ completion: @escaping (Bool) -> Void) {
         center.getNotificationSettings { settings in
@@ -29,6 +30,27 @@ final class Notifications: NSObject, UNUserNotificationCenterDelegate {
         content.body = text
         content.sound = .default
         center.add(UNNotificationRequest(identifier: "goodstock-reminder", content: content, trigger: nil))
+    }
+
+    /// The daily use-soon reminders, scheduled ahead by the page ([{id, at, title, text}], one per morning with what is
+    /// due that day), so they arrive while the app is closed. Each call replaces the previous list.
+    func syncReminders(json: String) {
+        let list = (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [[String: Any]] ?? []
+        let now = Date().timeIntervalSince1970
+        let requests: [UNNotificationRequest] = list.compactMap { reminder in
+            guard let id = reminder["id"] as? String, let at = (reminder["at"] as? NSNumber)?.doubleValue, at / 1000 > now + 1 else { return nil }
+            let content = UNMutableNotificationContent()
+            content.title = reminder["title"] as? String ?? ""
+            content.body = reminder["text"] as? String ?? ""
+            content.sound = .default
+            return UNNotificationRequest(identifier: Self.reminderPrefix + id, content: content,
+                                         trigger: UNTimeIntervalNotificationTrigger(timeInterval: at / 1000 - now, repeats: false))
+        }
+        center.getPendingNotificationRequests { pending in
+            let old = pending.map(\.identifier).filter { $0.hasPrefix(Self.reminderPrefix) }
+            self.center.removePendingNotificationRequests(withIdentifiers: old)
+            requests.forEach { self.center.add($0) }
+        }
     }
 
     func syncTimers(json: String) {

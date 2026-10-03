@@ -53,6 +53,12 @@ final class NativeBridge {
         TimerAlarms.sync(activity.getApplicationContext(), json);
     }
 
+    /** Replaces the scheduled use-soon reminders with this list: [{id, at, title, text}]. */
+    @JavascriptInterface
+    public void setReminders(String json) {
+        ReminderAlarms.sync(activity.getApplicationContext(), json);
+    }
+
     @JavascriptInterface
     public void notify(String title, String text) {
         Notifications.showReminder(activity.getApplicationContext(), title, text);
