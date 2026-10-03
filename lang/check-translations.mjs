@@ -39,7 +39,7 @@ function collectKeys() {
 
 // Fixed text in index.html that is not translated: icons and numbers, the brand, the version label, and
 // placeholders that app.js replaces straight away.
-const IGNORED_HTML_TEXT = [/^[^\p{L}]*$/u, /^goodstock$/, /Goodstock v\d/, /^STEP 1$/, /^https:\/\/…$/, /^Recipe$/];
+const IGNORED_HTML_TEXT = [/^[^\p{L}]*$/u, /^goodstock$/i, /Goodstock v\d/, /^STEP 1$/, /^https:\/\/…$/, /^Recipe$/];
 
 // The arguments of every call to name(…), split at top-level commas: the first argument of tp() is any expression,
 // possibly with brackets and commas of its own ("Math.max(1, n)").

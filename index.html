@@ -163,6 +163,12 @@
           <div class="deepl-help-links"><a class="text-button" href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Get a free key ↗</a><a class="text-button" href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener noreferrer">Where do I find my key? ↗</a><button class="text-button" type="button" data-action="deepl-help">How to get a key</button></div>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="deepl-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="deepl-disconnect" id="deepl-disconnect" hidden>Remove key</button></div>
         </fieldset>
+        <fieldset class="mealie-settings server-only" id="pin-settings">
+          <legend>Household PIN</legend>
+          <p class="settings-note" id="pin-note">No PIN. Anyone on your home network can open this kitchen.</p>
+          <label>New PIN<input name="newPin" type="password" autocomplete="new-password" inputmode="numeric" minlength="4" maxlength="32" placeholder="At least 4 characters" /><span class="field-hint">Each device asks for it once. Use it if Goodstock can be reached from outside your home.</span></label>
+          <div class="mealie-actions"><button class="button button-outline" type="button" data-action="pin-save" id="pin-save">Set PIN</button><button class="button button-quiet" type="button" data-action="pin-remove" id="pin-remove" hidden>Remove PIN</button></div>
+        </fieldset>
         <fieldset class="mealie-settings phone-only" id="home-server-settings">
           <legend>Home server</legend>
           <p class="settings-note" id="home-server-note">Not connected. This phone keeps its own kitchen.</p>
@@ -173,7 +179,7 @@
         <div class="test-zone backup-zone phone-only" id="auto-backup-zone" hidden><div><strong>Automatic weekly backup</strong><span id="auto-backup-text">Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.</span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="auto-backup-folder" id="auto-backup-folder">Choose folder</button><button class="button button-quiet" type="button" data-action="auto-backup-off" id="auto-backup-off" hidden>Turn off</button></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.49 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.51 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 
@@ -189,6 +195,16 @@
       </ol>
       <p class="field-hint">The key is saved on the Goodstock server (or, in the phone app, on the phone) and is never shown again. Recipe text is sent to DeepL to be translated.</p>
       <div class="dialog-actions"><a class="button button-outline" href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Open DeepL ↗</a><button class="button button-primary" type="button" data-close>Got it</button></div>
+    </dialog>
+
+    <dialog id="pin-dialog" class="app-dialog pin-dialog">
+      <form id="pin-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow">GOODSTOCK</span><h2>Enter the household PIN</h2></div></div>
+        <p class="dialog-copy" id="pin-dialog-text">This kitchen is protected with a PIN. This device asks only once.</p>
+        <label>PIN<input name="pin" type="password" autocomplete="current-password" inputmode="numeric" required /></label>
+        <p class="field-hint pin-error" id="pin-error" role="alert"></p>
+        <div class="dialog-actions"><button class="button button-primary" type="submit">Unlock</button></div>
+      </form>
     </dialog>
 
     <dialog id="wipe-dialog" class="app-dialog wipe-dialog">

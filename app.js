@@ -692,6 +692,109 @@ function homeServer() {
   try { return localStorage.getItem(HOME_SERVER_KEY) || ''; } catch { return ''; }
 }
 
+// Household PIN. When the server answers "PIN required", the unlock dialog opens. Browsers then get a session
+// cookie and reload; a phone app keeps the token it gets and sends it with every request to the home server.
+const HOME_TOKEN_KEY = 'goodstock-home-token-v1';
+const homeToken = () => { try { return localStorage.getItem(HOME_TOKEN_KEY) || ''; } catch { return ''; } };
+let pinPrompted = false;
+let pendingHomeServer = '';
+const plainFetch = window.fetch.bind(window);
+
+function askForPin(address = '') {
+  if (address) pendingHomeServer = address;
+  if (pinPrompted) return;
+  pinPrompted = true;
+  const form = $('#pin-form');
+  form.reset();
+  $('#pin-error').textContent = '';
+  $('#pin-dialog').showModal();
+  form.elements.pin.focus();
+}
+
+// Every kitchen API call in the browser goes through fetch; a "PIN required" answer opens the dialog.
+if (!STANDALONE) {
+  window.fetch = async (input, init) => {
+    const response = await plainFetch(input, init);
+    const address = String((input && input.url) || input);
+    if (response.status === 401 && /\/api\//.test(address) && !/\/api\/auth\//.test(address)) {
+      response.clone().json().then((body) => { if (body && body.code === 'pin') askForPin(); }).catch(() => {});
+    }
+    return response;
+  };
+}
+
+async function unlockWithPin(pin) {
+  const error = $('#pin-error');
+  error.textContent = '';
+  let status = 0;
+  let body = {};
+  try {
+    if (STANDALONE) {
+      const answer = JSON.parse(await nativeCall('httpSend', 'POST', `${pendingHomeServer || homeServer()}/api/auth/login`, JSON.stringify({ 'content-type': 'application/json', accept: 'application/json' }), JSON.stringify({ pin })));
+      status = answer.status;
+      body = JSON.parse(answer.body || '{}');
+    } else {
+      const response = await plainFetch('/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pin }) });
+      status = response.status;
+      body = await response.json().catch(() => ({}));
+    }
+  } catch {
+    error.textContent = t('Could not reach the app server.');
+    return;
+  }
+  if (status !== 200) {
+    error.textContent = status === 429 ? t('Too many wrong PINs. Try again in a few minutes.') : t('That PIN is not right.');
+    return;
+  }
+  if (!STANDALONE) { location.reload(); return; }
+  localStorage.setItem(HOME_TOKEN_KEY, body.token || '');
+  $('#pin-dialog').close();
+  pinPrompted = false;
+  if (pendingHomeServer && !homeServer()) {
+    const address = pendingHomeServer;
+    pendingHomeServer = '';
+    $('#settings-form').elements.homeServer.value = address;
+    await connectHomeServer();
+    return;
+  }
+  pendingHomeServer = '';
+  checkRemoteRevision();
+  pushPendingState();
+}
+
+// Settings → Household PIN (server version).
+async function fillPinSettings() {
+  if (STANDALONE) return;
+  const note = $('#pin-note');
+  try {
+    const status = await (await plainFetch('/api/auth/status', { cache: 'no-store' })).json();
+    note.textContent = status.required ? t('PIN is on. Each new device asks for it once.') : t('No PIN. Anyone on your home network can open this kitchen.');
+    note.className = `settings-note${status.required ? ' is-connected' : ''}`;
+    $('#pin-save').textContent = status.required ? t('Change PIN') : t('Set PIN');
+    $('#pin-remove').hidden = !status.required;
+  } catch {
+    note.textContent = t('PIN settings are unavailable while offline.');
+  }
+}
+
+async function savePin() {
+  const input = $('#settings-form').elements.newPin;
+  const pin = input.value;
+  const note = $('#pin-note');
+  if (pin.length < 4) { note.textContent = t('Use a PIN of 4 to 32 characters.'); note.className = 'settings-note is-error'; input.focus(); return; }
+  const response = await plainFetch('/api/auth/pin', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pin }) }).catch(() => null);
+  input.value = '';
+  if (!response || !response.ok) { note.textContent = t('Could not save the PIN.'); note.className = 'settings-note is-error'; return; }
+  await fillPinSettings();
+  note.textContent = t('PIN saved. Other devices ask for it once.');
+}
+
+async function removePin() {
+  if (!window.confirm(t('Remove the household PIN? Anyone on your home network can then open this kitchen.'))) return;
+  await plainFetch('/api/auth/pin', { method: 'DELETE' }).catch(() => null);
+  await fillPinSettings();
+}
+
 // True when this device takes part in a shared kitchen: the server version always, a phone app once connected.
 const isShared = () => !STANDALONE || Boolean(homeServer());
 
@@ -704,10 +807,12 @@ async function kitchenRequest(path, { method = 'GET', body = null } = {}) {
     });
     return { status: response.status, ok: response.ok, json: () => response.json() };
   }
-  const headers = JSON.stringify({ 'content-type': 'application/json', accept: 'application/json' });
+  const token = homeToken();
+  const headers = JSON.stringify({ 'content-type': 'application/json', accept: 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) });
   const answer = JSON.parse(body
     ? await nativeCall('httpSend', method, `${homeServer()}${path}`, headers, JSON.stringify(body))
     : await nativeCall('httpRequest', `${homeServer()}${path}`, headers));
+  if (answer.status === 401 && /"code"\s*:\s*"pin"/.test(answer.body || '')) askForPin();
   return { status: answer.status, ok: answer.status >= 200 && answer.status < 300, json: async () => JSON.parse(answer.body || 'null') };
 }
 
@@ -928,7 +1033,13 @@ async function connectHomeServer() {
   setHomeServerNote(t('Testing the connection…'));
   let revision = null;
   try {
-    const answer = JSON.parse(await nativeCall('httpRequest', `${address}/api/state/revision`, JSON.stringify({ accept: 'application/json' })));
+    const token = homeToken();
+    const answer = JSON.parse(await nativeCall('httpRequest', `${address}/api/state/revision`, JSON.stringify({ accept: 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) })));
+    if (answer.status === 401 && /"code"\s*:\s*"pin"/.test(answer.body || '')) {
+      setHomeServerNote(t('This home server has a PIN.'));
+      askForPin(address);
+      return;
+    }
     if (answer.status === 200) revision = JSON.parse(answer.body || '{}').revision;
   } catch { /* Answered below. */ }
   if (!Number.isFinite(revision)) {
@@ -969,6 +1080,7 @@ async function connectHomeServer() {
 function disconnectHomeServer() {
   if (!window.confirm(t('Stop sharing with the home server? This phone keeps its copy of the kitchen.'))) return;
   localStorage.removeItem(HOME_SERVER_KEY);
+  localStorage.removeItem(HOME_TOKEN_KEY);
   localStorage.removeItem(PENDING_KEY);
   localStorage.removeItem(SYNC_BASE_KEY);
   startPhonePolling();
@@ -2932,6 +3044,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'steps-read-aloud') toggleReadAloud();
   if (action === 'auto-backup-folder') await chooseAutoBackupFolder();
   if (action === 'auto-backup-off') turnOffAutoBackup();
+  if (action === 'pin-save') await savePin();
+  if (action === 'pin-remove') await removePin();
   if (action === 'steps-listen') toggleListening();
   if (action === 'open-settings') $('#settings-button').click();
   if (action === 'restore-data') $('#restore-file').click();
@@ -3457,6 +3571,12 @@ $('#settings-form').addEventListener('submit', (event) => {
   $('#settings-dialog').close();
 });
 
+$('#pin-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  unlockWithPin(event.currentTarget.elements.pin.value);
+});
+$('#pin-dialog').addEventListener('close', () => { pinPrompted = false; });
+
 document.addEventListener('submit', (event) => {
   // Read the id attribute: a field named "id" or "name" inside a form shadows form.id in real browsers.
   const formId = event.target.getAttribute('id');
@@ -3508,7 +3628,7 @@ async function fillSettings() {
   fillSettingsMode();
   fillHomeServerSettings();
   fillAutoBackup();
-  await Promise.all([loadMealieSettings(), loadDeeplSettings()]);
+  await Promise.all([loadMealieSettings(), loadDeeplSettings(), fillPinSettings()]);
 }
 
 function fillSettingsMode() {

@@ -181,9 +181,13 @@ a Spanish or German recipe works less well than a Dutch one.
 ---------
 
 5.1 A simple PIN or password for the server version.
-    The app has no login, which is fine on a trusted home network. But it keeps your Mealie and DeepL keys
-    and can wipe all data. If it ever becomes reachable from outside (your Mealie already has a public
-    address), add at least a household PIN, or put it behind your reverse proxy's login.
+    DONE (v2.1.51): Settings → Household PIN (server version). Once set, the server answers kitchen requests only
+    from devices that unlocked once. Each gets a session for a year (a cookie in browsers, a token for the phone
+    apps connected as home server). The PIN is stored as a salted scrypt hash in /data/auth.json, never in plain
+    text, and wrong PINs are limited to 5 per 5 minutes per address. Changing the PIN signs out the other devices.
+    Still open without it: the app's files, a health check, and the 30-minute QR shopping downloads. Tested end to
+    end: set, refused without a session, wrong/right PIN, rate limit, phone app connecting with the PIN, remove.
+    HTTPS is still advised if it is ever reachable from the internet.
 
 
 6. KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)

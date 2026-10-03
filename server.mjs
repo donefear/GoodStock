@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import QRCode from 'qrcode';
@@ -315,9 +315,125 @@ async function translateTexts(body) {
   return { texts: translated };
 }
 
+// Household PIN (optional, set in Settings). With a PIN, the kitchen API answers only devices that unlocked once:
+// they get a session token (a cookie for browsers, a bearer token for the phone apps) that lasts a year. The app's
+// own files, the PIN endpoints and the short-lived QR download links stay open. The PIN is stored as a salted
+// scrypt hash in /data/auth.json, with the hashes of the issued sessions; wrong PINs are rate-limited per address.
+const authPath = join(dataDirectory, 'auth.json');
+let auth = { salt: '', hash: '', sessions: [] };
+const SESSION_COOKIE = 'goodstock_session';
+const SESSION_DAYS = 365;
+const MAX_SESSIONS = 100;
+const loginFailures = new Map(); // address → { count, until }
+
+async function loadAuth() {
+  try {
+    const saved = JSON.parse(await readFile(authPath, 'utf8'));
+    auth = { salt: String(saved.salt || ''), hash: String(saved.hash || ''), sessions: Array.isArray(saved.sessions) ? saved.sessions : [] };
+  } catch (error) {
+    if (error.code !== 'ENOENT') console.error('Could not read the household PIN settings:', error.message);
+  }
+}
+
+async function saveAuth() {
+  await mkdir(dataDirectory, { recursive: true });
+  const temporaryPath = `${authPath}.tmp`;
+  await writeFile(temporaryPath, JSON.stringify(auth), { encoding: 'utf8', mode: 0o600 });
+  await rename(temporaryPath, authPath);
+}
+
+const pinRequired = () => Boolean(auth.hash);
+const hashPin = (pin, salt) => scryptSync(String(pin), salt, 32).toString('hex');
+const tokenHash = (token) => createHash('sha256').update(token).digest('hex');
+
+function pinMatches(pin) {
+  if (!pinRequired() || typeof pin !== 'string') return false;
+  const given = Buffer.from(hashPin(pin, auth.salt), 'hex');
+  const stored = Buffer.from(auth.hash, 'hex');
+  return given.length === stored.length && timingSafeEqual(given, stored);
+}
+
+function requestToken(request) {
+  const bearer = /^Bearer\s+(\S+)$/i.exec(request.headers.authorization || '');
+  if (bearer) return bearer[1];
+  const cookie = (request.headers.cookie || '').split(/;\s*/).find((part) => part.startsWith(`${SESSION_COOKIE}=`));
+  return cookie ? decodeURIComponent(cookie.slice(SESSION_COOKIE.length + 1)) : '';
+}
+
+function isAuthorized(request) {
+  if (!pinRequired()) return true;
+  const token = requestToken(request);
+  if (!token) return false;
+  const hash = tokenHash(token);
+  return auth.sessions.some((session) => session.hash === hash && session.expires > Date.now());
+}
+
+async function startSession(response) {
+  const token = randomBytes(32).toString('base64url');
+  auth.sessions = [{ hash: tokenHash(token), expires: Date.now() + SESSION_DAYS * 86_400_000 }, ...auth.sessions.filter((session) => session.expires > Date.now())].slice(0, MAX_SESSIONS);
+  await saveAuth();
+  response.setHeader('set-cookie', `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=${SESSION_DAYS * 86_400}; HttpOnly; SameSite=Lax`);
+  return token;
+}
+
+function tooManyAttempts(address) {
+  const entry = loginFailures.get(address);
+  return Boolean(entry && entry.count >= 5 && entry.until > Date.now());
+}
+
+function noteFailure(address) {
+  const entry = loginFailures.get(address);
+  const fresh = !entry || entry.until <= Date.now();
+  loginFailures.set(address, { count: fresh ? 1 : entry.count + 1, until: Date.now() + 5 * 60_000 });
+}
+
+const validPin = (pin) => typeof pin === 'string' && pin.length >= 4 && pin.length <= 32;
+
+// Routes that work without unlocking: the PIN screen itself, a health check, and QR shopping-list downloads (random
+// links that expire after 30 minutes, opened on a phone that has never unlocked).
+const OPEN_API = [/^\/api\/auth\//, /^\/api\/health$/, /^\/api\/shopping\/download\//];
+
+async function handleAuth(request, response, url) {
+  const address = request.socket.remoteAddress || '';
+  if (request.method === 'GET' && url.pathname === '/api/auth/status') {
+    return sendJson(response, 200, { required: pinRequired(), unlocked: isAuthorized(request) });
+  }
+  if (request.method === 'POST' && url.pathname === '/api/auth/login') {
+    if (tooManyAttempts(address)) return sendJson(response, 429, { error: 'Too many wrong PINs. Try again in a few minutes.' });
+    const { pin } = await requestBody(request);
+    if (!pinMatches(pin)) {
+      noteFailure(address);
+      return sendJson(response, 401, { error: 'That PIN is not right.' });
+    }
+    loginFailures.delete(address);
+    return sendJson(response, 200, { token: await startSession(response) });
+  }
+  if (request.method === 'POST' && url.pathname === '/api/auth/pin') {
+    if (!isAuthorized(request)) return sendJson(response, 401, { error: 'PIN required', code: 'pin' });
+    const { pin } = await requestBody(request);
+    if (!validPin(pin)) return sendJson(response, 400, { error: 'Use a PIN of 4 to 32 characters.' });
+    const salt = randomBytes(16).toString('hex');
+    auth = { salt, hash: hashPin(pin, salt), sessions: [] };
+    // Other devices have to unlock with the new PIN; this one stays unlocked.
+    return sendJson(response, 200, { token: await startSession(response) });
+  }
+  if (request.method === 'DELETE' && url.pathname === '/api/auth/pin') {
+    if (!isAuthorized(request)) return sendJson(response, 401, { error: 'PIN required', code: 'pin' });
+    auth = { salt: '', hash: '', sessions: [] };
+    await saveAuth();
+    return sendJson(response, 200, { required: false });
+  }
+  return sendJson(response, 404, { error: 'Not found' });
+}
+
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
+    if (url.pathname.startsWith('/api/auth/')) return await handleAuth(request, response, url);
+    if (url.pathname === '/api/health') return sendJson(response, 200, { ok: true });
+    if (url.pathname.startsWith('/api/') && !OPEN_API.some((pattern) => pattern.test(url.pathname)) && !isAuthorized(request)) {
+      return sendJson(response, 401, { error: 'PIN required', code: 'pin' });
+    }
     if (request.method === 'GET' && url.pathname === '/api/state') {
       sendJson(response, 200, kitchen.state ? { ...kitchen.state, _revision: kitchen.revision } : null);
       return;
@@ -519,6 +635,7 @@ const server = createServer(async (request, response) => {
 await loadKitchen();
 await loadMealieConfig();
 await loadDeeplConfig();
+await loadAuth();
 server.listen(port, '0.0.0.0', () => {
   console.log(`Goodstock listening on port ${port}`);
 });
