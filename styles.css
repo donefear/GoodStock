@@ -398,6 +398,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .test-zone .backup-status { color: var(--green); font-weight: 700; }
 .test-zone .backup-status:empty { display: none; }
 .is-standalone .server-only { display: none; }
+html:not(.is-standalone) .phone-only { display: none; }
 .danger-zone { margin-top: 4px; padding: 14px 12px; border: 1px solid #efd2c9; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fcf4f0; }
 .danger-zone strong, .danger-zone span { display: block; }
 .danger-zone strong { color: #984b3b; font-size: 12px; }

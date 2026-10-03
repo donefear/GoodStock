@@ -107,10 +107,13 @@ a Spanish or German recipe works less well than a Dutch one.
 -----------------------
 
 4.1 Sync the phone apps with your home server (biggest win).
-    Right now the Android/iPhone apps keep a separate kitchen on the phone. The server already has everything
-    needed (revisions, item-by-item merging, live updates). Let the phone app optionally connect to
-    http://<server>:8484 when it's on home Wi-Fi: one kitchen everywhere, and the phone still works offline in
-    the shop.
+    DONE (v2.1.41): phone apps have Settings → Home server. Enter the address you use at home (e.g.
+    192.168.1.10:8484) and press Connect. The phone's items are added to the server's kitchen (items the server
+    already has are not doubled), and from then on both stay in step. The phone keeps a copy and works offline, and
+    changes made in the shop are sent when it's back on the home network. It uses the same revision-and-merge sync
+    as the browsers. Requests go through the phone's native bridge, so the server needed no changes, and phones
+    check for news every 15 seconds while open. Disconnect keeps the phone's copy. Tested end to end against a
+    real server: connect, phone→server, server→phone, disconnect.
 
 4.2 Barcode scanning to add groceries.
     The phone apps have a camera. Scan a product and fill in the name (Open Food Facts is a free database). This

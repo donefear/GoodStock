@@ -607,11 +607,39 @@ function missingIngredients(recipe) {
   return (recipe.ingredients || []).filter((ingredient) => !matchingInventory(ingredient));
 }
 
+// The phone apps can share the kitchen with a Goodstock server at home (Settings → Home server). Their requests then
+// go through the phone (the native bridge), which is not limited by CORS or by plain http, like Mealie and DeepL.
+const HOME_SERVER_KEY = 'goodstock-home-server-v1';
+
+function homeServer() {
+  if (!STANDALONE) return '';
+  try { return localStorage.getItem(HOME_SERVER_KEY) || ''; } catch { return ''; }
+}
+
+// True when this device takes part in a shared kitchen: the server version always, a phone app once connected.
+const isShared = () => !STANDALONE || Boolean(homeServer());
+
+async function kitchenRequest(path, { method = 'GET', body = null } = {}) {
+  if (!STANDALONE) {
+    const response = await fetch(path, {
+      method, cache: 'no-store',
+      headers: body ? { 'content-type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { status: response.status, ok: response.ok, json: () => response.json() };
+  }
+  const headers = JSON.stringify({ 'content-type': 'application/json', accept: 'application/json' });
+  const answer = JSON.parse(body
+    ? await nativeCall('httpSend', method, `${homeServer()}${path}`, headers, JSON.stringify(body))
+    : await nativeCall('httpRequest', `${homeServer()}${path}`, headers));
+  return { status: answer.status, ok: answer.status >= 200 && answer.status < 300, json: async () => JSON.parse(answer.body || 'null') };
+}
+
 function updateSyncStatus(mode, detail) {
   const dot = $('#sync-dot');
   const label = $('#sync-label');
   const text = $('#sync-detail');
-  if (STANDALONE) {
+  if (!isShared()) {
     dot.className = 'sync-dot online';
     label.textContent = t('Saved on this phone');
     text.textContent = t('Back up in Settings');
@@ -619,16 +647,18 @@ function updateSyncStatus(mode, detail) {
   }
   dot.className = `sync-dot ${mode}`;
   label.textContent = mode === 'offline' ? t('Working offline') : mode === 'pending' ? t('Changes queued') : t('Shared kitchen, in sync');
-  const live = liveSync.connected
-    ? (liveSync.devices > 1 ? tp(liveSync.devices, 'Live · {count} device connected', 'Live · {count} devices connected') : t('Live · only this device right now'))
-    : t('Synced with the server');
+  const live = STANDALONE
+    ? t('Home server · {address}', { address: homeServer().replace(/^https?:\/\//, '') })
+    : liveSync.connected
+      ? (liveSync.devices > 1 ? tp(liveSync.devices, 'Live · {count} device connected', 'Live · {count} devices connected') : t('Live · only this device right now'))
+      : t('Synced with the server');
   text.textContent = detail || (mode === 'offline' ? t('Will sync when reconnected') : live);
 }
 
 // Sends this device's changes, saying which server revision they build on. If another device saved first, the
 // server answers 409 with its kitchen; merge into it and send again. Failures retry after a pause.
 async function pushPendingState() {
-  if (STANDALONE || syncing || !navigator.onLine) return;
+  if (!isShared() || syncing || !navigator.onLine) return;
   const pending = localStorage.getItem(PENDING_KEY);
   if (!pending) return;
   syncing = true;
@@ -636,10 +666,9 @@ async function pushPendingState() {
   updateSyncStatus('pending', t('Sending changes'));
   let again = false;
   try {
-    const response = await fetch('/api/state', {
+    const response = await kitchenRequest('/api/state', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ state: JSON.parse(pending), baseRevision: readSyncBase()?.revision || 0, client: CLIENT_ID }),
+      body: { state: JSON.parse(pending), baseRevision: readSyncBase()?.revision || 0, client: CLIENT_ID },
     });
     const result = await response.json().catch(() => ({}));
     if (response.status === 409 && result.state) {
@@ -666,13 +695,13 @@ async function pushPendingState() {
 function persist() {
   const snapshot = JSON.stringify(state);
   localStorage.setItem(STORAGE_KEY, snapshot);
-  if (!STANDALONE) localStorage.setItem(PENDING_KEY, snapshot);
+  if (isShared()) localStorage.setItem(PENDING_KEY, snapshot);
   render();
   checkExpiryReminders();
   pushPendingState();
 }
 
-// Shared kitchen sync (Docker/server version only; the Android app keeps everything on the phone).
+// Shared kitchen sync (the server version, and phone apps connected to a home server).
 // The server keeps one kitchen with a revision number. This page remembers the last revision it saw ("base"), sends
 // its changes with that revision, and when someone else saved first it merges item by item and sends again. A live
 // event stream tells it about other devices' saves straight away, so every open page stays in step.
@@ -692,7 +721,7 @@ function writeSyncBase(base) {
 }
 
 async function fetchRemoteKitchen() {
-  const response = await fetch('/api/state', { cache: 'no-store' });
+  const response = await kitchenRequest('/api/state');
   if (!response.ok) throw new Error('Kitchen unavailable');
   const body = await response.json();
   if (!body) return { revision: 0, state: null };
@@ -761,7 +790,7 @@ function applyRemoteKitchen(remote) {
 }
 
 async function pullRemoteKitchen() {
-  if (STANDALONE || !navigator.onLine) return;
+  if (!isShared() || !navigator.onLine) return;
   if (syncing) { pullAfterSync = true; return; }
   try {
     const remote = await fetchRemoteKitchen();
@@ -778,8 +807,103 @@ function currentSyncMode() {
 
 const showSyncStatus = () => updateSyncStatus(currentSyncMode());
 
+// Phone apps cannot keep an event stream open through the bridge, so they ask for the revision every 15 seconds
+// while open, and again when they come back to the front.
+let phonePollId = null;
+
+function startPhonePolling() {
+  clearInterval(phonePollId);
+  phonePollId = null;
+  if (!STANDALONE || !homeServer()) return;
+  phonePollId = setInterval(checkRemoteRevision, 15_000);
+}
+
+async function checkRemoteRevision() {
+  if (!isShared() || !navigator.onLine || document.visibilityState !== 'visible') return;
+  try {
+    const { revision } = await (await kitchenRequest('/api/state/revision')).json();
+    if (revision > (readSyncBase()?.revision || 0)) pullRemoteKitchen();
+    if (STANDALONE) showSyncStatus();
+  } catch {
+    if (STANDALONE) updateSyncStatus('offline', t('Home server not reachable · will try again'));
+  }
+}
+
+// Settings → Home server. Connecting tests the address, then folds this phone's kitchen into the server's one
+// (items from both are kept) and keeps the two in step from then on. Disconnecting keeps the phone's copy.
+function setHomeServerNote(text, kind = '') {
+  const note = $('#home-server-note');
+  note.textContent = text;
+  note.className = `settings-note${kind ? ` is-${kind}` : ''}`;
+}
+
+function fillHomeServerSettings() {
+  if (!STANDALONE) return;
+  const address = homeServer();
+  $('#settings-form').elements.homeServer.value = address;
+  $('#home-server-disconnect').hidden = !address;
+  setHomeServerNote(address ? t('Connected to {address}. This phone shares that kitchen.', { address }) : t('Not connected. This phone keeps its own kitchen.'), address ? 'connected' : '');
+}
+
+async function connectHomeServer() {
+  let address = $('#settings-form').elements.homeServer.value.trim().replace(/\/+$/, '');
+  if (!address) { setHomeServerNote(t('Enter the address you open Goodstock on at home.'), 'error'); return; }
+  if (!/^https?:\/\//i.test(address)) address = `http://${address}`;
+  setHomeServerNote(t('Testing the connection…'));
+  let revision = null;
+  try {
+    const answer = JSON.parse(await nativeCall('httpRequest', `${address}/api/state/revision`, JSON.stringify({ accept: 'application/json' })));
+    if (answer.status === 200) revision = JSON.parse(answer.body || '{}').revision;
+  } catch { /* Answered below. */ }
+  if (!Number.isFinite(revision)) {
+    setHomeServerNote(t('No Goodstock server answered at {address}. Check the address and that the phone is on your home network.', { address }), 'error');
+    return;
+  }
+  if (!window.confirm(t('Share the kitchen on {address}? Items from this phone are added to it, and from then on both stay in step.', { address }))) {
+    setHomeServerNote(t('Not connected. This phone keeps its own kitchen.'));
+    return;
+  }
+  localStorage.setItem(HOME_SERVER_KEY, address);
+  // No common history yet: everything on this phone counts as new and is added to the server's kitchen, except
+  // what the server already has (the same item in the same place, the same shopping-list line).
+  localStorage.removeItem(SYNC_BASE_KEY);
+  try {
+    const remote = await fetchRemoteKitchen();
+    if (remote.state) {
+      const sameItem = (item) => `${cleanIngredient(item.name)}|${item.location}|${item.kind}`;
+      const serverItems = new Set((remote.state.inventory || []).map(sameItem));
+      const serverShopping = new Set((remote.state.shopping || []).map((item) => cleanIngredient(item.name)));
+      state.inventory = state.inventory.filter((item) => !serverItems.has(sameItem(item)));
+      state.shopping = state.shopping.filter((item) => !serverShopping.has(cleanIngredient(item.name)));
+      localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+      applyRemoteKitchen(remote);
+    } else {
+      localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+    }
+  } catch {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+  }
+  await pushPendingState();
+  startPhonePolling();
+  fillHomeServerSettings();
+  fillSettingsMode();
+  render();
+}
+
+function disconnectHomeServer() {
+  if (!window.confirm(t('Stop sharing with the home server? This phone keeps its copy of the kitchen.'))) return;
+  localStorage.removeItem(HOME_SERVER_KEY);
+  localStorage.removeItem(PENDING_KEY);
+  localStorage.removeItem(SYNC_BASE_KEY);
+  startPhonePolling();
+  fillHomeServerSettings();
+  fillSettingsMode();
+  render();
+}
+
 function connectLiveSync() {
-  if (STANDALONE || typeof EventSource === 'undefined') return;
+  if (STANDALONE) { startPhonePolling(); return; }
+  if (typeof EventSource === 'undefined') return;
   const source = new EventSource(`/api/events?client=${encodeURIComponent(CLIENT_ID)}`);
   source.addEventListener('open', () => { liveSync.connected = true; showSyncStatus(); });
   source.addEventListener('error', () => { liveSync.connected = false; showSyncStatus(); });
@@ -794,13 +918,7 @@ function connectLiveSync() {
     if (data.revision > (readSyncBase()?.revision || 0)) pullRemoteKitchen();
   });
   // Backup for networks that block event streams: look for a newer revision every 30 seconds.
-  setInterval(async () => {
-    if (liveSync.connected || !navigator.onLine || document.visibilityState !== 'visible') return;
-    try {
-      const { revision } = await (await fetch('/api/state/revision', { cache: 'no-store' })).json();
-      if (revision > (readSyncBase()?.revision || 0)) pullRemoteKitchen();
-    } catch { /* Offline for now. */ }
-  }, 30_000);
+  setInterval(() => { if (!liveSync.connected) checkRemoteRevision(); }, 30_000);
 }
 
 function applyTheme(theme) {
@@ -881,10 +999,11 @@ async function initialize() {
   // First visit on this device: the starting kitchen in the device's language (an existing server kitchen
   // replaces it below).
   if (!cached) state = freshState();
-  const pending = STANDALONE ? 'local' : localStorage.getItem(PENDING_KEY);
+  const shared = isShared();
+  const pending = shared ? localStorage.getItem(PENDING_KEY) : 'local';
   if (cached) state = normalizeState(JSON.parse(cached));
   // Shared kitchen: start from the server's copy, folding in anything this device changed while away.
-  if (!STANDALONE && navigator.onLine) {
+  if (shared && navigator.onLine) {
     try {
       const remote = await fetchRemoteKitchen();
       if (remote.state) {
@@ -900,15 +1019,15 @@ async function initialize() {
       if (cached) updateSyncStatus('offline');
     }
   }
-  if (!cached && (!pending || STANDALONE)) {
+  if (!cached && (!pending || !shared)) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    if (!STANDALONE) localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+    if (shared) localStorage.setItem(PENDING_KEY, JSON.stringify(state));
   }
   await loadIngredientCatalog();
   if (backfillMissingExpirations()) {
     const snapshot = JSON.stringify(state);
     localStorage.setItem(STORAGE_KEY, snapshot);
-    if (!STANDALONE) localStorage.setItem(PENDING_KEY, snapshot);
+    if (shared) localStorage.setItem(PENDING_KEY, snapshot);
   }
   inventoryMode = localStorage.getItem(INVENTORY_MODE_KEY) === 'map' ? 'map' : 'list';
   loadTimers();
@@ -2445,6 +2564,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'translation-save') saveRecipeTranslation();
   if (action === 'translation-discard') { recipeTranslation = null; render(); }
   if (action === 'mealie-disconnect') await disconnectMealie();
+  if (action === 'home-server-connect') await connectHomeServer();
+  if (action === 'home-server-disconnect') disconnectHomeServer();
   if (action === 'open-settings') $('#settings-button').click();
   if (action === 'restore-data') $('#restore-file').click();
   if (action === 'view-recipe') {
@@ -2935,13 +3056,21 @@ async function fillSettings() {
   else if (!('Notification' in window)) expiryNote.textContent = t('This browser does not support system alerts. The in-app Use soon panel remains available.');
   else if (Notification.permission === 'denied') expiryNote.textContent = t('Browser notifications are blocked. Allow them in browser settings; the in-app panel remains available.');
   else expiryNote.textContent = t('System alerts are checked daily while the app is open. The in-app Use soon panel is always available.');
-  $('#settings-mode-title').textContent = STANDALONE ? t('Kept on this device') : t('Shared kitchen');
-  $('#settings-mode-text').textContent = STANDALONE
-    ? t('The phone app keeps everything on this device and works without a server. Use Back up below to save a copy.')
-    : liveSync.connected
-      ? tp(liveSync.devices, 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} device connected now).', 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} devices connected now).')
-      : t('Everyone who opens Goodstock on this server sees the same kitchen, updated live.');
+  fillSettingsMode();
+  fillHomeServerSettings();
   await Promise.all([loadMealieSettings(), loadDeeplSettings()]);
+}
+
+function fillSettingsMode() {
+  const phoneShared = STANDALONE && homeServer();
+  $('#settings-mode-title').textContent = STANDALONE && !phoneShared ? t('Kept on this device') : t('Shared kitchen');
+  $('#settings-mode-text').textContent = phoneShared
+    ? t('This phone shares the kitchen on your home server and keeps a copy, so it also works when you are out.')
+    : STANDALONE
+      ? t('The phone app keeps everything on this device and works without a server. Use Back up below to save a copy.')
+      : liveSync.connected
+        ? tp(liveSync.devices, 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} device connected now).', 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} devices connected now).')
+        : t('Everyone who opens Goodstock on this server sees the same kitchen, updated live.');
 }
 
 function setMealieNote(text, kind = '') {
@@ -3058,6 +3187,10 @@ $('#settings-form').addEventListener('keydown', (event) => {
     event.preventDefault();
     saveMealieSettings();
   }
+  if (event.key === 'Enter' && event.target.name === 'homeServer') {
+    event.preventDefault();
+    connectHomeServer();
+  }
   if (event.key === 'Enter' && event.target.name === 'deeplKey') {
     event.preventDefault();
     saveDeeplSettings();
@@ -3100,6 +3233,7 @@ window.goodstockBack = () => {
 };
 // Coming back to the app: catch up on timers that ended while it was paused, and on expiry reminders.
 window.goodstockResume = () => {
+  checkRemoteRevision();
   refreshTimers();
   checkExpiryReminders();
 };

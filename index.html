@@ -158,10 +158,16 @@
           <div class="deepl-help-links"><a class="text-button" href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Get a free key ↗</a><a class="text-button" href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener noreferrer">Where do I find my key? ↗</a><button class="text-button" type="button" data-action="deepl-help">How to get a key</button></div>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="deepl-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="deepl-disconnect" id="deepl-disconnect" hidden>Remove key</button></div>
         </fieldset>
+        <fieldset class="mealie-settings phone-only" id="home-server-settings">
+          <legend>Home server</legend>
+          <p class="settings-note" id="home-server-note">Not connected. This phone keeps its own kitchen.</p>
+          <label>Goodstock server address<input name="homeServer" type="url" inputmode="url" placeholder="http://192.168.1.10:8484" autocomplete="off" /><span class="field-hint">The address you open Goodstock on at home. The phone then shares that kitchen and keeps a copy for when you are out.</span></label>
+          <div class="mealie-actions"><button class="button button-outline" type="button" data-action="home-server-connect">Connect</button><button class="button button-quiet" type="button" data-action="home-server-disconnect" id="home-server-disconnect" hidden>Disconnect</button></div>
+        </fieldset>
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the phone app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.35 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.41 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 
