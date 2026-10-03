@@ -30,12 +30,18 @@ export function deeplChunks(texts, size = 50) {
   return chunks;
 }
 
+// The English sentence as a template with its values, so the app can show it in the user's language.
+export function deeplErrorTemplate(status) {
+  if (status === 401 || status === 403) return { text: 'DeepL did not accept the API key.' };
+  if (status === 456) return { text: 'The DeepL character limit for this month is used up.' };
+  if (status === 429) return { text: 'DeepL is busy. Try again in a moment.' };
+  if (status === 413) return { text: 'That recipe is too long to translate in one go.' };
+  return { text: 'DeepL answered with HTTP {status}.', vars: { status } };
+}
+
 export function deeplErrorMessage(status) {
-  if (status === 401 || status === 403) return 'DeepL did not accept the API key.';
-  if (status === 456) return 'The DeepL character limit for this month is used up.';
-  if (status === 429) return 'DeepL is busy. Try again in a moment.';
-  if (status === 413) return 'That recipe is too long to translate in one go.';
-  return `DeepL answered with HTTP ${status}.`;
+  const { text, vars } = deeplErrorTemplate(status);
+  return vars ? text.replace('{status}', String(vars.status)) : text;
 }
 
 export function deeplUsageText(usage) {
@@ -45,4 +51,4 @@ export function deeplUsageText(usage) {
 }
 
 // The browser app loads this file as a module next to its classic scripts.
-if (typeof window !== 'undefined') window.GoodstockDeepl = { TRANSLATION_LANGUAGES, deeplUrl, deeplHeaders, deeplRequestBody, deeplChunks, deeplErrorMessage, deeplUsageText };
+if (typeof window !== 'undefined') window.GoodstockDeepl = { TRANSLATION_LANGUAGES, deeplUrl, deeplHeaders, deeplRequestBody, deeplChunks, deeplErrorMessage, deeplErrorTemplate, deeplUsageText };

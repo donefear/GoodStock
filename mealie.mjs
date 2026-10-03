@@ -41,11 +41,20 @@ export function mealieRecipePageUrl(baseUrl, groupSlug, slug) {
   return `${baseUrl}/g/${encodeURIComponent(groupSlug || 'home')}/r/${encodeURIComponent(slug)}`;
 }
 
+// The English sentence as a template with its values, so the app can show it in the user's language.
+export function mealieErrorTemplate(status, url) {
+  if (status === 401 || status === 403) return { text: 'Mealie did not accept the API key.' };
+  if (status === 404) return { text: 'Found a website at {url}, but not the Mealie API. Check the address.', vars: { url } };
+  return { text: 'Mealie answered with HTTP {status}.', vars: { status } };
+}
+
+export function fillMessage({ text, vars }) {
+  return text.replace(/\{(\w+)\}/g, (match, name) => (vars && name in vars ? String(vars[name]) : match));
+}
+
 export function mealieErrorMessage(status, url) {
-  if (status === 401 || status === 403) return 'Mealie did not accept the API key.';
-  if (status === 404) return `Found a website at ${url}, but not the Mealie API. Check the address.`;
-  return `Mealie answered with HTTP ${status}.`;
+  return fillMessage(mealieErrorTemplate(status, url));
 }
 
 // The browser app loads this file as a module next to its classic scripts.
-if (typeof window !== 'undefined') window.GoodstockMealie = { normalizeMealieUrl, mapMealieRecipe, mealieRows, mealieRecipePageUrl, mealieErrorMessage };
+if (typeof window !== 'undefined') window.GoodstockMealie = { normalizeMealieUrl, mapMealieRecipe, mealieRows, mealieRecipePageUrl, mealieErrorMessage, mealieErrorTemplate };

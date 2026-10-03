@@ -739,5 +739,16 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Mash the banana, then whisk in the eggs, milk, and oat flour.": "Prak de banaan en klop er de eieren, melk en het havermeel door.",
   "Let the batter rest for 5 minutes.": "Laat het beslag 5 minuten rusten.",
   "Cook small pancakes in a hot oiled pan for 2 minutes per side.": "Bak kleine pannenkoekjes in een hete, ingevette pan, 2 minuten per kant.",
-  "{term} cooking technique": "{term} kooktechniek"
+  "{term} cooking technique": "{term} kooktechniek",
+  "Mealie at {url} took too long to answer.": "Mealie op {url} reageerde te traag.",
+  "Could not reach Mealie at {url}.": "Kon Mealie op {url} niet bereiken.",
+  "Mealie answered with HTTP {status}.": "Mealie antwoordde met HTTP {status}.",
+  "DeepL answered with HTTP {status}.": "DeepL antwoordde met HTTP {status}.",
+  "DeepL took too long to answer.": "DeepL reageerde te traag.",
+  "Could not reach DeepL. Check that the server has internet access.": "Kon DeepL niet bereiken. Controleer of de server internettoegang heeft.",
+  "The website took too long to answer.": "De website reageerde te traag.",
+  "Could not reach that website.": "Kon die website niet bereiken.",
+  "Could not save the Mealie settings.": "Kon de Mealie-instellingen niet bewaren.",
+  "Mealie is not configured": "Mealie is niet ingesteld",
+  "Request failed": "Verzoek mislukt",
 };

@@ -739,5 +739,16 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Eggs": "Яйца",
   "Potatoes": "Картофель",
   "Dish soap": "Средство для мытья посуды",
-  "{term} cooking technique": "{term} техника приготовления"
+  "{term} cooking technique": "{term} техника приготовления",
+  "Mealie at {url} took too long to answer.": "Mealie по адресу {url} слишком долго не отвечал.",
+  "Could not reach Mealie at {url}.": "Не удалось подключиться к Mealie по адресу {url}.",
+  "Mealie answered with HTTP {status}.": "Mealie ответил кодом HTTP {status}.",
+  "DeepL answered with HTTP {status}.": "DeepL ответил кодом HTTP {status}.",
+  "DeepL took too long to answer.": "DeepL слишком долго не отвечал.",
+  "Could not reach DeepL. Check that the server has internet access.": "Не удалось подключиться к DeepL. Проверь, есть ли у сервера доступ в интернет.",
+  "The website took too long to answer.": "Сайт слишком долго не отвечал.",
+  "Could not reach that website.": "Не удалось открыть этот сайт.",
+  "Could not save the Mealie settings.": "Не удалось сохранить настройки Mealie.",
+  "Mealie is not configured": "Mealie не настроен",
+  "Request failed": "Запрос не выполнен",
 };

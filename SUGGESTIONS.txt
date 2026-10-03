@@ -88,8 +88,10 @@ a Spanish or German recipe works less well than a Dutch one.
     but not as an image file).
 
 3.3 Some server error messages are still English.
-    Most are translated, but messages that include an address (e.g. "Could not reach Mealie at ...") are built
-    on the server in English. Send an error code plus the address and let the page write the sentence.
+    DONE (v2.1.33): sentences with a value in them (an address, an HTTP status) now travel as an English template
+    plus values (errorText/errorVars), from the server and from the shared Mealie/DeepL helpers on the phone. The
+    page shows them in its language: "Mealie unter http://… ist nicht erreichbar." The remaining fixed server
+    messages (timeouts, "Could not reach that website", …) were added to all nine languages.
 
 3.4 Android CI does not build the standalone branch.
     .github/workflows/android.yml only runs on main and experiments. Add standalone, or merge more often.

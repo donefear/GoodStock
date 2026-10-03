@@ -739,5 +739,16 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Eggs": "卵",
   "Potatoes": "じゃがいも",
   "Dish soap": "食器用洗剤",
-  "{term} cooking technique": "{term} 調理法"
+  "{term} cooking technique": "{term} 調理法",
+  "Mealie at {url} took too long to answer.": "{url} の Mealie から応答がありません（タイムアウト）。",
+  "Could not reach Mealie at {url}.": "{url} の Mealie に接続できませんでした。",
+  "Mealie answered with HTTP {status}.": "Mealie から HTTP {status} が返されました。",
+  "DeepL answered with HTTP {status}.": "DeepL から HTTP {status} が返されました。",
+  "DeepL took too long to answer.": "DeepL から応答がありません（タイムアウト）。",
+  "Could not reach DeepL. Check that the server has internet access.": "DeepL に接続できませんでした。サーバーがインターネットに接続できるか確認してください。",
+  "The website took too long to answer.": "ウェブサイトから応答がありません（タイムアウト）。",
+  "Could not reach that website.": "そのウェブサイトに接続できませんでした。",
+  "Could not save the Mealie settings.": "Mealie の設定を保存できませんでした。",
+  "Mealie is not configured": "Mealie が設定されていません",
+  "Request failed": "リクエストに失敗しました",
 };

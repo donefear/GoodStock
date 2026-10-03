@@ -739,5 +739,16 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Eggs": "鸡蛋",
   "Potatoes": "土豆",
   "Dish soap": "洗洁精",
-  "{term} cooking technique": "{term} 烹饪技巧"
+  "{term} cooking technique": "{term} 烹饪技巧",
+  "Mealie at {url} took too long to answer.": "{url} 上的 Mealie 响应超时。",
+  "Could not reach Mealie at {url}.": "无法连接到 {url} 上的 Mealie。",
+  "Mealie answered with HTTP {status}.": "Mealie 返回了 HTTP {status}。",
+  "DeepL answered with HTTP {status}.": "DeepL 返回了 HTTP {status}。",
+  "DeepL took too long to answer.": "DeepL 响应超时。",
+  "Could not reach DeepL. Check that the server has internet access.": "无法连接到 DeepL。请检查服务器能否访问互联网。",
+  "The website took too long to answer.": "网站响应超时。",
+  "Could not reach that website.": "无法访问该网站。",
+  "Could not save the Mealie settings.": "无法保存 Mealie 设置。",
+  "Mealie is not configured": "尚未配置 Mealie",
+  "Request failed": "请求失败",
 };

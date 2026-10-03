@@ -52,6 +52,19 @@ N_('Enter a Mealie API key. You can create one in Mealie under your user profile
 N_('Paste your DeepL API key. You find it in your DeepL account under API Keys.'); N_('Nothing to translate, or too much at once.');
 N_('The shopping list must contain between 1 and 200 items'); N_('The shopping list has no named items');
 N_('Could not determine the application address for the QR code');
+N_('Mealie at {url} took too long to answer.'); N_('Could not reach Mealie at {url}.'); N_('Mealie answered with HTTP {status}.');
+N_('DeepL answered with HTTP {status}.'); N_('DeepL took too long to answer.'); N_('Could not reach DeepL. Check that the server has internet access.');
+N_('The website took too long to answer.'); N_('Could not reach that website.'); N_('Could not save the Mealie settings.');
+N_('Mealie is not configured'); N_('Request failed');
+
+// An error to show: the English text stays the message (code checks it, e.g. for "API key"), and "local" holds the
+// sentence in the app's language. Sentences with a value in them arrive as a template plus values ({ text, vars }).
+const localMessage = (message) => (message && message.text ? t(message.text, message.vars) : t(String(message || '')));
+function serverError(result, fallback) {
+  const english = (result && result.error) || fallback;
+  return Object.assign(new Error(english), { local: result && result.errorText ? t(result.errorText, result.errorVars) : t(english) });
+}
+const errorText = (error, fallback) => (error && error.local) || t((error && error.message) || fallback);
 
 // Mealie is reached one of two ways: in the browser through the server (which keeps the API key), in the Android
 // app straight from the phone, with the connection saved on the phone.
@@ -72,7 +85,10 @@ async function phoneMealieGet(path, config = phoneMealie()) {
   } catch {
     throw Object.assign(new Error(t('Could not reach Mealie at {url}. Check the address and that this phone is on the same network.', { url: config.url })), { unreachable: true });
   }
-  if (response.status >= 400) throw new Error(window.GoodstockMealie.mealieErrorMessage(response.status, config.url));
+  if (response.status >= 400) {
+    const message = window.GoodstockMealie.mealieErrorTemplate(response.status, config.url);
+    throw Object.assign(new Error(window.GoodstockMealie.mealieErrorMessage(response.status, config.url)), { local: localMessage(message) });
+  }
   try { return JSON.parse(response.body); } catch { throw new Error(t('Found a website at {url}, but not the Mealie API. Check the address.', { url: config.url })); }
 }
 
@@ -1294,7 +1310,7 @@ async function importRecipeFromUrl() {
     } else {
       const response = await fetch(`/api/recipes/import?url=${encodeURIComponent(address)}`);
       result = await response.json().catch(() => ({}));
-      if (!response.ok) { status.textContent = t(result.error || N_('That recipe could not be imported.')); return; }
+      if (!response.ok) { status.textContent = serverError(result, N_('That recipe could not be imported.')).local; return; }
     }
     const host = (() => { try { return new URL(result.sourceUrl).hostname.replace(/^www\./, ''); } catch { return t('the website'); } })();
     result.instructions = tidyImportedSteps(result.instructions);
@@ -1444,7 +1460,7 @@ function phoneDeeplKey() {
 }
 
 async function phoneDeepl(path, key, body) {
-  const { deeplUrl, deeplHeaders, deeplErrorMessage } = window.GoodstockDeepl;
+  const { deeplUrl, deeplHeaders, deeplErrorMessage, deeplErrorTemplate } = window.GoodstockDeepl;
   let response;
   try {
     const answer = body
@@ -1454,7 +1470,7 @@ async function phoneDeepl(path, key, body) {
   } catch {
     throw new Error(N_('Could not reach DeepL. Check that the phone is online.'));
   }
-  if (response.status >= 400) throw new Error(deeplErrorMessage(response.status));
+  if (response.status >= 400) throw Object.assign(new Error(deeplErrorMessage(response.status)), { local: localMessage(deeplErrorTemplate(response.status)) });
   return JSON.parse(response.body);
 }
 
@@ -1476,7 +1492,7 @@ async function translateTexts(texts, target, source = '') {
     body: JSON.stringify({ texts, target, source }),
   }).catch(() => { throw new Error(N_('Could not reach the app server.')); });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || N_('Translation failed.'));
+  if (!response.ok) throw serverError(result, N_('Translation failed.'));
   return result.texts || [];
 }
 
@@ -1546,7 +1562,7 @@ async function startRecipeTranslation(id) {
     };
   } catch (error) {
     const message = error?.message || N_('Translation failed.');
-    recipeTranslation = { recipeId: recipe.id, target, error: t(message), needsKey: /API key|DeepL API/.test(message) };
+    recipeTranslation = { recipeId: recipe.id, target, error: errorText(error, message), needsKey: /API key|DeepL API/.test(message) };
   }
   if (activeView === 'recipe' && recipePageId === recipe.id) render();
 }
@@ -1643,7 +1659,7 @@ async function saveDeeplSettings() {
     } else {
       const response = await fetch('/api/translate/config', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ apiKey }) });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || N_('Could not save the DeepL key.'));
+      if (!response.ok) throw serverError(result, N_('Could not save the DeepL key.'));
       usage = result.usage || '';
     }
     await loadDeeplSettings();
@@ -1651,7 +1667,7 @@ async function saveDeeplSettings() {
     // A "no key" error on the recipe page no longer applies.
     if (recipeTranslation?.error) { recipeTranslation = null; render(); }
   } catch (error) {
-    setDeeplNote(t(error?.message || N_('Could not save the DeepL key.')), 'error');
+    setDeeplNote(errorText(error, 'Could not save the DeepL key.'), 'error');
   }
 }
 
@@ -2390,7 +2406,7 @@ async function openShoppingShare() {
       body: JSON.stringify({ items: state.shopping }),
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(t(result.error || N_('Could not create the download link')));
+    if (!response.ok) throw serverError(result, N_('Could not create the download link'));
     shoppingShareUrl = result.url;
     image.src = result.qrCode;
     image.hidden = false;
@@ -2398,7 +2414,7 @@ async function openShoppingShare() {
     link.hidden = false;
     status.textContent = t('Scan with your phone camera. The download link expires in 30 minutes.');
   } catch (error) {
-    status.textContent = t('{reason}. Make sure the app is online and try again.', { reason: error.message });
+    status.textContent = t('{reason}. Make sure the app is online and try again.', { reason: errorText(error, 'Could not create the download link').replace(/[.。]$/, '') });
   }
 }
 
@@ -3002,7 +3018,7 @@ async function connectMealie(address) {
         body: JSON.stringify({ url, apiKey, publicUrl }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw Object.assign(new Error(result.error || N_('Could not connect to Mealie.')), { unreachable: /Could not reach/.test(result.error || '') });
+      if (!response.ok) throw Object.assign(serverError(result, N_('Could not connect to Mealie.')), { unreachable: /Could not reach/.test(result.error || '') });
       user = result.user || '';
     }
     await loadMealieSettings();
@@ -3011,7 +3027,7 @@ async function connectMealie(address) {
     render();
     return false;
   } catch (error) {
-    setMealieNote(t(error?.message || N_('Could not connect to Mealie.')), 'error');
+    setMealieNote(errorText(error, 'Could not connect to Mealie.'), 'error');
     // Tells saveMealieSettings to try plain http when https could not reach the server at all.
     return Boolean(error?.unreachable);
   }

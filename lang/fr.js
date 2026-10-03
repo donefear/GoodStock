@@ -739,5 +739,16 @@ window.GOODSTOCK_TRANSLATIONS.fr = {
   "Mash the banana, then whisk in the eggs, milk, and oat flour.": "Écrase la banane, puis incorpore au fouet les œufs, le lait et la farine d’avoine.",
   "Let the batter rest for 5 minutes.": "Laisse reposer la pâte 5 minutes.",
   "Cook small pancakes in a hot oiled pan for 2 minutes per side.": "Fais cuire de petits pancakes dans une poêle chaude huilée, 2 minutes de chaque côté.",
-  "{term} cooking technique": "{term} technique de cuisine"
+  "{term} cooking technique": "{term} technique de cuisine",
+  "Mealie at {url} took too long to answer.": "Mealie à {url} a mis trop de temps à répondre.",
+  "Could not reach Mealie at {url}.": "Impossible de joindre Mealie à {url}.",
+  "Mealie answered with HTTP {status}.": "Mealie a répondu avec HTTP {status}.",
+  "DeepL answered with HTTP {status}.": "DeepL a répondu avec HTTP {status}.",
+  "DeepL took too long to answer.": "DeepL a mis trop de temps à répondre.",
+  "Could not reach DeepL. Check that the server has internet access.": "Impossible de joindre DeepL. Vérifie que le serveur a accès à Internet.",
+  "The website took too long to answer.": "Le site a mis trop de temps à répondre.",
+  "Could not reach that website.": "Impossible de joindre ce site.",
+  "Could not save the Mealie settings.": "Impossible d’enregistrer les réglages Mealie.",
+  "Mealie is not configured": "Mealie n’est pas configuré",
+  "Request failed": "La requête a échoué",
 };

@@ -4,8 +4,8 @@ import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import QRCode from 'qrcode';
 import { extractRecipeFromHtml, NO_RECIPE_MESSAGE } from './recipe-import.mjs';
-import { mapMealieRecipe, mealieErrorMessage, mealieRecipePageUrl, mealieRows, normalizeMealieUrl } from './mealie.mjs';
-import { TRANSLATION_LANGUAGES, deeplChunks, deeplErrorMessage, deeplHeaders, deeplRequestBody, deeplUrl, deeplUsageText } from './deepl.mjs';
+import { fillMessage, mapMealieRecipe, mealieErrorTemplate, mealieRecipePageUrl, mealieRows, normalizeMealieUrl } from './mealie.mjs';
+import { TRANSLATION_LANGUAGES, deeplChunks, deeplErrorTemplate, deeplHeaders, deeplRequestBody, deeplUrl, deeplUsageText } from './deepl.mjs';
 
 const port = Number(process.env.PORT || 8080);
 const dataDirectory = process.env.DATA_DIR || './data';
@@ -66,6 +66,17 @@ const staticFiles = new Map([
   ['/icon-512.png', ['icon-512.png', 'image/png']],
   ...TRANSLATION_LANGUAGES.filter((code) => code !== 'en').map((code) => [`/lang/${code}.js`, [`lang/${code}.js`, 'text/javascript; charset=utf-8']]),
 ]);
+
+// Errors for the page. A sentence with a value in it (an address, an HTTP status) also travels as its English
+// template and values ("errorText", "errorVars"), so the page can show it in its own language.
+function pageError(message, status) {
+  return Object.assign(new Error(fillMessage(message)), { status, template: message.vars ? message : null });
+}
+
+function errorBody(error, fallback) {
+  if (!error?.status) return { error: fallback };
+  return { error: error.message, ...(error.template ? { errorText: error.template.text, errorVars: error.template.vars } : {}) };
+}
 
 function sendJson(response, status, value) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -173,9 +184,9 @@ async function fetchMealie(path, config = mealie) {
     });
   } catch (error) {
     const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
-    throw Object.assign(new Error(timedOut ? `Mealie at ${config.url} took too long to answer.` : `Could not reach Mealie at ${config.url}.`), { status: 502 });
+    throw pageError({ text: timedOut ? 'Mealie at {url} took too long to answer.' : 'Could not reach Mealie at {url}.', vars: { url: config.url } }, 502);
   }
-  if (!result.ok) throw Object.assign(new Error(mealieErrorMessage(result.status, config.url)), { status: 502 });
+  if (!result.ok) throw pageError(mealieErrorTemplate(result.status, config.url), 502);
   return result.json();
 }
 
@@ -222,7 +233,7 @@ async function importRecipeFromUrl(address) {
     redirect: 'follow',
     signal: AbortSignal.timeout(12000),
   });
-  if (!result.ok) throw Object.assign(new Error(`The website refused the import (HTTP ${result.status}). Some sites block this; copy the recipe text and paste it instead.`), { status: 502 });
+  if (!result.ok) throw pageError({ text: 'The website refused the import (HTTP {status}). Some sites block this; copy the recipe text and paste it instead.', vars: { status: result.status } }, 502);
   const recipe = extractRecipeFromHtml(await result.text(), result.url || target.href);
   if (!recipe) throw Object.assign(new Error(NO_RECIPE_MESSAGE), { status: 422 });
   return recipe;
@@ -260,7 +271,7 @@ async function callDeepl(path, key, body) {
     const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
     throw Object.assign(new Error(timedOut ? 'DeepL took too long to answer.' : 'Could not reach DeepL. Check that the server has internet access.'), { status: 502 });
   }
-  if (!result.ok) throw Object.assign(new Error(deeplErrorMessage(result.status)), { status: 502 });
+  if (!result.ok) throw pageError(deeplErrorTemplate(result.status), 502);
   return result.json();
 }
 
@@ -329,7 +340,7 @@ const server = createServer(async (request, response) => {
         sendJson(response, 200, await importRecipeFromUrl(url.searchParams.get('url') || ''));
       } catch (error) {
         const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
-        sendJson(response, error?.status || 502, { error: timedOut ? 'The website took too long to answer.' : error?.status ? error.message : 'Could not reach that website.' });
+        sendJson(response, error?.status || 502, timedOut ? { error: 'The website took too long to answer.' } : errorBody(error, 'Could not reach that website.'));
       }
       return;
     }
@@ -341,7 +352,7 @@ const server = createServer(async (request, response) => {
         else if (request.method === 'POST' && url.pathname === '/api/translate') sendJson(response, 200, await translateTexts(await requestBody(request)));
         else sendJson(response, 405, { error: 'Method not allowed' });
       } catch (error) {
-        sendJson(response, error?.status || 502, { error: error?.status ? error.message : 'Translation failed.' });
+        sendJson(response, error?.status || 502, errorBody(error, 'Translation failed.'));
       }
       return;
     }
@@ -353,7 +364,7 @@ const server = createServer(async (request, response) => {
       try {
         sendJson(response, 200, await connectMealie(await requestBody(request)));
       } catch (error) {
-        sendJson(response, error?.status || 502, { error: error?.status ? error.message : 'Could not save the Mealie settings.' });
+        sendJson(response, error?.status || 502, errorBody(error, 'Could not save the Mealie settings.'));
       }
       return;
     }
@@ -485,7 +496,7 @@ const server = createServer(async (request, response) => {
     sendJson(response, 404, { error: 'Not found' });
   } catch (error) {
     const status = error.message === 'Request body is too large' ? 413 : 502;
-    sendJson(response, status, { error: error.message || 'Request failed' });
+    sendJson(response, status, error?.template ? errorBody(error) : { error: error.message || 'Request failed' });
   }
 });
 
