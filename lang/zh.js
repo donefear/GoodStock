@@ -784,4 +784,9 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "{count} checked items cleared": "已清除 {count} 个已勾选项",
   "{count} items put away": "已收好 {count} 件物品",
   "Undo": "撤销",
+  "Text size": "文字大小",
+  "Bigger text and buttons on this device, for reading from across the kitchen": "在此设备上放大文字和按钮，站在厨房另一头也能看清",
+  "Normal": "标准",
+  "Large": "大",
+  "Extra large": "特大",
 };

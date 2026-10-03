@@ -997,6 +997,18 @@ function connectLiveSync() {
   setInterval(() => { if (!liveSync.connected) checkRemoteRevision(); }, 30_000);
 }
 
+// Text size: a per-device preference that scales the whole interface (CSS zoom, which Chrome 81 has too).
+const TEXT_SIZE_KEY = 'goodstock-text-size-v1';
+const TEXT_SIZES = { normal: 1, large: 1.15, xlarge: 1.3 };
+
+function applyTextSize(size) {
+  const chosen = TEXT_SIZES[size] ? size : 'normal';
+  document.documentElement.style.zoom = chosen === 'normal' ? '' : String(TEXT_SIZES[chosen]);
+  document.documentElement.dataset.textSize = chosen;
+  const select = $('#text-size-select');
+  if (select) select.value = chosen;
+}
+
 function applyTheme(theme) {
   const isDark = theme === 'dark';
   document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
@@ -1070,6 +1082,7 @@ async function initialize() {
   detectFlexGap();
   await setLanguage(preferredLanguage());
   applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+  try { applyTextSize(localStorage.getItem(TEXT_SIZE_KEY)); } catch { applyTextSize('normal'); }
   document.documentElement.classList.toggle('is-standalone', STANDALONE);
   const cached = localStorage.getItem(STORAGE_KEY);
   // First visit on this device: the starting kitchen in the device's language (an existing server kitchen
@@ -3118,6 +3131,11 @@ document.addEventListener('change', async (event) => {
     render();
   }
   if (event.target.id === 'language-select') { await changeLanguage(event.target.value); return; }
+  if (event.target.id === 'text-size-select') {
+    try { localStorage.setItem(TEXT_SIZE_KEY, event.target.value); } catch { /* For this visit only. */ }
+    applyTextSize(event.target.value);
+    return;
+  }
   if (event.target.id === 'dark-mode-toggle') {
     const theme = event.target.checked ? 'dark' : 'light';
     localStorage.setItem(THEME_KEY, theme);

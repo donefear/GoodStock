@@ -163,7 +163,10 @@ a Spanish or German recipe works less well than a Dutch one.
     first.
 
 4.8 Bigger text option for the kitchen tablet.
-    A text-size setting (normal / large / extra large) for reading from across the kitchen.
+    DONE (v2.1.48): Settings → Text size: Normal, Large (115%) or Extra large (130%), saved per device like dark
+    mode. It scales the whole interface, buttons included. Dialogs, cook mode and the timer pills were adjusted so
+    they still fit the screen when zoomed. Tested in English and German on tablet and phone: nothing runs off the
+    screen.
 
 4.9 Automatic backups for the phone apps.
     Today the phone apps rely on remembering to press Back up. A weekly automatic backup to iCloud Drive /

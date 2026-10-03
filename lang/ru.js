@@ -784,4 +784,9 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "{count} checked items cleared": {"one": "Убран {count} отмеченный пункт", "few": "Убрано {count} отмеченных пункта", "many": "Убрано {count} отмеченных пунктов", "other": "Убрано {count} отмеченного пункта"},
   "{count} items put away": {"one": "Убран на место {count} продукт", "few": "Убрано на место {count} продукта", "many": "Убрано на место {count} продуктов", "other": "Убрано на место {count} продукта"},
   "Undo": "Отменить",
+  "Text size": "Размер текста",
+  "Bigger text and buttons on this device, for reading from across the kitchen": "Крупнее текст и кнопки на этом устройстве, чтобы читать с другого конца кухни",
+  "Normal": "Обычный",
+  "Large": "Крупный",
+  "Extra large": "Очень крупный",
 };

@@ -784,4 +784,9 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "{count} checked items cleared": {"one": "{count} afgevinkt item gewist", "other": "{count} afgevinkte items gewist"},
   "{count} items put away": {"one": "{count} item opgeborgen", "other": "{count} items opgeborgen"},
   "Undo": "Ongedaan maken",
+  "Text size": "Tekstgrootte",
+  "Bigger text and buttons on this device, for reading from across the kitchen": "Grotere tekst en knoppen op dit apparaat, om vanaf de andere kant van de keuken te lezen",
+  "Normal": "Normaal",
+  "Large": "Groot",
+  "Extra large": "Extra groot",
 };

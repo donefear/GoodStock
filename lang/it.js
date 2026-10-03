@@ -784,4 +784,9 @@ window.GOODSTOCK_TRANSLATIONS.it = {
   "{count} checked items cleared": {"one": "{count} articolo spuntato rimosso", "other": "{count} articoli spuntati rimossi"},
   "{count} items put away": {"one": "{count} articolo messo via", "other": "{count} articoli messi via"},
   "Undo": "Annulla",
+  "Text size": "Dimensione del testo",
+  "Bigger text and buttons on this device, for reading from across the kitchen": "Testo e pulsanti più grandi su questo dispositivo, da leggere anche dall'altra parte della cucina",
+  "Normal": "Normale",
+  "Large": "Grande",
+  "Extra large": "Molto grande",
 };

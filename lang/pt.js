@@ -784,4 +784,9 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "{count} checked items cleared": {"one": "{count} item marcado removido", "other": "{count} itens marcados removidos"},
   "{count} items put away": {"one": "{count} item guardado", "other": "{count} itens guardados"},
   "Undo": "Desfazer",
+  "Text size": "Tamanho do texto",
+  "Bigger text and buttons on this device, for reading from across the kitchen": "Texto e botões maiores neste aparelho, para ler do outro lado da cozinha",
+  "Normal": "Normal",
+  "Large": "Grande",
+  "Extra large": "Muito grande",
 };

@@ -784,4 +784,9 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "{count} checked items cleared": "チェック済みの {count} 件を消しました",
   "{count} items put away": "{count} 件をしまいました",
   "Undo": "元に戻す",
+  "Text size": "文字の大きさ",
+  "Bigger text and buttons on this device, for reading from across the kitchen": "この端末で文字とボタンを大きくして、キッチンの離れた場所からも読みやすくします",
+  "Normal": "標準",
+  "Large": "大",
+  "Extra large": "特大",
 };

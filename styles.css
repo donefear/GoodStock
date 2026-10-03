@@ -750,3 +750,18 @@ html:not(.is-standalone) .phone-only { display: none; }
 .undo-bar .text-button { flex: 0 0 auto; color: #9fe0bf; font-weight: 700; }
 .no-flex-gap .undo-bar > * + * { margin-left: 16px; }
 @media (max-width: 760px) { .undo-bar { bottom: calc(76px + env(safe-area-inset-bottom)); } }
+
+/* Text size (Settings): the page is zoomed, so limits in screen units are divided by the zoom to still fit. */
+:root[data-text-size="large"] { --text-zoom: 1.15; }
+:root[data-text-size="xlarge"] { --text-zoom: 1.3; }
+:root[data-text-size="large"] body, :root[data-text-size="xlarge"] body { min-width: 0; min-height: calc(100vh / var(--text-zoom)); }
+:root[data-text-size="large"] .app-shell, :root[data-text-size="xlarge"] .app-shell,
+:root[data-text-size="large"] .main-area, :root[data-text-size="xlarge"] .main-area { min-height: calc(100vh / var(--text-zoom)); }
+:root[data-text-size="large"] .app-dialog, :root[data-text-size="xlarge"] .app-dialog { max-height: min(calc(90vh / var(--text-zoom)), 760px); }
+:root[data-text-size="large"] .ingredient-checks, :root[data-text-size="xlarge"] .ingredient-checks { max-height: calc(42vh / var(--text-zoom)); }
+:root[data-text-size="large"] .recipe-ingredient-list, :root[data-text-size="xlarge"] .recipe-ingredient-list { max-height: calc(45vh / var(--text-zoom)); }
+:root[data-text-size="large"] .floating-timers, :root[data-text-size="xlarge"] .floating-timers { max-height: calc((100vh - 40px) / var(--text-zoom)); width: min(300px, calc((100vw - 24px) / var(--text-zoom))); }
+:root[data-text-size="large"] .undo-bar, :root[data-text-size="xlarge"] .undo-bar { max-width: calc((100vw - 32px) / var(--text-zoom)); }
+@media (max-width: 760px) {
+  :root[data-text-size="large"] .steps-dialog, :root[data-text-size="xlarge"] .steps-dialog { height: calc(100vh / var(--text-zoom)); max-height: calc(100vh / var(--text-zoom)); }
+}
