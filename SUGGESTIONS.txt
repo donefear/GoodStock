@@ -1,0 +1,141 @@
+GOODSTOCK – SUGGESTIONS FOR WHAT TO CHANGE OR ADD
+Written 2026-10-03, after v2.1.2 (ten languages + iPhone app).
+Ordered roughly by how much I'd recommend doing them first. Each item says why.
+
+
+1. FINISH WHAT WAS JUST BUILT
+------------------------------
+
+1.1 Build the iPhone app once on your Mac.
+    DONE (v2.1.11) as far as possible without the phone: GitHub Actions compiled the app on a cloud Mac with Xcode
+    (iOS simulator build). It passed with no Swift warnings, and the bundled web files and version were checked. The
+    workflows now use actions/checkout@v5, because v4 runs on the deprecated Node 20.
+    STILL FOR YOU: open ios/Goodstock.xcodeproj in Xcode and press Run on your iPhone (steps in ios/README.md).
+    Then check by hand: a timer rings with the phone locked, Back up saves to Files, Restore reads it back, and
+    confirm dialogs (delete recipe, clear list) work.
+
+1.2 Push the standalone branch, then merge it into main.
+    Pushing runs the iOS build check on GitHub. Portainer deploys from main, so the server only gets the new
+    languages after the merge.
+
+1.3 Have a native speaker read a few languages.
+    The nine translations are machine-written. They pass every automatic check, but wording can still be stiff.
+    Start with the languages people in your household actually use.
+
+
+2. MAKE THE LANGUAGES WORK BEYOND THE BUTTONS
+---------------------------------------------
+The menus are translated, but the "smart" parts of the app still only understand English and Dutch. In practice,
+a Spanish or German recipe works less well than a Dutch one.
+
+2.1 Cook-mode timers and oven heads-ups in every language.
+    Times are found with English/Dutch words only (minutes, minuten, uur...). "10 Minuten" works,
+    "10 minutos" or "10 分" does not, so those recipes get no timer buttons. Extend TIME_PATTERN in app.js.
+
+2.2 Amounts written into the steps ("Add 200 g of flour").
+    addStepAmounts relies on English/Dutch articles (the, de, het). Add articles for the other languages
+    (der/die/das, le/la/les, el/la, il/la, o/a...), or skip this feature for languages it can't handle.
+
+2.3 Ingredient catalog in all ten languages.
+    ingredients.json has English and Dutch names. Inventory ↔ recipe matching ("you have everything"), shelf-life
+    estimates and the add-item suggestions all depend on it. A translated catalog makes these work for everyone.
+    This is a good job for a translation agent, like the interface languages.
+
+2.4 Kitchen-tool detection.
+    kitchen-tools.js recognises tools in English/Dutch text only. Add the words for "pan", "oven", "whisk"...
+    in the other languages.
+
+2.5 New kitchens start in the chosen language.
+    The default storage places (Pantry, Fridge, Freezer, Cleaning shelf) and the four starter recipes are always
+    English. Create them in the device's language for a brand-new kitchen. Existing kitchens stay as they are.
+
+2.6 Cooking-term videos in your language.
+    The "Watch a video" button searches YouTube in English. Search in the app's language instead.
+
+
+3. SMALL FIXES
+--------------
+
+3.1 Missing favicon.
+    Browsers ask for /favicon.ico and get a 404 (harmless, but it shows in logs). Add
+    <link rel="icon" href="logo.svg"> and serve it.
+
+3.2 Home-screen icon for the server version on iPhones.
+    The web version has no apple-touch-icon, so "Add to Home Screen" on an iPhone shows a blank square.
+
+3.3 Some server error messages are still English.
+    Most are translated, but messages that include an address (e.g. "Could not reach Mealie at ...") are built
+    on the server in English. Send an error code plus the address and let the page write the sentence.
+
+3.4 Android CI does not build the standalone branch.
+    .github/workflows/android.yml only runs on main and experiments. Add standalone, or merge more often.
+
+3.5 App Store-ready icon (only if you ever publish).
+    The iOS icon PNG has an alpha channel. Fine for installing from Xcode; App Store upload rejects it.
+
+
+4. FEATURES I WOULD ADD
+-----------------------
+
+4.1 Sync the phone apps with your home server (biggest win).
+    Right now the Android/iPhone apps keep a separate kitchen on the phone. The server already has everything
+    needed (revisions, item-by-item merging, live updates). Let the phone app optionally connect to
+    http://<server>:8484 when it's on home Wi-Fi: one kitchen everywhere, and the phone still works offline in
+    the shop.
+
+4.2 Barcode scanning to add groceries.
+    The phone apps have a camera. Scan a product and fill in the name (Open Food Facts is a free database). This
+    makes "Put away" after shopping much faster.
+
+4.3 Daily use-soon reminder that doesn't need the app open.
+    On the phone apps the expiry reminder only happens when you open the app. Schedule a real daily notification
+    (e.g. 9:00) with the list of items expiring soon.
+
+4.4 Hands-free cook mode.
+    Say "next" or "back" while cooking with messy hands (Web Speech API in Chrome; speech recognition on the
+    phones). Reading each step out loud would pair well with this.
+
+4.5 Recipe servings / scaling.
+    "Make it for 6 instead of 4" with all amounts recalculated. The amount parser is already there.
+
+4.6 Shopping list grouped by category.
+    Fruit & veg together, dairy together, using the categories in ingredients.json. Shopping goes faster.
+
+4.7 Undo instead of "are you sure?".
+    Deleting an item or recipe could show an "Undo" bar for a few seconds, which is friendlier on a touch screen.
+
+4.8 Bigger text option for the kitchen tablet.
+    A text-size setting (normal / large / extra large) for reading from across the kitchen.
+
+4.9 Automatic backups for the phone apps.
+    Today the phone apps rely on remembering to press Back up. A weekly automatic backup to iCloud Drive /
+    Google Drive (or to the home server, see 4.1) would avoid losing a kitchen with a lost phone.
+
+
+5. SAFETY
+---------
+
+5.1 A simple PIN or password for the server version.
+    The app has no login, which is fine on a trusted home network. But it keeps your Mealie and DeepL keys
+    and can wipe all data. If it ever becomes reachable from outside (your Mealie already has a public
+    address), add at least a household PIN, or put it behind your reverse proxy's login.
+
+
+6. KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
+-----------------------------------------------------
+
+6.1 Turn the test scripts into a real test suite.
+    During this work I used browser tests (every language, every view, tablet and phone sizes, the old Chrome 80
+    and Safari's WebKit). Move them into a tests/ folder and run them on GitHub on every push, together with
+    lang/check-translations.mjs, so a broken translation or a layout overflow is caught automatically.
+
+6.2 Split app.js.
+    It is about 3,000 lines. Splitting it into a few ES modules (inventory, recipes, cook mode, timers, sync)
+    makes changes safer. This needs no build step, and Chrome 81 on the tablet supports modules.
+
+6.3 Health check in docker-compose.yml.
+    Let Docker/Portainer restart the container automatically if the server stops answering.
+
+6.4 Add languages on request.
+    Adding a language is now: copy a lang file, translate, run the checker. Right-to-left languages (Arabic,
+    Hebrew) also need layout work. Romanian, Polish or Turkish would be easy additions.
