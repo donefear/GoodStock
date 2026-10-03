@@ -34,8 +34,9 @@ The menus are translated, but the "smart" parts of the app still only understand
 a Spanish or German recipe works less well than a Dutch one.
 
 2.1 Cook-mode timers and oven heads-ups in every language.
-    Times are found with English/Dutch words only (minutes, minuten, uur...). "10 Minuten" works,
-    "10 minutos" or "10 分" does not, so those recipes get no timer buttons. Extend TIME_PATTERN in app.js.
+    DONE (v2.1.21): times are recognised in all ten languages ("10 minutos", "8 minuti", "15 минут", "5 分钟",
+    "1時間", "2 bis 3 Minuten"...) and highlighted in steps. Steps written in Chinese/Japanese (。) and Russian are
+    split into one sentence per bite. The oven heads-up already worked in any language (it looks for °C/°F).
 
 2.2 Amounts written into the steps ("Add 200 g of flour").
     addStepAmounts relies on English/Dutch articles (the, de, het). Add articles for the other languages

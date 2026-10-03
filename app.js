@@ -1708,7 +1708,16 @@ async function openRecipeDialog(id, isRemote, planId = '') {
 }
 
 // Step-by-step cook mode: one small, concrete action per screen.
-const TIME_PATTERN = /(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|to|tot)\s*(\d+))?\s*(hours?|hrs?|uur|uren|minutes?|minuten|minuut|mins?|seconds?|seconden|secs?)(?![a-z])/i;
+// Times in recipe steps, in the app's languages ("10 minutes", "10 Minuten", "10 minutos", "5 分钟", "1時間").
+// Longer words come before their short forms; the lookahead keeps "min" from matching inside "minced".
+const TIME_UNITS = [
+  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'часов', 'часа', 'час', '小时', '小時', '時間', 'h',
+  'minutes?', 'minuten', 'minuut', 'minuti', 'minuto', 'minutos', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'mins?', 'min',
+  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundos?', 'seg', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'secs?',
+];
+const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|bis|à|a|al|до|至)\s*(\d+))?\s*(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё])`, 'i');
+const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[ae]|час|小时|小時|時間)/i;
+const SECOND_UNIT = /^(?:s|сек|秒)/i;
 const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
 let recipeDialogRecipe = null;
 let recipeDialogPlanId = '';
@@ -1736,21 +1745,24 @@ function stepMinutes(text) {
   if (!match) return null;
   const value = Number(match[1].replace(',', '.'));
   const unit = match[3].toLowerCase();
-  const minutes = /^(h|uur|uren)/.test(unit) ? value * 60 : /^s/.test(unit) ? value / 60 : value;
+  const minutes = HOUR_UNIT.test(unit) ? value * 60 : SECOND_UNIT.test(unit) ? value / 60 : value;
   return minutes > 0 ? { minutes, label: match[0].trim() } : null;
 }
 
 function isStepHeading(text) {
-  return text.length <= 40 && !/[.!?:]$/.test(text) && text.split(/\s+/).length <= 4;
+  return text.length <= 40 && !/[.!?:。！？：]$/.test(text) && text.split(/\s+/).length <= 4;
 }
 
 function splitIntoBites(text) {
   const cleaned = text.replace(/^\s*(?:step\s*)?\d+[.):]\s*/i, '').trim();
-  const sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý0-9])/).flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
-  return sentences.reduce((bites, sentence) => {
+  // Sentences end with . ! ? before a capital (Latin or Cyrillic), or with Chinese/Japanese 。！？.
+  const sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÝА-ЯЁ0-9¿¡])|(?<=[。！？])/).flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
+  // Chinese and Japanese say as much in far fewer characters, so "very short" is shorter there.
+  const dense = /[぀-ヿ一-鿿]/.test(cleaned);
+  return sentences.map((sentence) => sentence.trim()).filter(Boolean).reduce((bites, sentence) => {
     const previous = bites[bites.length - 1];
-    if (previous && previous.length < 25) bites[bites.length - 1] = `${previous} ${sentence}`;
-    else bites.push(sentence.trim());
+    if (previous && previous.length < (dense ? 8 : 25)) bites[bites.length - 1] = `${previous}${dense ? '' : ' '}${sentence}`;
+    else bites.push(sentence);
     return bites;
   }, []).filter(Boolean);
 }
