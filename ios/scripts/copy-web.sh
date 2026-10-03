@@ -8,12 +8,13 @@ ROOT="${SRCROOT}/.."
 DEST="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/web"
 
 rm -rf "$DEST"
-mkdir -p "$DEST/fonts" "$DEST/lang"
-for file in index.html i18n.js app.js kitchen-tools.js kitchen-reference.js recipe-import.mjs mealie.mjs deepl.mjs styles.css ingredients.json manifest.webmanifest logo.svg icon.svg; do
+mkdir -p "$DEST/fonts" "$DEST/lang" "$DEST/app"
+for file in index.html i18n.js kitchen-tools.js kitchen-reference.js recipe-import.mjs mealie.mjs deepl.mjs styles.css ingredients.json manifest.webmanifest logo.svg icon.svg; do
   cp "$ROOT/$file" "$DEST/"
 done
 cp "$ROOT"/fonts/*.woff2 "$ROOT/fonts/fonts.css" "$DEST/fonts/"
 cp "$ROOT"/lang/*.js "$DEST/lang/"
+cp "$ROOT"/app/*.js "$DEST/app/"
 
 LABEL=$(grep -oE 'Goodstock v[0-9]+\.[0-9]+(\.[0-9]+)?' "$ROOT/index.html" | head -1 | sed 's/Goodstock v//')
 IFS=. read -r MAJOR MINOR PATCH <<< "$LABEL"

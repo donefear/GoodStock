@@ -203,8 +203,14 @@ a Spanish or German recipe works less well than a Dutch one.
     Not automated: Chrome 81 (the tablet) and Safari/WebKit checks, which were done by hand this session.
 
 6.2 Split app.js.
-    It is about 3,000 lines. Splitting it into a few ES modules (inventory, recipes, cook mode, timers, sync)
-    makes changes safer. This needs no build step, and Chrome 81 on the tablet supports modules.
+    DONE (v2.1.62): app.js (3,800 lines by then) is now five files in app/, loaded in order: core.js (phone
+    bridge, state, ingredient catalog and matching, quantities, servings, expiry), sync.js (home server, PIN,
+    sync), views.js (preferences, start-up, all pages, recipe editor, translation, dialogs, barcodes), cook.js
+    (cook mode, timers, read aloud and voice) and actions.js (buttons and forms, Settings, backups; starts the app).
+    I kept them as plain scripts sharing one global scope instead of ES modules. That changes no behaviour (no
+    imports/exports to get wrong in thousands of cross-references), needs no build step, and works the same in
+    Chrome 81 and both phone apps. Server, Docker image, offline cache, APK, iOS bundle and the translation checker
+    all list the new files. Checked with the full test suite (17/17), Chromium 80 and an APK build.
 
 6.3 Health check in docker-compose.yml.
     Let Docker/Portainer restart the container automatically if the server stops answering.

@@ -49,7 +49,11 @@ const shoppingShareLifetime = 30 * 60 * 1000;
 const staticFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
-  ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
+  ['/app/core.js', ['app/core.js', 'text/javascript; charset=utf-8']],
+  ['/app/sync.js', ['app/sync.js', 'text/javascript; charset=utf-8']],
+  ['/app/views.js', ['app/views.js', 'text/javascript; charset=utf-8']],
+  ['/app/cook.js', ['app/cook.js', 'text/javascript; charset=utf-8']],
+  ['/app/actions.js', ['app/actions.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/sw.js', ['sw.js', 'text/javascript; charset=utf-8']],
   ['/manifest.webmanifest', ['manifest.webmanifest', 'application/manifest+json']],

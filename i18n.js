@@ -89,12 +89,12 @@ async function setLanguage(code, { remember = false } = {}) {
 // The fixed parts of index.html. Plain text and the placeholder, title, aria-label, label and alt attributes are
 // looked up by their English text. Elements with mixed markup carry data-i18n="key", and the key's translation
 // replaces their inner HTML. The English original is remembered, so switching language again starts from it.
-// Views drawn by app.js are skipped: they are rebuilt with t() on every render.
+// Views drawn by app/*.js are skipped: they are rebuilt with t() on every render.
 const originalText = new WeakMap();
 const originalAttributes = new WeakMap();
 const originalHtml = new WeakMap();
 const TRANSLATED_ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'label', 'alt'];
-// Also skipped: parts of dialogs that app.js fills with recipe and item names, which must not be "translated".
+// Also skipped: parts of dialogs that app/*.js fills with recipe and item names, which must not be "translated".
 const SKIP_TRANSLATION = '#view-container, #floating-timers, script, style, svg, code, datalist, #recipe-dialog-title, #recipe-dialog-description, #recipe-dialog-ingredients, #recipe-dialog-actions, #cook-ingredients, #steps-body, #steps-recipe-name, #steps-timer-panel, #putaway-item-name, #wipe-summary';
 
 function translatePage(root) {

@@ -36,12 +36,12 @@ data stays). With a paid Apple Developer account it lasts a year, and you can al
 - The Xcode project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen). After
   changing `project.yml`, run `xcodegen generate` in this folder (`brew install xcodegen` once). Changes made only in
   Xcode's project settings are lost the next time it is generated.
-- The web files are copied into the app by `scripts/copy-web.sh` at every build, so changes to `app.js`,
+- The web files are copied into the app by `scripts/copy-web.sh` at every build, so changes to `app/*.js`,
   `index.html`, `lang/` and the rest are picked up by simply building again. Keep its file list in step with
   `webFiles` in `android/app/build.gradle`.
 - The app version comes from the `Goodstock vX.Y.Z` label in `index.html`, like the APK.
 - `Goodstock/NativeBridge.swift` provides `window.GoodstockNative` with the same methods as the Android bridge;
-  `app.js` uses it when `STANDALONE` is true.
+  `app/*.js` uses it when `STANDALONE` is true.
 - In a Debug build, Safari on the Mac can inspect the page: Safari → Develop → your iPhone → Goodstock.
 - GitHub Actions (`.github/workflows/ios.yml`) builds the app for the simulator on every push that touches it, as a
   check that it still compiles.

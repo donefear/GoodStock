@@ -4,7 +4,7 @@
 //   node lang/check-translations.mjs          report per language (exit code 1 when something is missing)
 //   node lang/check-translations.mjs --keys   print the English texts as JSON, the starting point for a new language
 //
-// Where texts come from: t('…'), tp(n, '…', '…') and N_('…') in app.js; the kitchen tools, converter units and
+// Where texts come from: t('…'), tp(n, '…', '…') and N_('…') in app/*.js; the kitchen tools, converter units and
 // cooking terms in kitchen-tools.js and kitchen-reference.js; and the fixed text in index.html (see translatePage in
 // i18n.js), where elements with data-i18n="key" keep their inner HTML as one text.
 import { readFileSync, readdirSync } from 'node:fs';
@@ -19,7 +19,7 @@ const STRING = String.raw`('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")`;
 
 function collectKeys() {
   const keys = new Map(); // key → English text, or { one, other } for counted text
-  const app = read('app.js');
+  const app = readdirSync(join(root, 'app')).filter((file) => file.endsWith('.js')).sort().map((file) => read(`app/${file}`)).join('\n');
   for (const match of app.matchAll(new RegExp(String.raw`\b(?:t|N_)\(\s*${STRING}`, 'g'))) keys.set(unquote(match[1]), unquote(match[1]));
   for (const args of callArguments(app, 'tp')) {
     if (args.length < 3 || !/^['"]/.test(args[1]) || !/^['"]/.test(args[2])) continue;
@@ -38,7 +38,7 @@ function collectKeys() {
 }
 
 // Fixed text in index.html that is not translated: icons and numbers, the brand, the version label, and
-// placeholders that app.js replaces straight away.
+// placeholders that app/*.js replaces straight away.
 const IGNORED_HTML_TEXT = [/^[^\p{L}]*$/u, /^goodstock$/i, /Goodstock v\d/, /^STEP 1$/, /^https:\/\/…$/, /^Recipe$/];
 
 // The arguments of every call to name(…), split at top-level commas: the first argument of tp() is any expression,
