@@ -1419,14 +1419,18 @@ const RECIPE_LANGUAGE_WORDS = {
   nl: /\s(?:de|het|een|en|van|met|voeg|toe|snijd|bak|kook|minuten|tot|op|je|zout|peper|ui|eieren|melk|boter|in de)\s/g,
   de: /\s(?:der|die|das|und|mit|minuten|bis|ein|eine|den|dem|zugeben|salz|pfeffer|zwiebel|eier|milch|butter|im)\s/g,
   fr: /\s(?:le|la|les|et|du|des|avec|ajouter|ajoutez|minutes|jusqu'à|une|sel|poivre|oignon|oeufs|œufs|lait|beurre|dans)\s/g,
-  es: /\s(?:el|los|las|y|del|con|añadir|añade|minutos|hasta|una|sal|pimienta|cebolla|huevos|leche|mantequilla|en el)\s/g,
-  it: /\s(?:il|lo|gli|e|del|della|con|aggiungere|aggiungete|minuti|fino|una|sale|pepe|cipolla|uova|latte|burro|nel)\s/g,
+  es: /\s(?:el|la|los|las|y|del|con|añadir|añade|minutos|hasta|una|sal|pimienta|cebolla|huevos|leche|mantequilla|en el)\s/g,
+  it: /\s(?:il|lo|la|gli|e|del|della|con|aggiungere|aggiungete|minuti|fino|una|sale|pepe|cipolla|uova|latte|burro|nel)\s/g,
   pt: /\s(?:o|os|as|e|do|da|com|adicione|minutos|até|uma|sal|pimenta|cebola|ovos|leite|manteiga|no)\s/g,
 };
 
 function recipeLanguage(recipe) {
   if (recipe.language && LANGUAGES.some((language) => language.code === recipe.language)) return recipe.language;
-  const text = ` ${[recipe.name, recipe.description, ...(recipe.ingredients || []), ...recipeInstructions(recipe)].join(' ').toLowerCase()} `;
+  return textLanguage([recipe.name, recipe.description, ...(recipe.ingredients || []), ...recipeInstructions(recipe)].join(' '));
+}
+
+function textLanguage(value) {
+  const text = ` ${String(value || '').toLowerCase()} `;
   if (/[぀-ヿ]/.test(text)) return 'ja';
   if (/[一-鿿]/.test(text)) return 'zh';
   if (/[Ѐ-ӿ]/.test(text)) return 'ru';
@@ -1785,7 +1789,16 @@ function wordStem(word) {
   return (stripped.length >= 3 ? stripped : lower).replace(/([^aeiou])\1$/, '$1');
 }
 
-const STEP_DETERMINERS = new Set(['the', 'a', 'an', 'de', 'het', 'een']);
+// Articles per recipe language, replaced by the amount ("Add the flour" → "Add 200 g of flour"), and the word that
+// links an amount with a unit to the ingredient ("200 g of flour", "200 g de farine", "200 g di farina").
+const STEP_ARTICLES = {
+  en: ['the', 'a', 'an'], nl: ['de', 'het', 'een'], de: ['der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einen'],
+  fr: ['le', 'la', 'les', "l'", 'l’', 'un', 'une', 'des', 'du'], es: ['el', 'la', 'los', 'las', 'un', 'una'],
+  it: ['il', 'lo', 'la', 'i', 'gli', 'le', "l'", 'l’', 'un', 'una'], pt: ['o', 'a', 'os', 'as', 'um', 'uma'],
+};
+const AMOUNT_LINKS = { en: ' of ', fr: ' de ', es: ' de ', it: ' di ', pt: ' de ' };
+// French and Italian join an article to the next word ("l'huile"); those are split so the ingredient is found.
+const STEP_WORD = /[lLdD]['’](?=\p{L})|[\p{L}-]+(?:['’][\p{L}-]+)*/gu;
 const isPrepWord = (word) => /^\p{L}{2,}ed$/u.test(word) || /^ge\p{L}+(?:en|de|te)$/iu.test(word);
 
 // Puts each ingredient's amount in front of its first mention in the steps:
@@ -1795,9 +1808,11 @@ const isPrepWord = (word) => /^\p{L}{2,}ed$/u.test(word) || /^ge\p{L}+(?:en|de|t
 // chocolade, or only the last word of a longer name) need "the/de/het/een/a" right before them.
 function addStepAmounts(steps, ingredients) {
   const markerRanges = (text) => [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
+  const language = textLanguage(steps.map((step) => step.text).join(' '));
+  const articles = new Set(STEP_ARTICLES[language] || []);
   for (const target of ingredients.map(parseIngredient).filter((entry) => entry.amount)) {
-    const name = target.name.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim().toLowerCase();
-    const core = name.split(/\s+(?:met|with|zonder|without|voor|for)\s+/)[0].trim();
+    const name = target.name.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim().toLowerCase().replace(/^(?:de|d['’]|di)\s*/, '');
+    const core = name.split(/\s+(?:met|with|zonder|without|voor|for|mit|ohne|für|avec|sans|pour|con|sin|para|senza|per|com|sem)\s+/)[0].trim();
     const coreWords = core.split(' ').filter(Boolean);
     if (!coreWords.length || core.length < 2) continue;
     const phrases = [...new Set([name, core])].map((phrase) => phrase.split(' ').filter(Boolean).map(wordStem));
@@ -1807,7 +1822,7 @@ function addStepAmounts(steps, ingredients) {
     for (const step of steps) {
       if (placed) break;
       const skip = markerRanges(step.text);
-      const words = [...step.text.matchAll(/[\p{L}’'-]+/gu)]
+      const words = [...step.text.matchAll(STEP_WORD)]
         .filter((match) => !skip.some(([from, to]) => match.index >= from && match.index < to))
         .map((match) => ({ text: match[0], start: match.index, end: match.index + match[0].length, stem: wordStem(match[0]) }));
       let found = null;
@@ -1823,7 +1838,7 @@ function addStepAmounts(steps, ingredients) {
         // Loose matches need an article (or a prep word after one) right before them.
         const previous = words[index - 1]?.text.toLowerCase();
         const beforePrep = words[index - 2]?.text.toLowerCase();
-        if (STEP_DETERMINERS.has(previous) || previous === 'hoeveelheid' || (isPrepWord(words[index - 1]?.text || '') && STEP_DETERMINERS.has(beforePrep))) {
+        if (articles.has(previous) || previous === 'hoeveelheid' || (isPrepWord(words[index - 1]?.text || '') && articles.has(beforePrep))) {
           found = { first: index, last: index, exact: false };
         }
       }
@@ -1835,18 +1850,23 @@ function addStepAmounts(steps, ingredients) {
       if (from > 0 && isPrepWord(words[from - 1].text)) { prep = words[from - 1].text; from -= 1; }
       let dropFrom = from;
       const previous = (offset) => words[from - offset]?.text.toLowerCase();
-      if (previous(1) === 'hoeveelheid' && STEP_DETERMINERS.has(previous(2))) dropFrom = from - 2;
-      else if (previous(1) === 'of' && previous(2) === 'amount' && STEP_DETERMINERS.has(previous(3))) dropFrom = from - 3;
-      else if (STEP_DETERMINERS.has(previous(1))) dropFrom = from - 1;
+      if (previous(1) === 'hoeveelheid' && articles.has(previous(2))) dropFrom = from - 2;
+      else if (previous(1) === 'of' && previous(2) === 'amount' && articles.has(previous(3))) dropFrom = from - 3;
+      else if (articles.has(previous(1))) dropFrom = from - 1;
       const insertAt = words[dropFrom].start;
       const before = step.text.slice(0, insertAt);
       // Already has an amount right there ("2 tbsp milk"): leave it.
-      if (/[\d¼½¾⅓⅔⅛⅜⅝⅞]\s*[\p{L}.]*\s*(?:of\s+|van\s+)?$/u.test(before)) { placed = true; break; }
-      const dutch = /\b(?:de|het|een|en|met|voeg|toe|snijd|bak|kook|minuten|giet|weeg|meet)\b/i.test(step.text);
-      const unit = target.unitText ? ` ${unitLabel(target.unitText, target.amount)}${dutch ? '' : ' of'}` : '';
+      // Also when another ingredient line already put its amount there.
+      if (/[\d¼½¾⅓⅔⅛⅜⅝⅞]\s*[\p{L}.]*\s*(?:(?:of|van|de|di)\s+|d['’])?$/u.test(before) || /\u0002\s*$/.test(before)) { placed = true; break; }
       const named = step.text.slice(words[found.first].start, words[found.last].end);
       const moved = `${prep ? `${prep} ` : ''}${named}`;
-      step.text = `${before}\u0001${formatAmount(target.amount, target.unit)}${unit}\u0002 ${insertAt === 0 ? moved.toLowerCase() : moved}${step.text.slice(words[found.last].end)}`;
+      // "200 g of flour", "200 g de farine", "200 g d’huile" (French before a vowel), "200 g Mehl".
+      let link = target.unitText ? (AMOUNT_LINKS[language] || ' ') : ' ';
+      if (language === 'fr' && link === ' de ' && /^[aeiouyhàâéèêëîïôûü]/i.test(moved)) link = ' d’';
+      const unit = target.unitText ? ` ${unitLabel(target.unitText, target.amount)}` : '';
+      const amount = `${formatAmount(target.amount, target.unit)}${unit}${link.trimEnd()}`;
+      const gap = link.endsWith(' ') ? ' ' : '';
+      step.text = `${before}\u0001${amount}\u0002${gap}${insertAt === 0 && language !== 'de' ? moved.toLowerCase() : moved}${step.text.slice(words[found.last].end)}`;
       placed = true;
     }
   }

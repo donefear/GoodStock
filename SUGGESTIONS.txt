@@ -39,8 +39,12 @@ a Spanish or German recipe works less well than a Dutch one.
     split into one sentence per bite. The oven heads-up already worked in any language (it looks for °C/°F).
 
 2.2 Amounts written into the steps ("Add 200 g of flour").
-    addStepAmounts relies on English/Dutch articles (the, de, het). Add articles for the other languages
-    (der/die/das, le/la/les, el/la, il/la, o/a...), or skip this feature for languages it can't handle.
+    DONE (v2.1.22) for German, French, Spanish, Italian and Portuguese, on top of English and Dutch.
+    The recipe's language is detected once, its own articles are replaced by the amount, and the right
+    linking word is used: "200 g de farine", "30 ml d’huile", "250 g di farina", "200 g Mehl" (German nouns
+    keep their capital). Also fixed: two ingredient lines naming the same thing no longer both add an amount.
+    Not done: Russian, Chinese and Japanese. They have no articles, and Chinese/Japanese have no spaces between
+    words, so the matching would need a different approach. Those recipes simply show the steps as written.
 
 2.3 Ingredient catalog in all ten languages.
     ingredients.json has English and Dutch names. Inventory ↔ recipe matching ("you have everything"), shelf-life
