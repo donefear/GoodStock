@@ -832,4 +832,6 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "IDEAS FOR YOU": "ИДЕИ ДЛЯ ТЕБЯ",
   "Recipes from the web": "Рецепты из интернета",
   "Uses {count} things you have": {"one": "Использует {count} продукт, который у тебя есть", "few": "Использует {count} продукта, которые у тебя есть", "many": "Использует {count} продуктов, которые у тебя есть", "other": "Использует {count} продукта, которые у тебя есть"},
+  "Select all": "Отметить все",
+  "Clear all": "Снять все",
 };

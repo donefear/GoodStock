@@ -832,4 +832,6 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "IDEAS FOR YOU": "IDEI PENTRU TINE",
   "Recipes from the web": "Rețete de pe internet",
   "Uses {count} things you have": {"one": "Folosește {count} lucru pe care îl ai", "few": "Folosește {count} lucruri pe care le ai", "other": "Folosește {count} de lucruri pe care le ai"},
+  "Select all": "Bifează tot",
+  "Clear all": "Debifează tot",
 };

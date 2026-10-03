@@ -165,6 +165,12 @@ document.addEventListener('click', async (event) => {
   if (action === 'steps-next') moveCookStep(1);
   if (action === 'steps-back') moveCookStep(-1);
   if (action === 'steps-restart') moveCookStep(-cookSession.index);
+  if (action === 'steps-check-all') {
+    const boxes = Array.from(document.querySelectorAll('#steps-body [data-steps-item]'));
+    const all = boxes.every((box) => box.checked);
+    boxes.forEach((box) => { if (all) cookSession.checked.delete(box.dataset.stepsItem); else cookSession.checked.add(box.dataset.stepsItem); });
+    renderCookStep();
+  }
   if (action === 'steps-timer-start') startCookTimer(Number(button.dataset.minutes), button.dataset.label);
   if (action === 'timer-stop') stopCookTimer(button.dataset.timer);
   if (action === 'timer-open') openTimerStep(button.dataset.timer);
@@ -840,6 +846,8 @@ $('#steps-body').addEventListener('change', (event) => {
   const key = event.target.dataset.stepsItem;
   if (!key || !cookSession) return;
   if (event.target.checked) cookSession.checked.add(key); else cookSession.checked.delete(key);
+  const toggle = $('#steps-body .steps-check-all');
+  if (toggle) toggle.textContent = Array.from(document.querySelectorAll('#steps-body [data-steps-item]')).every((box) => box.checked) ? t('Clear all') : `✓ ${t('Select all')}`;
 });
 
 // Enter in a Mealie field tests and saves the connection instead of closing Settings.

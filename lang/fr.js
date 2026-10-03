@@ -832,4 +832,6 @@ window.GOODSTOCK_TRANSLATIONS.fr = {
   "IDEAS FOR YOU": "IDÉES POUR TOI",
   "Recipes from the web": "Recettes du web",
   "Uses {count} things you have": {"one": "Utilise {count} chose que tu as", "other": "Utilise {count} choses que tu as"},
+  "Select all": "Tout cocher",
+  "Clear all": "Tout décocher",
 };

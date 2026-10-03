@@ -832,4 +832,6 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "IDEAS FOR YOU": "あなたへのおすすめ",
   "Recipes from the web": "ウェブのレシピ",
   "Uses {count} things you have": "手持ちの材料を {count} つ使います",
+  "Select all": "すべて選択",
+  "Clear all": "すべて解除",
 };

@@ -832,4 +832,6 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "IDEAS FOR YOU": "IDEEËN VOOR JOU",
   "Recipes from the web": "Recepten van het web",
   "Uses {count} things you have": {"one": "Gebruikt {count} ding dat je hebt", "other": "Gebruikt {count} dingen die je hebt"},
+  "Select all": "Alles aanvinken",
+  "Clear all": "Alles uitvinken",
 };

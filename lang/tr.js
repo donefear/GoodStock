@@ -832,4 +832,6 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "IDEAS FOR YOU": "SANA ÖZEL FİKİRLER",
   "Recipes from the web": "İnternetten tarifler",
   "Uses {count} things you have": {"one": "Elindeki {count} malzemeyi kullanır", "other": "Elindeki {count} malzemeyi kullanır"},
+  "Select all": "Tümünü seç",
+  "Clear all": "Tümünü kaldır",
 };

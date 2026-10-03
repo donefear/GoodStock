@@ -565,6 +565,12 @@ function toggleListening(on = !listening) {
   updateVoiceButtons();
 }
 
+// One button ticks every item of a get-ready list, or clears them when all are ticked.
+function checkAllButton(keys, checked) {
+  const all = keys.length > 0 && keys.every((key) => checked.has(key));
+  return `<button class="text-button steps-check-all" type="button" data-action="steps-check-all">${all ? t('Clear all') : `✓ ${t('Select all')}`}</button>`;
+}
+
 function renderCookStep() {
   const { recipe, bites, index, checked } = cookSession;
   const bite = bites[index];
@@ -576,13 +582,13 @@ function renderCookStep() {
   const resume = cookSession.resumed && index > 0 ? `<button class="text-button steps-restart" type="button" data-action="steps-restart">${t('Resumed where you left off · start over')}</button>` : '';
   let body = '';
   if (bite.type === 'gather') {
-    body = `<h3 class="steps-heading">${t('Get these out')}${bite.parts > 1 ? ` (${bite.part}/${bite.parts})` : ''}</h3><p class="steps-hint">${t('Tap each one as it lands on the counter.')}</p><div class="steps-gather">${bite.items.map((item) => {
+    body = `<h3 class="steps-heading">${t('Get these out')}${bite.parts > 1 ? ` (${bite.part}/${bite.parts})` : ''}</h3><p class="steps-hint">${t('Tap each one as it lands on the counter.')}</p>${checkAllButton(bite.items.map((item) => `${index}:${item}`), checked)}<div class="steps-gather">${bite.items.map((item) => {
       const key = `${index}:${item}`;
       const stocked = matchingInventory(item);
       return `<label class="ingredient-check"><input type="checkbox" data-steps-item="${escapeHtml(key)}" ${checked.has(key) ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span><span>${escapeHtml(item)}</span><small>${stocked ? escapeHtml(stocked.location) : t('not in inventory')}</small></label>`;
     }).join('')}</div>`;
   } else if (bite.type === 'tools') {
-    body = `<h3 class="steps-heading">${t("Tools you'll need")}</h3><p class="steps-hint">${t("Tap each one once it's out and ready.")}</p><div class="steps-gather">${bite.tools.map((tool) => {
+    body = `<h3 class="steps-heading">${t("Tools you'll need")}</h3><p class="steps-hint">${t("Tap each one once it's out and ready.")}</p>${checkAllButton(bite.tools.map((tool) => `${index}:${tool.id}`), checked)}<div class="steps-gather">${bite.tools.map((tool) => {
       const key = `${index}:${tool.id}`;
       return `<label class="ingredient-check tool-check"><input type="checkbox" data-steps-item="${escapeHtml(key)}" ${checked.has(key) ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span>${kitchenToolIcon(tool)}<span><strong>${escapeHtml(t(tool.name))}</strong><small>${escapeHtml(t(tool.description))}</small></span></label>`;
     }).join('')}</div>`;

@@ -832,4 +832,6 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "IDEAS FOR YOU": "为你推荐",
   "Recipes from the web": "网上的食谱",
   "Uses {count} things you have": "用到你现有的 {count} 样食材",
+  "Select all": "全选",
+  "Clear all": "全部取消",
 };

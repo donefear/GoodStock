@@ -690,6 +690,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 .steps-tools li span { color: var(--ink); }
 .steps-timer-button {align-self: flex-start; min-height: 52px; font-size: 15px; }
 .steps-restart { align-self: flex-start; padding: 0; min-height: 30px; }
+.steps-check-all { align-self: flex-start; margin: -4px 0 -6px; padding: 0; min-height: 36px; font-weight: 700; }
 .steps-done { display: grid; justify-items: center; gap: 14px; text-align: center; }
 .steps-done > span { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: var(--green); font-size: 30px; font-weight: 700; }
 .steps-done .steps-hint { margin: 0; }
