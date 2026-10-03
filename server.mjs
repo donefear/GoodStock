@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import QRCode from 'qrcode';
 import { extractRecipeFromHtml, NO_RECIPE_MESSAGE } from './recipe-import.mjs';
 import { mapMealieRecipe, mealieErrorMessage, mealieRecipePageUrl, mealieRows, normalizeMealieUrl } from './mealie.mjs';
-import { deeplChunks, deeplErrorMessage, deeplHeaders, deeplRequestBody, deeplUrl, deeplUsageText } from './deepl.mjs';
+import { TRANSLATION_LANGUAGES, deeplChunks, deeplErrorMessage, deeplHeaders, deeplRequestBody, deeplUrl, deeplUsageText } from './deepl.mjs';
 
 const port = Number(process.env.PORT || 8080);
 const dataDirectory = process.env.DATA_DIR || './data';
@@ -59,6 +59,8 @@ const staticFiles = new Map([
   ['/recipe-import.mjs', ['recipe-import.mjs', 'text/javascript; charset=utf-8']],
   ['/mealie.mjs', ['mealie.mjs', 'text/javascript; charset=utf-8']],
   ['/deepl.mjs', ['deepl.mjs', 'text/javascript; charset=utf-8']],
+  ['/i18n.js', ['i18n.js', 'text/javascript; charset=utf-8']],
+  ...TRANSLATION_LANGUAGES.filter((code) => code !== 'en').map((code) => [`/lang/${code}.js`, [`lang/${code}.js`, 'text/javascript; charset=utf-8']]),
 ]);
 
 function sendJson(response, status, value) {
@@ -287,11 +289,12 @@ async function disconnectDeepl() {
 async function translateTexts(body) {
   if (!deepl.key) throw Object.assign(new Error('Add a DeepL API key in Settings to translate recipes.'), { status: 503 });
   const texts = Array.isArray(body?.texts) ? body.texts.map((text) => String(text ?? '')) : [];
-  const target = body?.target === 'nl' ? 'nl' : 'en';
+  const target = TRANSLATION_LANGUAGES.includes(body?.target) ? body.target : 'en';
+  const source = TRANSLATION_LANGUAGES.includes(body?.source) ? body.source : '';
   if (!texts.length || texts.length > 400 || texts.join('').length > 60000) throw Object.assign(new Error('Nothing to translate, or too much at once.'), { status: 400 });
   const translated = [];
   for (const chunk of deeplChunks(texts)) {
-    const result = await callDeepl('/translate', deepl.key, deeplRequestBody(chunk, target, body?.source === 'nl' || body?.source === 'en' ? body.source : ''));
+    const result = await callDeepl('/translate', deepl.key, deeplRequestBody(chunk, target, source));
     translated.push(...(result.translations || []).map((entry) => entry.text));
   }
   return { texts: translated };

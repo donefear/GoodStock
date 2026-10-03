@@ -67,8 +67,9 @@ final class Notifications {
         ensureChannels(context);
         Notification notification = builder(context, TIMERS)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("⏰ Time is up: " + (title == null ? "Timer" : title))
-                .setContentText((text == null || text.isEmpty() ? "Your timer" : text) + " · tap to open Goodstock")
+                // The web app writes both lines in the chosen language ("⏰ Time is up: Pasta", "10 min · tap to open…").
+                .setContentTitle(title == null || title.isEmpty() ? "⏰ Time is up" : title)
+                .setContentText(text == null ? "" : text)
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setContentIntent(openApp(context))
                 .setAutoCancel(true)

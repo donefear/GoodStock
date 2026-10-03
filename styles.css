@@ -377,6 +377,12 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .setting-toggle strong { color: var(--ink); font-size: 13px; }
 .setting-toggle small { margin-top: 4px; color: var(--muted); font-size: 10px; font-weight: 400; }
 .setting-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.setting-language { min-height: 55px; padding: 8px 0; display: flex !important; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.setting-language > span { flex: 1 1 180px; min-width: 0; margin: 0 12px 6px 0; }
+.setting-language strong, .setting-language small { display: block; }
+.setting-language strong { color: var(--ink); font-size: 13px; }
+.setting-language small { margin-top: 4px; color: var(--muted); font-size: 10px; font-weight: 400; }
+.app-dialog .setting-language > select { width: auto; min-width: 140px; flex: 0 0 auto; margin-top: 0; }
 .toggle-track { position: relative; width: 46px; height: 26px; flex: 0 0 46px; border-radius: 20px; background: #c7d0c7; transition: background .18s ease; }
 .toggle-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; transition: transform .18s ease; }
 .setting-toggle input:checked + .toggle-track { background: var(--green); }
@@ -433,7 +439,10 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
   h1 { font-size: 30px; }
   .page-heading p { max-width: 440px; font-size: 12px; }
   .page-heading > .button { min-height: 43px; }
-  .stats-row { margin-bottom: 27px; }
+  .stats-row { margin-bottom: 27px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat > div { min-width: 0; overflow-wrap: anywhere; }
+  .test-zone { flex-wrap: wrap; }
+  .backup-actions { flex-wrap: wrap; }
   .expiration-panel { margin-top: -7px; padding: 13px; }
   .expiration-panel > header { align-items: start; }
   .expiry-row { grid-template-columns: 1fr; gap: 4px; }

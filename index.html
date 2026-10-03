@@ -49,7 +49,7 @@
         <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients in English and Dutch</span></label>
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
         <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label>
-        <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option>Food</option><option>Household</option></select></label></div>
+        <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option value="Food">Food</option><option value="Household">Household</option></select></label></div>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save item</button></div>
       </form>
     </dialog>
@@ -132,6 +132,7 @@
       <form id="settings-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">YOUR SPACE</span><h2>Kitchen settings</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <div class="settings-mode" id="settings-mode"><strong id="settings-mode-title">Shared kitchen</strong><span id="settings-mode-text">Everyone who opens Goodstock on this server sees the same kitchen, updated live.</span></div>
+        <label class="setting-language" for="language-select"><span><strong>Language</strong><small>Menus and buttons on this device. Recipes can be translated with DeepL.</small></span><select id="language-select"></select></label>
         <label class="setting-toggle" for="dark-mode-toggle"><span><strong>Dark mode</strong><small>Use a darker palette on this device</small></span><input id="dark-mode-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
         <label class="setting-toggle" for="expiry-notifications-toggle"><span><strong>Expiration notifications</strong><small>Get a daily browser alert for items due within 3 days</small></span><input id="expiry-notifications-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
         <p class="field-hint settings-permission-note" id="expiry-notifications-note">The in-app Use soon panel is always available. System alerts require HTTPS and browser permission, and are checked while the app is open.</p>
@@ -143,31 +144,31 @@
           <label>API key<input name="mealieKey" type="password" autocomplete="off" placeholder="Paste a Mealie API token" /><span class="field-hint">In Mealie: your profile → API Tokens → create a token.</span></label>
           <label>Public address <span class="field-hint">Optional. The address your devices use to open Mealie, if it differs from the one above.</span><input name="mealiePublicUrl" type="url" inputmode="url" placeholder="Same as above" autocomplete="off" /></label>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="mealie-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="mealie-disconnect" id="mealie-disconnect" hidden>Disconnect</button></div>
-          <p class="field-hint server-only">You can also set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack; settings saved here take priority.</p>
+          <p class="field-hint server-only" data-i18n="settings.mealieEnv">You can also set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack; settings saved here take priority.</p>
         </fieldset>
         <fieldset class="mealie-settings deepl-settings" id="deepl-settings">
           <legend>Translation (DeepL)</legend>
           <p class="settings-note" id="deepl-note">Checking…</p>
-          <label>DeepL API key<input name="deeplKey" type="password" autocomplete="off" placeholder="Paste your DeepL API key" /><span class="field-hint">A free DeepL API key lets Goodstock translate recipes between Dutch and English.</span></label>
+          <label>DeepL API key<input name="deeplKey" type="password" autocomplete="off" placeholder="Paste your DeepL API key" /><span class="field-hint">A free DeepL API key lets Goodstock translate recipes into your language.</span></label>
           <div class="deepl-help-links"><a class="text-button" href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Get a free key ↗</a><a class="text-button" href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener noreferrer">Where do I find my key? ↗</a><button class="text-button" type="button" data-action="deepl-help">How to get a key</button></div>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="deepl-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="deepl-disconnect" id="deepl-disconnect" hidden>Remove key</button></div>
         </fieldset>
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the Android app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.0 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.1 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 
     <dialog id="deepl-help-dialog" class="app-dialog deepl-help-dialog">
       <div class="dialog-heading"><div><span class="eyebrow">TRANSLATION</span><h2>Get a free DeepL key</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
-      <p class="dialog-copy">DeepL translates recipes between Dutch and English. The free plan allows 500,000 characters a month; a recipe is about 1,000 to 3,000.</p>
+      <p class="dialog-copy">DeepL translates recipes into the language Goodstock is set to. The free plan allows 500,000 characters a month; a recipe is about 1,000 to 3,000.</p>
       <ol class="help-steps">
-        <li><strong>Open the DeepL API page</strong><span>Go to <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">deepl.com/pro-api</a> and choose <b>DeepL API Free</b> (not the paid Pro plan, and not the regular DeepL app subscription).</span></li>
-        <li><strong>Create your account</strong><span>Sign up with your email. DeepL may ask for a card to check you are a real person; the Free plan is not charged.</span></li>
-        <li><strong>Copy your key</strong><span>In your account, open <a href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener noreferrer">API Keys</a> and copy the key. Free keys end in <code>:fx</code>.</span></li>
-        <li><strong>Paste it in Goodstock</strong><span>Back in <b>Settings → Translation (DeepL)</b>, paste the key and tap <b>Save &amp; test</b>. You should see how many characters you have used this month.</span></li>
-        <li><strong>Translate a recipe</strong><span>Open any recipe and tap <b>Translate to English</b> or <b>Translate to Nederlands</b> next to Edit.</span></li>
+        <li><strong>Open the DeepL API page</strong><span data-i18n="deepl.help.step1">Go to <a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">deepl.com/pro-api</a> and choose <b>DeepL API Free</b> (not the paid Pro plan, and not the regular DeepL app subscription).</span></li>
+        <li><strong>Create your account</strong><span data-i18n="deepl.help.step2">Sign up with your email. DeepL may ask for a card to check you are a real person; the Free plan is not charged.</span></li>
+        <li><strong>Copy your key</strong><span data-i18n="deepl.help.step3">In your account, open <a href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener noreferrer">API Keys</a> and copy the key. Free keys end in <code>:fx</code>.</span></li>
+        <li><strong>Paste it in Goodstock</strong><span data-i18n="deepl.help.step4">Back in <b>Settings → Translation (DeepL)</b>, paste the key and tap <b>Save &amp; test</b>. You should see how many characters you have used this month.</span></li>
+        <li><strong>Translate a recipe</strong><span data-i18n="deepl.help.step5">Open any recipe in another language and tap <b>Translate to …</b> next to Edit. It translates into the language Goodstock is set to.</span></li>
       </ol>
       <p class="field-hint">The key is saved on the Goodstock server (or on the phone in the Android app) and is never shown again. Recipe text is sent to DeepL to be translated.</p>
       <div class="dialog-actions"><a class="button button-outline" href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Open DeepL ↗</a><button class="button button-primary" type="button" data-close>Got it</button></div>
@@ -178,13 +179,14 @@
         <div class="dialog-heading"><div><span class="eyebrow wipe-eyebrow">CANNOT BE UNDONE</span><h2>Wipe all data?</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <p class="dialog-copy">This deletes everything on every device that uses this kitchen:</p>
         <ul class="wipe-summary" id="wipe-summary"></ul>
-        <label>Type <strong>WIPE</strong> to confirm<input name="confirmation" autocomplete="off" autocapitalize="characters" spellcheck="false" /></label>
+        <label><span data-i18n="wipe.confirm">Type <strong>WIPE</strong> to confirm</span><input name="confirmation" autocomplete="off" autocapitalize="characters" spellcheck="false" /></label>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Keep my data</button><button class="button button-danger" type="submit" disabled>Wipe everything</button></div>
       </form>
     </dialog>
 
     <div class="floating-timers timer-list" id="floating-timers" aria-label="Running timers" aria-live="polite" hidden></div>
 
+    <script src="i18n.js" defer></script>
     <script src="kitchen-tools.js" defer></script>
     <script src="kitchen-reference.js" defer></script>
     <script type="module" src="recipe-import.mjs"></script>

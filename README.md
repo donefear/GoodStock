@@ -19,6 +19,14 @@ When both environment variables are set, the Recipes view searches Mealie and le
 
 The bundled `ingredients.json` catalog contains common ingredients with English and Dutch names. Both names are suggested when adding inventory, and the pairs allow recipe availability checks to match an English recipe ingredient against a Dutch inventory item. The catalog is included in the offline app cache.
 
+## Languages
+
+Goodstock's menus and buttons come in English, Dutch, Spanish, French, German, Italian, Portuguese (Brazil), Russian, Chinese (simplified) and Japanese. Pick one under **Settings → Language**; the choice is kept per device, so people sharing one kitchen can each use their own language. Without a choice, the device's language is used when Goodstock has it, otherwise English.
+
+Recipes keep the language they were written in. A recipe in another language shows **Translate to …** on its page: with a DeepL key set in Settings, it translates into the app's language and saves the result as a new recipe. Kitchen data you type yourself (item names, storage locations) is never translated.
+
+Translations live in `lang/<code>.js`, keyed by the English text. After changing or adding interface text, run `node lang/check-translations.mjs` to list what each language is missing.
+
 ## Expiration reminders
 
 Set an optional expiration date when adding or editing inventory. Common perishables get a storage-specific shelf-life estimate when added; dates are marked as estimates and the package date can override them. Stable pantry items are left blank. Items due within three days (and overdue items) appear in the Inventory **Use soon** panel with saved recipes that use them. Browser notifications are optional, require HTTPS and permission, and are checked daily while Goodstock is open; the in-app panel works without notifications. Estimates are general guidance, not food-safety guarantees.

@@ -11,10 +11,15 @@ export function deeplHeaders(key) {
   return { authorization: `DeepL-Auth-Key ${String(key || '').trim()}`, 'content-type': 'application/json', accept: 'application/json' };
 }
 
-// DeepL wants "EN-GB"/"EN-US" rather than "EN" as a target.
+// The app's languages (see i18n.js). DeepL wants a regional variant for some targets ("EN-GB" rather than "EN");
+// as a source it takes the plain code.
+export const TRANSLATION_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+const DEEPL_TARGETS = { en: 'EN-GB', pt: 'PT-BR', zh: 'ZH-HANS' };
+
 export function deeplRequestBody(texts, target, source = '') {
-  const body = { text: texts, target_lang: target === 'en' ? 'EN-GB' : 'NL', preserve_formatting: true };
-  if (source) body.source_lang = source.toUpperCase();
+  const code = TRANSLATION_LANGUAGES.includes(target) ? target : 'en';
+  const body = { text: texts, target_lang: DEEPL_TARGETS[code] || code.toUpperCase(), preserve_formatting: true };
+  if (source && source !== code) body.source_lang = source.toUpperCase();
   return body;
 }
 
@@ -40,4 +45,4 @@ export function deeplUsageText(usage) {
 }
 
 // The browser app loads this file as a module next to its classic scripts.
-if (typeof window !== 'undefined') window.GoodstockDeepl = { deeplUrl, deeplHeaders, deeplRequestBody, deeplChunks, deeplErrorMessage, deeplUsageText };
+if (typeof window !== 'undefined') window.GoodstockDeepl = { TRANSLATION_LANGUAGES, deeplUrl, deeplHeaders, deeplRequestBody, deeplChunks, deeplErrorMessage, deeplUsageText };
