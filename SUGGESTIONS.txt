@@ -99,7 +99,8 @@ a Spanish or German recipe works less well than a Dutch one.
     because the runners already include the Android SDK, and setup-java moved to v5.
 
 3.5 App Store-ready icon (only if you ever publish).
-    The iOS icon PNG has an alpha channel. Fine for installing from Xcode; App Store upload rejects it.
+    CHECKED (v2.1.35), nothing to fix: this suggestion was wrong. The PNG header shows ios/…/icon-1024.png is
+    already plain RGB (colour type 2) with no alpha channel, so it is fine for an App Store upload.
 
 
 4. FEATURES I WOULD ADD
