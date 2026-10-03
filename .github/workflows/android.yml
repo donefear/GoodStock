@@ -2,7 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, experiments]
+    branches: [main, standalone, experiments]
     tags: ['v*']
   workflow_dispatch:
 
@@ -20,12 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      # The Ubuntu runners come with the Android SDK (ANDROID_HOME), so no setup action is needed; the extra
+      # android-actions/setup-android step started failing in 2026.
+      - name: Check the Android SDK
+        run: test -d "$ANDROID_HOME" && echo "Android SDK at $ANDROID_HOME"
 
       - uses: gradle/actions/setup-gradle@v4
         with:

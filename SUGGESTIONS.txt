@@ -94,7 +94,9 @@ a Spanish or German recipe works less well than a Dutch one.
     messages (timeouts, "Could not reach that website", …) were added to all nine languages.
 
 3.4 Android CI does not build the standalone branch.
-    .github/workflows/android.yml only runs on main and experiments. Add standalone, or merge more often.
+    DONE (v2.1.34): the Android workflow now also runs on standalone. It turned out the Android build had been
+    failing on GitHub since v2.1.0 (also on main): the android-actions/setup-android step broke. It is removed,
+    because the runners already include the Android SDK, and setup-java moved to v5.
 
 3.5 App Store-ready icon (only if you ever publish).
     The iOS icon PNG has an alpha channel. Fine for installing from Xcode; App Store upload rejects it.
