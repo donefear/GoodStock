@@ -14,3 +14,8 @@ dist/
 *.keystore
 *.jks
 android/signing.env
+
+# iOS (Xcode user state and build output)
+ios/build/
+ios/DerivedData/
+ios/**/xcuserdata/

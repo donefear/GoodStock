@@ -1,6 +1,6 @@
 # Goodstock Kitchen
 
-A touch-friendly kitchen planner with inventory, weekly meals, a shopping list, and optional Mealie recipe search. The Node service uses only built-in modules; state is stored in a persistent JSON file in the mounted `/data` volume. The browser keeps a local copy and queues the latest changes while offline.
+A touch-friendly kitchen planner with inventory, weekly meals, a shopping list, and optional Mealie recipe search. Besides the server version below, there are standalone phone apps for Android (`android/`) and iPhone/iPad (`ios/`, see `ios/README.md`). The Node service uses only built-in modules; state is stored in a persistent JSON file in the mounted `/data` volume. The browser keeps a local copy and queues the latest changes while offline.
 
 ## Deploy in Portainer
 

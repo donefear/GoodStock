@@ -1,0 +1,44 @@
+# XcodeGen project description: `xcodegen generate` (in this folder) writes Goodstock.xcodeproj from it.
+# Edit this file rather than the project in Xcode, so the two stay in step.
+name: Goodstock
+options:
+  bundleIdPrefix: com.donefear
+  deploymentTarget:
+    iOS: "16.4"   # WebKit needs 16.4 for the regex lookbehind app.js uses
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+targets:
+  Goodstock:
+    type: application
+    platform: iOS
+    sources:
+      - path: Goodstock
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.donefear.goodstock
+        PRODUCT_NAME: Goodstock
+        INFOPLIST_FILE: Goodstock/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        # Your Apple ID team: pick it once in Xcode under Signing & Capabilities.
+        DEVELOPMENT_TEAM: ""
+    postBuildScripts:
+      - name: Copy web app
+        script: bash "${SRCROOT}/scripts/copy-web.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)
+schemes:
+  Goodstock:
+    build:
+      targets:
+        Goodstock: all
+    run:
+      config: Debug
+    archive:
+      config: Release

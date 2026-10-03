@@ -23,7 +23,7 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
-// Android app: the APK's native shell injects window.GoodstockNative. There is no server then; data lives only on
+// Phone apps (Android APK in android/, iPhone/iPad app in ios/): the native shell injects window.GoodstockNative. There is no server then; data lives only on
 // the phone, and phone features stand in for server ones (alarms, notifications, sharing, fetching recipe pages).
 const nativeApp = window.GoodstockNative || null;
 const STANDALONE = Boolean(nativeApp);
@@ -2532,7 +2532,7 @@ document.addEventListener('change', async (event) => {
       const allowed = await nativeCall('requestNotifications').then((result) => result === 'granted').catch(() => false);
       toggle.checked = allowed;
       if (allowed) localStorage.setItem(EXPIRY_REMINDERS_KEY, 'true'); else localStorage.removeItem(EXPIRY_REMINDERS_KEY);
-      note.textContent = allowed ? t('Enabled. Goodstock checks for items due soon when you open the app.') : t('Notifications are off for Goodstock. Allow them in Android settings; the in-app panel remains available.');
+      note.textContent = allowed ? t('Enabled. Goodstock checks for items due soon when you open the app.') : t("Notifications are off for Goodstock. Allow them in the phone's settings; the in-app panel remains available.");
       if (allowed) checkExpiryReminders();
       return;
     }
@@ -2815,14 +2815,14 @@ async function fillSettings() {
   const canNotify = STANDALONE || (window.isSecureContext && 'Notification' in window);
   expiryToggle.disabled = !canNotify;
   expiryToggle.checked = canNotify && localStorage.getItem(EXPIRY_REMINDERS_KEY) === 'true' && (STANDALONE ? nativeApp.notificationsAllowed() : Notification.permission === 'granted');
-  if (STANDALONE) expiryNote.textContent = t('A daily Android notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.');
+  if (STANDALONE) expiryNote.textContent = t('A daily phone notification for items due within 3 days, checked when you open the app. The in-app Use soon panel is always available.');
   else if (!window.isSecureContext) expiryNote.textContent = t('System alerts need HTTPS. The in-app Use soon panel remains available.');
   else if (!('Notification' in window)) expiryNote.textContent = t('This browser does not support system alerts. The in-app Use soon panel remains available.');
   else if (Notification.permission === 'denied') expiryNote.textContent = t('Browser notifications are blocked. Allow them in browser settings; the in-app panel remains available.');
   else expiryNote.textContent = t('System alerts are checked daily while the app is open. The in-app Use soon panel is always available.');
   $('#settings-mode-title').textContent = STANDALONE ? t('Kept on this device') : t('Shared kitchen');
   $('#settings-mode-text').textContent = STANDALONE
-    ? t('The Android app keeps everything on this device and works without a server. Use Back up below to save a copy.')
+    ? t('The phone app keeps everything on this device and works without a server. Use Back up below to save a copy.')
     : liveSync.connected
       ? tp(liveSync.devices, 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} device connected now).', 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} devices connected now).')
       : t('Everyone who opens Goodstock on this server sees the same kitchen, updated live.');
