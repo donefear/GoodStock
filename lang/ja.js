@@ -586,7 +586,7 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Settings": "設定",
   "Item name": "品目名",
   "e.g. Rolled oats / Havermout": "例：オートミール / Havermout",
-  "Common ingredients in English and Dutch": "英語とオランダ語のよく使う材料",
+  "Common ingredients, in your language and in English": "よく使う材料（あなたの言語と英語）",
   "e.g. bags": "例：袋",
   "Expiration date": "賞味・消費期限",
   "Optional. Product estimates are approximate; check the package date.": "任意。品目ごとの目安はおおよそです。パッケージの日付を確認してください。",

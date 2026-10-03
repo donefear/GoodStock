@@ -17,7 +17,7 @@ When both environment variables are set, the Recipes view searches Mealie and le
 
 ## Ingredients
 
-The bundled `ingredients.json` catalog contains common ingredients with English and Dutch names. Both names are suggested when adding inventory, and the pairs allow recipe availability checks to match an English recipe ingredient against a Dutch inventory item. The catalog is included in the offline app cache.
+The bundled `ingredients.json` catalog names common ingredients in all ten app languages. When adding inventory, the name in the app's language is suggested along with English and Dutch, and recipe availability checks match across languages (a Spanish "harina" finds the "Flour" in stock). The catalog is included in the offline app cache.
 
 ## Languages
 

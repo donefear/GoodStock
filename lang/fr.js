@@ -586,7 +586,7 @@ window.GOODSTOCK_TRANSLATIONS.fr = {
   "Settings": "Réglages",
   "Item name": "Nom de l’article",
   "e.g. Rolled oats / Havermout": "ex. Flocons d’avoine / Havermout",
-  "Common ingredients in English and Dutch": "Ingrédients courants en anglais et en néerlandais",
+  "Common ingredients, in your language and in English": "Ingrédients courants, dans ta langue et en anglais",
   "e.g. bags": "ex. sachets",
   "Expiration date": "Date de péremption",
   "Optional. Product estimates are approximate; check the package date.": "Facultatif. Les estimations sont approximatives ; vérifie la date sur l’emballage.",

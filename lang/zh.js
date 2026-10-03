@@ -586,7 +586,7 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Settings": "设置",
   "Item name": "物品名称",
   "e.g. Rolled oats / Havermout": "例如：燕麦片 / Havermout",
-  "Common ingredients in English and Dutch": "常见食材（英语和荷兰语）",
+  "Common ingredients, in your language and in English": "常见食材（你的语言和英语）",
   "e.g. bags": "例如：袋",
   "Expiration date": "到期日",
   "Optional. Product estimates are approximate; check the package date.": "选填。产品估算仅供参考；请查看包装日期。",

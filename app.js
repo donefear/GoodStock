@@ -197,19 +197,62 @@ function currentWeekPlans() {
   return state.plan.filter((entry) => entry.date >= first && entry.date <= last);
 }
 
+// Every name of a catalog ingredient, in all the app's languages ("de": ["Kartoffel", "Kartoffeln"]).
+const CATALOG_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+const catalogNames = (ingredient, code) => [].concat(ingredient[code] || []).filter(Boolean);
+const CJK = /[぀-ヿ㐀-鿿]/;
+let catalogIndex = { source: null, entries: [] };
+
+function catalogAliases() {
+  if (catalogIndex.source !== ingredientCatalog) {
+    catalogIndex = {
+      source: ingredientCatalog,
+      entries: ingredientCatalog.map((ingredient) => ({
+        ingredient,
+        aliases: [...new Set(CATALOG_LANGUAGES.flatMap((code) => catalogNames(ingredient, code)).map(cleanIngredient).filter(Boolean))],
+        // Dutch and German glue words together (kipfilet, Eierschale), so their short names may start a longer word.
+        compounds: new Set(['nl', 'de'].flatMap((code) => catalogNames(ingredient, code)).map(cleanIngredient)),
+      })),
+    };
+  }
+  return catalogIndex.entries;
+}
+
+// The catalog entry an item or recipe line is about. An exact name wins; otherwise the longest name found inside
+// it, so "sweet potato" is a sweet potato and not a potato. Short names (pan, sal) must be a whole word, or start one
+// in Dutch and German (kipfilet);
+// Chinese and Japanese names are found anywhere, since those languages put no spaces between words.
+// Matching runs for every recipe line against every item on each redraw, so results are remembered per text.
+let ingredientRecordCache = { source: null, results: new Map() };
+
 function ingredientRecord(value) {
+  if (ingredientRecordCache.source !== ingredientCatalog) ingredientRecordCache = { source: ingredientCatalog, results: new Map() };
+  const key = String(value || '');
+  if (!ingredientRecordCache.results.has(key)) ingredientRecordCache.results.set(key, findIngredientRecord(key));
+  return ingredientRecordCache.results.get(key);
+}
+
+function findIngredientRecord(value) {
   const normalized = cleanIngredient(value);
   if (!normalized) return undefined;
-  return ingredientCatalog.find((ingredient) => [ingredient.en, ingredient.nl].some((name) => {
-    const alias = cleanIngredient(name);
-    return normalized === alias || (normalized.length > 4 && normalized.includes(alias));
-  }));
+  let best = null;
+  let bestScore = 0;
+  for (const { ingredient, aliases, compounds } of catalogAliases()) {
+    for (const alias of aliases) {
+      let score = 0;
+      if (normalized === alias) score = 1000 + alias.length;
+      else if (CJK.test(alias) ? normalized.includes(alias) : normalized.length > 4 && (alias.length > 3 ? normalized.includes(alias) : new RegExp(`(?:^| )${alias}${compounds.has(alias) ? '' : '(?: |$)'}`).test(normalized))) score = alias.length;
+      if (score > bestScore) { best = ingredient; bestScore = score; }
+    }
+  }
+  return best || undefined;
 }
 
 function ingredientTerms(value) {
   const normalized = cleanIngredient(value);
   const record = ingredientRecord(value);
-  return record ? [normalized, cleanIngredient(record.en), cleanIngredient(record.nl)] : [normalized];
+  if (!record) return [normalized];
+  return [normalized, ...catalogAliases().find((entry) => entry.ingredient === record).aliases];
 }
 
 function recipeById(id) {
@@ -217,10 +260,12 @@ function recipeById(id) {
 }
 
 function cleanIngredient(value) {
-  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  // Accents and other marks go, letters of every script stay (Cyrillic, Chinese, Japanese), and units and small
+  // linking words ("of", "de", "di") are dropped, the same way for item names and for recipe lines.
+  return String(value || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
     .replace(/^[\s\d\u00bc\u00bd\u00be\u2153\u2154\u215b\u215c\u215d\u215e./,\u2013-]+/, '')
-    .replace(/\b(?:g|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|el|tl|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of)\b/g, ' ')
-    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\b(?:g|gr|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|el|tl|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of|de|di|du|del|della|da|do|d|van|von|cdas?|cdtas?|cucharadas?|cucharaditas?|tazas?|cucchiai[oa]?|cucchiaini?|stk|st|uds?|pz)\b/g, ' ')
+    .replace(/[^\p{L}\p{N} ]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/ies$/, 'y')
@@ -767,16 +812,19 @@ async function loadIngredientCatalog() {
   fillIngredientOptions();
 }
 
-// Ingredient names are English and Dutch; the category shown next to them follows the app's language.
+// Suggestions when adding an item: the name in the app's language first, plus English and Dutch (the household's
+// other usual languages), each labelled with the other name and the category.
 function fillIngredientOptions() {
   const options = $('#ingredient-options');
   if (!options) return;
   options.innerHTML = ingredientCatalog.flatMap((ingredient) => {
     const category = escapeHtml(t(ingredient.category || ''));
-    return [
-      `<option value="${escapeHtml(ingredient.en)}" label="${escapeHtml(ingredient.nl)} · ${category}"></option>`,
-      `<option value="${escapeHtml(ingredient.nl)}" label="${escapeHtml(ingredient.en)} · ${category}"></option>`,
-    ];
+    const local = catalogNames(ingredient, currentLanguage)[0];
+    const names = [...new Set([local, ingredient.en, ingredient.nl].filter(Boolean))];
+    return names.map((name) => {
+      const other = name === ingredient.en ? (local && local !== name ? local : ingredient.nl) : ingredient.en;
+      return `<option value="${escapeHtml(name)}" label="${escapeHtml(other)} · ${category}"></option>`;
+    });
   }).join('');
 }
 

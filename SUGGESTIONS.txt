@@ -47,9 +47,12 @@ a Spanish or German recipe works less well than a Dutch one.
     words, so the matching would need a different approach. Those recipes simply show the steps as written.
 
 2.3 Ingredient catalog in all ten languages.
-    ingredients.json has English and Dutch names. Inventory ↔ recipe matching ("you have everything"), shelf-life
-    estimates and the add-item suggestions all depend on it. A translated catalog makes these work for everyone.
-    This is a good job for a translation agent, like the interface languages.
+    DONE (v2.1.23): all 63 ingredients have names in all ten languages, with common alternatives (Kartoffel/
+    Kartoffeln, 玉ねぎ/たまねぎ). Matching works across languages: a Spanish "300 g de harina" finds "Flour"
+    in stock, "2 Eier" finds "Eieren". Russian, Chinese and Japanese names now match at all; before, every
+    non-Latin letter was thrown away. Add-item suggestions show the name in your language first. Two older matching
+    bugs are fixed: "sweet potato" no longer counts as "potato", and a short name only matches a whole word, so
+    "pancakes" is not "pan" (bread). Matching results are cached, so the old kitchen tablet stays fast.
 
 2.4 Kitchen-tool detection.
     kitchen-tools.js recognises tools in English/Dutch text only. Add the words for "pan", "oven", "whisk"...

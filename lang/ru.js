@@ -586,7 +586,7 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Settings": "Настройки",
   "Item name": "Название",
   "e.g. Rolled oats / Havermout": "напр. Овсяные хлопья / Havermout",
-  "Common ingredients in English and Dutch": "Частые продукты на английском и нидерландском",
+  "Common ingredients, in your language and in English": "Частые продукты — на твоём языке и на английском",
   "e.g. bags": "напр. пакеты",
   "Expiration date": "Срок годности",
   "Optional. Product estimates are approximate; check the package date.": "Необязательно. Оценки примерные; сверься с датой на упаковке.",
