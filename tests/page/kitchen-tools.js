@@ -16,6 +16,10 @@ const cases = [
   ['Añade el tomate pelado.', []],
   ['Отварите куриные ножки.', []],
   ['Pon las tapas en la mesa.', []],
+  ['Preîncălziți cuptorul. Bateți ouăle cu telul într-un castron.', ['oven', 'whisk', 'bowl']],
+  ['Rozgrzej piekarnik. Ubij jajka trzepaczką w misce.', ['oven', 'whisk', 'bowl']],
+  ['Fırını önceden ısıtın. Yumurtaları bir kasede çırpın.', ['oven', 'bowl', 'whisk']],
+  ['Bake a lemon tart.', []],
 ];
 for (const [text, want] of cases) {
   const got = ids(text);

@@ -5,6 +5,7 @@ const cases = [
   ['Hornear 25 minutos.', 25], ['Cuocere per 8 minuti.', 8], ['Asse por 2 horas.', 120],
   ['Варите 15 минут.', 15], ['Жарьте 3 минуты.', 3], ['Отдохнуть 30 секунд.', 0.5],
   ['煮 5 分钟。', 5], ['焖 1 小时。', 60], ['5分煮ます。', 5], ['1時間寝かせます。', 60],
+  ['Fierbe 20 de minute.', 20], ['Lasă la cuptor 1 oră.', 60], ['Gotuj przez 15 minut.', 15], ['Piecz godzinę 1 godz.', 60], ['Odstaw na 30 sekund.', 0.5], ['10 dakika pişirin.', 10], ['1 saat dinlendirin.', 60],
   ['Mix 20 seconds.', 1 / 3], ['Add the minced garlic.', null], ['Etwa 2 bis 3 Minuten braten.', 2],
 ];
 for (const [text, minutes] of cases) {

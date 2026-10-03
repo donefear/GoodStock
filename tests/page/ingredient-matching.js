@@ -6,7 +6,7 @@ const cases = [
   ['500 ml молоко', 'milk'], ['500 ml 牛奶', 'milk'], ['牛乳 200ml', 'milk'], ['卵 2個', 'egg'], ['3 яйца', 'egg'],
   ['2 cebollas', 'onion'], ["2 c. à s. d'huile d'olive", 'olive-oil'], ['Aceite de oliva', 'olive-oil'], ['Olivenöl', 'olive-oil'],
   ['Сливочное масло', 'butter'], ['Оливковое масло', 'olive-oil'], ['Peperone rosso', 'bell-pepper'], ['Pepe nero', 'black-pepper'],
-  ['Kipfilet', 'chicken'], ['Rolled oats', 'oats'], ['Havermout', 'oats'], ['Dish soap', null], ['Pancakes', null],
+  ['Kipfilet', 'chicken'], ['300 g făină', 'flour'], ['2 jajka', 'egg'], ['250 ml mleka', 'milk'], ['1 kg patates', 'potato'], ['2 soğan', 'onion'], ['Un', 'flour'], ['Rolled oats', 'oats'], ['Havermout', 'oats'], ['Dish soap', null], ['Pancakes', null],
 ];
 for (const [text, want] of cases) {
   const got = id(text);

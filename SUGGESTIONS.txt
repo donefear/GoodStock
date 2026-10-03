@@ -219,5 +219,12 @@ a Spanish or German recipe works less well than a Dutch one.
     merely unhealthy. For that, add an "autoheal" container or let Portainer alert you.
 
 6.4 Add languages on request.
-    Adding a language is now: copy a lang file, translate, run the checker. Right-to-left languages (Arabic,
-    Hebrew) also need layout work. Romanian, Polish or Turkish would be easy additions.
+    DONE (v2.1.64): Romanian, Polish and Turkish added, so Goodstock now has 13 languages. Each gets the interface
+    (817 lines, with Romanian one/few/other and Polish one/few/many/other plurals) and the 63 catalog ingredients
+    (with forms like "płatków owsianych"). Each also gets cook-mode time words ("20 de minute", "15 minut",
+    "10 dakika"), storage-place words for shelf life, kitchen tools, voice commands, recipe headings for pasted
+    recipes, spoon and piece units, DeepL as a target, starter kitchens, and iPhone dialog buttons. The Turkish
+    dotless ı now matches i. Tests cover all three (17/17, every view in all 13 languages).
+    Not done: amounts written into steps for these three (their grammar has no separate articles to replace), and
+    right-to-left languages (Arabic, Hebrew), which need layout work. A real speaker's read-through is still the
+    best check.

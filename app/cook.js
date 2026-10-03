@@ -6,12 +6,12 @@
 // Times in recipe steps, in the app's languages ("10 minutes", "10 Minuten", "10 minutos", "5 分钟", "1時間").
 // Longer words come before their short forms; the lookahead keeps "min" from matching inside "minced".
 const TIME_UNITS = [
-  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'часов', 'часа', 'час', '小时', '小時', '時間', 'h',
-  'minutes?', 'minuten', 'minuut', 'minuti', 'minuto', 'minutos', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'mins?', 'min',
-  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundos?', 'seg', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'secs?',
+  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'oră', 'godzin[ayę]?', 'godz', 'saat', 'часов', 'часа', 'час', '小时', '小時', '時間', 'h',
+  'minutes?', 'minuten', 'minuut', 'minuti', 'minuto', 'minutos', 'minut[aeyę]?', 'dakika', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'mins?', 'min',
+  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundos?', 'seg', 'secunde', 'secundă', 'sekund[ayę]?', 'saniye', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'secs?',
 ];
-const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|bis|à|a|al|до|至)\s*(\d+))?\s*(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё])`, 'i');
-const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[ae]|час|小时|小時|時間)/i;
+const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|bis|à|a|al|do|до|至)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё])`, 'i');
+const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[aeă]|godz|saat|час|小时|小時|時間)/i;
 const SECOND_UNIT = /^(?:s|сек|秒)/i;
 const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
 let recipeDialogRecipe = null;
@@ -467,11 +467,11 @@ let listening = false;
 const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const VOICE_COMMANDS = {
   // \b only knows Latin letters, so Russian, Chinese and Japanese words stand outside it.
-  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte)\b|дальше|далее|следующ|下一步|下一个|次へ|次/i,
-  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar)\b|назад|上一步|戻る|前へ/i,
-  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete)\b|повтори|重复|もう一度/i,
-  timer: /\b(?:timer|minuteur|temporizador|cronometro)\b|cronômetro|таймер|计时|タイマー/i,
-  stop: /\b(?:stop|stopp|para|ferma|pare)\b|arrête|стоп|停止|止めて/i,
+  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte|dalej|sonraki|ileri)\b|următorul|înainte|następny|дальше|далее|следующ|下一步|下一个|次へ|次/i,
+  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar|wstecz|cofnij|geri)\b|înapoi|назад|上一步|戻る|前へ/i,
+  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete|tekrar)\b|repetă|powtórz|повтори|重复|もう一度/i,
+  timer: /\b(?:timer|minuteur|temporizador|cronometro|cronometru|temporizator|minutnik)\b|zamanlayıcı|cronômetro|таймер|计时|タイマー/i,
+  stop: /\b(?:stop|stopp|para|ferma|pare|dur)\b|arrête|стоп|停止|止めて/i,
 };
 
 const canSpeak = () => (STANDALONE && nativeApp.canSpeak ? Boolean(nativeApp.canSpeak()) : 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function');

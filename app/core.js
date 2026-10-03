@@ -234,7 +234,7 @@ function currentWeekPlans() {
 }
 
 // Every name of a catalog ingredient, in all the app's languages ("de": ["Kartoffel", "Kartoffeln"]).
-const CATALOG_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+const CATALOG_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr'];
 const catalogNames = (ingredient, code) => [].concat(ingredient[code] || []).filter(Boolean);
 const CJK = /[぀-ヿ㐀-鿿]/;
 let catalogIndex = { source: null, entries: [] };
@@ -298,7 +298,8 @@ function recipeById(id) {
 function cleanIngredient(value) {
   // Accents and other marks go, letters of every script stay (Cyrillic, Chinese, Japanese), and units and small
   // linking words ("of", "de", "di") are dropped, the same way for item names and for recipe lines.
-  return String(value || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  // Turkish dotless ı counts as i, so "ıspanak" and "Ispanak" are the same word.
+  return String(value || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/ı/g, 'i')
     .replace(/^[\s\d\u00bc\u00bd\u00be\u2153\u2154\u215b\u215c\u215d\u215e./,\u2013-]+/, '')
     .replace(/\b(?:g|gr|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|el|tl|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of|de|di|du|del|della|da|do|d|van|von|cdas?|cdtas?|cucharadas?|cucharaditas?|tazas?|cucchiai[oa]?|cucchiaini?|stk|st|uds?|pz)\b/g, ' ')
     .replace(/[^\p{L}\p{N} ]/gu, ' ')
@@ -319,11 +320,11 @@ const UNIT_ALIASES = {
   ml: /^(?:ml|millilit(?:er|re)s?|мл|毫升)$/, cl: /^(?:cl|centilit(?:er|re)s?)$/, dl: /^(?:dl|decilit(?:er|re)s?)$/, l: /^(?:l|lit(?:er|re)s?|л|升)$/,
   oz: /^(?:oz|ounces?)$/, lb: /^(?:lbs?|pounds?)$/, 'fl oz': /^(?:fl\.?\s*oz|fluid\s+ounces?)$/,
   pint: /^(?:pints?|pt)$/, quart: /^(?:quarts?|qt)$/, gallon: /^(?:gallons?|gal)$/, inch: /^inch(?:es)?$/, cm: /^(?:cm|centimet(?:er|re)s?)$/,
-  cup: /^(?:cups?|kopjes?|tazas?|tazze|tazza|tasses?)$/, tbsp: /^(?:tbsps?|tbs|tablespoons?|el|eetlepels?|cdas?|cucharadas?|cucchiai[oa]?)$/, tsp: /^(?:tsps?|teaspoons?|tl|theelepels?|cdtas?|cucharaditas?|cucchiaini?)$/,
+  cup: /^(?:cups?|kopjes?|tazas?|tazze|tazza|tasses?)$/, tbsp: /^(?:tbsps?|tbs|tablespoons?|el|eetlepels?|cdas?|cucharadas?|cucchiai[oa]?|linguri|lingură|łyżki|łyżka|łyżek)$/, tsp: /^(?:tsps?|teaspoons?|tl|theelepels?|cdtas?|cucharaditas?|cucchiaini?|lingurițe|linguriță|łyżeczki|łyżeczka|łyżeczek)$/,
   can: /^(?:cans?|tins?|blikj?e?s?)$/, jar: /^(?:jars?|potj?e?s?)$/, bag: /^(?:bags?|zakj?e?s?)$/, bottle: /^(?:bottles?|flessen|fles)$/,
   pack: /^(?:packs?|packets?|packages?|pakj?e?s?)$/, clove: /^(?:cloves?|teentjes?|tenen)$/, bunch: /^(?:bunch(?:es)?|bosj?e?s?)$/,
   pinch: /^(?:pinch(?:es)?|snufjes?|snuifjes?|snuf)$/, splash: /^(?:splash(?:es)?|dash(?:es)?|scheutjes?|scheut)$/, slice: /^(?:slices?|plakj?e?s?)$/, sprig: /^(?:sprigs?|takjes?)$/, handful: /^(?:handfuls?|handjes?)$/,
-  stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|stuks?|st|x|whole|items?|stk|stück|uds?|un|pz|шт|個|个)$/,
+  stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|stuks?|st|x|whole|items?|stk|stück|uds?|un|pz|buc|bucăți|bucată|szt|sztuki|sztuk|adet|шт|個|个)$/,
 };
 const TO_METRIC = { oz: [28.3495, 'g'], lb: [453.592, 'g'], 'fl oz': [29.5735, 'ml'], pint: [473.176, 'ml'], quart: [946.353, 'ml'], gallon: [3785.41, 'ml'], inch: [2.54, 'cm'] };
 const UNIT_SCALES = { mg: ['mass', 0.001], g: ['mass', 1], kg: ['mass', 1000], ml: ['volume', 1], cl: ['volume', 10], dl: ['volume', 100], l: ['volume', 1000], tsp: ['volume', 5], tbsp: ['volume', 15], cup: ['volume', 240] };
@@ -570,9 +571,9 @@ function recipesUsingInventoryItem(item) {
 }
 
 // Storage locations are the kitchen's own names, in any language; these words decide which kind of storage it is.
-const FREEZER_WORDS = /freezer|vriezer|diepvries|gefrier|tiefkühl|congélateur|congelador|congelatore|морозил|冷冻|冷凍/i;
-const FRIDGE_WORDS = /fridge|koelkast|kühlschrank|réfrigérateur|frigo|nevera|frigorífico|geladeira|frigorifero|холодильник|冰箱|冷蔵/i;
-const PANTRY_WORDS = /pantry|voorraad|vorrat|speisekammer|garde-manger|placard|despensa|dispensa|кладов|食品|パントリー|食料/i;
+const FREEZER_WORDS = /freezer|vriezer|diepvries|gefrier|tiefkühl|congélateur|congelador|congelatore|congelator|zamrażar|dondurucu|морозил|冷冻|冷凍/i;
+const FRIDGE_WORDS = /fridge|koelkast|kühlschrank|réfrigérateur|frigo|nevera|frigorífico|geladeira|frigorifero|frigider|lodówk|buzdolab|холодильник|冰箱|冷蔵/i;
+const PANTRY_WORDS = /pantry|voorraad|vorrat|speisekammer|garde-manger|placard|despensa|dispensa|cămar|spiżar|kiler|кладов|食品|パントリー|食料/i;
 
 // General estimates used when the catalog has no entry (or no value for this storage type).
 const CATEGORY_SHELF_LIFE_DAYS = {

@@ -33,6 +33,9 @@
 		<string>ru</string>
 		<string>zh-Hans</string>
 		<string>ja</string>
+		<string>ro</string>
+		<string>pl</string>
+		<string>tr</string>
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

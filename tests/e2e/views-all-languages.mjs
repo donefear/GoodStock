@@ -1,6 +1,6 @@
-// Every view, Settings and cook mode in all ten languages, on a tablet and a phone: no script errors, no 404s, no
+// Every view, Settings and cook mode in every language, on a tablet and a phone: no script errors, no 404s, no
 // sideways scrolling, navigation translated, and switching language live works.
-const LANGS = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+const LANGS = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr'];
 const VIEWS = ['inventory', 'week', 'shopping', 'recipes', 'tools'];
 const SIZES = [{ width: 1280, height: 800, name: 'tablet' }, { width: 390, height: 844, name: 'phone' }];
 

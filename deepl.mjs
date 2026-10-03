@@ -13,7 +13,7 @@ export function deeplHeaders(key) {
 
 // The app's languages (see i18n.js). DeepL wants a regional variant for some targets ("EN-GB" rather than "EN");
 // as a source it takes the plain code.
-export const TRANSLATION_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja'];
+export const TRANSLATION_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr'];
 const DEEPL_TARGETS = { en: 'EN-GB', pt: 'PT-BR', zh: 'ZH-HANS' };
 
 export function deeplRequestBody(texts, target, source = '') {

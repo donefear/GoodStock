@@ -127,7 +127,7 @@ function loadLanguage(code) {
 
 const placeholders = (text) => [...String(text).matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort().join(',');
 const tags = (text) => [...String(text).matchAll(/<\/?([a-z]+)/gi)].map((match) => match[1].toLowerCase()).sort().join(',');
-const PLURAL_CATEGORIES = { ru: ['one', 'few', 'many', 'other'], zh: ['other'], ja: ['other'] };
+const PLURAL_CATEGORIES = { ru: ['one', 'few', 'many', 'other'], pl: ['one', 'few', 'many', 'other'], ro: ['one', 'few', 'other'], zh: ['other'], ja: ['other'] };
 
 const keys = collectKeys();
 if (process.argv.includes('--keys')) {

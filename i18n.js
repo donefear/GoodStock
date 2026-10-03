@@ -13,6 +13,9 @@ const LANGUAGES = [
   { code: 'ru', name: 'Русский', locale: 'ru-RU' },
   { code: 'zh', name: '中文', locale: 'zh-CN' },
   { code: 'ja', name: '日本語', locale: 'ja-JP' },
+  { code: 'ro', name: 'Română', locale: 'ro-RO' },
+  { code: 'pl', name: 'Polski', locale: 'pl-PL' },
+  { code: 'tr', name: 'Türkçe', locale: 'tr-TR' },
 ];
 const LANGUAGE_KEY = 'goodstock-language-v1';
 

@@ -1,5 +1,5 @@
 const fail = []; const log = [];
-for (const code of ['en', 'nl', 'de', 'fr', 'es', 'it', 'pt', 'ru', 'zh', 'ja']) {
+for (const code of ['en', 'nl', 'de', 'fr', 'es', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr']) {
   await setLanguage(code);
   const fresh = freshState();
   state = fresh;
@@ -11,7 +11,7 @@ for (const code of ['en', 'nl', 'de', 'fr', 'es', 'it', 'pt', 'ru', 'zh', 'ja'])
   for (const recipe of fresh.recipes) {
     for (const line of recipe.ingredients) {
       if (!parseIngredient(line).amount) fail.push(`${code}: no amount in "${line}"`);
-      if (!ingredientRecord(line) && !/rosemary|rozemarijn|rosmarin|romarin|romero|rosmarino|alecrim|розмарин|迷迭香|ローズマリー/i.test(line)) fail.push(`${code}: catalog does not know "${line}"`);
+      if (!ingredientRecord(line) && !/rosemary|rozemarijn|rosmarin|romarin|romero|rosmarino|alecrim|розмарин|迷迭香|ローズマリー|rozmarin|rozmaryn|biberiye/i.test(line)) fail.push(`${code}: catalog does not know "${line}"`);
     }
   }
   // The sample eggs in the fridge count for the pancakes; the step with a time gets a timer.

@@ -17,11 +17,11 @@ When both environment variables are set, the Recipes view searches Mealie and le
 
 ## Ingredients
 
-The bundled `ingredients.json` catalog names common ingredients in all ten app languages. When adding inventory, the name in the app's language is suggested along with English and Dutch, and recipe availability checks match across languages (a Spanish "harina" finds the "Flour" in stock). The catalog is included in the offline app cache.
+The bundled `ingredients.json` catalog names common ingredients in all the app's languages. When adding inventory, the name in the app's language is suggested along with English and Dutch, and recipe availability checks match across languages (a Spanish "harina" finds the "Flour" in stock). The catalog is included in the offline app cache.
 
 ## Languages
 
-Goodstock's menus and buttons come in English, Dutch, Spanish, French, German, Italian, Portuguese (Brazil), Russian, Chinese (simplified) and Japanese. Pick one under **Settings → Language**; the choice is kept per device, so people sharing one kitchen can each use their own language. Without a choice, the device's language is used when Goodstock has it, otherwise English.
+Goodstock's menus and buttons come in English, Dutch, Spanish, French, German, Italian, Portuguese (Brazil), Russian, Chinese (simplified), Japanese, Romanian, Polish and Turkish. Pick one under **Settings → Language**; the choice is kept per device, so people sharing one kitchen can each use their own language. Without a choice, the device's language is used when Goodstock has it, otherwise English.
 
 Recipes keep the language they were written in. A recipe in another language shows **Translate to …** on its page: with a DeepL key set in Settings, it translates into the app's language and saves the result as a new recipe. Kitchen data you type yourself (item names, storage locations) is never translated.
 

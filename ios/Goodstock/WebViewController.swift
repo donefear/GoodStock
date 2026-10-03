@@ -113,7 +113,7 @@ enum DialogLabels {
     private static let labels: [String: (ok: String, cancel: String)] = [
         "en": ("OK", "Cancel"), "nl": ("OK", "Annuleren"), "es": ("Aceptar", "Cancelar"), "fr": ("OK", "Annuler"),
         "de": ("OK", "Abbrechen"), "it": ("OK", "Annulla"), "pt": ("OK", "Cancelar"), "ru": ("ОК", "Отмена"),
-        "zh": ("好", "取消"), "ja": ("OK", "キャンセル"),
+        "zh": ("好", "取消"), "ja": ("OK", "キャンセル"), "ro": ("OK", "Anulează"), "pl": ("OK", "Anuluj"), "tr": ("Tamam", "İptal"),
     ]
     static func ok(_ language: String) -> String { labels[language]?.ok ?? "OK" }
     static func cancel(_ language: String) -> String { labels[language]?.cancel ?? "Cancel" }
