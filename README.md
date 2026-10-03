@@ -1,44 +1,150 @@
 # Goodstock Kitchen
 
-A touch-friendly kitchen planner with inventory, weekly meals, a shopping list, and optional Mealie recipe search. Besides the server version below, there are standalone phone apps for Android (`android/`) and iPhone/iPad (`ios/`, see `ios/README.md`). The Node service uses only built-in modules; state is stored in a persistent JSON file in the mounted `/data` volume. The browser keeps a local copy and queues the latest changes while offline.
+**A touch-friendly kitchen companion for the whole household.** Goodstock keeps track of what's in your fridge, freezer and pantry, plans the week's meals, writes the shopping list, and walks you through recipes one step at a time. It's built for a tablet on the kitchen wall, and it works just as well on a phone or laptop.
 
-## Deploy in Portainer
+It comes in three forms:
 
-1. Put this project folder somewhere Portainer can access, or push it to a Git repository.
-2. In Portainer, choose **Stacks** and deploy from that Git repository. Set the repository path to this project folder and the Compose path to `docker-compose.yml` (Portainer's default filename), so it can build the included `Dockerfile`.
-3. Optionally set `MEALIE_URL` and `MEALIE_API_KEY` in the stack environment. `MEALIE_URL` is the address reachable from the container, for example `http://mealie:9000` when both containers share a Docker network.
-4. Deploy the stack and open `http://<your-server-ip>:8484` on the tablet or another browser.
+| | What it is | Best for |
+|---|---|---|
+| **Server version** | A small Docker container that serves the app to every browser on your home network | One shared kitchen for the whole household, live on every device |
+| **Android app** | A standalone APK with everything on the phone (`android/`) | Using Goodstock without a server, or carrying your home kitchen with you |
+| **iPhone / iPad app** | The same standalone app for iOS 16.4+ (`ios/`) | The same, on Apple devices |
 
-The named `goodstock-data` volume keeps inventory and planning data across container updates. Back up that volume with your normal Docker backup process. An optional household PIN (Settings → Household PIN) locks the kitchen API: each device unlocks once and stays unlocked for a year; the PIN is stored hashed in `/data/auth.json`. Still, do not publish the app directly to the internet without HTTPS in front of it; it is meant for a home network.
+The phone apps can also connect to your home server and stay in sync with it.
 
-## Mealie
+---
 
-When both environment variables are set, the Recipes view searches Mealie and lets you import recipes into Goodstock. Planned Mealie recipes in This week get a **Mealie ↗** link. If `MEALIE_URL` is an internal Docker address, set `MEALIE_PUBLIC_URL` to the address browsers use, for example `http://192.168.1.10:9925`. Goodstock owns the inventory, weekly plan, and shopping list; imported recipes are stored in its own data volume.
+## Features
 
-## Ingredients
+### 🥫 Inventory
+- **Everything you have, by location**: Fridge, Freezer, Pantry and any storage spots you add. You can see it as a **list** or as a visual **map** of your kitchen.
+- **Smart ingredient names.** A catalog of common ingredients in all 13 languages suggests names as you type. Recipes match across languages, so a Spanish "harina" finds the "Flour" in stock.
+- **Expiry dates, estimated for you.** Common perishables get a shelf-life estimate for their storage type. A date from the package always overrides the estimate.
+- **Use soon panel.** Shows items that expire within three days, and anything overdue, together with saved recipes that use them.
+- **Barcode scanning** in the phone apps fills in a product's name when you add it.
+- **Reminders.** In the browser you get notifications while the app is open. The phone apps send a daily "use soon" notification even when the app is closed.
 
-The bundled `ingredients.json` catalog names common ingredients in all the app's languages. When adding inventory, the name in the app's language is suggested along with English and Dutch, and recipe availability checks match across languages (a Spanish "harina" finds the "Flour" in stock). The catalog is included in the offline app cache.
+### 📖 Recipes
+- **Your own recipe box.** Write a recipe, paste one as text, or **import from a website**. Most recipe sites work, because Goodstock reads the recipe data built into their pages.
+- **Full recipe pages** with ingredients, the kitchen tools you'll need, and numbered steps that have amounts written in ("Add **200 g** flour…").
+- **Servings and scaling.** Make a recipe for 2 or for 8 and every amount changes with it.
+- **Metric throughout.** Pounds, ounces and °F are converted automatically. Cups and spoons stay as written.
+- **What you have.** Every recipe page marks which ingredients are in stock and how many are missing.
+- **One-tap translation** with DeepL saves a translated copy of a recipe in your language.
+- **Mealie integration (optional).** Search your [Mealie](https://mealie.io) recipe server and import recipes from it.
+- **Recipe ideas from the web (experimental).** Goodstock suggests new recipes from [TheMealDB](https://www.themealdb.com) based on what you've cooked lately and what's about to expire. Each suggestion says why it was picked.
 
-## Languages
+### 👩‍🍳 Step-by-step cook mode
+- **One action at a time.** Recipes are split into short, single-action steps, with big buttons that work with messy hands.
+- **Get ready first.** You start with an ingredient checklist and a tools checklist, each with a **Select all** button. The ingredient checklist shows where each item is stored.
+- **Timers built in.** "Simmer for 10 minutes" turns into a timer button. Timers keep running and ring even if you leave cook mode.
+- **Oven heads-up.** Goodstock tells you to preheat early, before you reach the step that needs the oven.
+- **Hands-free.** 🔊 **Read aloud** speaks each step, and 🎙 **voice commands** ("next", "back", "repeat", "start timer") move you through the recipe.
+- **Picks up where you left off** if you close it halfway through.
+- **"Cooked ✓"** takes the amounts you used out of your inventory. You can adjust each amount first.
 
-Goodstock's menus and buttons come in English, Dutch, Spanish, French, German, Italian, Portuguese (Brazil), Russian, Chinese (simplified), Japanese, Romanian, Polish and Turkish. Pick one under **Settings → Language**; the choice is kept per device, so people sharing one kitchen can each use their own language. Without a choice, the device's language is used when Goodstock has it, otherwise English.
+### 📅 This week
+- **Plan meals by day.** Pick recipes for the week, with servings for each meal.
+- **One tap builds the shopping list** from the week's plan. It only adds what you don't already have.
 
-Recipes keep the language they were written in. A recipe in another language shows **Translate to …** on its page: with a DeepL key set in Settings, it translates into the app's language and saves the result as a new recipe. Kitchen data you type yourself (item names, storage locations) is never translated.
+### 🛒 Shopping list
+- **Grouped in supermarket order**: vegetables, fruit, bakery, dairy and so on.
+- **Put it away.** Checked items go into the inventory in one step.
+- **Share to phone.** Scan a QR code to download the list onto your phone (server version). The phone apps use the normal share menu.
 
-Translations live in `lang/<code>.js`, keyed by the English text. After changing or adding interface text, run `node lang/check-translations.mjs` to list what each language is missing.
+### 🧰 Kitchen tools
+- **Timers.** Several named timers at once.
+- **Converter.** Weights, volumes, cups to grams for common ingredients, temperatures and gas marks.
+- **Cooking terms.** A glossary (julienne, blanch, deglaze …), each term with a button that finds a how-to video.
 
-## Recipe ideas from the web
+### 🌍 Languages
+The interface is available in **English, Dutch, Spanish, French, German, Italian, Portuguese (Brazil), Russian, Chinese (simplified), Japanese, Romanian, Polish and Turkish**. The language is chosen per device, so people sharing one kitchen can each use their own. Without a choice, Goodstock uses the device's language when it has it.
 
-Recipes → Ideas for you → **Find recipes for me** suggests recipes from [TheMealDB](https://www.themealdb.com), a free recipe collection, based on what you cooked or planned in the last 90 days and what you have (soon-expiring items count extra). Each idea says why it was picked; recipes you already have are skipped, and **Add to my recipes** saves one as your own. The recipes are in English; the recipe page can translate them with DeepL. The browser version asks TheMealDB through the server, the phone apps directly.
+### ✨ Everyday comforts
+- **Shared, live kitchen.** Every device on the server sees changes right away. If two people edit at once, both changes are merged item by item, so nothing is lost.
+- **Works offline.** The app keeps working without a connection and syncs when it's back.
+- **Undo** instead of "are you sure?" pop-ups.
+- **Light and dark themes**, and **Large / Extra large text** for a tablet across the room.
+- **Household PIN (optional).** Locks the server version so only your devices can use it.
+- **Backups.** Export and import your whole kitchen as a file. The phone apps can also make an automatic weekly backup to a folder you choose, such as Google Drive or iCloud.
 
-## Expiration reminders
+---
 
-Set an optional expiration date when adding or editing inventory. Common perishables get a storage-specific shelf-life estimate when added; dates are marked as estimates and the package date can override them. Stable pantry items are left blank. Items due within three days (and overdue items) appear in the Inventory **Use soon** panel with saved recipes that use them. Browser notifications are optional, require HTTPS and permission, and are checked daily while Goodstock is open; the in-app panel works without notifications. Estimates are general guidance, not food-safety guarantees.
+## Install the server version
 
-## Shopping list on a phone
+### Docker Compose
+```sh
+docker compose -f docker-compose.yml up --build -d
+```
+Then open `http://localhost:8484`, or `http://<server-ip>:8484` from another device on your network.
 
-Choose **Share to phone** on the shopping list and scan the QR code with the phone camera. It downloads a plain-text copy; checked items are marked. The random link expires after 30 minutes and works while the phone can reach the Goodstock server, normally on the same home network. QR generation runs in the container using the `qrcode` package; rebuilding the image installs this dependency.
+### Portainer
+1. Push this project to a Git repository that Portainer can reach.
+2. In Portainer, go to **Stacks** → **Add stack** → **Repository**. Use `docker-compose.yml` as the Compose path, so Portainer builds the included `Dockerfile`.
+3. Deploy, then open `http://<server-ip>:8484` on the tablet.
 
-## Offline behavior
+Your kitchen data lives in the `goodstock-data` volume (`/data` in the container). It survives updates, and you can back it up like any other Docker volume. The container has a health check at `/api/health`.
 
-After the first online visit, the browser caches the app shell and keeps the latest kitchen state on that device. Inventory and planning remain viewable offline. Changes are saved locally and the newest state is sent to the server after connectivity returns. Keep a single household tablet as the active editor; simultaneous edits from multiple devices are last-write-wins in this first version.
+### Without Docker
+```sh
+npm install
+PORT=8080 DATA_DIR=./data npm start
+```
+
+### Optional settings
+You can set everything in the app under **Settings**. The environment variables below are optional defaults.
+
+| Variable | Purpose |
+|---|---|
+| `MEALIE_URL`, `MEALIE_API_KEY` | Connect a Mealie recipe server. Use an address the container can reach, for example `http://mealie:9000`. |
+| `MEALIE_PUBLIC_URL` | The Mealie address browsers use, if it differs from `MEALIE_URL`. |
+| `DEEPL_API_KEY` | Turns on recipe translation. A free DeepL key is enough. |
+
+API keys set in Settings are stored on the server and are never sent back to the browser.
+
+> **Security note:** Goodstock is made for a trusted home network. Even with a household PIN, don't expose it directly to the internet without HTTPS in front of it.
+
+## Phone apps
+
+- **Android:** see [android/README.md](android/README.md). It runs on Android 5.0+ and builds in Docker, so no Android Studio is needed.
+- **iPhone / iPad:** see [ios/README.md](ios/README.md). It runs on iOS 16.4+ and builds on a Mac with Xcode. The project is generated with XcodeGen.
+
+Both apps hold the whole kitchen on the device and need no server. To share a kitchen with your home server, use **Settings → Home server**.
+
+## Browser support
+
+The web app is kept compatible with **Chrome 81**, so an old Android 4.4 tablet can still serve as the kitchen screen. Newer browsers, including Safari, Firefox and Edge, work as well.
+
+---
+
+## For developers
+
+Goodstock is plain HTML, CSS and JavaScript, with no framework and no build step. The server is a single Node.js file, and its only runtime dependency is `qrcode`.
+
+| Path | What's in it |
+|---|---|
+| `index.html`, `styles.css` | The page and its responsive light/dark styles |
+| `app/*.js` | The client: `core` (state, ingredients, quantities), `sync`, `views`, `cook`, `ideas` and `actions` |
+| `server.mjs` | Static files, the shared-state API with live updates, and proxies for Mealie, DeepL, recipe import and TheMealDB |
+| `i18n.js`, `lang/*.js` | Interface translations, keyed by the English text |
+| `ingredients.json` | The multilingual ingredient catalog with shelf-life estimates |
+| `kitchen-reference.js`, `kitchen-tools.js` | Converter data, the cooking-terms glossary and kitchen-tool detection |
+| `recipe-import.mjs`, `mealie.mjs`, `deepl.mjs` | Code shared by the server and the phone apps |
+| `android/`, `ios/` | The phone apps |
+| `tests/` | The test suite |
+
+### Tests
+```sh
+npm test
+```
+This runs the translation check, page tests and end-to-end tests in a headless browser against fresh servers. GitHub Actions runs the suite on every push, and also builds the Android APK and the iOS app. See [tests/README.md](tests/README.md) for a Docker command to use when Node isn't installed.
+
+### Adding interface text
+Write it in English inside `t('…')`, then run `node lang/check-translations.mjs`. It lists the lines each language is missing.
+
+### Versioning
+Every change bumps the patch number in the `Goodstock vX.Y.Z` label in `index.html` and the cache name in `sw.js`. The phone apps take their version from that label.
+
+---
+
+*Expiry estimates are general guidance, not food-safety guarantees. When in doubt, trust the package date and your nose.*
