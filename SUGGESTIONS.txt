@@ -61,8 +61,13 @@ a Spanish or German recipe works less well than a Dutch one.
     peeler, "ножки" not a knife, "tapas" not a lid.
 
 2.5 New kitchens start in the chosen language.
-    The default storage places (Pantry, Fridge, Freezer, Cleaning shelf) and the four starter recipes are always
-    English. Create them in the device's language for a brand-new kitchen. Existing kitchens stay as they are.
+    DONE (v2.1.25): a brand-new kitchen (first visit, or after Wipe all data) gets its storage places, sample
+    items and the four starter recipes in the device's language, e.g. Vorrat / Kühlschrank / Gefrierschrank and
+    "Tomatensuppe mit weißen Bohnen". Each was checked in all ten languages: storage places are recognised for shelf
+    life, every ingredient line has an amount and is known to the catalog, and the timers work. Existing kitchens
+    keep what they have. Along the way, the amount parser learned Cyrillic and Chinese metric units (мл, г, кг, 克,
+    毫升), and the catalog learned the Russian forms used after a number (молока, картофеля...), so Russian recipes
+    can be written grammatically.
 
 2.6 Cooking-term videos in your language.
     The "Watch a video" button searches YouTube in English. Search in the app's language instead.

@@ -10,12 +10,12 @@ const TIMERS_KEY = 'goodstock-timers-v1';
 const TIMER_RESTORE_LIMIT_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPIRY_WINDOW_DAYS = 3;
-const defaultLocations = ['Pantry', 'Fridge', 'Freezer', 'Cleaning shelf'];
+const defaultLocations = [N_('Pantry'), N_('Fridge'), N_('Freezer'), N_('Cleaning shelf')];
 const starterRecipes = [
-  { id: 'tomato-bean-soup', name: 'Tomato & white bean soup', description: 'A bright, hearty one-pot lunch.', ingredients: ['1 onion', '2 cans white beans', '1 can tomatoes', '500 ml vegetable stock'], source: 'Goodstock', instructions: ['Chop the onion.', 'Soften the onion in a splash of oil over medium heat for 5 minutes.', 'Add the tomatoes, drained beans, and stock.', 'Simmer for 15 minutes.', 'Season with salt and pepper, then mash a few beans to thicken.'] },
-  { id: 'lemon-pasta', name: 'Lemony greens pasta', description: 'Fast pasta with greens and a little parmesan.', ingredients: ['250 g pasta', '100 g spinach', '1 lemon', '30 g parmesan'], source: 'Goodstock', instructions: ['Bring a big pot of salted water to the boil.', 'Cook the pasta for 10 minutes.', 'Zest and juice the lemon while the pasta cooks.', 'Add the spinach to the pot for the last minute.', 'Drain, keeping a cup of pasta water.', 'Toss with lemon, grated parmesan, and a splash of pasta water.'] },
-  { id: 'crispy-potatoes', name: 'Crispy potato tray', description: 'Crisp edges, soft middle, plenty of herbs.', ingredients: ['1 kg potatoes', '2 tbsp olive oil', '3 cloves garlic', '2 sprigs rosemary'], source: 'Goodstock', instructions: ['Heat the oven to 220°C.', 'Cut the potatoes into chunks.', 'Toss with olive oil, crushed garlic, rosemary, and salt on a tray.', 'Roast for 40 minutes, turning once halfway.'] },
-  { id: 'oat-pancakes', name: 'Everyday oat pancakes', description: 'A small-batch breakfast for slow mornings.', ingredients: ['100 g rolled oats', '2 eggs', '150 ml milk', '1 banana'], source: 'Goodstock', instructions: ['Blend the oats into a rough flour.', 'Mash the banana, then whisk in the eggs, milk, and oat flour.', 'Let the batter rest for 5 minutes.', 'Cook small pancakes in a hot oiled pan for 2 minutes per side.'] },
+  { id: 'tomato-bean-soup', name: N_('Tomato & white bean soup'), description: N_('A bright, hearty one-pot lunch.'), ingredients: [N_('1 onion'), N_('2 cans white beans'), N_('1 can tomatoes'), N_('500 ml vegetable stock')], source: 'Goodstock', instructions: [N_('Chop the onion.'), N_('Soften the onion in a splash of oil over medium heat for 5 minutes.'), N_('Add the tomatoes, drained beans, and stock.'), N_('Simmer for 15 minutes.'), N_('Season with salt and pepper, then mash a few beans to thicken.')] },
+  { id: 'lemon-pasta', name: N_('Lemony greens pasta'), description: N_('Fast pasta with greens and a little parmesan.'), ingredients: [N_('250 g pasta'), N_('100 g spinach'), N_('1 lemon'), N_('30 g parmesan')], source: 'Goodstock', instructions: [N_('Bring a big pot of salted water to the boil.'), N_('Cook the pasta for 10 minutes.'), N_('Zest and juice the lemon while the pasta cooks.'), N_('Add the spinach to the pot for the last minute.'), N_('Drain, keeping a cup of pasta water.'), N_('Toss with lemon, grated parmesan, and a splash of pasta water.')] },
+  { id: 'crispy-potatoes', name: N_('Crispy potato tray'), description: N_('Crisp edges, soft middle, plenty of herbs.'), ingredients: [N_('1 kg potatoes'), N_('2 tbsp olive oil'), N_('3 cloves garlic'), N_('2 sprigs rosemary')], source: 'Goodstock', instructions: [N_('Heat the oven to 220°C.'), N_('Cut the potatoes into chunks.'), N_('Toss with olive oil, crushed garlic, rosemary, and salt on a tray.'), N_('Roast for 40 minutes, turning once halfway.')] },
+  { id: 'oat-pancakes', name: N_('Everyday oat pancakes'), description: N_('A small-batch breakfast for slow mornings.'), ingredients: [N_('100 g rolled oats'), N_('2 eggs'), N_('150 ml milk'), N_('1 banana')], source: 'Goodstock', instructions: [N_('Blend the oats into a rough flour.'), N_('Mash the banana, then whisk in the eggs, milk, and oat flour.'), N_('Let the batter rest for 5 minutes.'), N_('Cook small pancakes in a hot oiled pan for 2 minutes per side.')] },
 ];
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -111,18 +111,34 @@ async function keepScreenOn(on) {
   }
 }
 
+// A new kitchen starts in the device's language: storage places, sample items and starter recipes. After that
+// they are the kitchen's own data and are not translated again (a shared kitchen keeps what it was given).
+const localDefaultLocations = () => defaultLocations.map((location) => t(location));
+
+function localStarterRecipe(recipe) {
+  return {
+    ...recipe,
+    name: t(recipe.name),
+    description: t(recipe.description),
+    ingredients: recipe.ingredients.map((line) => t(line)),
+    instructions: recipe.instructions.map((line) => t(line)),
+    ...(currentLanguage === 'en' ? {} : { language: currentLanguage }),
+  };
+}
+
 function freshState() {
+  const [pantry, fridge, , cleaning] = localDefaultLocations();
   return {
     inventory: [
-      { id: makeId(), name: 'Rolled oats', quantity: 1, unit: 'bag', location: 'Pantry', kind: 'Food' },
-      { id: makeId(), name: 'Eggs', quantity: 6, unit: 'pcs', location: 'Fridge', kind: 'Food' },
-      { id: makeId(), name: 'Potatoes', quantity: 4, unit: 'pcs', location: 'Pantry', kind: 'Food' },
-      { id: makeId(), name: 'Dish soap', quantity: 1, unit: 'bottle', location: 'Cleaning shelf', kind: 'Household' },
+      { id: makeId(), name: t('Rolled oats'), quantity: 1, unit: 'bag', location: pantry, kind: 'Food' },
+      { id: makeId(), name: t('Eggs'), quantity: 6, unit: 'pcs', location: fridge, kind: 'Food' },
+      { id: makeId(), name: t('Potatoes'), quantity: 4, unit: 'pcs', location: pantry, kind: 'Food' },
+      { id: makeId(), name: t('Dish soap'), quantity: 1, unit: 'bottle', location: cleaning, kind: 'Household' },
     ],
-    recipes: starterRecipes.map((recipe) => ({ ...recipe, ingredients: [...recipe.ingredients] })),
+    recipes: starterRecipes.map(localStarterRecipe),
     plan: [],
     shopping: [],
-    locations: [...defaultLocations],
+    locations: localDefaultLocations(),
     timerPresets: [],
   };
 }
@@ -279,8 +295,8 @@ const INGREDIENT_PATTERN = new RegExp(String.raw`^(${AMOUNT_SOURCE})(?:\s*(?:-|�
 const IMPERIAL_PATTERN = new RegExp(String.raw`(?<![\d.,/])(${AMOUNT_SOURCE})(?:\s*(-|–|to)\s*(${AMOUNT_SOURCE}))?\s*(fl\.?\s*oz|fluid\s+ounces?|ounces?|oz|pounds?|lbs?|pints?|quarts?|gallons?|inch(?:es)?)(?![a-z])\.?`, 'gi');
 const FAHRENHEIT_PATTERN = /(\d{3})\s*(?:°\s*F|degrees?\s+F(?:ahrenheit)?|F)\b/g;
 const UNIT_ALIASES = {
-  g: /^(?:g|gr|grams?|grammes?)$/, kg: /^(?:kg|kilos?|kilograms?)$/, mg: /^(?:mg|milligrams?)$/,
-  ml: /^(?:ml|millilit(?:er|re)s?)$/, cl: /^(?:cl|centilit(?:er|re)s?)$/, dl: /^(?:dl|decilit(?:er|re)s?)$/, l: /^(?:l|lit(?:er|re)s?)$/,
+  g: /^(?:g|gr|grams?|grammes?|г|гр|克)$/, kg: /^(?:kg|kilos?|kilograms?|кг|公斤|千克)$/, mg: /^(?:mg|milligrams?|мг)$/,
+  ml: /^(?:ml|millilit(?:er|re)s?|мл|毫升)$/, cl: /^(?:cl|centilit(?:er|re)s?)$/, dl: /^(?:dl|decilit(?:er|re)s?)$/, l: /^(?:l|lit(?:er|re)s?|л|升)$/,
   oz: /^(?:oz|ounces?)$/, lb: /^(?:lbs?|pounds?)$/, 'fl oz': /^(?:fl\.?\s*oz|fluid\s+ounces?)$/,
   pint: /^(?:pints?|pt)$/, quart: /^(?:quarts?|qt)$/, gallon: /^(?:gallons?|gal)$/, inch: /^inch(?:es)?$/, cm: /^(?:cm|centimet(?:er|re)s?)$/,
   cup: /^(?:cups?|kopjes?|tazas?|tazze|tazza|tasses?)$/, tbsp: /^(?:tbsps?|tbs|tablespoons?|el|eetlepels?|cdas?|cucharadas?|cucchiai[oa]?)$/, tsp: /^(?:tsps?|teaspoons?|tl|theelepels?|cdtas?|cucharaditas?|cucchiaini?)$/,
@@ -846,6 +862,9 @@ async function initialize() {
   applyTheme(localStorage.getItem(THEME_KEY) || 'light');
   document.documentElement.classList.toggle('is-standalone', STANDALONE);
   const cached = localStorage.getItem(STORAGE_KEY);
+  // First visit on this device: the starting kitchen in the device's language (an existing server kitchen
+  // replaces it below).
+  if (!cached) state = freshState();
   const pending = STANDALONE ? 'local' : localStorage.getItem(PENDING_KEY);
   if (cached) state = normalizeState(JSON.parse(cached));
   // Shared kitchen: start from the server's copy, folding in anything this device changed while away.
@@ -2706,7 +2725,7 @@ function defaultStorageLocation(name) {
   if (existing && state.locations.includes(existing.location)) return existing.location;
   const record = ingredientRecord(name);
   const shelfLife = record?.shelfLifeDays || CATEGORY_SHELF_LIFE_DAYS[record?.category] || {};
-  const pattern = (shelfLife.fridge ?? 0) > (shelfLife.pantry ?? 0) ? /fridge|koelkast/i : /pantry|voorraad/i;
+  const pattern = (shelfLife.fridge ?? 0) > (shelfLife.pantry ?? 0) ? FRIDGE_WORDS : PANTRY_WORDS;
   return state.locations.find((location) => pattern.test(location)) || state.locations[0];
 }
 
@@ -2832,7 +2851,7 @@ $('#wipe-form').addEventListener('submit', (event) => {
   if (event.currentTarget.elements.confirmation.value.trim().toUpperCase() !== 'WIPE') return;
   $('#wipe-dialog').close();
   $('#settings-dialog').close();
-  state = { inventory: [], recipes: [], plan: [], shopping: [], locations: [...defaultLocations], timerPresets: [] };
+  state = { inventory: [], recipes: [], plan: [], shopping: [], locations: localDefaultLocations(), timerPresets: [] };
   activeView = 'inventory';
   inventoryQuery = '';
   inventoryLocation = 'All locations';
