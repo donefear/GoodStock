@@ -194,9 +194,13 @@ a Spanish or German recipe works less well than a Dutch one.
 -----------------------------------------------------
 
 6.1 Turn the test scripts into a real test suite.
-    During this work I used browser tests (every language, every view, tablet and phone sizes, the old Chrome 80
-    and Safari's WebKit). Move them into a tests/ folder and run them on GitHub on every push, together with
-    lang/check-translations.mjs, so a broken translation or a layout overflow is caught automatically.
+    DONE (v2.1.61): tests/ with `npm test` (tests/run.mjs). It runs the translation check, 10 page tests inside the
+    real app (timers and step splitting in ten languages, step amounts, ingredient matching, kitchen tools, fresh
+    kitchens, cooking-term videos, voice commands, servings, shopping groups, undo) and 6 end-to-end tests, each on
+    its own fresh server (every view in every language on tablet and phone, phone↔home-server sync, household PIN,
+    reminders and backups, text size, barcode lookup and translated server errors). GitHub runs it on every push
+    (.github/workflows/tests.yml); tests/README.md has the Docker command for running it without Node. 17/17 pass.
+    Not automated: Chrome 81 (the tablet) and Safari/WebKit checks, which were done by hand this session.
 
 6.2 Split app.js.
     It is about 3,000 lines. Splitting it into a few ES modules (inventory, recipes, cook mode, timers, sync)

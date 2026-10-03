@@ -19,3 +19,6 @@ android/signing.env
 ios/build/
 ios/DerivedData/
 ios/**/xcuserdata/
+
+# npm install for the tests (the Docker image installs from package.json)
+package-lock.json

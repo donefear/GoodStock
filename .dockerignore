@@ -5,3 +5,6 @@ data
 *.log
 android
 dist
+tests
+.github
+ios
