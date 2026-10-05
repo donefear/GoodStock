@@ -9,6 +9,7 @@ It comes in three forms:
 | **Server version** | A small Docker container that serves the app to every browser on your home network | One shared kitchen for the whole household, live on every device |
 | **Android app** | A standalone APK with everything on the phone (`android/`) | Using Goodstock without a server, or carrying your home kitchen with you |
 | **iPhone / iPad app** | The same standalone app for iOS 16.4+ (`ios/`) | The same, on Apple devices |
+| **Desktop app** | The same standalone app for Windows, macOS and Linux (`desktop/`) | A kitchen laptop or PC without running a server |
 
 The phone apps can also connect to your home server and stay in sync with it.
 
@@ -108,6 +109,7 @@ API keys set in Settings are stored on the server and are never sent back to the
 
 - **Android:** see [android/README.md](android/README.md). It runs on Android 5.0+ and builds in Docker, so no Android Studio is needed.
 - **iPhone / iPad:** see [ios/README.md](ios/README.md). It runs on iOS 16.4+ and builds on a Mac with Xcode. The project is generated with XcodeGen.
+- **Windows, macOS, Linux:** see [desktop/README.md](desktop/README.md). An Electron app (portable `.exe` or installer, `.dmg`, AppImage), built on GitHub or with `bash desktop/build.sh` in Docker.
 
 Both apps hold the whole kitchen on the device and need no server. To share a kitchen with your home server, use **Settings → Home server**.
 
@@ -137,7 +139,7 @@ Goodstock is plain HTML, CSS and JavaScript, with no framework and no build step
 ```sh
 npm test
 ```
-This runs the translation check, page tests and end-to-end tests in a headless browser against fresh servers. GitHub Actions runs the suite on every push, and also builds the Android APK and the iOS app. See [tests/README.md](tests/README.md) for a Docker command to use when Node isn't installed.
+This runs the translation check, page tests and end-to-end tests in a headless browser against fresh servers. GitHub Actions runs the suite on every push, and also builds the Android APK, the iOS app and the desktop apps. See [tests/README.md](tests/README.md) for a Docker command to use when Node isn't installed.
 
 ### Adding interface text
 Write it in English inside `t('…')`, then run `node lang/check-translations.mjs`. It lists the lines each language is missing.

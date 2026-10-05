@@ -1,0 +1,31 @@
+{
+  "name": "goodstock",
+  "productName": "Goodstock",
+  "version": "1.0.0",
+  "description": "Kitchen inventory and meal planning",
+  "author": "donefear",
+  "desktopName": "goodstock.desktop",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "prepare-web": "node prepare.mjs",
+    "start": "node prepare.mjs && electron ."
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.donefear.goodstock",
+    "productName": "Goodstock",
+    "artifactName": "Goodstock-v${version}-${os}-${arch}.${ext}",
+    "files": ["main.js", "preload.js", "native.js", "web/**/*"],
+    "directories": { "output": "../dist/desktop", "buildResources": "build" },
+    "win": { "target": [{ "target": "portable", "arch": ["x64"] }, { "target": "nsis", "arch": ["x64"] }] },
+    "portable": { "artifactName": "Goodstock-v${version}-windows-portable.exe" },
+    "nsis": { "artifactName": "Goodstock-v${version}-windows-setup.exe", "oneClick": true, "perMachine": false },
+    "linux": { "target": [{ "target": "AppImage", "arch": ["x64"] }], "category": "Utility", "syncDesktopName": true, "artifactName": "Goodstock-v${version}-linux-x86_64.AppImage" },
+    "mac": { "target": [{ "target": "dmg", "arch": ["universal"] }], "category": "public.app-category.lifestyle", "identity": "-", "artifactName": "Goodstock-v${version}-mac.dmg" }
+  }
+}

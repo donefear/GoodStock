@@ -1,7 +1,7 @@
 #!/bin/bash
 # Xcode build phase: copies the web app from the repository root into the app bundle's "web" folder, and sets the
 # app version from the "Goodstock vX.Y.Z" label in index.html (build number X·10000 + Y·100 + Z, like the APK).
-# Keep the file list in step with webFiles in android/app/build.gradle.
+# Keep the file list in step with webFiles in android/app/build.gradle and the list in desktop/prepare.mjs.
 set -euo pipefail
 
 ROOT="${SRCROOT}/.."

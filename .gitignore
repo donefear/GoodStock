@@ -22,3 +22,9 @@ ios/**/xcuserdata/
 
 # npm install for the tests (the Docker image installs from package.json)
 package-lock.json
+
+# Desktop app (Electron) build files
+desktop/node_modules/
+desktop/web/
+desktop/build/
+desktop/package-lock.json
