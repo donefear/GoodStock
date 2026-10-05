@@ -834,4 +834,8 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Uses {count} things you have": "用到你现有的 {count} 样食材",
   "Select all": "全选",
   "Clear all": "全部取消",
+  "General": "常规",
+  "Connections": "连接",
+  "Your data": "你的数据",
+  "All optional: Goodstock works fully without them. Tap one to set it up.": "全部可选：没有它们 Goodstock 也能完整使用。点按一项即可设置。",
 };

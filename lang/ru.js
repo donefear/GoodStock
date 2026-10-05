@@ -834,4 +834,8 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Uses {count} things you have": {"one": "Использует {count} продукт, который у тебя есть", "few": "Использует {count} продукта, которые у тебя есть", "many": "Использует {count} продуктов, которые у тебя есть", "other": "Использует {count} продукта, которые у тебя есть"},
   "Select all": "Отметить все",
   "Clear all": "Снять все",
+  "General": "Общие",
+  "Connections": "Подключения",
+  "Your data": "Ваши данные",
+  "All optional: Goodstock works fully without them. Tap one to set it up.": "Всё необязательно: Goodstock полностью работает и без них. Нажмите, чтобы настроить.",
 };

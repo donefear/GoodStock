@@ -310,7 +310,8 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .integration-note p { flex: 1; margin: 0; color: #69776d; font-size: 11px; line-height: 1.6; }
 .integration-note p strong { color: #3d5144; }
 .integration-state { color: #8b958c; font-size: 8px; font-weight: 700; letter-spacing: .8px; }
-.app-dialog { width: min(500px, calc(100% - 28px)); max-height: min(90vh, 760px); padding: 25px; border: 1px solid #dce4da; border-radius: 8px; background: var(--white); color: var(--ink); box-shadow: 0 20px 70px #24352b2a; }
+/* Newer Chrome scrolls a modal dialog by itself; Chrome 81 (the kitchen tablet) needs overflow set, or a long dialog spills past its edge. */
+.app-dialog { width: min(500px, calc(100% - 28px)); max-height: min(90vh, 760px); padding: 25px; border: 1px solid #dce4da; border-radius: 8px; background: var(--white); color: var(--ink); box-shadow: 0 20px 70px #24352b2a; overflow-y: auto; }
 @supports (height: 100dvh) { .app-dialog { max-height: min(90dvh, 760px); } }
 .app-dialog::backdrop { background: #1e2c2480; backdrop-filter: blur(2px); }
 .app-dialog form { display: flex; flex-direction: column; gap: 15px; }
@@ -356,6 +357,26 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .mealie-settings .settings-note { margin: 0; font-size: 12px; }
 .mealie-settings .settings-note.is-connected { color: var(--green); font-weight: 700; }
 .mealie-settings .settings-note.is-error { color: #b65c48; font-weight: 700; }
+/* Settings tabs, and connections folded to one line (name + status) until tapped. A <details> cannot be a grid or
+   flex container in Chrome 81, so its contents are spaced with margins. */
+.inventory-mode-switch.settings-tabs { display: flex; align-self: stretch; }
+.settings-tabs button { flex: 1; min-width: 0; min-height: 38px; padding: 0 4px; font-size: 13px; }
+.no-flex-gap .settings-tabs button + button { margin-left: 3px; }
+.settings-panel:not([hidden]) { display: grid; gap: 15px; }
+.settings-panel > * { min-width: 0; }
+.settings-intro { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.settings-connection { margin: 0; padding: 0; display: block; }
+.settings-connection > summary { position: relative; padding: 12px 44px 12px 14px; border-radius: 8px; list-style: none; cursor: pointer; }
+.settings-connection > summary::-webkit-details-marker { display: none; }
+.settings-connection > summary::after { content: '›'; position: absolute; top: 50%; right: 18px; color: var(--muted); font-size: 22px; line-height: 1; transform: translateY(-50%); transition: transform .15s ease; }
+.settings-connection[open] > summary::after { transform: translateY(-50%) rotate(90deg); }
+.settings-connection > summary:hover { background: rgba(73, 128, 92, .07); }
+.settings-connection > summary:focus-visible { outline: 3px solid #80ad94; outline-offset: -3px; }
+.settings-connection > summary strong { display: block; color: var(--ink); font-size: 13px; }
+.settings-connection > summary .settings-note { display: block; margin-top: 3px; }
+.settings-connection[open] { padding-bottom: 14px; }
+.settings-connection[open] > summary { border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; }
+.settings-connection > :not(summary) { margin: 12px 14px 0; }
 .mealie-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .settings-mode { margin-bottom: 6px; padding: 12px 14px; border-radius: 8px; display: grid; gap: 3px; background: var(--mint); }
 .settings-mode strong { color: var(--green-dark); font-size: 13px; }

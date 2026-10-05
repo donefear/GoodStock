@@ -138,48 +138,52 @@
     </dialog>
 
     <dialog id="settings-dialog" class="app-dialog">
-      <form id="settings-form" method="dialog">
+      <form id="settings-form" method="dialog" novalidate>
         <div class="dialog-heading"><div><span class="eyebrow">YOUR SPACE</span><h2>Kitchen settings</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
-        <div class="settings-mode" id="settings-mode"><strong id="settings-mode-title">Shared kitchen</strong><span id="settings-mode-text">Everyone who opens Goodstock on this server sees the same kitchen, updated live.</span></div>
+        <div class="inventory-mode-switch settings-tabs" role="tablist" aria-label="Settings"><button type="button" role="tab" class="active" aria-selected="true" data-action="settings-tab" data-tab="general">General</button><button type="button" role="tab" aria-selected="false" data-action="settings-tab" data-tab="connections">Connections</button><button type="button" role="tab" aria-selected="false" data-action="settings-tab" data-tab="data">Your data</button></div>
+        <div class="settings-panel" data-panel="general" role="tabpanel">
         <label class="setting-language" for="language-select"><span><strong>Language</strong><small>Menus and buttons on this device. Recipes can be translated with DeepL.</small></span><select id="language-select"></select></label>
         <label class="setting-language" for="text-size-select"><span><strong>Text size</strong><small>Bigger text and buttons on this device, for reading from across the kitchen</small></span><select id="text-size-select"><option value="normal">Normal</option><option value="large">Large</option><option value="xlarge">Extra large</option></select></label>
         <label class="setting-toggle" for="dark-mode-toggle"><span><strong>Dark mode</strong><small>Use a darker palette on this device</small></span><input id="dark-mode-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
         <label class="setting-toggle" for="expiry-notifications-toggle"><span><strong>Expiration notifications</strong><small>Get a daily browser alert for items due within 3 days</small></span><input id="expiry-notifications-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
         <p class="field-hint settings-permission-note" id="expiry-notifications-note">The in-app Use soon panel is always available. System alerts require HTTPS and browser permission, and are checked while the app is open.</p>
         <label>Storage locations <span class="field-hint">Separate with commas</span><input name="locations" /></label>
-        <fieldset class="mealie-settings" id="mealie-settings">
-          <legend>Mealie recipe library</legend>
-          <p class="settings-note" id="mealie-note">Checking…</p>
+        </div>
+        <div class="settings-panel" data-panel="connections" role="tabpanel" hidden>
+        <p class="settings-intro">All optional: Goodstock works fully without them. Tap one to set it up.</p>
+        <details class="mealie-settings settings-connection" id="mealie-settings">
+          <summary><strong>Mealie recipe library</strong><span class="settings-note" id="mealie-note">Checking…</span></summary>
           <label>Mealie address<input name="mealieUrl" type="url" inputmode="url" placeholder="https://mealie.example.com" autocomplete="off" /></label>
           <label>API key<input name="mealieKey" type="password" autocomplete="off" placeholder="Paste a Mealie API token" /><span class="field-hint">In Mealie: your profile → API Tokens → create a token.</span></label>
           <label>Public address <span class="field-hint">Optional. The address your devices use to open Mealie, if it differs from the one above.</span><input name="mealiePublicUrl" type="url" inputmode="url" placeholder="Same as above" autocomplete="off" /></label>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="mealie-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="mealie-disconnect" id="mealie-disconnect" hidden>Disconnect</button></div>
           <p class="field-hint server-only" data-i18n="settings.mealieEnv">You can also set <code>MEALIE_URL</code> and <code>MEALIE_API_KEY</code> in your Portainer stack; settings saved here take priority.</p>
-        </fieldset>
-        <fieldset class="mealie-settings deepl-settings" id="deepl-settings">
-          <legend>Translation (DeepL)</legend>
-          <p class="settings-note" id="deepl-note">Checking…</p>
+        </details>
+        <details class="mealie-settings settings-connection deepl-settings" id="deepl-settings">
+          <summary><strong>Translation (DeepL)</strong><span class="settings-note" id="deepl-note">Checking…</span></summary>
           <label>DeepL API key<input name="deeplKey" type="password" autocomplete="off" placeholder="Paste your DeepL API key" /><span class="field-hint">A free DeepL API key lets Goodstock translate recipes into your language.</span></label>
           <div class="deepl-help-links"><a class="text-button" href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Get a free key ↗</a><a class="text-button" href="https://www.deepl.com/your-account/keys" target="_blank" rel="noopener noreferrer">Where do I find my key? ↗</a><button class="text-button" type="button" data-action="deepl-help">How to get a key</button></div>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="deepl-save">Save &amp; test</button><button class="button button-quiet" type="button" data-action="deepl-disconnect" id="deepl-disconnect" hidden>Remove key</button></div>
-        </fieldset>
-        <fieldset class="mealie-settings server-only" id="pin-settings">
-          <legend>Household PIN</legend>
-          <p class="settings-note" id="pin-note">No PIN. Anyone on your home network can open this kitchen.</p>
+        </details>
+        <details class="mealie-settings settings-connection server-only" id="pin-settings">
+          <summary><strong>Household PIN</strong><span class="settings-note" id="pin-note">No PIN. Anyone on your home network can open this kitchen.</span></summary>
           <label>New PIN<input name="newPin" type="password" autocomplete="new-password" inputmode="numeric" minlength="4" maxlength="32" placeholder="At least 4 characters" /><span class="field-hint">Each device asks for it once. Use it if Goodstock can be reached from outside your home.</span></label>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="pin-save" id="pin-save">Set PIN</button><button class="button button-quiet" type="button" data-action="pin-remove" id="pin-remove" hidden>Remove PIN</button></div>
-        </fieldset>
-        <fieldset class="mealie-settings phone-only" id="home-server-settings">
-          <legend>Home server</legend>
-          <p class="settings-note" id="home-server-note">Not connected. This phone keeps its own kitchen.</p>
+        </details>
+        <details class="mealie-settings settings-connection phone-only" id="home-server-settings">
+          <summary><strong>Home server</strong><span class="settings-note" id="home-server-note">Not connected. This phone keeps its own kitchen.</span></summary>
           <label>Goodstock server address<input name="homeServer" type="url" inputmode="url" placeholder="http://192.168.1.10:8484" autocomplete="off" /><span class="field-hint">The address you open Goodstock on at home. The phone then shares that kitchen and keeps a copy for when you are out.</span></label>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="home-server-connect">Connect</button><button class="button button-quiet" type="button" data-action="home-server-disconnect" id="home-server-disconnect" hidden>Disconnect</button></div>
-        </fieldset>
+        </details>
+        </div>
+        <div class="settings-panel" data-panel="data" role="tabpanel" hidden>
+        <div class="settings-mode" id="settings-mode"><strong id="settings-mode-title">Shared kitchen</strong><span id="settings-mode-text">Everyone who opens Goodstock on this server sees the same kitchen, updated live.</span></div>
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the phone app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone backup-zone phone-only" id="auto-backup-zone" hidden><div><strong>Automatic weekly backup</strong><span id="auto-backup-text">Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.</span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="auto-backup-folder" id="auto-backup-folder">Choose folder</button><button class="button button-quiet" type="button" data-action="auto-backup-off" id="auto-backup-off" hidden>Turn off</button></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.70 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        </div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v2.1.71 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

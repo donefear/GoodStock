@@ -834,4 +834,8 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Uses {count} things you have": {"one": "Gebruikt {count} ding dat je hebt", "other": "Gebruikt {count} dingen die je hebt"},
   "Select all": "Alles aanvinken",
   "Clear all": "Alles uitvinken",
+  "General": "Algemeen",
+  "Connections": "Koppelingen",
+  "Your data": "Je gegevens",
+  "All optional: Goodstock works fully without them. Tap one to set it up.": "Allemaal optioneel: Goodstock werkt ook volledig zonder. Tik er een aan om hem in te stellen.",
 };

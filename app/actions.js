@@ -138,7 +138,12 @@ document.addEventListener('click', async (event) => {
   if (action === 'pin-save') await savePin();
   if (action === 'pin-remove') await removePin();
   if (action === 'steps-listen') toggleListening();
-  if (action === 'open-settings') $('#settings-button').click();
+  if (action === 'open-settings') {
+    $('#settings-button').click();
+    const connection = button.dataset.open && $(`#${button.dataset.open}`);
+    if (connection) { showSettingsTab('connections'); connection.open = true; }
+  }
+  if (action === 'settings-tab') showSettingsTab(button.dataset.tab);
   if (action === 'restore-data') $('#restore-file').click();
   if (action === 'view-recipe') {
     if (button.dataset.remote === 'true') openRecipeDialog(id, true);
@@ -706,9 +711,22 @@ $('#settings-button').addEventListener('click', async () => {
   $('#settings-form').elements.locations.value = state.locations.join(', ');
   $('#dark-mode-toggle').checked = document.documentElement.dataset.theme === 'dark';
   fillLanguageSelect();
+  showSettingsTab('general');
+  for (const connection of $$('#settings-dialog .settings-connection')) connection.open = false;
   $('#settings-dialog').showModal();
   await fillSettings();
 });
+
+// Settings has three tabs: General (this device), Connections (Mealie, DeepL, PIN, home server, each folded to one
+// line with its status) and Your data (backups, wipe). It opens on General with the connections folded.
+function showSettingsTab(tab) {
+  for (const button of $$('#settings-dialog [data-action="settings-tab"]')) {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  }
+  for (const panel of $$('#settings-dialog .settings-panel')) panel.hidden = panel.dataset.panel !== tab;
+}
 
 // The parts of Settings that depend on this device and on the connections, in the chosen language.
 async function fillSettings() {

@@ -834,4 +834,8 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Uses {count} things you have": {"one": "Folosește {count} lucru pe care îl ai", "few": "Folosește {count} lucruri pe care le ai", "other": "Folosește {count} de lucruri pe care le ai"},
   "Select all": "Bifează tot",
   "Clear all": "Debifează tot",
+  "General": "General",
+  "Connections": "Conexiuni",
+  "Your data": "Datele tale",
+  "All optional: Goodstock works fully without them. Tap one to set it up.": "Toate sunt opționale: Goodstock funcționează complet și fără ele. Atinge una pentru a o configura.",
 };

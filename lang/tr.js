@@ -834,4 +834,8 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Uses {count} things you have": {"one": "Elindeki {count} malzemeyi kullanır", "other": "Elindeki {count} malzemeyi kullanır"},
   "Select all": "Tümünü seç",
   "Clear all": "Tümünü kaldır",
+  "General": "Genel",
+  "Connections": "Bağlantılar",
+  "Your data": "Verilerin",
+  "All optional: Goodstock works fully without them. Tap one to set it up.": "Hepsi isteğe bağlı: Goodstock bunlar olmadan da tam çalışır. Ayarlamak için birine dokun.",
 };

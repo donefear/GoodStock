@@ -834,4 +834,8 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "Uses {count} things you have": {"one": "Usa {count} coisa que você tem", "other": "Usa {count} coisas que você tem"},
   "Select all": "Marcar tudo",
   "Clear all": "Desmarcar tudo",
+  "General": "Geral",
+  "Connections": "Ligações",
+  "Your data": "Os seus dados",
+  "All optional: Goodstock works fully without them. Tap one to set it up.": "Tudo opcional: o Goodstock funciona totalmente sem elas. Toque numa para a configurar.",
 };

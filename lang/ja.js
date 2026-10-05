@@ -834,4 +834,8 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Uses {count} things you have": "手持ちの材料を {count} つ使います",
   "Select all": "すべて選択",
   "Clear all": "すべて解除",
+  "General": "一般",
+  "Connections": "接続",
+  "Your data": "データ",
+  "All optional: Goodstock works fully without them. Tap one to set it up.": "すべて任意です。なくても Goodstock はすべて使えます。タップして設定します。",
 };
