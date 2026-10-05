@@ -1,7 +1,7 @@
 name: iOS app
 
 # Checks that the iPhone/iPad app builds: generates the Xcode project from ios/project.yml and compiles it for the
-# simulator without signing. Installing on a phone happens from Xcode on a Mac (see ios/README.md).
+# simulator without signing, then builds an unsigned .ipa for iPhone (artifact) to sideload (see ios/README.md).
 on:
   push:
     branches: [main, standalone, experiments]
@@ -38,3 +38,22 @@ jobs:
           APP=$(find ~/Library/Developer/Xcode/DerivedData -path '*Debug-iphonesimulator/Goodstock.app' -type d | head -1)
           test -f "$APP/web/index.html" && test -f "$APP/web/lang/nl.js" && test -f "$APP/web/fonts/fonts.css"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist"
+
+      # An unsigned device build packed as an .ipa. Windows users can install it with Sideloadly or AltStore, which
+      # sign it with their own Apple ID (see ios/README.md).
+      - name: Build an unsigned .ipa for iPhone
+        run: |
+          xcodebuild -project ios/Goodstock.xcodeproj -scheme Goodstock -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -20
+          test "${PIPESTATUS[0]}" -eq 0
+          VERSION=$(grep -oE 'Goodstock v[0-9]+\.[0-9]+(\.[0-9]+)?' index.html | head -1 | cut -d v -f 2)
+          mkdir -p build/ipa/Payload dist
+          cp -R build/device/Build/Products/Release-iphoneos/Goodstock.app build/ipa/Payload/
+          (cd build/ipa && zip -qr "../../dist/Goodstock-v$VERSION-unsigned.ipa" Payload)
+          echo "IPA_NAME=Goodstock-v$VERSION-unsigned" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IPA_NAME }}
+          path: dist/*.ipa

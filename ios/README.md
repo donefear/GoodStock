@@ -22,6 +22,15 @@ Needs iOS 16.4 or newer (any iPhone from the iPhone 8 onward, updated).
 With a free Apple ID the app stops opening after 7 days; connect the phone and press **Run** again to renew it (your
 data stays). With a paid Apple Developer account it lasts a year, and you can also share it through TestFlight.
 
+## Put it on your iPhone from Windows (no Mac)
+
+Every push that touches the app runs `.github/workflows/ios.yml`, which also builds an unsigned
+`Goodstock-vX.Y.Z-unsigned.ipa`. Download it from the run's **Artifacts** on GitHub (it comes zipped; unzip it to get
+the `.ipa`). Then install [Sideloadly](https://sideloadly.io) and iTunes (from apple.com, not the Microsoft Store),
+connect the iPhone with a cable, drop the `.ipa` into Sideloadly, enter your Apple ID and press **Start**. Sideloadly
+signs the app with your Apple ID. Step 5 above (Developer Mode, Trust) still applies, and with a free Apple ID the app
+must be re-installed every 7 days (your data stays).
+
 ## What works differently from the browser version
 
 - Timers ring as notifications when Goodstock is in the background or the screen is locked. Allow notifications
