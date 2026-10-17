@@ -3,7 +3,11 @@
 A standalone desktop app, like the phone apps: Goodstock in its own window, with everything (inventory, recipes,
 plans, shopping list) kept on this computer. No server is needed. Use **Settings → Back up** to save a copy, or
 **Automatic weekly backup** to keep the newest four in a folder you choose (for example OneDrive or Dropbox). To
-share one kitchen with the household instead, connect it to your Goodstock server under **Settings → Home server**.
+share one kitchen with the household instead, go to **Settings → Connections**. There you can connect to your
+Goodstock server (**Home server**), sync through a **Shared folder** (Google Drive, OneDrive, Dropbox, iCloud Drive or
+Syncthing), or **Host this kitchen**. Hosting makes this computer the home server on your Wi-Fi (port 8486), and the
+phones join with the address and PIN it shows. Windows asks once whether to let Goodstock through the firewall:
+allow it on private networks.
 
 Built with [Electron](https://www.electronjs.org/): `main.js` opens the window and answers the page's
 `window.GoodstockNative` calls (from `preload.js`), the same methods as the Android and iOS bridges.

@@ -94,6 +94,10 @@ async function initialize() {
   // First visit on this device: the starting kitchen in the device's language (an existing server kitchen
   // replaces it below).
   if (!cached) state = freshState();
+  // A device that hosts the kitchen starts its server again before connecting to it.
+  if (hosting()) {
+    try { await startHosting(true); } catch { /* Shown as offline; Settings can stop hosting. */ }
+  }
   const shared = isShared();
   const pending = shared ? localStorage.getItem(PENDING_KEY) : 'local';
   if (cached) state = normalizeState(JSON.parse(cached));
@@ -626,6 +630,22 @@ function undoLastChange() {
   persist();
 }
 
+function removeInventoryItem(id) {
+  const item = state.inventory.find((entry) => entry.id === id);
+  if (!item) return;
+  withUndo(t('Removed “{name}”', { name: item.name }), ['inventory'], () => {
+    state.inventory = state.inventory.filter((entry) => entry.id !== id);
+  });
+}
+
+function clearInventory() {
+  const count = state.inventory.length;
+  if (!count) { window.alert(t('The inventory is already empty.')); return false; }
+  if (!window.confirm(tp(count, 'Remove {count} item from the inventory?', 'Remove all {count} items from the inventory?'))) return false;
+  withUndo(tp(count, '{count} item removed from the inventory', '{count} items removed from the inventory'), ['inventory'], () => { state.inventory = []; });
+  return true;
+}
+
 function deleteRecipe(id) {
   const recipe = recipeById(id);
   if (!recipe) return;
@@ -1097,6 +1117,7 @@ function openItemDialog(item) {
   $('#scan-barcode-button').hidden = Boolean(item) || !canScanBarcodes();
   $('#barcode-status').textContent = '';
   $('#item-dialog-title').textContent = item ? t('Edit item') : t('Add an item');
+  $('#item-remove').hidden = !item;
   form.elements.id.value = item?.id || '';
   form.elements.name.value = item?.name || '';
   form.elements.quantity.value = item?.quantity ?? 1;

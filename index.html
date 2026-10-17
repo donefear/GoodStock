@@ -56,7 +56,7 @@
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
         <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label>
         <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option value="Food">Food</option><option value="Household">Household</option></select></label></div>
-        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save item</button></div>
+        <div class="dialog-actions"><button class="button button-quiet item-remove-button" type="button" data-action="remove-item" id="item-remove" hidden>Remove item</button><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save item</button></div>
       </form>
     </dialog>
 
@@ -175,15 +175,27 @@
           <label>Goodstock server address<input name="homeServer" type="url" inputmode="url" placeholder="http://192.168.1.10:8484" autocomplete="off" /><span class="field-hint">The address you open Goodstock on at home. The phone then shares that kitchen and keeps a copy for when you are out.</span></label>
           <div class="mealie-actions"><button class="button button-outline" type="button" data-action="home-server-connect">Connect</button><button class="button button-quiet" type="button" data-action="home-server-disconnect" id="home-server-disconnect" hidden>Disconnect</button></div>
         </details>
+        <details class="mealie-settings settings-connection phone-only" id="sync-folder-settings" hidden>
+          <summary><strong>Shared folder</strong><span class="settings-note" id="sync-folder-note">Off. This device keeps its own kitchen.</span></summary>
+          <p class="field-hint">No server needed: choose the same folder on every device of your household, in a place that keeps itself in step between them (iCloud Drive, Syncthing, Dropbox, OneDrive, or Google Drive on a computer). Each device keeps a full copy and takes in the others' changes when the folder has synced, usually within a minute.</p>
+          <div class="mealie-actions"><button class="button button-outline" type="button" data-action="sync-folder-choose" id="sync-folder-choose">Choose folder</button><button class="button button-quiet" type="button" data-action="sync-folder-now" id="sync-folder-now" hidden>Sync now</button><button class="button button-quiet" type="button" data-action="sync-folder-off" id="sync-folder-off" hidden>Stop</button></div>
+        </details>
+        <details class="mealie-settings settings-connection phone-only" id="host-settings" hidden>
+          <summary><strong>Host this kitchen</strong><span class="settings-note" id="host-note">Off</span></summary>
+          <p class="field-hint">This device becomes the home server for your household on your Wi-Fi. The other phones connect under Home server with the address and PIN shown here, and stay in step instantly while Goodstock is open on this device. Best on a computer or a phone that stays at home on the charger.</p>
+          <div class="host-details" id="host-details" hidden></div>
+          <div class="mealie-actions"><button class="button button-outline" type="button" data-action="host-start" id="host-start">Start hosting</button><button class="button button-quiet" type="button" data-action="host-stop" id="host-stop" hidden>Stop hosting</button></div>
+        </details>
         </div>
         <div class="settings-panel" data-panel="data" role="tabpanel" hidden>
         <div class="settings-mode" id="settings-mode"><strong id="settings-mode-title">Shared kitchen</strong><span id="settings-mode-text">Everyone who opens Goodstock on this server sees the same kitchen, updated live.</span></div>
         <div class="test-zone backup-zone"><div><strong>Back up your kitchen</strong><span>Save inventory, recipes, plans and the shopping list to a file, or restore from one. In the phone app this is the only copy of your data.</span><span class="backup-status" id="backup-status" role="status" aria-live="polite"></span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="backup-data">Back up</button><button class="button button-quiet" type="button" data-action="restore-data">Restore</button><input id="restore-file" type="file" accept=".json,application/json" hidden /></div></div>
         <div class="test-zone backup-zone phone-only" id="auto-backup-zone" hidden><div><strong>Automatic weekly backup</strong><span id="auto-backup-text">Once a week, a backup goes to a folder you choose (for example in Google Drive or iCloud Drive). The newest four are kept.</span></div><div class="backup-actions"><button class="button button-outline" type="button" data-action="auto-backup-folder" id="auto-backup-folder">Choose folder</button><button class="button button-quiet" type="button" data-action="auto-backup-off" id="auto-backup-off" hidden>Turn off</button></div></div>
         <div class="test-zone"><div><strong>Test cook mode</strong><span>Add a random test recipe to today's plan, with 15-second timers, °F and oz to convert, and lots of tools.</span></div><button class="button button-outline" type="button" data-action="add-test-recipe">Add test recipe</button></div>
+        <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.0.0 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.0.2 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

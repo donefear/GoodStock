@@ -49,6 +49,57 @@ export default async () => {
     await rm(folder, { recursive: true, force: true });
   }
 
+  // Shared folder: only Goodstock sync files are listed, read or written.
+  const syncFolder = await mkdtemp(join(tmpdir(), 'goodstock-sync-'));
+  try {
+    await writeFile(join(syncFolder, 'holiday.json'), '{}');
+    await native.writeSyncFile(syncFolder, 'goodstock-sync-abcd1234.json', '{"app":"goodstock"}');
+    const listed = await native.listSyncFolder(syncFolder);
+    check(listed.length === 1 && listed[0].name === 'goodstock-sync-abcd1234.json' && listed[0].size === 19 && listed[0].modified > 0, `only sync files are listed: ${JSON.stringify(listed)}`);
+    check(await native.readSyncFile(syncFolder, 'goodstock-sync-abcd1234.json') === '{"app":"goodstock"}', 'a sync file reads back');
+    let refused = '';
+    try { await native.readSyncFile(syncFolder, '../holiday.json'); } catch (error) { refused = error.message; }
+    check(/sync file/.test(refused), `other files cannot be read: ${refused}`);
+  } finally {
+    await rm(syncFolder, { recursive: true, force: true });
+  }
+
+  // Hosting: the PIN gives the token, saves need the current revision, and the kitchen survives a restart.
+  const hostFolder = await mkdtemp(join(tmpdir(), 'goodstock-hosted-'));
+  try {
+    let clock = 0;
+    const options = { file: join(hostFolder, 'kitchen.json'), pin: '123456', token: 'secret-token', now: () => clock };
+    const host = native.createKitchenHost(options);
+    await host.load();
+    const auth = (client) => ({ authorization: 'Bearer secret-token', 'x-goodstock-client': client });
+    const kitchen = { inventory: [{ id: '1', name: 'Rice' }], recipes: [] };
+    check((await host.handle({ method: 'GET', path: '/api/state' })).body.code === 'pin', 'the kitchen needs the token');
+    check((await host.handle({ method: 'POST', path: '/api/auth/login', body: '{"pin":"123456"}' })).body.token === 'secret-token', 'the PIN gives the token');
+    for (let i = 0; i < 5; i += 1) await host.handle({ method: 'POST', path: '/api/auth/login', body: '{"pin":"000000"}' });
+    check((await host.handle({ method: 'POST', path: '/api/auth/login', body: '{"pin":"123456"}' })).status === 429, 'five wrong PINs lock the login');
+    clock += 6 * 60_000;
+    check((await host.handle({ method: 'POST', path: '/api/auth/login', body: '{"pin":"123456"}' })).status === 200, 'the lock ends after five minutes');
+    const saved = await host.handle({ method: 'POST', path: '/api/state', headers: auth('a'), body: JSON.stringify({ state: kitchen, baseRevision: 0 }) });
+    check(saved.status === 200 && saved.body.revision === 1, `first save: ${JSON.stringify(saved)}`);
+    const stale = await host.handle({ method: 'POST', path: '/api/state', headers: auth('b'), body: JSON.stringify({ state: kitchen, baseRevision: 0 }) });
+    check(stale.status === 409 && stale.body.state.inventory[0].name === 'Rice', `a save on an old revision gets the kitchen: ${stale.status}`);
+    const revision = await host.handle({ method: 'GET', path: '/api/state/revision', headers: auth('a') });
+    check(revision.body.revision === 1 && revision.body.devices === 1, `revision and other devices: ${JSON.stringify(revision.body)}`);
+    const again = native.createKitchenHost(options);
+    await again.load();
+    const reloaded = await again.handle({ method: 'GET', path: '/api/state', headers: auth('a') });
+    check(reloaded.body && reloaded.body._revision === 1 && reloaded.body.inventory[0].name === 'Rice', `the kitchen survives a restart: ${JSON.stringify(reloaded.body)}`);
+    const { server, port } = await native.startKitchenHost(again, [0]);
+    try {
+      const response = await fetch(`http://127.0.0.1:${port}/api/state/revision`, { headers: auth('c') });
+      check(response.status === 200 && (await response.json()).revision === 1, 'the host answers over HTTP');
+    } finally {
+      server.close();
+    }
+  } finally {
+    await rm(hostFolder, { recursive: true, force: true });
+  }
+
   const now = 1_000_000;
   const timers = native.upcomingAlarms(JSON.stringify([
     { id: 'a', endsAt: now + 5000, title: 'Pasta', text: 'Done' },

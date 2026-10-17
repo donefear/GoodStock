@@ -2,7 +2,7 @@
 // are bundled (desktop/web, copied by prepare.mjs) and served at goodstock://app/, so the page keeps its data in its
 // own storage on this computer. preload.js provides window.GoodstockNative; this file answers its calls.
 const { app, BrowserWindow, Menu, Notification, ShareMenu, clipboard, dialog, ipcMain, net, powerSaveBlocker, protocol, shell } = require('electron');
-const { mkdir, readFile, writeFile } = require('node:fs/promises');
+const { mkdir, readFile, unlink, writeFile } = require('node:fs/promises');
 const { basename, extname, join, normalize, sep } = require('node:path');
 const { pathToFileURL } = require('node:url');
 const native = require('./native');
@@ -134,6 +134,50 @@ async function writeBackup(id, name, content) {
   }
 }
 
+async function chooseSyncFolder(id) {
+  const result = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] });
+  const folder = !result.canceled && result.filePaths[0];
+  if (!folder) return callback(id, false, 'cancelled');
+  await saveSettings({ ...(await loadSettings()), syncFolder: folder });
+  callback(id, true, basename(folder) || folder);
+}
+
+// Answers a shared-folder call with the result of `work(folder)`.
+async function inSyncFolder(id, work) {
+  const { syncFolder } = await loadSettings();
+  if (!syncFolder) return callback(id, false, 'No shared folder chosen');
+  try {
+    callback(id, true, await work(syncFolder));
+  } catch (error) {
+    callback(id, false, (error && error.message) || 'The shared folder could not be used');
+  }
+}
+
+// Hosting: the PIN and token stay the same between starts, so the phones stay connected after a restart.
+let kitchenHost = null;
+async function startKitchenHost(id) {
+  try {
+    const settings = await loadSettings();
+    const secrets = settings.host || native.makeHostSecrets();
+    if (!settings.host) await saveSettings({ ...settings, host: secrets });
+    if (!kitchenHost) {
+      const host = native.createKitchenHost({ file: join(app.getPath('userData'), 'host-kitchen.json'), ...secrets });
+      await host.load();
+      kitchenHost = await native.startKitchenHost(host);
+    }
+    callback(id, true, JSON.stringify({ port: kitchenHost.port, addresses: native.lanAddresses(), pin: secrets.pin, token: secrets.token }));
+  } catch (error) {
+    callback(id, false, (error && error.message) || 'Hosting could not start');
+  }
+}
+
+async function stopKitchenHost() {
+  if (kitchenHost) { kitchenHost.server.close(); kitchenHost = null; }
+  const { host, ...rest } = await loadSettings();
+  await saveSettings(rest);
+  await unlink(join(app.getPath('userData'), 'host-kitchen.json')).catch(() => {});
+}
+
 const handlers = {
   setTimers: (json) => scheduleAlarms(timers, json, 'endsAt', true),
   setReminders: (json) => scheduleAlarms(reminders, json, 'at', false),
@@ -151,6 +195,13 @@ const handlers = {
   chooseBackupFolder,
   forgetBackupFolder: async () => { const { backupFolder, ...rest } = await loadSettings(); await saveSettings(rest); },
   writeBackup,
+  chooseSyncFolder,
+  forgetSyncFolder: async () => { const { syncFolder, ...rest } = await loadSettings(); await saveSettings(rest); },
+  listSyncFolder: (id) => inSyncFolder(id, async (folder) => JSON.stringify(await native.listSyncFolder(folder))),
+  readSyncFile: (id, name) => inSyncFolder(id, (folder) => native.readSyncFile(folder, name)),
+  writeSyncFile: (id, name, content) => inSyncFolder(id, async (folder) => { await native.writeSyncFile(folder, name, content); return 'saved'; }),
+  startKitchenHost,
+  stopKitchenHost,
   unsupported: (id) => callback(id, false, 'unsupported'),
 };
 

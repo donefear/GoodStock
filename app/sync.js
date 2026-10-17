@@ -127,7 +127,7 @@ async function kitchenRequest(path, { method = 'GET', body = null } = {}) {
     return { status: response.status, ok: response.ok, json: () => response.json() };
   }
   const token = homeToken();
-  const headers = JSON.stringify({ 'content-type': 'application/json', accept: 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) });
+  const headers = JSON.stringify({ 'content-type': 'application/json', accept: 'application/json', 'x-goodstock-client': CLIENT_ID, ...(token ? { authorization: `Bearer ${token}` } : {}) });
   const answer = JSON.parse(body
     ? await nativeCall('httpSend', method, `${homeServer()}${path}`, headers, JSON.stringify(body))
     : await nativeCall('httpRequest', `${homeServer()}${path}`, headers));
@@ -139,6 +139,15 @@ function updateSyncStatus(mode, detail) {
   const dot = $('#sync-dot');
   const label = $('#sync-label');
   const text = $('#sync-detail');
+  if (!isShared() && folderSync()) {
+    const settings = folderSync();
+    dot.className = `sync-dot ${settings.error ? 'pending' : 'online'}`;
+    label.textContent = t('Shared folder');
+    text.textContent = detail || (settings.error
+      ? t('Folder not reachable · will try again')
+      : tp(Object.keys(readFolderBases()).length, 'In step with {count} other device', 'In step with {count} other devices'));
+    return;
+  }
   if (!isShared()) {
     dot.className = 'sync-dot online';
     label.textContent = t('Saved on this phone');
@@ -148,7 +157,9 @@ function updateSyncStatus(mode, detail) {
   dot.className = `sync-dot ${mode}`;
   label.textContent = mode === 'offline' ? t('Working offline') : mode === 'pending' ? t('Changes queued') : t('Shared kitchen, in sync');
   const live = STANDALONE
-    ? t('Home server · {address}', { address: homeServer().replace(/^https?:\/\//, '') })
+    ? (hosting()
+      ? tp(liveSync.devices, 'Hosting · {count} other device connected', 'Hosting · {count} other devices connected')
+      : t('Home server · {address}', { address: homeServer().replace(/^https?:\/\//, '') }))
     : liveSync.connected
       ? (liveSync.devices > 1 ? tp(liveSync.devices, 'Live · {count} device connected', 'Live · {count} devices connected') : t('Live · only this device right now'))
       : t('Synced with the server');
@@ -199,6 +210,7 @@ function persist() {
   render();
   checkExpiryReminders();
   pushPendingState();
+  syncFolderSoon();
 }
 
 // Shared kitchen sync (the server version, and phone apps connected to a home server).
@@ -229,14 +241,43 @@ async function fetchRemoteKitchen() {
   return { revision: Number(revision) || 0, state: remoteState };
 }
 
+// A short fingerprint of a text, so a merge base can be kept as one small stamp per item instead of a full copy.
+function stamp(text) {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i += 1) {
+    const code = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 2654435761);
+    h2 = Math.imul(h2 ^ code, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
+}
+
+const MERGED_LISTS = ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets'];
+const itemStamp = (item) => stamp(String(JSON.stringify(item)));
+
+// A kitchen as fingerprints ({ inventory: { id: stamp }, …, locations: stamp }): all that mergeStates needs of a base.
+function fingerprintState(value) {
+  const prints = { locations: itemStamp(value?.locations) };
+  for (const key of MERGED_LISTS) {
+    prints[key] = {};
+    for (const item of value?.[key] || []) if (item && item.id != null) prints[key][String(item.id)] = itemStamp(item);
+  }
+  return prints;
+}
+
 // Three-way merge of lists of items with an id: changes made here since the last sync win over the server's copy,
-// everything else takes the server's version. A delete does not beat an edit made elsewhere.
+// everything else takes the server's version. A delete does not beat an edit made elsewhere. The base is the list
+// itself, or its fingerprints ({ id: stamp }, see fingerprintState).
 function mergeById(base = [], local = [], remote = []) {
   const idOf = (item) => (item && item.id != null ? String(item.id) : null);
-  const baseById = new Map(base.map((item) => [idOf(item), JSON.stringify(item)]));
+  const print = Array.isArray(base) ? (item) => JSON.stringify(item) : itemStamp;
+  const baseById = Array.isArray(base) ? new Map(base.map((item) => [idOf(item), print(item)])) : new Map(Object.entries(base || {}));
   const localById = new Map(local.map((item) => [idOf(item), item]));
   const remoteById = new Map(remote.map((item) => [idOf(item), item]));
-  const changed = (item, id) => (item ? !baseById.has(id) || JSON.stringify(item) !== baseById.get(id) : baseById.has(id));
+  const changed = (item, id) => (item ? !baseById.has(id) || print(item) !== baseById.get(id) : baseById.has(id));
   const pick = (id) => {
     const mine = localById.get(id);
     const theirs = remoteById.get(id);
@@ -259,10 +300,13 @@ function mergeById(base = [], local = [], remote = []) {
 
 function mergeStates(base, local, remote) {
   const merged = { ...remote };
-  for (const key of ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets']) {
+  for (const key of MERGED_LISTS) {
     merged[key] = mergeById(base?.[key] || [], local?.[key] || [], remote?.[key] || []);
   }
-  merged.locations = JSON.stringify(local?.locations) !== JSON.stringify(base?.locations) ? local.locations : remote.locations;
+  const localChangedLocations = typeof base?.locations === 'string'
+    ? itemStamp(local?.locations) !== base.locations
+    : JSON.stringify(local?.locations) !== JSON.stringify(base?.locations);
+  merged.locations = localChangedLocations ? local.locations : remote.locations;
   return merged;
 }
 
@@ -321,7 +365,8 @@ function startPhonePolling() {
 async function checkRemoteRevision() {
   if (!isShared() || !navigator.onLine || document.visibilityState !== 'visible') return;
   try {
-    const { revision } = await (await kitchenRequest('/api/state/revision')).json();
+    const { revision, devices } = await (await kitchenRequest('/api/state/revision')).json();
+    if (hosting()) liveSync.devices = Number(devices) || 0;
     if (revision > (readSyncBase()?.revision || 0)) pullRemoteKitchen();
     if (STANDALONE) showSyncStatus();
   } catch {
@@ -339,6 +384,8 @@ function setHomeServerNote(text, kind = '') {
 
 function fillHomeServerSettings() {
   if (!STANDALONE) return;
+  // A device that hosts the kitchen is its own home server (127.0.0.1); the Host section shows that instead.
+  $('#home-server-settings').hidden = Boolean(hosting());
   const address = homeServer();
   $('#settings-form').elements.homeServer.value = address;
   $('#home-server-disconnect').hidden = !address;
@@ -346,6 +393,7 @@ function fillHomeServerSettings() {
 }
 
 async function connectHomeServer() {
+  if (folderSync()) { setHomeServerNote(t('This device syncs through a shared folder. Stop that first.'), 'error'); return; }
   let address = $('#settings-form').elements.homeServer.value.trim().replace(/\/+$/, '');
   if (!address) { setHomeServerNote(t('Enter the address you open Goodstock on at home.'), 'error'); return; }
   if (!/^https?:\/\//i.test(address)) address = `http://${address}`;
@@ -353,7 +401,7 @@ async function connectHomeServer() {
   let revision = null;
   try {
     const token = homeToken();
-    const answer = JSON.parse(await nativeCall('httpRequest', `${address}/api/state/revision`, JSON.stringify({ accept: 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) })));
+    const answer = JSON.parse(await nativeCall('httpRequest', `${address}/api/state/revision`, JSON.stringify({ accept: 'application/json', 'x-goodstock-client': CLIENT_ID, ...(token ? { authorization: `Bearer ${token}` } : {}) })));
     if (answer.status === 401 && /"code"\s*:\s*"pin"/.test(answer.body || '')) {
       setHomeServerNote(t('This home server has a PIN.'));
       askForPin(address);
@@ -409,7 +457,7 @@ function disconnectHomeServer() {
 }
 
 function connectLiveSync() {
-  if (STANDALONE) { startPhonePolling(); return; }
+  if (STANDALONE) { startPhonePolling(); startFolderSync(); return; }
   if (typeof EventSource === 'undefined') return;
   const source = new EventSource(`/api/events?client=${encodeURIComponent(CLIENT_ID)}`);
   source.addEventListener('open', () => { liveSync.connected = true; showSyncStatus(); });
@@ -426,4 +474,253 @@ function connectLiveSync() {
   });
   // Backup for networks that block event streams: look for a newer revision every 30 seconds.
   setInterval(() => { if (!liveSync.connected) checkRemoteRevision(); }, 30_000);
+}
+
+// Shared folder (phone and desktop apps, no server): every device writes its kitchen to goodstock-sync-<device>.json
+// in a folder the household already keeps in step (iCloud Drive, Syncthing, Dropbox, a Google Drive folder on a
+// computer…) and merges the other devices' files into its own, item by item like the server sync. Each device only
+// ever writes its own file, so two devices saving at once never overwrite each other. For each other device this
+// one remembers fingerprints of that device's kitchen as last merged: the base of the three-way merge.
+const FOLDER_SYNC_KEY = 'goodstock-folder-sync-v1';
+const FOLDER_BASES_KEY = 'goodstock-folder-bases-v1';
+const FOLDER_FILE = /^goodstock-sync-([\w-]{4,64})\.json$/;
+const FOLDER_SYNC_EVERY = 30_000;
+let folderSyncRunning = false;
+let folderSyncAgain = false;
+let folderSyncTimer = null;
+let folderSyncInterval = null;
+
+const canSyncFolder = () => STANDALONE && Boolean(nativeApp.canSyncFolder && nativeApp.canSyncFolder());
+
+function folderSync() {
+  if (!canSyncFolder()) return null;
+  try { return JSON.parse(localStorage.getItem(FOLDER_SYNC_KEY) || 'null'); } catch { return null; }
+}
+
+function writeFolderSync(settings) {
+  try { localStorage.setItem(FOLDER_SYNC_KEY, JSON.stringify(settings)); } catch { /* Tried again next time. */ }
+}
+
+function readFolderBases() {
+  try { return JSON.parse(localStorage.getItem(FOLDER_BASES_KEY) || '{}') || {}; } catch { return {}; }
+}
+
+// Two devices meeting for the first time may both have the same thing under different ids (the starting kitchen,
+// or milk bought before they were linked). The one with the smaller id is kept on both sides, so both devices make
+// the same choice and settle on one copy.
+function dropTwinsOnFirstMeeting(local, remote) {
+  const keys = {
+    inventory: (item) => `${cleanIngredient(item.name)}|${item.location}|${item.kind}`,
+    shopping: (item) => cleanIngredient(item.name),
+  };
+  const mine = { ...local };
+  const theirs = { ...remote };
+  for (const list of Object.keys(keys)) {
+    const keyOf = keys[list];
+    const localByKey = new Map((local[list] || []).map((item) => [keyOf(item), item]));
+    const remoteByKey = new Map((remote[list] || []).map((item) => [keyOf(item), item]));
+    const keep = (other) => (item) => {
+      const twin = other.get(keyOf(item));
+      return !twin || String(twin.id) === String(item.id) || String(item.id) < String(twin.id);
+    };
+    mine[list] = (local[list] || []).filter(keep(remoteByKey));
+    theirs[list] = (remote[list] || []).filter(keep(localByKey));
+  }
+  return [mine, theirs];
+}
+
+function syncFolderSoon() {
+  if (!folderSync()) return;
+  clearTimeout(folderSyncTimer);
+  folderSyncTimer = setTimeout(syncFolderNow, 1500);
+}
+
+function startFolderSync() {
+  clearInterval(folderSyncInterval);
+  folderSyncInterval = null;
+  if (!folderSync()) return;
+  folderSyncInterval = setInterval(() => { if (document.visibilityState === 'visible') syncFolderNow(); }, FOLDER_SYNC_EVERY);
+  syncFolderNow();
+}
+
+// Reads the other devices' files that changed since last time and merges them in, then writes this device's file
+// when its kitchen changed.
+async function syncFolderNow() {
+  const settings = folderSync();
+  if (!settings) return;
+  if (folderSyncRunning) { folderSyncAgain = true; return; }
+  folderSyncRunning = true;
+  try {
+    const files = JSON.parse(await nativeCall('listSyncFolder') || '[]');
+    const bases = readFolderBases();
+    let merged = false;
+    for (const file of files) {
+      const match = FOLDER_FILE.exec(file.name || '');
+      if (!match || match[1] === settings.device) continue;
+      const device = match[1];
+      const known = bases[device];
+      if (known && known.modified === file.modified && known.size === file.size) continue;
+      let parsed = null;
+      try { parsed = JSON.parse(await nativeCall('readSyncFile', file.name)); } catch { continue; }
+      if (!parsed || parsed.app !== 'goodstock' || !parsed.state || !Array.isArray(parsed.state.inventory)) continue;
+      const remote = normalizeState(parsed.state);
+      const print = stamp(JSON.stringify(remote));
+      if (!known || known.stamp !== print) {
+        const [mine, theirs] = known ? [state, remote] : dropTwinsOnFirstMeeting(state, remote);
+        state = normalizeState(mergeStates(known ? known.base : null, mine, theirs));
+        merged = true;
+      }
+      bases[device] = { modified: file.modified, size: file.size, stamp: print, base: fingerprintState(remote), platform: String(parsed.platform || '') };
+    }
+    try { localStorage.setItem(FOLDER_BASES_KEY, JSON.stringify(bases)); } catch { /* Merged again next time. */ }
+    const snapshot = JSON.stringify(state);
+    if (merged) {
+      localStorage.setItem(STORAGE_KEY, snapshot);
+      renderWhenIdle();
+    }
+    const written = stamp(snapshot);
+    if (written !== settings.written) {
+      const content = JSON.stringify({ app: 'goodstock', syncVersion: 1, device: settings.device, platform: nativeApp.platform || '', savedAt: new Date().toISOString(), state });
+      await nativeCall('writeSyncFile', `goodstock-sync-${settings.device}.json`, content);
+    }
+    if (folderSync()) writeFolderSync({ ...settings, written, last: new Date().toISOString(), error: '' });
+  } catch (error) {
+    if (folderSync()) writeFolderSync({ ...settings, error: String((error && error.message) || 'failed') });
+  } finally {
+    folderSyncRunning = false;
+    showSyncStatus();
+    if ($('#settings-dialog').open) fillFolderSyncSettings();
+    if (folderSyncAgain) { folderSyncAgain = false; syncFolderSoon(); }
+  }
+}
+
+function setFolderSyncNote(text, kind = '') {
+  const note = $('#sync-folder-note');
+  note.textContent = text;
+  note.className = `settings-note${kind ? ` is-${kind}` : ''}`;
+}
+
+function fillFolderSyncSettings() {
+  const section = $('#sync-folder-settings');
+  section.hidden = !canSyncFolder();
+  if (section.hidden) return;
+  const settings = folderSync();
+  $('#sync-folder-choose').textContent = settings ? t('Change folder') : t('Choose folder');
+  $('#sync-folder-now').hidden = !settings;
+  $('#sync-folder-off').hidden = !settings;
+  if (!settings) { setFolderSyncNote(t('Off. This device keeps its own kitchen.')); return; }
+  const others = Object.keys(readFolderBases()).length;
+  if (settings.error) setFolderSyncNote(t('“{folder}” could not be read. Goodstock tries again in a moment.', { folder: settings.folder }), 'error');
+  else if (!settings.last) setFolderSyncNote(t('Syncing with “{folder}”…', { folder: settings.folder }));
+  else {
+    const time = formatDate(new Date(settings.last), { hour: '2-digit', minute: '2-digit' });
+    setFolderSyncNote(tp(others, '“{folder}” · {count} other device · synced {time}', '“{folder}” · {count} other devices · synced {time}', { folder: settings.folder, time }), 'connected');
+  }
+}
+
+async function chooseSyncFolder() {
+  if (isShared()) { setFolderSyncNote(t('This device already shares a kitchen through a home server. Disconnect it first.'), 'error'); return; }
+  let folder;
+  try {
+    folder = await nativeCall('chooseSyncFolder');
+  } catch (error) {
+    if (!error || error.message !== 'cancelled') setFolderSyncNote(t('That folder cannot be used. Choose another one.'), 'error');
+    return;
+  }
+  const previous = folderSync();
+  // Another folder holds other devices' files: meet those afresh.
+  localStorage.removeItem(FOLDER_BASES_KEY);
+  writeFolderSync({ folder, device: (previous && previous.device) || makeId().replace(/[^\w-]/g, '').slice(0, 36), written: '', last: null, error: '' });
+  fillFolderSyncSettings();
+  fillSettingsMode();
+  startFolderSync();
+}
+
+function stopFolderSync() {
+  if (!window.confirm(t('Stop syncing through the shared folder? This device keeps its copy of the kitchen.'))) return;
+  try { nativeApp.forgetSyncFolder(); } catch { /* Nothing kept. */ }
+  localStorage.removeItem(FOLDER_SYNC_KEY);
+  localStorage.removeItem(FOLDER_BASES_KEY);
+  startFolderSync();
+  fillFolderSyncSettings();
+  fillSettingsMode();
+  showSyncStatus();
+}
+
+// Hosting (Android and desktop apps): this device runs a small home server on the Wi-Fi with the same kitchen API
+// as the Goodstock server, so other phones connect to it under Home server with its address and PIN. The host
+// itself connects to its own server (127.0.0.1) and syncs exactly like the others. The kitchen is shared while
+// Goodstock runs on the host; the others keep their copy and catch up when it is back.
+const HOST_KEY = 'goodstock-host-v1';
+const canHostKitchen = () => STANDALONE && Boolean(nativeApp.canHostKitchen && nativeApp.canHostKitchen());
+
+function hosting() {
+  if (!STANDALONE) return null;
+  try { return JSON.parse(localStorage.getItem(HOST_KEY) || 'null'); } catch { return null; }
+}
+
+// Starts the host, or resumes it after a restart. The native side keeps the port, PIN and kitchen between starts.
+async function startHosting(resume = false) {
+  const info = JSON.parse(await nativeCall('startKitchenHost'));
+  localStorage.setItem(HOST_KEY, JSON.stringify({ port: info.port, addresses: info.addresses || [], pin: info.pin }));
+  localStorage.setItem(HOME_TOKEN_KEY, info.token);
+  localStorage.setItem(HOME_SERVER_KEY, `http://127.0.0.1:${info.port}`);
+  if (resume) return;
+  localStorage.removeItem(SYNC_BASE_KEY);
+  localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+}
+
+function setHostNote(text, kind = '') {
+  const note = $('#host-note');
+  note.textContent = text;
+  note.className = `settings-note${kind ? ` is-${kind}` : ''}`;
+}
+
+async function beginHosting() {
+  if (homeServer()) { setHostNote(t('This device already shares a kitchen through a home server. Disconnect it first.'), 'error'); return; }
+  if (folderSync()) { setHostNote(t('This device syncs through a shared folder. Stop that first.'), 'error'); return; }
+  try {
+    await startHosting();
+  } catch {
+    setHostNote(t('Hosting could not start on this device.'), 'error');
+    return;
+  }
+  await pushPendingState();
+  startPhonePolling();
+  fillHostSettings();
+  fillHomeServerSettings();
+  fillFolderSyncSettings();
+  fillSettingsMode();
+  render();
+}
+
+function endHosting() {
+  if (!window.confirm(t('Stop hosting? The other devices keep their copy but no longer stay in step with this one.'))) return;
+  try { nativeApp.stopKitchenHost(); } catch { /* Already stopped. */ }
+  for (const key of [HOST_KEY, HOME_SERVER_KEY, HOME_TOKEN_KEY, PENDING_KEY, SYNC_BASE_KEY]) localStorage.removeItem(key);
+  liveSync.devices = 0;
+  startPhonePolling();
+  fillHostSettings();
+  fillHomeServerSettings();
+  fillFolderSyncSettings();
+  fillSettingsMode();
+  render();
+}
+
+function fillHostSettings() {
+  const section = $('#host-settings');
+  section.hidden = !canHostKitchen();
+  if (section.hidden) return;
+  const host = hosting();
+  $('#host-start').hidden = Boolean(host);
+  $('#host-stop').hidden = !host;
+  const details = $('#host-details');
+  details.hidden = !host;
+  if (!host) { setHostNote(t('Off')); details.innerHTML = ''; return; }
+  setHostNote(tp(liveSync.devices, 'Hosting · {count} other device connected', 'Hosting · {count} other devices connected'), 'connected');
+  const addresses = host.addresses.length
+    ? host.addresses.map((address) => `<dd><code>${escapeHtml(`${address}:${host.port}`)}</code></dd>`).join('')
+    : `<dd>${escapeHtml(t('Not on a Wi-Fi network right now'))}</dd>`;
+  details.innerHTML = `<p>${escapeHtml(t('On the other phones, open Settings → Connections → Home server and enter:'))}</p>`
+    + `<dl class="host-codes"><dt>${escapeHtml(t('Address'))}</dt>${addresses}<dt>${escapeHtml(t('PIN'))}</dt><dd><code class="host-pin">${escapeHtml(host.pin)}</code></dd></dl>`;
 }

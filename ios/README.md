@@ -38,6 +38,9 @@ must be re-installed every 7 days (your data stays).
 - Mealie connects straight from the phone, so the phone must reach your Mealie server (home Wi-Fi). iOS asks once
   for permission to use the local network.
 - DeepL translation uses the key saved on the phone in Goodstock's Settings.
+- To share a kitchen without a server, use **Settings → Connections → Shared folder** and pick a folder in iCloud
+  Drive (or one that Syncthing/Möbius Sync keeps in step). An iPhone cannot host the kitchen, because iOS stops the
+  app in the background, but it can join an Android phone or computer that hosts it, under **Home server**.
 - Links to recipe sites, DeepL and YouTube open in a Safari sheet.
 
 ## Working on it

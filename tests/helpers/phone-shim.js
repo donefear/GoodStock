@@ -27,5 +27,16 @@ window.GoodstockNative = {
   canAutoBackup: function () { return true; },
   chooseBackupFolder: function (id) { answer(id, true, 'Goodstock backups'); },
   forgetBackupFolder: function () { window.__forgotFolder = true; },
-  writeBackup: function (id, name, content) { (window.__writes = window.__writes || []).push([name, JSON.parse(content).state.inventory.length]); answer(id, true, 'saved'); }
+  writeBackup: function (id, name, content) { (window.__writes = window.__writes || []).push([name, JSON.parse(content).state.inventory.length]); answer(id, true, 'saved'); },
+  // The shared folder lives in window.__folder ({ name: { content, modified } }); a test copies files between
+  // phones the way a folder-sync app would.
+  canSyncFolder: function () { return true; },
+  chooseSyncFolder: function (id) { window.__folder = window.__folder || {}; answer(id, true, 'Kitchen sync'); },
+  forgetSyncFolder: function () { window.__folder = null; },
+  listSyncFolder: function (id) {
+    var folder = window.__folder || {};
+    answer(id, true, JSON.stringify(Object.keys(folder).map(function (name) { return { name: name, modified: folder[name].modified, size: folder[name].content.length }; })));
+  },
+  readSyncFile: function (id, name) { var file = (window.__folder || {})[name]; if (file) answer(id, true, file.content); else answer(id, false, 'File not found'); },
+  writeSyncFile: function (id, name, content) { window.__folder[name] = { content: content, modified: Date.now() }; answer(id, true, 'saved'); }
 };

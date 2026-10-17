@@ -276,6 +276,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .recipe-import-status { margin: 0; color: var(--green); font-size: 12px; font-weight: 600; }
 .recipe-import-status:empty { display: none; }
 .recipe-delete-button { color: #b65c48; }
+.item-remove-button { margin-right: auto; color: #b65c48; }
 .shopping-list { border-top: 1px solid var(--line); }
 .shopping-row { min-height: 67px; padding: 10px 8px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; }
 .shopping-row.checked .shopping-name { color: #9ba39b; text-decoration: line-through; }
@@ -377,6 +378,13 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .settings-connection[open] { padding-bottom: 14px; }
 .settings-connection[open] > summary { border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; }
 .settings-connection > :not(summary) { margin: 12px 14px 0; }
+.settings-connection[hidden], .host-details[hidden] { display: none; }
+.host-details p { margin: 0; color: var(--ink); font-size: 12px; line-height: 1.5; }
+.host-codes { margin: 8px 0 0; display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 4px 12px; }
+.host-codes dt { grid-column: 1; color: var(--muted); font-size: 12px; }
+.host-codes dd { grid-column: 2; margin: 0; }
+.host-codes code { color: var(--ink); font-size: 15px; font-weight: 700; word-break: break-all; }
+.host-codes .host-pin { font-size: 22px; letter-spacing: .12em; }
 .mealie-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .settings-mode { margin-bottom: 6px; padding: 12px 14px; border-radius: 8px; display: grid; gap: 3px; background: var(--mint); }
 .settings-mode strong { color: var(--green-dark); font-size: 13px; }

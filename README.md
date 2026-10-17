@@ -11,7 +11,7 @@ It comes in three forms:
 | **iPhone / iPad app** | The same standalone app for iOS 16.4+ (`ios/`) | The same, on Apple devices |
 | **Desktop app** | The same standalone app for Windows, macOS and Linux (`desktop/`) | A kitchen laptop or PC without running a server |
 
-The phone apps can also connect to your home server and stay in sync with it.
+The phone apps can also connect to your home server and stay in sync with it. Without a server, they can share one kitchen through a shared folder, or one of them can host it on the Wi-Fi (see [Phone apps](#phone-apps)).
 
 ---
 
@@ -111,7 +111,11 @@ API keys set in Settings are stored on the server and are never sent back to the
 - **iPhone / iPad:** see [ios/README.md](ios/README.md). It runs on iOS 16.4+ and builds on a Mac with Xcode. The project is generated with XcodeGen.
 - **Windows, macOS, Linux:** see [desktop/README.md](desktop/README.md). An Electron app (portable `.exe` or installer, `.dmg`, AppImage), built on GitHub or with `bash desktop/build.sh` in Docker.
 
-Both apps hold the whole kitchen on the device and need no server. To share a kitchen with your home server, use **Settings → Home server**.
+The apps hold the whole kitchen on the device and need no server. A household can still share one kitchen, under **Settings → Connections**:
+
+- **Home server:** connect to your Goodstock server.
+- **Shared folder** (Android, iPhone, desktop): every device picks the same folder that a sync app keeps in step (iCloud Drive, Syncthing, Dropbox, OneDrive, Google Drive on a computer). Each device writes its own file there and merges in the others' changes, item by item. No device has to be switched on at the same time as another.
+- **Host this kitchen** (Android, desktop): one device becomes the home server on your Wi-Fi. The others connect under Home server with the address and PIN it shows, and stay in step instantly while Goodstock runs on the host.
 
 ## Browser support
 

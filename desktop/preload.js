@@ -26,4 +26,13 @@ contextBridge.exposeInMainWorld('GoodstockNative', {
   chooseBackupFolder: (id) => send('chooseBackupFolder', id),
   forgetBackupFolder: () => send('forgetBackupFolder'),
   writeBackup: (id, name, content) => send('writeBackup', id, name, content),
+  canSyncFolder: () => true,
+  chooseSyncFolder: (id) => send('chooseSyncFolder', id),
+  forgetSyncFolder: () => send('forgetSyncFolder'),
+  listSyncFolder: (id) => send('listSyncFolder', id),
+  readSyncFile: (id, name) => send('readSyncFile', id, name),
+  writeSyncFile: (id, name, content) => send('writeSyncFile', id, name, content),
+  canHostKitchen: () => true,
+  startKitchenHost: (id) => send('startKitchenHost', id),
+  stopKitchenHost: () => send('stopKitchenHost'),
 });

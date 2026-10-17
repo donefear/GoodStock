@@ -42,6 +42,7 @@ final class NativeBridge {
     private String pendingSaveContent;
     private String pendingPermissionId;
     private String pendingFolderId;
+    private String pendingSyncFolderId;
     private android.speech.tts.TextToSpeech speech;
     private boolean speechReady;
     private String pendingSpeech;
@@ -351,6 +352,80 @@ final class NativeBridge {
             return;
         }
         activity.runOnUiThread(() -> BarcodeScan.start(activity, (ok, value) -> callback(callbackId, ok, value)));
+    }
+
+    /** The shared folder for syncing without a server (see SyncFolder). */
+    @JavascriptInterface
+    public boolean canSyncFolder() {
+        return Build.VERSION.SDK_INT >= 21;
+    }
+
+    @JavascriptInterface
+    public void chooseSyncFolder(String callbackId) {
+        if (!canSyncFolder()) { callback(callbackId, false, "unsupported"); return; }
+        pendingSyncFolderId = callbackId;
+        activity.runOnUiThread(() -> activity.startActivityForResult(AutoBackup.chooseFolderIntent(), MainActivity.REQUEST_SYNC_FOLDER));
+    }
+
+    void onSyncFolderResult(int resultCode, Intent data) {
+        String id = pendingSyncFolderId;
+        pendingSyncFolderId = null;
+        if (id == null) return;
+        try {
+            String name = resultCode == Activity.RESULT_OK && data != null ? SyncFolder.rememberFolder(activity, data.getData()) : null;
+            callback(id, name != null, name != null ? name : "cancelled");
+        } catch (Exception error) {
+            callback(id, false, "That folder cannot be used");
+        }
+    }
+
+    @JavascriptInterface
+    public void forgetSyncFolder() {
+        if (canSyncFolder()) SyncFolder.forgetFolder(activity);
+    }
+
+    /** Folder work runs off the web view's thread, after the backups and web requests already queued. */
+    private interface FolderWork { String run() throws Exception; }
+
+    private void inBackground(String callbackId, FolderWork work) {
+        network.execute(() -> {
+            try {
+                callback(callbackId, true, work.run());
+            } catch (Exception error) {
+                callback(callbackId, false, error.getMessage() == null ? "The shared folder could not be used" : error.getMessage());
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public void listSyncFolder(String callbackId) {
+        inBackground(callbackId, () -> SyncFolder.list(activity));
+    }
+
+    @JavascriptInterface
+    public void readSyncFile(String callbackId, String name) {
+        inBackground(callbackId, () -> SyncFolder.read(activity, name));
+    }
+
+    @JavascriptInterface
+    public void writeSyncFile(String callbackId, String name, String content) {
+        inBackground(callbackId, () -> { SyncFolder.write(activity, name, content); return "saved"; });
+    }
+
+    /** Hosting the kitchen for the household on the Wi-Fi (see KitchenHost). */
+    @JavascriptInterface
+    public boolean canHostKitchen() {
+        return true;
+    }
+
+    @JavascriptInterface
+    public void startKitchenHost(String callbackId) {
+        inBackground(callbackId, () -> KitchenHost.start(activity));
+    }
+
+    @JavascriptInterface
+    public void stopKitchenHost() {
+        KitchenHost.stop(activity);
     }
 
     private void callback(String id, boolean ok, String payload) {

@@ -129,6 +129,11 @@ document.addEventListener('click', async (event) => {
   if (action === 'mealie-disconnect') await disconnectMealie();
   if (action === 'home-server-connect') await connectHomeServer();
   if (action === 'home-server-disconnect') disconnectHomeServer();
+  if (action === 'sync-folder-choose') await chooseSyncFolder();
+  if (action === 'sync-folder-now') await syncFolderNow();
+  if (action === 'sync-folder-off') stopFolderSync();
+  if (action === 'host-start') await beginHosting();
+  if (action === 'host-stop') endHosting();
   if (action === 'scan-barcode') await scanBarcode();
   if (action === 'steps-read-aloud') toggleReadAloud();
   if (action === 'auto-backup-folder') await chooseAutoBackupFolder();
@@ -210,6 +215,10 @@ document.addEventListener('click', async (event) => {
   }
   if (action === 'add-item') openItemDialog();
   if (action === 'edit-item') openItemDialog(state.inventory.find((item) => item.id === id));
+  if (action === 'remove-item') {
+    removeInventoryItem($('#item-form').elements.id.value);
+    $('#item-dialog').close();
+  }
   if (action === 'adjust') {
     const item = state.inventory.find((entry) => entry.id === id);
     if (item) { item.quantity = Math.max(0, Number(item.quantity) + Number(button.dataset.delta)); persist(); }
@@ -292,6 +301,11 @@ document.addEventListener('click', async (event) => {
       : t('Nothing recognisable in that text yet.'));
   }
   if (action === 'wipe-data') openWipeDialog();
+  if (action === 'clear-inventory' && clearInventory()) {
+    $('#settings-dialog').close();
+    activeView = 'inventory';
+    render();
+  }
   if (action === 'clear-list' && state.shopping.length) withUndo(t('Shopping list cleared'), ['shopping'], () => { state.shopping = []; });
 });
 
@@ -742,20 +756,22 @@ async function fillSettings() {
   else expiryNote.textContent = t('System alerts are checked daily while the app is open. The in-app Use soon panel is always available.');
   fillSettingsMode();
   fillHomeServerSettings();
+  fillFolderSyncSettings();
+  fillHostSettings();
   fillAutoBackup();
   await Promise.all([loadMealieSettings(), loadDeeplSettings(), fillPinSettings()]);
 }
 
 function fillSettingsMode() {
-  const phoneShared = STANDALONE && homeServer();
+  const phoneShared = STANDALONE && (homeServer() || folderSync());
   $('#settings-mode-title').textContent = STANDALONE && !phoneShared ? t('Kept on this device') : t('Shared kitchen');
-  $('#settings-mode-text').textContent = phoneShared
-    ? t('This phone shares the kitchen on your home server and keeps a copy, so it also works when you are out.')
-    : STANDALONE
-      ? t('The phone app keeps everything on this device and works without a server. Use Back up below to save a copy.')
-      : liveSync.connected
-        ? tp(liveSync.devices, 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} device connected now).', 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} devices connected now).')
-        : t('Everyone who opens Goodstock on this server sees the same kitchen, updated live.');
+  const mode = $('#settings-mode-text');
+  if (hosting()) mode.textContent = t('This device hosts the kitchen for your household. The others stay in step while Goodstock is open here.');
+  else if (folderSync()) mode.textContent = t('This device shares the kitchen through a shared folder and keeps a full copy, so it also works offline.');
+  else if (phoneShared) mode.textContent = t('This phone shares the kitchen on your home server and keeps a copy, so it also works when you are out.');
+  else if (STANDALONE) mode.textContent = t('The phone app keeps everything on this device and works without a server. Use Back up below to save a copy.');
+  else if (liveSync.connected) mode.textContent = tp(liveSync.devices, 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} device connected now).', 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} devices connected now).');
+  else mode.textContent = t('Everyone who opens Goodstock on this server sees the same kitchen, updated live.');
 }
 
 function setMealieNote(text, kind = '') {
@@ -923,6 +939,7 @@ window.goodstockBack = () => {
 // Coming back to the app: catch up on timers that ended while it was paused, and on expiry reminders.
 window.goodstockResume = () => {
   checkRemoteRevision();
+  syncFolderNow();
   runAutoBackup();
   refreshTimers();
   checkExpiryReminders();

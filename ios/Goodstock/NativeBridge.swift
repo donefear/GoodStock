@@ -49,7 +49,13 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         canAutoBackup: function () { return true; },
         chooseBackupFolder: function (id) { post('chooseBackupFolder', [id]); },
         forgetBackupFolder: function () { post('forgetBackupFolder', []); },
-        writeBackup: function (id, name, content) { post('writeBackup', [id, String(name), String(content)]); }
+        writeBackup: function (id, name, content) { post('writeBackup', [id, String(name), String(content)]); },
+        canSyncFolder: function () { return true; },
+        chooseSyncFolder: function (id) { post('chooseSyncFolder', [id]); },
+        forgetSyncFolder: function () { post('forgetSyncFolder', []); },
+        listSyncFolder: function (id) { post('listSyncFolder', [id]); },
+        readSyncFile: function (id, name) { post('readSyncFile', [id, String(name)]); },
+        writeSyncFile: function (id, name, content) { post('writeSyncFile', [id, String(name), String(content)]); }
       };
       // Tell the app the page's language (i18n.js sets html lang), for the confirm dialog buttons.
       function sendLanguage() { post('language', [document.documentElement.lang || 'en']); }
@@ -104,6 +110,17 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
                 case .failure(let error): self.callback(arg(0), ok: false, payload: error.localizedDescription)
                 }
             }
+        case "chooseSyncFolder":
+            guard let controller else { return callback(arg(0), ok: false, payload: "cancelled") }
+            SyncFolder.shared.chooseFolder(from: controller) { self.answer(arg(0), $0) }
+        case "forgetSyncFolder":
+            SyncFolder.shared.forgetFolder()
+        case "listSyncFolder":
+            SyncFolder.shared.list { self.answer(arg(0), $0) }
+        case "readSyncFile":
+            SyncFolder.shared.read(name: arg(1)) { self.answer(arg(0), $0) }
+        case "writeSyncFile":
+            SyncFolder.shared.write(name: arg(1), content: arg(2)) { self.answer(arg(0), $0) }
         case "scanBarcode":
             scanBarcode(id: arg(0))
         case "saveFile":
@@ -179,6 +196,13 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         pendingSave = nil
         try? FileManager.default.removeItem(at: pending.file)
         callback(pending.id, ok: saved, payload: saved ? "saved" : "cancelled")
+    }
+
+    private func answer(_ id: String, _ result: Result<String, Error>) {
+        switch result {
+        case .success(let payload): callback(id, ok: true, payload: payload)
+        case .failure(let error): callback(id, ok: false, payload: error.localizedDescription)
+        }
     }
 
     private func callback(_ id: String, ok: Bool, payload: String) {
