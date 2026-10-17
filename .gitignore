@@ -28,3 +28,6 @@ desktop/node_modules/
 desktop/web/
 desktop/build/
 desktop/package-lock.json
+
+# Local version backups (tools/backup-version.sh)
+backups/

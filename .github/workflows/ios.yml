@@ -2,11 +2,15 @@ name: iOS app
 
 # Checks that the iPhone/iPad app builds: generates the Xcode project from ios/project.yml and compiles it for the
 # simulator without signing, then builds an unsigned .ipa for iPhone (artifact) to sideload (see ios/README.md).
+# A version tag also attaches the .ipa to its GitHub release (path filters are not applied to tag pushes). To add
+# it to an older release, run the workflow by hand and enter that tag.
 on:
   push:
     branches: [main, standalone, experiments]
+    tags: ['v*']
     paths:
       - 'ios/**'
+      - 'app/**'
       - '*.js'
       - '*.mjs'
       - 'index.html'
@@ -14,12 +18,23 @@ on:
       - 'lang/**'
       - '.github/workflows/ios.yml'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to build and attach to its release (e.g. v3.0.0). Leave empty for a test build.'
+        required: false
+        default: ''
 
 jobs:
   build:
     runs-on: macos-15
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || (startsWith(github.ref, 'refs/tags/v') && github.ref_name || '') }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Generate the Xcode project
         run: |
@@ -57,3 +72,10 @@ jobs:
         with:
           name: ${{ env.IPA_NAME }}
           path: dist/*.ipa
+
+      - name: Attach the .ipa to the GitHub release
+        if: env.RELEASE_TAG != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: dist/*.ipa

@@ -1,230 +1,225 @@
 GOODSTOCK – SUGGESTIONS FOR WHAT TO CHANGE OR ADD
-Written 2026-10-03, after v2.1.2 (ten languages + iPhone app).
+First list written 2026-10-03, after v2.1.2. New list written 2026-10-18, after v3.0.2.
 Ordered roughly by how much I'd recommend doing them first. Each item says why.
+Finished items are marked [x] DONE, paused ones [ ] ON HOLD. The new list is numbered from 0.1 so it doesn't clash with the old numbers.
+
+
+=====================================================================================================================
+NEW SUGGESTIONS (after v3.0.2)
+=====================================================================================================================
+
+
+LOOSE ENDS FROM THE FIRST LIST AND FROM v3.0.2
+----------------------------------------------
+
+0.1 Keep "Host this kitchen" running on Android when the screen is off.
+    KitchenHost.java runs inside the normal app process, with no foreground service and no wake lock. Android
+    stops or freezes background apps after a few minutes, so the other phones lose the kitchen as soon as the host
+    phone is put away. A foreground service with a small "Goodstock is sharing your kitchen" notification (and a
+    Stop button) keeps it alive. This is what makes hosting usable in practice.
+
+0.2 Try the two new ways of sharing (v3.0.2) on real devices.
+    Shared folder and hosting were tested in code, not in daily use. Check them with a real sync app: Syncthing and
+    iCloud Drive can take minutes to deliver a file, and may create "conflict" copies of a file. The app should
+    ignore those copies, or merge them in. Also check what the other phones show when the host goes away (a clear
+    "host not reachable, working offline" message, not an error).
+
+0.3 Re-schedule the daily reminders after an Android restart.
+    From 4.3: after a reboot, Android forgets the alarms until Goodstock is opened once. A BOOT_COMPLETED receiver
+    that re-schedules them from the last saved list fixes this. It's small, and it makes the reminders reliable.
+
+0.4 Run the iPhone app on a real iPhone.
+    [ ] ON HOLD (2026-10-18): waiting until a Mac that can build the app is available.
+    From 1.1, still open. The workflow now builds an unsigned .ipa for sideloading from Windows (v2.1.69). Check by
+    hand: a timer rings with the phone locked, backup and restore through Files, barcode scanning, and the new
+    shared-folder sync with iCloud Drive.
+
+0.5 A real person reads the languages your household uses.
+    [ ] ON HOLD (2026-10-18): waiting until people are found to test the languages.
+    From 1.3 and 6.4. All 13 languages have only had a machine proofread. One evening with a native speaker per
+    language catches what the checker can't, like the wrong tone, odd words and text that gets cut off on buttons.
+
+
+EVERYDAY USE
+------------
+
+0.6 Search in the inventory and in recipes.
+    There is no search field anywhere yet. Once a kitchen has 80 items and 40 recipes, scrolling gets slow,
+    especially on the tablet. One search box per page, using the catalog matching that already exists (typing
+    "harina" finds "Flour", "eieren" finds "Eggs"). It's cheap to build and you'd use it every day.
+
+0.7 Staples: "always keep at least …".
+    Let an item have an optional minimum amount (2 L milk, 1 bag of rice). When "Cooked ✓" or Remove brings it
+    under that amount, it goes onto the shopping list by itself, with a small "restock" tag. Today the list is
+    only built from the week's plan, so everyday basics get forgotten.
+
+0.8 "Opened" and "frozen on" dates.
+    An opened jar of pesto or carton of milk keeps far shorter than a closed one. An "Opened today" button in the
+    edit dialog would shorten the estimate (ingredients.json gets an optional "opened" number of days). Freezer
+    items get a "frozen on" date, so that "chicken, frozen 5 months ago" shows up in Use soon. The package date
+    still wins, as it does now.
+
+0.9 Leftovers after cooking.
+    After "Cooked ✓", offer "Put leftovers in the fridge". This adds "Leftovers: Pea soup" with a 3-day estimate,
+    so leftovers appear in Use soon instead of being forgotten at the back of the fridge.
+
+0.10 Used up or thrown away? A small waste overview.
+    "Remove item" (v3.0.2) could ask one optional question: Used up / Thrown away. Settings → Your data, or a small
+    card on the inventory page, then shows "this month: 3 items thrown away (bread ×2, yoghurt)". Seeing it is the
+    simplest way to waste less, and the expiry estimates can learn from it later.
+
+0.11 Barcodes in "Put away", and scan to use up.
+    From 4.2. When putting the shopping away, scanning a product fills in its pack size and the right expiry
+    estimate. Scanning an item that's already in stock offers "Use up / Remove".
+
+0.12 Group the shared and downloaded shopping list too.
+    From 4.6. The list in the app is in supermarket order, but the QR download and share text are still one flat
+    list. The same groups as headings in the text make it easy to follow in the shop.
+
+0.13 Recipe photos.
+    Website imports nearly always come with a photo (schema.org "image"), and Mealie recipes have one too, but own
+    recipes show no picture. Keep the imported photo (downloaded once, small, saved next to the kitchen data rather
+    than inside it), and let you add a photo to your own recipes. Recipe cards are much easier to scan with photos.
+
+0.14 Print a recipe or the shopping list.
+    There is no print style yet, so printing takes the whole screen with its menus. A short @media print section
+    gives a clean recipe page (ingredients, numbered steps with amounts) and a shopping list with tick boxes.
+    It's useful for the fridge door or for someone who shops without a phone.
+
+0.15 Faster week planning.
+    "Repeat last week" and "Copy this day to…" on the This week page, plus a "plan these first" hint that puts
+    recipes using Use soon items at the top. Most households cook the same dozen meals, and planning them should
+    take a few taps.
+
+0.16 Recipe favourites and a "last cooked" note.
+    A ★ on recipes, a "Favourites" filter, and "cooked 6 times, last 12 days ago" on the recipe page. The cooking
+    history is already collected for the recipe ideas (ideas.js), so this mostly shows data the app already keeps.
+
+
+SERVER VERSION
+--------------
+
+0.17 Easy HTTPS (biggest win for the server version).
+    Several features stay off on the plain-http home server: 🎤 voice commands, browser notifications, barcode
+    scanning in phone browsers, and the offline service worker on any address other than localhost. An optional
+    Caddy service in docker-compose.yml (with a local certificate, or a free certificate when you have a domain),
+    plus a short README section, turns them all on at once.
+
+0.18 Automatic backups on the server.
+    The phone apps make weekly backups, but the server keeps only one /data/state.json. One bad sync or a mistaken
+    "Wipe all data" and it's gone. A daily copy into /data/backups (keeping the last 14), with a "Restore from a
+    server backup" list in Settings → Your data, needs no extra setup.
+
+0.19 Restart the container when it is unhealthy.
+    From 6.3. Docker only restarts a container that has stopped, not one that is unhealthy. An optional "autoheal"
+    service in the Compose file (commented out by default) closes that gap.
+
+
+LANGUAGES
+---------
+
+0.20 Amounts in the steps for the remaining languages.
+    From 2.2 and 6.4: Russian, Chinese, Japanese, Romanian, Polish and Turkish recipes show the steps without
+    amounts written in. For Chinese and Japanese, finding the ingredient's catalog name inside the sentence (there
+    are no spaces) and putting the amount just before it would work for most recipes. For the other four, put the
+    amount in brackets after the word ("морковь (2 шт.)"), which needs no grammar.
+
+0.21 Right-to-left languages (only if someone asks).
+    Arabic or Hebrew need dir="rtl" and CSS that flips with the text direction (margin-inline instead of
+    margin-left…). This is a layout job more than a translation job. Do it only on request.
+
+
+KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
+--------------------------------------------------
+
+0.22 Test the kitchen tablet automatically.
+    From 6.1: Chrome 81 is still only checked by hand. A CI job with puppeteer 2.1.1 (Chromium 80) that opens every
+    view and fails on a script error would catch a stray `??=` or `.at()` before it reaches the tablet.
+
+0.23 One command to bump the version.
+    Every change bumps the label in index.html and the cache name in sw.js, by hand, and the APK reads its version
+    from the label. A small `npm run bump` script that updates both (and checks they match in the tests) stops a
+    forgotten cache bump from serving old files.
+
+0.24 Split app/views.js.
+    At about 87 KB it's twice the size of any other client file. It holds every page plus the recipe editor and
+    translation. Moving the recipe pages, editor and translation into app/recipes.js (loaded right after views.js)
+    keeps it manageable, the same way app.js was split in 6.2.
+
+0.25 Signed desktop builds (only if others will install it).
+    The portable .exe and the .dmg are unsigned, so Windows SmartScreen and macOS Gatekeeper warn people on first
+    launch. That's fine for your own household. Signing, and maybe an update check, only matters if you hand the
+    app to others.
+
+
+ALSO DONE SINCE THE FIRST LIST (not in it)
+------------------------------------------
+[x] DONE v2.1.65  Dialog title and close button stay at the top while scrolling.
+[x] DONE v2.1.66  Recipe ideas from the web based on cooking history (experimental, TheMealDB).
+[x] DONE v2.1.67  Select all / clear all in cook mode's get-ready lists.
+[x] DONE v2.1.68  README rewritten to show every feature.
+[x] DONE v2.1.69  iOS workflow builds an unsigned .ipa to sideload from Windows.
+[x] DONE v2.1.70  Desktop app for Windows, macOS and Linux (Electron, standalone).
+[x] DONE v2.1.71  Settings in tabs (General, Connections, Your data).
+[x] DONE v3.0.2   Remove an item, Clear inventory, and sharing without a server (shared folder, hosting).
+
+
+=====================================================================================================================
+FIRST LIST (after v2.1.2) – ALL DONE
+=====================================================================================================================
+Shortened to one or two lines each. What was left open is carried over into the new list above.
 
 
 1. FINISH WHAT WAS JUST BUILT
 ------------------------------
-
-1.1 Build the iPhone app once on your Mac.
-    DONE (v2.1.11) as far as possible without the phone: GitHub Actions compiled the app on a cloud Mac with Xcode
-    (iOS simulator build). It passed with no Swift warnings, and the bundled web files and version were checked. The
-    workflows now use actions/checkout@v5, because v4 runs on the deprecated Node 20.
-    STILL FOR YOU: open ios/Goodstock.xcodeproj in Xcode and press Run on your iPhone (steps in ios/README.md).
-    Then check by hand: a timer rings with the phone locked, Back up saves to Files, Restore reads it back, and
-    confirm dialogs (delete recipe, clear list) work.
-
-1.2 Push the standalone branch, then merge it into main.
-    DONE (v2.1.12): standalone pushed; main fast-forwarded to it and pushed. Redeploy the stack in Portainer to
-    pick it up. Later versions are merged into main the same way at the end of this round.
-
-1.3 Have a native speaker read a few languages.
-    DONE (v2.1.13) as a proofreading pass: each language was reread line by line as a native-speaker editor
-    would, and 17–71 lines per language were improved. Examples: consistent expiry wording (nl houdbaar,
-    es vencer); Italian Inventory = Scorte everywhere; German "Ort: {location}" instead of "im {location}", which
-    was wrong for some names; Russian "винегрет" (a beet salad) → "заправка"; clashing cooking-term names fixed in
-    fr/ru. All languages still pass the checker.
-    STILL WORTH DOING: a real person reading the languages your household uses. A machine proofread can't replace
-    that.
+[x] DONE 1.1 Build the iPhone app once on your Mac. (v2.1.11, simulator build on GitHub Actions.)
+         Running it on a real iPhone is still open → 0.4.
+[x] DONE 1.2 Push the standalone branch, then merge it into main. (v2.1.12)
+[x] DONE 1.3 Have a native speaker read a few languages. (v2.1.13, machine proofreading pass.)
+         A real person's read-through is still open → 0.5.
 
 
 2. MAKE THE LANGUAGES WORK BEYOND THE BUTTONS
 ---------------------------------------------
-The menus are translated, but the "smart" parts of the app still only understand English and Dutch. In practice,
-a Spanish or German recipe works less well than a Dutch one.
-
-2.1 Cook-mode timers and oven heads-ups in every language.
-    DONE (v2.1.21): times are recognised in all ten languages ("10 minutos", "8 minuti", "15 минут", "5 分钟",
-    "1時間", "2 bis 3 Minuten"...) and highlighted in steps. Steps written in Chinese/Japanese (。) and Russian are
-    split into one sentence per bite. The oven heads-up already worked in any language (it looks for °C/°F).
-
-2.2 Amounts written into the steps ("Add 200 g of flour").
-    DONE (v2.1.22) for German, French, Spanish, Italian and Portuguese, on top of English and Dutch.
-    The recipe's language is detected once, its own articles are replaced by the amount, and the right
-    linking word is used: "200 g de farine", "30 ml d’huile", "250 g di farina", "200 g Mehl" (German nouns
-    keep their capital). Also fixed: two ingredient lines naming the same thing no longer both add an amount.
-    Not done: Russian, Chinese and Japanese. They have no articles, and Chinese/Japanese have no spaces between
-    words, so the matching would need a different approach. Those recipes simply show the steps as written.
-
-2.3 Ingredient catalog in all ten languages.
-    DONE (v2.1.23): all 63 ingredients have names in all ten languages, with common alternatives (Kartoffel/
-    Kartoffeln, 玉ねぎ/たまねぎ). Matching works across languages: a Spanish "300 g de harina" finds "Flour"
-    in stock, "2 Eier" finds "Eieren". Russian, Chinese and Japanese names now match at all; before, every
-    non-Latin letter was thrown away. Add-item suggestions show the name in your language first. Two older matching
-    bugs are fixed: "sweet potato" no longer counts as "potato", and a short name only matches a whole word, so
-    "pancakes" is not "pan" (bread). Matching results are cached, so the old kitchen tablet stays fast.
-
-2.4 Kitchen-tool detection.
-    DONE (v2.1.24): all 37 tools are recognised in recipe steps in all ten languages (KITCHEN_TOOL_WORDS in
-    kitchen-tools.js), e.g. "Backofen vorheizen", "fouettez", "varillas", "взбейте венчиком", "打蛋器", "泡立て器".
-    Ambiguous words are guarded: "fourchette" is not an oven, "tagliatelle" not a knife, "tomate pelado" not a
-    peeler, "ножки" not a knife, "tapas" not a lid.
-
-2.5 New kitchens start in the chosen language.
-    DONE (v2.1.25): a brand-new kitchen (first visit, or after Wipe all data) gets its storage places, sample
-    items and the four starter recipes in the device's language, e.g. Vorrat / Kühlschrank / Gefrierschrank and
-    "Tomatensuppe mit weißen Bohnen". Each was checked in all ten languages: storage places are recognised for shelf
-    life, every ingredient line has an amount and is known to the catalog, and the timers work. Existing kitchens
-    keep what they have. Along the way, the amount parser learned Cyrillic and Chinese metric units (мл, г, кг, 克,
-    毫升), and the catalog learned the Russian forms used after a number (молока, картофеля...), so Russian recipes
-    can be written grammatically.
-
-2.6 Cooking-term videos in your language.
-    DONE (v2.1.26): "Watch a video" searches YouTube in the app's language with the term's local name
-    ("Blanchieren Kochtechnik", "湯通し 調理法"); English stays "how to … cooking technique".
+[x] DONE 2.1 Cook-mode timers and oven heads-ups in every language. (v2.1.21)
+[x] DONE 2.2 Amounts written into the steps. (v2.1.22: en, nl, de, fr, es, it, pt.)
+         Russian, Chinese and Japanese still open → 0.20.
+[x] DONE 2.3 Ingredient catalog in all languages, cross-language stock matching. (v2.1.23)
+[x] DONE 2.4 Kitchen-tool detection in all languages. (v2.1.24)
+[x] DONE 2.5 New kitchens start in the chosen language. (v2.1.25)
+[x] DONE 2.6 Cooking-term videos in your language. (v2.1.26)
 
 
 3. SMALL FIXES
 --------------
-
-3.1 Missing favicon.
-    DONE (v2.1.31): new icon.svg (the green Goodstock icon, same as the iPhone app) is linked as the favicon, served
-    by the server, cached for offline use and bundled in both phone apps. Page loads no longer produce any 404.
-
-3.2 Home-screen icon for the server version on iPhones.
-    DONE (v2.1.32): apple-touch-icon.png (180 px) for iPhone/iPad "Add to Home Screen", plus 192/512 px icons in the
-    web manifest, which had none, for Android's "Add to Home screen". It also opens full-screen like an app
-    (apple-mobile-web-app-capable). Also fixed: icon.svg from v2.1.31 was not valid XML (browsers drew it inline
-    but not as an image file).
-
-3.3 Some server error messages are still English.
-    DONE (v2.1.33): sentences with a value in them (an address, an HTTP status) now travel as an English template
-    plus values (errorText/errorVars), from the server and from the shared Mealie/DeepL helpers on the phone. The
-    page shows them in its language: "Mealie unter http://… ist nicht erreichbar." The remaining fixed server
-    messages (timeouts, "Could not reach that website", …) were added to all nine languages.
-
-3.4 Android CI does not build the standalone branch.
-    DONE (v2.1.34): the Android workflow now also runs on standalone. It turned out the Android build had been
-    failing on GitHub since v2.1.0 (also on main): the android-actions/setup-android step broke. It is removed,
-    because the runners already include the Android SDK, and setup-java moved to v5.
-
-3.5 App Store-ready icon (only if you ever publish).
-    CHECKED (v2.1.35), nothing to fix: this suggestion was wrong. The PNG header shows ios/…/icon-1024.png is
-    already plain RGB (colour type 2) with no alpha channel, so it is fine for an App Store upload.
+[x] DONE 3.1 Missing favicon. (v2.1.31)
+[x] DONE 3.2 Home-screen icons for iPhone and Android. (v2.1.32)
+[x] DONE 3.3 Server error messages in the app's language. (v2.1.33)
+[x] DONE 3.4 Android CI builds again. (v2.1.34)
+[x] DONE 3.5 App Store-ready icon. (v2.1.35: checked, it already had no alpha channel.)
 
 
 4. FEATURES I WOULD ADD
 -----------------------
-
-4.1 Sync the phone apps with your home server (biggest win).
-    DONE (v2.1.41): phone apps have Settings → Home server. Enter the address you use at home (e.g.
-    192.168.1.10:8484) and press Connect. The phone's items are added to the server's kitchen (items the server
-    already has are not doubled), and from then on both stay in step. The phone keeps a copy and works offline, and
-    changes made in the shop are sent when it's back on the home network. It uses the same revision-and-merge sync
-    as the browsers. Requests go through the phone's native bridge, so the server needed no changes, and phones
-    check for news every 15 seconds while open. Disconnect keeps the phone's copy. Tested end to end against a
-    real server: connect, phone→server, server→phone, disconnect.
-
-4.2 Barcode scanning to add groceries.
-    DONE (v2.1.42): "Scan barcode" in the Add item dialog of both phone apps (Android: Google's code scanner, no
-    camera permission, Android 5.0+; iPhone: the system camera reader) and in Chrome on a phone over HTTPS. Product
-    name (in your language when the database has it) and pack size come from Open Food Facts, a free, open product
-    database; the expiry estimate follows. Everywhere, including the kitchen tablet, typing or pasting a barcode
-    number into the name field looks it up too (the server version asks Open Food Facts through the server).
-    Tested with a real product (Nutella → "Nutella, 400 g") through the server and through the phone path.
-    Not added to "Put away" yet: shopping-list items already have a name.
-
-4.3 Daily use-soon reminder that doesn't need the app open.
-    DONE (v2.1.43): with Expiration notifications on, the phone apps schedule a notification for each of the next
-    seven mornings at 9:00, each listing what will be due that day, so it arrives while the app is closed
-    (Android: system alarms; iPhone: local notifications). The schedule is redone whenever the kitchen changes or
-    the app opens, and turning the setting off cancels it. Note: after a phone restart, Android forgets the
-    schedule until Goodstock is opened once. The browser version can't do this without a push server; it still
-    reminds while open.
-
-4.4 Hands-free cook mode.
-    DONE (v2.1.44): cook mode has 🔊 Read aloud, which speaks each step as you reach it: labels in the app's
-    language, the recipe text in the recipe's language, amounts included. It works in browsers, on the iPhone, and
-    on Android through the phone's own text-to-speech. 🎤 Voice commands understand "next", "back", "repeat",
-    "timer" and "stop" in all ten languages. Limit: browsers only allow the microphone over HTTPS, so on the http
-    home server and inside the phone apps the 🎤 button stays hidden. Read aloud works everywhere.
-
-4.5 Recipe servings / scaling.
-    DONE (v2.1.45): recipes have an optional Servings field. You can fill it in the editor; website imports
-    (schema.org recipeYield) and Mealie (recipeServings/recipeYield) fill it automatically. The recipe page has
-    − / + next to Ingredients, by servings ("6 servings") or, without a servings number, by ×½ ×1½ ×2… All amounts
-    are recalculated, fractions, ranges and "1 1/2" included (amounts written inside the steps too). Planning a
-    scaled recipe remembers its scale, and cook mode, the shopping list, Review and "Cooked ✓" use the scaled
-    amounts. The week view shows it ("· 6 servings"). Also fixed: the translation checker missed counted texts
-    whose first argument had a comma in it.
-
-4.6 Shopping list grouped by category.
-    DONE (v2.1.46): the shopping list is grouped roughly in supermarket order: Vegetables, Fruit, Herbs, Bakery,
-    Pantry, Baking, Seasoning, then Dairy and Meat and fish last, and finally Other for anything the catalog doesn't
-    know. Each group heading shows how many are left (✓ when done). It works for items named in any of the ten
-    languages, and a list with only one group stays a plain list. The shared/downloaded text list is not grouped
-    yet.
-
-4.7 Undo instead of "are you sure?".
-    DONE (v2.1.47): deleting a recipe, clearing the shopping list, Put all away, Clear checked and removing a
-    planned meal now happen straight away, with an Undo bar for 10 seconds instead of a confirmation box. Undo
-    restores only the parts of the kitchen the action touched, so changes from other devices in those seconds stay.
-    The bigger, rarer actions (Restore a backup, Wipe all data, disconnecting Mealie/DeepL/home server) still ask
-    first.
-
-4.8 Bigger text option for the kitchen tablet.
-    DONE (v2.1.48): Settings → Text size: Normal, Large (115%) or Extra large (130%), saved per device like dark
-    mode. It scales the whole interface, buttons included. Dialogs, cook mode and the timer pills were adjusted so
-    they still fit the screen when zoomed. Tested in English and German on tablet and phone: nothing runs off the
-    screen.
-
-4.9 Automatic backups for the phone apps.
-    DONE (v2.1.49): Settings → Automatic weekly backup in both phone apps. Choose a folder once (Google Drive,
-    iCloud Drive, Downloads, On My iPhone…) and a backup is written right away, then again whenever the app is
-    opened and the last one is a week old; the newest four are kept. Android keeps write access to the folder
-    (Android 5.0+); iPhone remembers it as a security-scoped bookmark, which also works for iCloud Drive folders.
-    Change folder / Turn off are in the same place. A phone connected to the home server (4.1) has its data on the
-    server as well.
+[x] DONE 4.1 Sync the phone apps with your home server. (v2.1.41)
+[x] DONE 4.2 Barcode scanning to add groceries. (v2.1.42) In "Put away" still open → 0.11.
+[x] DONE 4.3 Daily use-soon reminder without the app open. (v2.1.43) Survive an Android restart → 0.3.
+[x] DONE 4.4 Hands-free cook mode: read aloud and voice commands. (v2.1.44) Voice needs HTTPS → 0.17.
+[x] DONE 4.5 Recipe servings and scaling. (v2.1.45)
+[x] DONE 4.6 Shopping list grouped by category. (v2.1.46) Shared/downloaded list still flat → 0.12.
+[x] DONE 4.7 Undo instead of "are you sure?". (v2.1.47)
+[x] DONE 4.8 Bigger text option for the kitchen tablet. (v2.1.48)
+[x] DONE 4.9 Automatic weekly backups for the phone apps. (v2.1.49) Server backups → 0.18.
 
 
 5. SAFETY
 ---------
-
-5.1 A simple PIN or password for the server version.
-    DONE (v2.1.51): Settings → Household PIN (server version). Once set, the server answers kitchen requests only
-    from devices that unlocked once. Each gets a session for a year (a cookie in browsers, a token for the phone
-    apps connected as home server). The PIN is stored as a salted scrypt hash in /data/auth.json, never in plain
-    text, and wrong PINs are limited to 5 per 5 minutes per address. Changing the PIN signs out the other devices.
-    Still open without it: the app's files, a health check, and the 30-minute QR shopping downloads. Tested end to
-    end: set, refused without a session, wrong/right PIN, rate limit, phone app connecting with the PIN, remove.
-    HTTPS is still advised if it is ever reachable from the internet.
+[x] DONE 5.1 Household PIN for the server version. (v2.1.51) HTTPS still advised → 0.17.
 
 
 6. KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
 -----------------------------------------------------
-
-6.1 Turn the test scripts into a real test suite.
-    DONE (v2.1.61): tests/ with `npm test` (tests/run.mjs). It runs the translation check, 10 page tests inside the
-    real app (timers and step splitting in ten languages, step amounts, ingredient matching, kitchen tools, fresh
-    kitchens, cooking-term videos, voice commands, servings, shopping groups, undo) and 6 end-to-end tests, each on
-    its own fresh server (every view in every language on tablet and phone, phone↔home-server sync, household PIN,
-    reminders and backups, text size, barcode lookup and translated server errors). GitHub runs it on every push
-    (.github/workflows/tests.yml); tests/README.md has the Docker command for running it without Node. 17/17 pass.
-    Not automated: Chrome 81 (the tablet) and Safari/WebKit checks, which were done by hand this session.
-
-6.2 Split app.js.
-    DONE (v2.1.62): app.js (3,800 lines by then) is now five files in app/, loaded in order: core.js (phone
-    bridge, state, ingredient catalog and matching, quantities, servings, expiry), sync.js (home server, PIN,
-    sync), views.js (preferences, start-up, all pages, recipe editor, translation, dialogs, barcodes), cook.js
-    (cook mode, timers, read aloud and voice) and actions.js (buttons and forms, Settings, backups; starts the app).
-    I kept them as plain scripts sharing one global scope instead of ES modules. That changes no behaviour (no
-    imports/exports to get wrong in thousands of cross-references), needs no build step, and works the same in
-    Chrome 81 and both phone apps. Server, Docker image, offline cache, APK, iOS bundle and the translation checker
-    all list the new files. Checked with the full test suite (17/17), Chromium 80 and an APK build.
-
-6.3 Health check in docker-compose.yml.
-    DONE (v2.1.63): the Dockerfile has a HEALTHCHECK on /api/health (every 30 s, open even with a household PIN), so
-    both Compose files and Portainer show the container as healthy/unhealthy. Verified: a fresh container reports
-    "healthy". Note: Docker itself only restarts a container that exits (restart: unless-stopped), not one that is
-    merely unhealthy. For that, add an "autoheal" container or let Portainer alert you.
-
-6.4 Add languages on request.
-    DONE (v2.1.64): Romanian, Polish and Turkish added, so Goodstock now has 13 languages. Each gets the interface
-    (817 lines, with Romanian one/few/other and Polish one/few/many/other plurals) and the 63 catalog ingredients
-    (with forms like "płatków owsianych"). Each also gets cook-mode time words ("20 de minute", "15 minut",
-    "10 dakika"), storage-place words for shelf life, kitchen tools, voice commands, recipe headings for pasted
-    recipes, spoon and piece units, DeepL as a target, starter kitchens, and iPhone dialog buttons. The Turkish
-    dotless ı now matches i. Tests cover all three (17/17, every view in all 13 languages).
-    Not done: amounts written into steps for these three (their grammar has no separate articles to replace), and
-    right-to-left languages (Arabic, Hebrew), which need layout work. A real speaker's read-through is still the
-    best check.
+[x] DONE 6.1 Real test suite, `npm test`, run on GitHub. (v2.1.61) Chrome 81 in CI → 0.22.
+[x] DONE 6.2 Split app.js into app/*.js. (v2.1.62) views.js has grown again → 0.24.
+[x] DONE 6.3 Docker health check. (v2.1.63) Restart when unhealthy → 0.19.
+[x] DONE 6.4 Romanian, Polish and Turkish (13 languages). (v2.1.64) Step amounts → 0.20, RTL → 0.21.
