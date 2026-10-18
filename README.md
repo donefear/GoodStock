@@ -125,6 +125,9 @@ Browsers keep some features off on a plain `http://` address other than `localho
 
 With a domain name that points at your home (ports 80 and 443 forwarded to 8485 and 8443), set `HTTPS_CERT` to your email address instead: Caddy then gets a free Let's Encrypt certificate, and nothing needs to be installed on the devices. Plain `http://<server-ip>:8484` keeps working next to it, for the phone apps' Home server connection and for anything that can't install the certificate. `bash tools/check-https.sh` tests the setup in Docker.
 
+### Restart when unhealthy (optional)
+Docker restarts Goodstock when it stops, but not when it hangs while still running. Add the `autoheal` profile (`COMPOSE_PROFILES=autoheal`, or `https,autoheal` together with HTTPS) and a small [autoheal](https://github.com/willfarrell/docker-autoheal) container restarts Goodstock whenever its health check fails. It uses the Docker socket and only touches containers labelled `autoheal-goodstock`.
+
 > **Security note:** Goodstock is made for a trusted home network. Even with a household PIN and HTTPS, don't expose it directly to the internet.
 
 ## Phone apps

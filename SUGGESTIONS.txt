@@ -140,9 +140,11 @@ SERVER VERSION
     kept. Settings → Your data lists them (date, counts, "before a big change") with Restore, which asks first and
     then works like restoring a backup file.
 
-0.19 Restart the container when it is unhealthy.
-    From 6.3. Docker only restarts a container that has stopped, not one that is unhealthy. An optional "autoheal"
-    service in the Compose file (commented out by default) closes that gap.
+[x] DONE 0.19 Restart the container when it is unhealthy. (v3.2.9)
+    An "autoheal" service (willfarrell/autoheal 1.2.0) in both Compose files, behind the Compose profile
+    "autoheal" instead of commented out: off by default, and in Portainer switched on with one environment
+    variable. It watches only containers labelled autoheal-goodstock (the Goodstock service has that label) every
+    30 seconds. Tried in Docker: a container that turned unhealthy was restarted within seconds.
 
 
 LANGUAGES

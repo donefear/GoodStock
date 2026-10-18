@@ -13,6 +13,9 @@ services:
       MEALIE_API_KEY: "${MEALIE_API_KEY:-}"
       # Optional: browser-facing Mealie address for "open in Mealie" links (defaults to MEALIE_URL).
       MEALIE_PUBLIC_URL: "${MEALIE_PUBLIC_URL:-}"
+    # Watched by the optional autoheal service below.
+    labels:
+      autoheal-goodstock: "true"
     volumes:
       - goodstock-data:/data
 
@@ -36,6 +39,20 @@ services:
       HTTPS_PORT: "8443"
     volumes:
       - goodstock-https:/data
+
+  # Optional: restarts Goodstock when its health check fails (Docker itself only restarts a container that has
+  # stopped, not one that hangs). Starts only with the "autoheal" profile, e.g. COMPOSE_PROFILES=autoheal or
+  # COMPOSE_PROFILES=https,autoheal. It needs the Docker socket and only touches containers with the label above.
+  autoheal:
+    image: willfarrell/autoheal:1.2.0
+    profiles: ["autoheal"]
+    container_name: goodstock-autoheal
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal-goodstock
+      AUTOHEAL_INTERVAL: "30"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   goodstock-data:
