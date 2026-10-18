@@ -917,4 +917,11 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Change photo": "更换照片",
   "That file could not be used as a photo.": "该文件无法用作照片。",
   "Print": "打印",
+  "Copy this day to…": "将这一天复制到…",
+  "Plan {count} meals from last week again": "再次安排上周的 {count} 顿饭",
+  "Repeat last week": "重复上周",
+  "Uses {items} soon": "及时用掉{items}",
+  "{count} meals from last week planned again": "已再次安排上周的 {count} 顿饭",
+  "Copy to": "复制到",
+  "{count} meals copied to {day}": "已将 {count} 顿饭复制到{day}",
 };

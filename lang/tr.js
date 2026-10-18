@@ -917,4 +917,11 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Change photo": "Fotoğrafı değiştir",
   "That file could not be used as a photo.": "Bu dosya fotoğraf olarak kullanılamıyor.",
   "Print": "Yazdır",
+  "Copy this day to…": "Bu günü şuraya kopyala…",
+  "Plan {count} meals from last week again": { "one": "Geçen haftanın {count} yemeğini yeniden planla", "other": "Geçen haftanın {count} yemeğini yeniden planla" },
+  "Repeat last week": "Geçen haftayı tekrarla",
+  "Uses {items} soon": "{items} zamanında kullanılır",
+  "{count} meals from last week planned again": { "one": "Geçen haftadan {count} yemek yeniden planlandı", "other": "Geçen haftadan {count} yemek yeniden planlandı" },
+  "Copy to": "Şuraya kopyala",
+  "{count} meals copied to {day}": { "one": "{count} yemek {day} gününe kopyalandı", "other": "{count} yemek {day} gününe kopyalandı" },
 };

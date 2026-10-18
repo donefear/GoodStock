@@ -2,6 +2,7 @@
 // A scan on the Inventory page finds the item by its saved barcode, or else by the product's name (and then
 // remembers the barcode); unknown products can be added with the barcode kept. Put away fills in the pack size.
 const fail = []; const log = [];
+const kitchenBefore = JSON.stringify(state);
 const wait = () => new Promise((resolve) => setTimeout(resolve, 50));
 const products = { '8710000000011': { name: 'Milk', amount: 1, unit: 'l' }, '8710000000028': { name: 'Whole milk', amount: 1, unit: 'l' } };
 let nextCode = '';
@@ -70,7 +71,7 @@ putaway.requestSubmit();
 await wait();
 const stored = state.inventory.find((item) => item.name === 'Melk');
 if (!stored || stored.barcode !== '8710000000028' || stored.quantity !== 1) fail.push(`put-away item: ${JSON.stringify(stored)}`);
-state.log = [];
+state = normalizeState(JSON.parse(kitchenBefore));
 activeView = 'inventory';
 persist();
 return { fail, log };

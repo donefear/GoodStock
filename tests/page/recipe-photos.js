@@ -1,6 +1,7 @@
 // Recipe photos (0.13): a picked photo is shrunk and saved with the recipe, shown on its card and page, and can be
 // removed; an imported recipe's photo comes through the server once; Mealie recipes get their photo's address.
 const fail = []; const log = [];
+const kitchenBefore = JSON.stringify(state);
 const wait = (ms = 50) => new Promise((resolve) => setTimeout(resolve, ms));
 const size = (src) => new Promise((resolve) => { const image = new Image(); image.onload = () => resolve([image.naturalWidth, image.naturalHeight]); image.onerror = () => resolve([0, 0]); image.src = src; });
 
@@ -53,7 +54,7 @@ if (refused.ok) fail.push('the photo proxy passed on a page that is not an image
 // Mealie: the photo's address on the Mealie server.
 const mealie = window.GoodstockMealie.mapMealieRecipe({ id: 'abc-123', slug: 'pie', name: 'Pie', image: 'x1' }, 'http://mealie.local:9000');
 if (mealie.photo !== 'http://mealie.local:9000/api/media/recipes/abc-123/images/min-original.webp') fail.push(`Mealie photo address: ${mealie.photo}`);
-state.recipes = [];
+state = normalizeState(JSON.parse(kitchenBefore));
 activeView = 'inventory';
 persist();
 return { fail, log };

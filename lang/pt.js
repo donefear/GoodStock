@@ -917,4 +917,11 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "Change photo": "Trocar foto",
   "That file could not be used as a photo.": "Esse arquivo não pode ser usado como foto.",
   "Print": "Imprimir",
+  "Copy this day to…": "Copiar este dia para…",
+  "Plan {count} meals from last week again": { "one": "Planejar de novo {count} refeição da semana passada", "other": "Planejar de novo {count} refeições da semana passada" },
+  "Repeat last week": "Repetir a semana passada",
+  "Uses {items} soon": "Aproveita {items} a tempo",
+  "{count} meals from last week planned again": { "one": "{count} refeição da semana passada planejada de novo", "other": "{count} refeições da semana passada planejadas de novo" },
+  "Copy to": "Copiar para",
+  "{count} meals copied to {day}": { "one": "{count} refeição copiada para {day}", "other": "{count} refeições copiadas para {day}" },
 };

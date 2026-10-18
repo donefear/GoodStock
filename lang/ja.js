@@ -917,4 +917,11 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Change photo": "写真を変更",
   "That file could not be used as a photo.": "そのファイルは写真として使えません。",
   "Print": "印刷",
+  "Copy this day to…": "この日をコピー…",
+  "Plan {count} meals from last week again": "先週の {count} 食をもう一度予定する",
+  "Repeat last week": "先週を繰り返す",
+  "Uses {items} soon": "{items}を早めに使えます",
+  "{count} meals from last week planned again": "先週の {count} 食をもう一度予定しました",
+  "Copy to": "コピー先",
+  "{count} meals copied to {day}": "{count} 食を{day}にコピーしました",
 };

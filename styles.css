@@ -223,7 +223,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .match-tag.has-missing { color: #a66c24; }
 .shopping-block { margin-top: 4px; }
 .shopping-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.recipe-heading-actions, .inventory-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.recipe-heading-actions, .inventory-heading-actions, .week-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Recipe page */
 .recipe-back { margin: -8px 0 10px; padding: 0; }
 .recipe-page-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -880,3 +880,13 @@ html:not(.is-standalone) .phone-only { display: none; }
   .custom-check { border: 1.5px solid #333; background: #fff; }
   .print-footer { margin-top: 18px; color: #777; font-size: 9pt; }
 }
+
+/* Faster week planning (0.15): copy a day's meals, and recipes that use something from Use soon. */
+.day-detail-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px 14px; }
+.copy-day-targets { margin: -4px 0 14px; padding: 10px 12px; border-radius: var(--radius); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: var(--mint); }
+.copy-day-targets > span { margin-right: 4px; color: var(--green-dark); font-size: 11px; font-weight: 700; }
+.day-target { min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; cursor: pointer; }
+.day-target:hover { border-color: var(--green); }
+.use-soon-tag { margin-top: 6px; color: var(--coral); font-size: 10px; font-weight: 700; }
+.no-flex-gap .day-detail-actions > * + * { margin-left: 14px; }
+.no-flex-gap .copy-day-targets > * { margin: 0 6px 6px 0; }

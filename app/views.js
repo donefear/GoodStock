@@ -258,17 +258,72 @@ function renderWeek() {
   }).join('');
   const selectedPlans = plans.filter((entry) => entry.date === dateKey(selectedDate));
   const selectedLabel = formatDate(selectedDate, { weekday: 'long', month: 'long', day: 'numeric' });
+  const copyRow = copyingDay === dateKey(selectedDate) && selectedPlans.length ? renderCopyDayTargets() : '';
+  const copyButton = selectedPlans.length ? `<button class="text-button" data-action="copy-day" aria-expanded="${Boolean(copyRow)}">${t('Copy this day to…')}</button>` : '';
+  const repeatCount = lastWeekMeals().length;
+  const repeatButton = repeatCount ? `<button class="button button-outline" data-action="repeat-last-week" title="${tp(repeatCount, 'Plan {count} meal from last week again', 'Plan {count} meals from last week again')}">${t('Repeat last week')} <span aria-hidden="true">↻</span></button>` : '';
   const planned = selectedPlans.length ? selectedPlans.map((entry) => {
     const recipe = recipeById(entry.recipeId);
     if (!recipe) return '';
     const title = `<button class="mealie-link recipe-title-link" type="button" data-action="view-recipe" data-id="${escapeHtml(recipe.id)}" title="${t('Show recipe')}">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`;
     return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? t('Cooked and confirmed') : tp(recipe.ingredients.length, '{count} ingredient', '{count} ingredients')}${planScale(entry) !== 1 ? ` · ${escapeHtml(scaleLabel(recipe, planScale(entry)))}` : ''}</span></div>${entry.cooked ? `<span class="cooked-label">${t('DONE')}</span>` : `<div class="planned-actions"><button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="${t('Cook it step by step')}">${t('Steps')} <span aria-hidden="true">▶</span></button><button class="button button-small button-quiet" data-action="review-plan" data-id="${escapeHtml(entry.id)}" title="${t('See what this needs and what you have')}">${t('Review')}</button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}" title="${t('Mark as cooked and remove the ingredients from stock')}">${t('Cooked')} <span aria-hidden="true">✓</span></button></div>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="${t('Remove meal')}">×</button></article>`;
   }).join('') : `<div class="day-empty"><span aria-hidden="true">✳</span><p>${t('No meal planned for this day.')}</p><small>${t('Pick a recipe below to give the day a little shape.')}</small></div>`;
-  const recipeOptions = [...state.recipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
-  return `${pageHeading(t('A GOOD WEEK STARTS HERE'), t('Make room for dinner.'), t('Plan meals at your own pace. Your list will follow along.'), `<button class="button button-outline" data-action="generate-shopping">${t('Build shopping list')} <span aria-hidden="true">↗</span></button>`)}
+  // Recipes that use something from Use soon come first ("plan these first"), then the ones closest to ready.
+  const soon = itemsNeedingExpiryAttention();
+  const usesSoon = new Map(state.recipes.map((recipe) => [recipe.id, soon.filter((item) => (recipe.ingredients || []).some((ingredient) => matchingInventory(ingredient)?.id === item.id))]));
+  const recipeOptions = [...state.recipes].sort((first, second) => usesSoon.get(second.id).length - usesSoon.get(first.id).length || missingIngredients(first).length - missingIngredients(second).length);
+  const soonTag = (recipe) => (usesSoon.get(recipe.id).length ? `<span class="use-soon-tag">${escapeHtml(t('Uses {items} soon', { items: usesSoon.get(recipe.id).slice(0, 2).map((item) => item.name).join(', ') }))}</span>` : '');
+  return `${pageHeading(t('A GOOD WEEK STARTS HERE'), t('Make room for dinner.'), t('Plan meals at your own pace. Your list will follow along.'), `<div class="week-heading-actions">${repeatButton}<button class="button button-outline" data-action="generate-shopping">${t('Build shopping list')} <span aria-hidden="true">↗</span></button></div>`)}
     <div class="week-navigation"><button class="icon-button" data-action="previous-week" aria-label="${t('Previous week')}" title="${t('Previous week')}">‹</button><label class="date-jump">${t('Jump to date')}<input id="week-date" type="date" value="${dateKey(selectedDate)}" aria-label="${t('Select a date')}" /></label><span class="week-range">${escapeHtml(weekLabel)}</span><button class="button button-quiet today-button" data-action="go-today">${t('Today')}</button><button class="icon-button" data-action="next-week" aria-label="${t('Next week')}" title="${t('Next week')}">›</button></div>
-    <section class="week-planner"><div class="week-strip">${dayButtons}</div><div class="day-detail"><div class="section-heading"><div><span class="eyebrow">${t('YOUR PLAN')}</span><h2>${escapeHtml(selectedLabel)}</h2></div><span class="plan-count">${tp(selectedPlans.length, '{count} meal', '{count} meals')}</span></div><div class="planned-list">${planned}</div></div></section>
-    <section class="section-block recipe-picker"><div class="section-heading"><div><span class="eyebrow">${t('PICK SOMETHING GOOD')}</span><h2>${t('Add a recipe to this day')}</h2></div><button class="text-button" data-view="recipes">${t('Browse all recipes')} <span aria-hidden="true">→</span></button></div><div class="picker-grid">${recipeOptions.slice(0, 3).map((recipe) => `<article class="picker-item"><span class="recipe-number">${tp(recipe.ingredients.length, '{count} INGREDIENT', '{count} INGREDIENTS', { count: String(recipe.ingredients.length).padStart(2, '0') })}</span><strong>${escapeHtml(recipe.name)}</strong><p>${escapeHtml(recipe.description || t('An idea from your recipe shelf.'))}</p><div class="picker-foot"><span class="match-tag ${missingIngredients(recipe).length ? 'has-missing' : ''}">${missingIngredients(recipe).length ? tp(missingIngredients(recipe).length, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</span><button class="button button-small button-dark" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${t('Add')} <span aria-hidden="true">＋</span></button></div></article>`).join('') || `<p class="muted">${t('Add recipes in your recipe library first.')}</p>`}</div></section>`;
+    <section class="week-planner"><div class="week-strip">${dayButtons}</div><div class="day-detail"><div class="section-heading"><div><span class="eyebrow">${t('YOUR PLAN')}</span><h2>${escapeHtml(selectedLabel)}</h2></div><div class="day-detail-actions">${copyButton}<span class="plan-count">${tp(selectedPlans.length, '{count} meal', '{count} meals')}</span></div></div>${copyRow}<div class="planned-list">${planned}</div></div></section>
+    <section class="section-block recipe-picker"><div class="section-heading"><div><span class="eyebrow">${t('PICK SOMETHING GOOD')}</span><h2>${t('Add a recipe to this day')}</h2></div><button class="text-button" data-view="recipes">${t('Browse all recipes')} <span aria-hidden="true">→</span></button></div><div class="picker-grid">${recipeOptions.slice(0, 3).map((recipe) => `<article class="picker-item"><span class="recipe-number">${tp(recipe.ingredients.length, '{count} INGREDIENT', '{count} INGREDIENTS', { count: String(recipe.ingredients.length).padStart(2, '0') })}</span><strong>${escapeHtml(recipe.name)}</strong>${soonTag(recipe)}<p>${escapeHtml(recipe.description || t('An idea from your recipe shelf.'))}</p><div class="picker-foot"><span class="match-tag ${missingIngredients(recipe).length ? 'has-missing' : ''}">${missingIngredients(recipe).length ? tp(missingIngredients(recipe).length, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</span><button class="button button-small button-dark" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${t('Add')} <span aria-hidden="true">＋</span></button></div></article>`).join('') || `<p class="muted">${t('Add recipes in your recipe library first.')}</p>`}</div></section>`;
+}
+
+// Faster planning: "Repeat last week" plans last week's meals again on the same weekdays, and "Copy this day to…"
+// copies a day's meals to another day of this week or the next. Meals already planned there are not doubled.
+let copyingDay = '';
+
+const plannedMeal = (entry) => ({ id: makeId(), date: entry.date, recipeId: entry.recipeId, cooked: false, ...(planScale(entry) !== 1 ? { scale: planScale(entry) } : {}) });
+const alreadyPlanned = (date, recipeId) => state.plan.some((entry) => entry.date === date && entry.recipeId === recipeId);
+
+function shiftDateKey(key, days) {
+  const date = dateFromKey(key);
+  date.setDate(date.getDate() + days);
+  return dateKey(date);
+}
+
+// Last week's meals that aren't planned on the same weekday this week yet.
+function lastWeekMeals() {
+  const first = dateKey(dateAtOffset(-7));
+  const last = dateKey(dateAtOffset(-1));
+  return state.plan.filter((entry) => entry.date >= first && entry.date <= last && recipeById(entry.recipeId))
+    .map((entry) => ({ ...entry, date: shiftDateKey(entry.date, 7) }))
+    .filter((entry, index, list) => !alreadyPlanned(entry.date, entry.recipeId) && list.findIndex((other) => other.date === entry.date && other.recipeId === entry.recipeId) === index);
+}
+
+function repeatLastWeek() {
+  const meals = lastWeekMeals();
+  if (!meals.length) return;
+  withUndo(tp(meals.length, '{count} meal from last week planned again', '{count} meals from last week planned again'), ['plan'], () => {
+    state.plan.push(...meals.map(plannedMeal));
+  });
+}
+
+function renderCopyDayTargets() {
+  const from = dateKey(selectedDate);
+  const days = Array.from({ length: 14 }, (_, index) => dateAtOffset(index)).filter((date) => dateKey(date) !== from);
+  return `<div class="copy-day-targets" role="group" aria-label="${t('Copy this day to…')}"><span>${t('Copy to')}</span>${days.map((date) => `<button class="day-target" data-action="copy-day-to" data-date="${dateKey(date)}">${escapeHtml(formatDate(date, { weekday: 'short', day: 'numeric' }))}</button>`).join('')}</div>`;
+}
+
+function copyDayTo(target) {
+  const from = copyingDay;
+  copyingDay = '';
+  const meals = state.plan.filter((entry) => entry.date === from && recipeById(entry.recipeId) && !alreadyPlanned(target, entry.recipeId)).map((entry) => ({ ...entry, date: target }));
+  const label = formatDate(dateFromKey(target), { weekday: 'long', day: 'numeric', month: 'long' });
+  if (!meals.length) { render(); return; }
+  withUndo(tp(meals.length, '{count} meal copied to {day}', '{count} meals copied to {day}', { day: label }), ['plan'], () => {
+    state.plan.push(...meals.map(plannedMeal));
+  });
 }
 
 // The shopping list in groups, roughly in the order of a supermarket walk: fresh produce first, things that need

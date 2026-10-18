@@ -49,7 +49,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **"Cooked ✓"** takes the amounts you used out of your inventory. You can adjust each amount first, and put the leftovers in the fridge with three days to eat them.
 
 ### 📅 This week
-- **Plan meals by day.** Pick recipes for the week, with servings for each meal.
+- **Plan meals by day.** Pick recipes for the week, with servings for each meal. **Repeat last week** in one tap, or **copy a day** to another day. Recipes that use something from Use soon are suggested first.
 - **One tap builds the shopping list** from the week's plan. It only adds what you don't already have.
 
 ### 🛒 Shopping list

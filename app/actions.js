@@ -269,6 +269,12 @@ document.addEventListener('click', async (event) => {
     activeView = 'week';
     render();
   }
+  if (action === 'repeat-last-week') repeatLastWeek();
+  if (action === 'copy-day') {
+    copyingDay = copyingDay === dateKey(selectedDate) ? '' : dateKey(selectedDate);
+    render();
+  }
+  if (action === 'copy-day-to') copyDayTo(button.dataset.date);
   if (action === 'remove-plan') withUndo(t('Meal removed from the plan'), ['plan'], () => { state.plan = state.plan.filter((entry) => entry.id !== id); });
   if (action === 'undo') undoLastChange();
   if (action === 'cook') openCookDialog(state.plan.find((entry) => entry.id === id));

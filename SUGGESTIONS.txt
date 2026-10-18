@@ -107,10 +107,11 @@ EVERYDAY USE
     keeps only what is still unchecked, in its groups, with tick boxes. Not in the phone apps: their web views
     can't print (Android would need its PrintManager through the bridge).
 
-0.15 Faster week planning.
-    "Repeat last week" and "Copy this day to…" on the This week page, plus a "plan these first" hint that puts
-    recipes using Use soon items at the top. Most households cook the same dozen meals, and planning them should
-    take a few taps.
+[x] DONE 0.15 Faster week planning. (v3.2.5)
+    "Repeat last week" (shown when last week has meals that aren't planned again yet) plans them on the same
+    weekdays, with their servings. "Copy this day to…" opens a row of the other days of this week and the next.
+    Neither doubles a meal that is already planned on that day, and both can be undone. The recipe picker puts
+    recipes that use something from Use soon first, tagged "Uses milk soon".
 
 0.16 Recipe favourites and a "last cooked" note.
     A ★ on recipes, a "Favourites" filter, and "cooked 6 times, last 12 days ago" on the recipe page. The cooking

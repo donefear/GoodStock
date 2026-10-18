@@ -917,4 +917,11 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Change photo": "Schimbă fotografia",
   "That file could not be used as a photo.": "Fișierul acesta nu poate fi folosit ca fotografie.",
   "Print": "Tipărește",
+  "Copy this day to…": "Copiază ziua aceasta în…",
+  "Plan {count} meals from last week again": { "one": "Planifică din nou {count} masă de săptămâna trecută", "few": "Planifică din nou {count} mese de săptămâna trecută", "other": "Planifică din nou {count} de mese de săptămâna trecută" },
+  "Repeat last week": "Repetă săptămâna trecută",
+  "Uses {items} soon": "Folosește la timp {items}",
+  "{count} meals from last week planned again": { "one": "{count} masă de săptămâna trecută planificată din nou", "few": "{count} mese de săptămâna trecută planificate din nou", "other": "{count} de mese de săptămâna trecută planificate din nou" },
+  "Copy to": "Copiază în",
+  "{count} meals copied to {day}": { "one": "{count} masă copiată în {day}", "few": "{count} mese copiate în {day}", "other": "{count} de mese copiate în {day}" },
 };

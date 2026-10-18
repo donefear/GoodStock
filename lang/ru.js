@@ -917,4 +917,11 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Change photo": "Заменить фото",
   "That file could not be used as a photo.": "Этот файл нельзя использовать как фото.",
   "Print": "Печать",
+  "Copy this day to…": "Скопировать этот день на…",
+  "Plan {count} meals from last week again": { "one": "Снова запланировать {count} блюдо с прошлой недели", "few": "Снова запланировать {count} блюда с прошлой недели", "many": "Снова запланировать {count} блюд с прошлой недели", "other": "Снова запланировать {count} блюда с прошлой недели" },
+  "Repeat last week": "Повторить прошлую неделю",
+  "Uses {items} soon": "Пора использовать: {items}",
+  "{count} meals from last week planned again": { "one": "{count} блюдо с прошлой недели запланировано снова", "few": "{count} блюда с прошлой недели запланированы снова", "many": "{count} блюд с прошлой недели запланированы снова", "other": "{count} блюда с прошлой недели запланированы снова" },
+  "Copy to": "Скопировать на",
+  "{count} meals copied to {day}": { "one": "{count} блюдо скопировано на {day}", "few": "{count} блюда скопированы на {day}", "many": "{count} блюд скопировано на {day}", "other": "{count} блюда скопированы на {day}" },
 };

@@ -1,6 +1,7 @@
 // The shared shopping list text (phone apps) and the QR download (server) use the same supermarket groups as the
 // list on screen, with the headings in the app's language (0.12).
 const fail = []; const log = [];
+const kitchenBefore = JSON.stringify(state);
 state.shopping = [
   { id: 'a', name: 'Milk', quantity: 1, unit: 'l', checked: false },
   { id: 'b', name: 'Carrots', quantity: 500, unit: 'g', checked: false },
@@ -30,6 +31,7 @@ const lines = download.split('\n');
 const heading = lines.indexOf('GROENTEN');
 if (heading < 0 || !/Carrots/.test(lines[heading + 1]) || !lines.includes('[x] Onions (3)')) fail.push('download not grouped');
 await setLanguage('en');
-state.shopping = [];
+state = normalizeState(JSON.parse(kitchenBefore));
+activeView = 'inventory';
 persist();
 return { fail, log };
