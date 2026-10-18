@@ -2,6 +2,7 @@
 // looks the English text up in the chosen language's table (lang/<code>.js) and falls back to English when a line
 // has no translation yet. Placeholders in braces are filled in afterwards: t('Expires in {days} days', { days }).
 // The language is a per-device preference, like the theme, because several people may share one kitchen.
+// A right-to-left language (Arabic, Hebrew…) adds dir: 'rtl', which mirrors the layout.
 const LANGUAGES = [
   { code: 'en', name: 'English', locale: 'en-GB' },
   { code: 'nl', name: 'Nederlands', locale: 'nl-NL' },
@@ -85,6 +86,8 @@ async function setLanguage(code, { remember = false } = {}) {
   try { currentPlurals = new Intl.PluralRules(languageLocale()); } catch { currentPlurals = null; }
   if (remember) { try { localStorage.setItem(LANGUAGE_KEY, currentLanguage); } catch { /* Kept for this visit only. */ } }
   document.documentElement.lang = currentLanguage;
+  // Right-to-left languages ({ …, dir: 'rtl' } in LANGUAGES) flip the layout; see the end of styles.css.
+  document.documentElement.dir = languageInfo(currentLanguage).dir === 'rtl' ? 'rtl' : 'ltr';
   translatePage(document.body);
   return currentLanguage;
 }

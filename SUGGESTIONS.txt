@@ -157,9 +157,16 @@ LANGUAGES
     are found inside the sentence, also by their catalog names. Ingredient lines may have the amount first or last
     ("Соль — 1 ч. л.", "鸡蛋 2个", "砂糖 大さじ2"); units stay as written. An amount already in the step stays.
 
-0.21 Right-to-left languages (only if someone asks).
-    Arabic or Hebrew need dir="rtl" and CSS that flips with the text direction (margin-inline instead of
-    margin-left…). This is a layout job more than a translation job. Do it only on request.
+[x] DONE 0.21 Right-to-left languages, the layout part. (v3.2.11)
+    A language with dir: 'rtl' in LANGUAGES sets <html dir="rtl">. styles.css now uses logical margins, paddings,
+    borders and text alignment everywhere (screenshots of every view in English are unchanged), and mirrors the
+    positioned parts in a [dir="rtl"] section at the end (Chrome 81 has no inset-inline): the menu moves to the
+    right, toggles, timers and dialogs follow. Arrows like → are turned around after each render; ‹ › mirror by
+    themselves. What people type (recipes, items, the list) keeps its own direction (unicode-bidi: plaintext), so
+    an English recipe stays readable in an Arabic interface. tests/e2e/rtl-layout.mjs checks every view at
+    tablet and phone width in a stand-in right-to-left language.
+    STILL OPEN: an actual Arabic or Hebrew translation (about 950 lines, and catalog names for the ingredients).
+    Only worth it when someone will use it and can read it over.
 
 
 KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)

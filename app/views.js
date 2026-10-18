@@ -166,7 +166,19 @@ function render() {
   $('#view-container').innerHTML = views[activeView]();
   refreshTimers();
   if (activeView === 'tools') afterToolsRender();
+  mirrorArrows($('#view-container'));
   updateSyncStatus(navigator.onLine ? (localStorage.getItem(PENDING_KEY) ? 'pending' : 'online') : 'offline');
+}
+
+// Right-to-left languages: arrows that point "forward" (→, ↗) point the other way. ‹ › and brackets are mirrored by
+// the browser itself. Recipe text is left alone.
+const MIRRORED_ARROWS = { '→': '←', '←': '→', '↗': '↖', '↖': '↗' };
+function mirrorArrows(root) {
+  if (document.documentElement.dir !== 'rtl' || !root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (/[→←↗↖]/.test(node.nodeValue) && !node.parentElement.closest('.recipe-method, .recipe-page-ingredients, .term-card p')) node.nodeValue = node.nodeValue.replace(/[→←↗↖]/g, (arrow) => MIRRORED_ARROWS[arrow]);
+  }
 }
 
 function pageHeading(eyebrow, title, subtitle, action = '') {

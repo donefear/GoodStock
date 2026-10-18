@@ -173,6 +173,9 @@ This runs the translation check, page tests and end-to-end tests in a headless b
 ### Adding interface text
 Write it in English inside `t('…')`, then run `node lang/check-translations.mjs`. It lists the lines each language is missing.
 
+### Right-to-left languages
+The layout is ready for Arabic, Hebrew and other right-to-left languages: give the language `dir: 'rtl'` in `LANGUAGES` (`i18n.js`) and the page mirrors itself. In `styles.css`, use `margin-inline-start` and similar logical properties instead of left and right; positioned elements get a `[dir="rtl"]` rule at the end of the file. `tests/e2e/rtl-layout.mjs` checks every view in a right-to-left stand-in language.
+
 ### Versioning
 Every change bumps the patch number in the `Goodstock vX.Y.Z` label in `index.html` and the cache name in `sw.js`. The phone apps take their version from that label.
 
