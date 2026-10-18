@@ -924,4 +924,13 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "{count} meals from last week planned again": { "one": "{count} refeição da semana passada planejada de novo", "other": "{count} refeições da semana passada planejadas de novo" },
   "Copy to": "Copiar para",
   "{count} meals copied to {day}": { "one": "{count} refeição copiada para {day}", "other": "{count} refeições copiadas para {day}" },
+  "Remove from favourites": "Remover dos favoritos",
+  "Add to favourites": "Adicionar aos favoritos",
+  "Favourite": "Favorita",
+  "Not cooked yet": "Ainda não preparada",
+  "today": "hoje",
+  "yesterday": "ontem",
+  "Favourites": "Favoritas",
+  "{count} days ago": { "one": "há {count} dia", "other": "há {count} dias" },
+  "Cooked {count} times, last {when}": { "one": "Preparada uma vez, a última {when}", "other": "Preparada {count} vezes, a última {when}" },
 };

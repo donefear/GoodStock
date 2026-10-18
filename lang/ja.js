@@ -924,4 +924,13 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "{count} meals from last week planned again": "先週の {count} 食をもう一度予定しました",
   "Copy to": "コピー先",
   "{count} meals copied to {day}": "{count} 食を{day}にコピーしました",
+  "Remove from favourites": "お気に入りから外す",
+  "Add to favourites": "お気に入りに追加",
+  "Favourite": "お気に入り",
+  "Not cooked yet": "まだ作っていません",
+  "today": "今日",
+  "yesterday": "昨日",
+  "Favourites": "お気に入り",
+  "{count} days ago": "{count} 日前",
+  "Cooked {count} times, last {when}": "{count} 回作りました（最後は{when}）",
 };

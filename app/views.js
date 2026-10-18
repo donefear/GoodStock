@@ -910,7 +910,8 @@ function renderRecipePage() {
   const toolRow = tools.length ? `<ul class="steps-tools recipe-page-tools" aria-label="${t('Tools')}">${tools.map((tool) => `<li title="${escapeHtml(t(tool.description))}">${kitchenToolIcon(tool)}<span>${escapeHtml(t(tool.name))}</span></li>`).join('')}</ul>` : '';
   return `<button class="text-button recipe-back" type="button" data-action="back-to-recipes">‹ ${t('All recipes')}</button>
     ${pageHeading(escapeHtml(sourceLabel(recipe.source).toUpperCase()), escapeHtml(recipe.name), escapeHtml(recipe.description || ''), actions)}
-    <div class="recipe-page-links">${links}</div>
+    <div class="recipe-page-links">${favouriteButton(saved, true)}${links}</div>
+    <p class="recipe-cooked-note">${escapeHtml(cookedText(saved.id))}</p>
     ${recipePhoto(recipe, 'recipe-page-photo')}
     ${renderTranslationPanel(recipe)}
     <div class="recipe-page">
@@ -1163,6 +1164,40 @@ async function disconnectDeepl() {
   await loadDeeplSettings();
 }
 
+// Favourites (a ★ saved with the recipe, so the household shares them) and how often a recipe was cooked, from the
+// meals marked "Cooked ✓" in the plan (the same history the recipe ideas use).
+const FAVOURITES_FILTER_KEY = 'goodstock-favourites-filter-v1';
+let favouritesOnly = (() => { try { return localStorage.getItem(FAVOURITES_FILTER_KEY) === 'true'; } catch { return false; } })();
+
+// With a label on the recipe page ("★ Favourite"), only the star on recipe cards.
+function favouriteButton(recipe, withLabel = false) {
+  const on = Boolean(recipe.favourite);
+  const hint = on ? t('Remove from favourites') : t('Add to favourites');
+  const label = withLabel ? ` ${on ? t('Favourite') : t('Add to favourites')}` : '';
+  return `<button class="favourite-button ${withLabel ? 'with-label' : ''} ${on ? 'is-on' : ''}" type="button" data-action="toggle-favourite" data-id="${escapeHtml(recipe.id)}" aria-pressed="${on}" title="${hint}"${withLabel ? '' : ` aria-label="${hint}"`}><span aria-hidden="true">${on ? '★' : '☆'}</span>${label}</button>`;
+}
+
+function toggleFavourite(id) {
+  const recipe = recipeById(id);
+  if (!recipe) return;
+  if (recipe.favourite) delete recipe.favourite; else recipe.favourite = true;
+  persist();
+}
+
+function cookedStats(recipeId) {
+  const today = dateKey(new Date());
+  const dates = state.plan.filter((entry) => entry.cooked && entry.recipeId === recipeId && entry.date <= today).map((entry) => entry.date).sort();
+  return { count: dates.length, last: dates[dates.length - 1] || '' };
+}
+
+function cookedText(recipeId) {
+  const { count, last } = cookedStats(recipeId);
+  if (!count) return t('Not cooked yet');
+  const days = Math.round((dateFromKey(dateKey(new Date())) - dateFromKey(last)) / DAY_MS);
+  const when = days <= 0 ? t('today') : days === 1 ? t('yesterday') : tp(days, '{count} day ago', '{count} days ago');
+  return tp(count, 'Cooked once, last {when}', 'Cooked {count} times, last {when}', { when });
+}
+
 function recipeCard(recipe, isRemote = false) {
   const missing = missingIngredients(recipe);
   const status = missing.length === 0 ? t('You have everything') : tp(missing.length, '{count} missing: {items}', '{count} missing: {items}', { items: `${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''}` });
@@ -1170,18 +1205,20 @@ function recipeCard(recipe, isRemote = false) {
   const button = isRemote
     ? `<button class="button button-small button-dark" data-action="import-recipe" data-id="${escapeHtml(recipe.slug || recipe.id)}">${t('Add to library')} <span aria-hidden="true">＋</span></button>`
     : `<button class="button button-small ${planned ? 'button-outline' : 'button-dark'}" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${planned ? t('Plan another day') : t('Plan this week')} <span aria-hidden="true">→</span></button>`;
-  return `<article class="recipe-card${safePhoto(recipe.photo) ? ' has-photo' : ''}">${recipePhoto(recipe, 'recipe-card-photo')}<div class="recipe-card-top"><span class="recipe-source">${escapeHtml(sourceLabel(recipe.source))}</span><span class="recipe-ingredient-count">${tp(recipe.ingredients?.length || 0, '{count} INGREDIENT', '{count} INGREDIENTS')}</span></div><h3><button class="recipe-title-link recipe-card-title" type="button" data-action="view-recipe" data-id="${escapeHtml(isRemote ? recipe.slug || recipe.id : recipe.id)}" data-remote="${isRemote}" title="${t('Show recipe')}">${escapeHtml(recipe.name)}</button></h3><p>${escapeHtml(recipe.description || t('A recipe from your collection.'))}</p><div class="recipe-missing ${missing.length ? 'has-missing' : ''}"><span aria-hidden="true">${missing.length ? '◷' : '✓'}</span>${escapeHtml(status)}</div><div class="recipe-card-bottom">${button}</div></article>`;
+  return `<article class="recipe-card${safePhoto(recipe.photo) ? ' has-photo' : ''}">${recipePhoto(recipe, 'recipe-card-photo')}<div class="recipe-card-top"><span class="recipe-source">${escapeHtml(sourceLabel(recipe.source))}</span><span class="recipe-ingredient-count">${tp(recipe.ingredients?.length || 0, '{count} INGREDIENT', '{count} INGREDIENTS')}</span>${isRemote ? '' : favouriteButton(recipe)}</div><h3><button class="recipe-title-link recipe-card-title" type="button" data-action="view-recipe" data-id="${escapeHtml(isRemote ? recipe.slug || recipe.id : recipe.id)}" data-remote="${isRemote}" title="${t('Show recipe')}">${escapeHtml(recipe.name)}</button></h3><p>${escapeHtml(recipe.description || t('A recipe from your collection.'))}</p><div class="recipe-missing ${missing.length ? 'has-missing' : ''}"><span aria-hidden="true">${missing.length ? '◷' : '✓'}</span>${escapeHtml(status)}</div><div class="recipe-card-bottom">${button}</div></article>`;
 }
 
 function renderRecipes() {
-  const localRecipes = state.recipes.filter((recipe) => matchesSearch(recipeQuery, `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`, recipe.ingredients || []));
+  const hasFavourites = state.recipes.some((recipe) => recipe.favourite);
+  const onlyFavourites = favouritesOnly && hasFavourites;
+  const localRecipes = state.recipes.filter((recipe) => (!onlyFavourites || recipe.favourite) && matchesSearch(recipeQuery, `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`, recipe.ingredients || []));
   const sorted = [...localRecipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   const actions = `<div class="recipe-heading-actions"><button class="button button-primary" data-action="new-recipe">＋ ${t('New recipe')}</button><button class="button button-outline" data-action="open-recipe-import">${t('Import')} <span aria-hidden="true">↓</span></button></div>`;
   return `${pageHeading(t('FROM YOUR SHELF'), t('What sounds good?'), t('Find something to make with what you have, or a few things you could grab.'), actions)}
     <form class="recipe-search" id="recipe-search-form"><span aria-hidden="true">⌕</span><input id="recipe-search" value="${escapeHtml(recipeQuery)}" placeholder="${t('Search recipes or ingredients')}" aria-label="${t('Search recipes or ingredients')}"/><button class="button button-primary" type="submit">${t('Search')}</button></form>
     ${renderIdeas()}
     ${mealieConfigured ? `<button class="button button-outline stock-search-button" data-action="search-stocked">${t('Find with my inventory')} <span aria-hidden="true">↗</span></button>` : ''}
-    <div class="recipe-results-heading"><div><span class="eyebrow">${t('YOUR RECIPE BOX')}</span><h2>${t('Closest to ready')}</h2></div><span class="muted">${tp(sorted.length, '{count} recipe', '{count} recipes')}</span></div>
+    <div class="recipe-results-heading"><div><span class="eyebrow">${t('YOUR RECIPE BOX')}</span><h2>${onlyFavourites ? t('Favourites') : t('Closest to ready')}</h2></div><div class="recipe-results-tools">${hasFavourites ? `<button class="favourites-filter ${onlyFavourites ? 'active' : ''}" type="button" data-action="favourites-filter" aria-pressed="${onlyFavourites}">★ ${t('Favourites')}</button>` : ''}<span class="muted">${tp(sorted.length, '{count} recipe', '{count} recipes')}</span></div></div>
     <div class="recipe-grid">${sorted.length ? sorted.map((recipe) => recipeCard(recipe)).join('') : `<p class="muted">${t('No recipes match that search.')}</p>`}</div>
     ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">${t('MEALIE LIBRARY')}</span><h2>${mealieResults.length ? t('From Mealie') : t('Search your recipes')}</h2></div><span class="muted">${t('Connected')}</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>${t('Already using Mealie?')}</strong><br/>${t('Connect it in Settings to search and import your recipe library here.')}</p><button class="button button-small button-outline" type="button" data-action="open-settings" data-open="mealie-settings">${t('Connect')}</button></div>`}`;
 }

@@ -269,6 +269,12 @@ document.addEventListener('click', async (event) => {
     activeView = 'week';
     render();
   }
+  if (action === 'toggle-favourite') toggleFavourite(id);
+  if (action === 'favourites-filter') {
+    favouritesOnly = !favouritesOnly;
+    try { localStorage.setItem(FAVOURITES_FILTER_KEY, String(favouritesOnly)); } catch { /* A per-browser convenience only. */ }
+    render();
+  }
   if (action === 'repeat-last-week') repeatLastWeek();
   if (action === 'copy-day') {
     copyingDay = copyingDay === dateKey(selectedDate) ? '' : dateKey(selectedDate);

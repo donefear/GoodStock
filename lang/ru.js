@@ -924,4 +924,13 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "{count} meals from last week planned again": { "one": "{count} блюдо с прошлой недели запланировано снова", "few": "{count} блюда с прошлой недели запланированы снова", "many": "{count} блюд с прошлой недели запланированы снова", "other": "{count} блюда с прошлой недели запланированы снова" },
   "Copy to": "Скопировать на",
   "{count} meals copied to {day}": { "one": "{count} блюдо скопировано на {day}", "few": "{count} блюда скопированы на {day}", "many": "{count} блюд скопировано на {day}", "other": "{count} блюда скопированы на {day}" },
+  "Remove from favourites": "Убрать из избранного",
+  "Add to favourites": "В избранное",
+  "Favourite": "В избранном",
+  "Not cooked yet": "Ещё не готовили",
+  "today": "сегодня",
+  "yesterday": "вчера",
+  "Favourites": "Избранное",
+  "{count} days ago": { "one": "{count} день назад", "few": "{count} дня назад", "many": "{count} дней назад", "other": "{count} дня назад" },
+  "Cooked {count} times, last {when}": { "one": "Приготовлено {count} раз, последний — {when}", "few": "Приготовлено {count} раза, последний — {when}", "many": "Приготовлено {count} раз, последний — {when}", "other": "Приготовлено {count} раза, последний — {when}" },
 };

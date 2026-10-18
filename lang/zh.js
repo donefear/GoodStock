@@ -924,4 +924,13 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "{count} meals from last week planned again": "已再次安排上周的 {count} 顿饭",
   "Copy to": "复制到",
   "{count} meals copied to {day}": "已将 {count} 顿饭复制到{day}",
+  "Remove from favourites": "取消收藏",
+  "Add to favourites": "加入收藏",
+  "Favourite": "已收藏",
+  "Not cooked yet": "还没做过",
+  "today": "今天",
+  "yesterday": "昨天",
+  "Favourites": "收藏",
+  "{count} days ago": "{count} 天前",
+  "Cooked {count} times, last {when}": "做过 {count} 次，最近一次是{when}",
 };

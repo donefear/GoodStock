@@ -890,3 +890,18 @@ html:not(.is-standalone) .phone-only { display: none; }
 .use-soon-tag { margin-top: 6px; color: var(--coral); font-size: 10px; font-weight: 700; }
 .no-flex-gap .day-detail-actions > * + * { margin-left: 14px; }
 .no-flex-gap .copy-day-targets > * { margin: 0 6px 6px 0; }
+
+/* Favourites and "cooked … times" (0.16). */
+.favourite-button { min-width: 30px; min-height: 30px; padding: 0 4px; border: 0; background: none; color: #b9a46a; font-size: 18px; line-height: 1; cursor: pointer; }
+.favourite-button.is-on { color: #d79b1d; }
+.favourite-button.with-label { padding: 0; font-size: 12px; font-weight: 700; color: var(--green); }
+.favourite-button.with-label span { margin-right: 2px; color: #d79b1d; font-size: 15px; }
+.recipe-card-top .favourite-button { margin: -7px -6px -7px 0; }
+.recipe-results-heading > .recipe-results-tools { flex-direction: row; align-items: center; gap: 14px; }
+.favourites-filter { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+.favourites-filter.active { border-color: #d79b1d; background: #fbf1d8; color: #7a5a10; }
+:root[data-theme="dark"] .favourites-filter.active { background: #44391c; color: #f0d48a; }
+.recipe-cooked-note { margin: -2px 0 18px; color: var(--muted); font-size: 12px; }
+.no-flex-gap .recipe-results-tools > * + * { margin-left: 14px; }
+@media print { .recipe-cooked-note, .favourite-button { display: none !important; } }
+.recipe-card-top .recipe-ingredient-count { margin-left: auto; }

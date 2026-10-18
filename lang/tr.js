@@ -924,4 +924,13 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "{count} meals from last week planned again": { "one": "Geçen haftadan {count} yemek yeniden planlandı", "other": "Geçen haftadan {count} yemek yeniden planlandı" },
   "Copy to": "Şuraya kopyala",
   "{count} meals copied to {day}": { "one": "{count} yemek {day} gününe kopyalandı", "other": "{count} yemek {day} gününe kopyalandı" },
+  "Remove from favourites": "Favorilerden çıkar",
+  "Add to favourites": "Favorilere ekle",
+  "Favourite": "Favori",
+  "Not cooked yet": "Henüz pişirilmedi",
+  "today": "bugün",
+  "yesterday": "dün",
+  "Favourites": "Favoriler",
+  "{count} days ago": { "one": "{count} gün önce", "other": "{count} gün önce" },
+  "Cooked {count} times, last {when}": { "one": "Bir kez pişirildi, en son {when}", "other": "{count} kez pişirildi, en son {when}" },
 };

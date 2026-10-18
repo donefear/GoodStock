@@ -113,9 +113,11 @@ EVERYDAY USE
     Neither doubles a meal that is already planned on that day, and both can be undone. The recipe picker puts
     recipes that use something from Use soon first, tagged "Uses milk soon".
 
-0.16 Recipe favourites and a "last cooked" note.
-    A ★ on recipes, a "Favourites" filter, and "cooked 6 times, last 12 days ago" on the recipe page. The cooking
-    history is already collected for the recipe ideas (ideas.js), so this mostly shows data the app already keeps.
+[x] DONE 0.16 Recipe favourites and a "last cooked" note. (v3.2.6)
+    A ☆/★ on every recipe card and on the recipe page ("★ Favourite"). It's saved with the recipe, so the whole
+    household shares it. The Recipes page gets a "★ Favourites" filter once there is a favourite (remembered per
+    device). The recipe page says "Cooked 6 times, last 12 days ago" or "Not cooked yet", counted from meals
+    marked Cooked ✓ up to today.
 
 
 SERVER VERSION

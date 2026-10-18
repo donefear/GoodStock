@@ -924,4 +924,13 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "{count} meals from last week planned again": { "one": "{count} maaltijd van vorige week opnieuw gepland", "other": "{count} maaltijden van vorige week opnieuw gepland" },
   "Copy to": "Kopiëren naar",
   "{count} meals copied to {day}": { "one": "{count} maaltijd gekopieerd naar {day}", "other": "{count} maaltijden gekopieerd naar {day}" },
+  "Remove from favourites": "Uit favorieten halen",
+  "Add to favourites": "Aan favorieten toevoegen",
+  "Favourite": "Favoriet",
+  "Not cooked yet": "Nog niet gekookt",
+  "today": "vandaag",
+  "yesterday": "gisteren",
+  "Favourites": "Favorieten",
+  "{count} days ago": { "one": "{count} dag geleden", "other": "{count} dagen geleden" },
+  "Cooked {count} times, last {when}": { "one": "Eén keer gekookt, laatst {when}", "other": "{count} keer gekookt, laatst {when}" },
 };

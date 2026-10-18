@@ -924,4 +924,13 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "{count} meals from last week planned again": { "one": "{count} masă de săptămâna trecută planificată din nou", "few": "{count} mese de săptămâna trecută planificate din nou", "other": "{count} de mese de săptămâna trecută planificate din nou" },
   "Copy to": "Copiază în",
   "{count} meals copied to {day}": { "one": "{count} masă copiată în {day}", "few": "{count} mese copiate în {day}", "other": "{count} de mese copiate în {day}" },
+  "Remove from favourites": "Scoate din favorite",
+  "Add to favourites": "Adaugă la favorite",
+  "Favourite": "Favorită",
+  "Not cooked yet": "Încă negătită",
+  "today": "azi",
+  "yesterday": "ieri",
+  "Favourites": "Favorite",
+  "{count} days ago": { "one": "acum {count} zi", "few": "acum {count} zile", "other": "acum {count} de zile" },
+  "Cooked {count} times, last {when}": { "one": "Gătită o dată, ultima dată {when}", "few": "Gătită de {count} ori, ultima dată {when}", "other": "Gătită de {count} de ori, ultima dată {when}" },
 };
