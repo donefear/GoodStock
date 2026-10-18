@@ -1,0 +1,60 @@
+name: Release notes
+
+# Writes the GitHub release for a version tag: what changed since the previous tag (the commit titles) and which
+# file to download for which device. The Android, desktop and iOS workflows attach their builds to the same release.
+# Run it by hand with a tag to (re)write the notes of an existing release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag whose release notes to write (e.g. v3.1.0)'
+        required: true
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Write the notes
+        run: |
+          git fetch --tags --force --quiet
+          PREVIOUS=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
+          RANGE=${PREVIOUS:+$PREVIOUS..}$TAG
+          {
+            echo "## What's new${PREVIOUS:+ since $PREVIOUS}"
+            echo
+            # One line per change; plain "vX.Y.Z" commits (version bumps without a description) are left out.
+            git log --no-merges --format='%s' "$RANGE" | grep -vE '^v[0-9]+\.[0-9]+(\.[0-9]+)?$' | sed 's/^/- /'
+            echo
+            echo "## Which file do I need?"
+            echo
+            echo "| Device | File |"
+            echo "| --- | --- |"
+            echo "| Android phone or tablet (5.0+) | \`Goodstock-$TAG.apk\` |"
+            echo "| Windows | \`…-windows-setup.exe\` (installs) or \`…-windows-portable.exe\` (runs without installing) |"
+            echo "| Mac | \`….dmg\` |"
+            echo "| Linux | \`….AppImage\` |"
+            echo "| iPhone / iPad (16.4+) | \`Goodstock-$TAG-unsigned.ipa\`, to sideload with Sideloadly or AltStore (see ios/README.md) |"
+            echo "| Home server (Docker) | No download: pull the new code and rebuild the stack (see README.md) |"
+            echo
+            echo "The apps are not signed by Apple or Microsoft, so Windows and macOS warn the first time you open them."
+            echo "An APK from this page cannot update an app installed from a build signed with your own key; back up first."
+            echo
+            echo "_The files appear below as their builds finish (the Mac and iPhone builds take longest)._"
+          } > notes.md
+          cat notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Goodstock ${{ env.TAG }}
+          body_path: notes.md
