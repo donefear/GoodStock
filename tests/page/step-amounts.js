@@ -12,6 +12,14 @@ const cases = [
   [['250 g di farina'], 'Aggiungi la farina e mescola il latte con le uova.', 'Aggiungi [250 g di] farina e mescola il latte con le uova.'],
   [['100 g de manteiga'], 'Derreta a manteiga com o açúcar e os ovos.', 'Derreta [100 g de] manteiga com o açúcar e os ovos.'],
   [['2 tbsp milk'], 'Add 2 tbsp milk.', 'Add 2 tbsp milk.'],
+  // Languages without articles (0.20): brackets after the word, matched by its stem; Chinese before, Japanese after.
+  [['200 г муки', '2 шт. моркови', 'Соль — 1 ч. л.'], 'Просейте муку в миску. Натрите морковь и добавьте соль.', 'Просейте муку ([200 г]) в миску. Натрите морковь ([2 шт.]) и добавьте соль ([1 ч. л.]).'],
+  [['200 г муки'], 'Добавьте 200 г муки и перемешайте.', 'Добавьте 200 г муки и перемешайте.'],
+  [['500 g mąki', '2 jajka'], 'Wsyp mąkę do miski i dodaj jajka.', 'Wsyp mąkę ([500 g]) do miski i dodaj jajka ([2]).'],
+  [['300 g făină', '2 ouă'], 'Cerne făina într-un castron și adaugă ouăle cu sare.', 'Cerne făina ([300 g]) într-un castron și adaugă ouăle ([2]) cu sare.'],
+  [['2 su bardağı un', '3 yumurta'], 'Unu eleyin ve yumurtaları ekleyin.', 'Unu ([2 su bardağı]) eleyin ve yumurtaları ([3]) ekleyin.'],
+  [['200克面粉', '鸡蛋 2个'], '把面粉倒入碗中，加入鸡蛋搅拌。', '把[200克]面粉倒入碗中，加入[2个]鸡蛋搅拌。'],
+  [['卵 2個', '砂糖 大さじ2'], '卵を溶きほぐし、砂糖を加える。', '卵（[2個]）を溶きほぐし、砂糖（[大さじ2]）を加える。'],
 ];
 for (const [ingredients, text, want] of cases) {
   const steps = [{ text }];

@@ -150,11 +150,12 @@ SERVER VERSION
 LANGUAGES
 ---------
 
-0.20 Amounts in the steps for the remaining languages.
-    From 2.2 and 6.4: Russian, Chinese, Japanese, Romanian, Polish and Turkish recipes show the steps without
-    amounts written in. For Chinese and Japanese, finding the ingredient's catalog name inside the sentence (there
-    are no spaces) and putting the amount just before it would work for most recipes. For the other four, put the
-    amount in brackets after the word ("морковь (2 шт.)"), which needs no grammar.
+[x] DONE 0.20 Amounts in the steps for the remaining languages. (v3.2.10)
+    Russian, Polish, Romanian and Turkish: the amount in brackets after the word, found by its stem so other
+    endings match too ("муки" → "Просейте муку (200 г)", "yumurta" → "yumurtaları (3)"). Chinese: before the name
+    ("加入2个鸡蛋"). Japanese: in brackets after it ("卵（2個）を"), which reads better there than in front. Names
+    are found inside the sentence, also by their catalog names. Ingredient lines may have the amount first or last
+    ("Соль — 1 ч. л.", "鸡蛋 2个", "砂糖 大さじ2"); units stay as written. An amount already in the step stays.
 
 0.21 Right-to-left languages (only if someone asks).
     Arabic or Hebrew need dir="rtl" and CSS that flips with the text direction (margin-inline instead of

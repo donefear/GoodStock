@@ -100,6 +100,7 @@ const isPrepWord = (word) => /^\p{L}{2,}ed$/u.test(word) || /^ge\p{L}+(?:en|de|t
 function addStepAmounts(steps, ingredients) {
   const markerRanges = (text) => [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
   const language = textLanguage(steps.map((step) => step.text).join(' '));
+  if (BRACKET_AMOUNT_LANGUAGES.includes(language) || CJK_AMOUNT_LANGUAGES.includes(language)) { addStepAmountsByName(steps, ingredients, language); return; }
   const articles = new Set(STEP_ARTICLES[language] || []);
   for (const target of ingredients.map(parseIngredient).filter((entry) => entry.amount)) {
     const name = target.name.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim().toLowerCase().replace(/^(?:de|d['’]|di)\s*/, '');
@@ -161,6 +162,102 @@ function addStepAmounts(steps, ingredients) {
       placed = true;
     }
   }
+}
+
+// Amounts in the steps for languages without articles to replace. Russian, Polish, Romanian and Turkish change a
+// word's ending ("морковь" → "морковку"), so the amount goes in brackets after the word, matched by its stem:
+// "Натрите морковку (2 шт.)". Chinese puts it before the ingredient ("把2个鸡蛋打散"), Japanese in brackets after
+// it ("卵（2個）を溶く"); there the name is found inside the sentence, also by its catalog names.
+const BRACKET_AMOUNT_LANGUAGES = ['ru', 'pl', 'ro', 'tr'];
+const CJK_AMOUNT_LANGUAGES = ['zh', 'ja'];
+const ENDING_VOWELS = /[аеёиоуыэюяьйaeęiouóyąăâîıöü]{1,2}$/u;
+const CJK_UNIT = '(?:g|kg|ml|l|克|千克|公斤|毫升|升|个|個|根|片|枚|本|勺|杯|瓣|颗|只|袋|包|株|把|適量|少々)';
+
+// "200 г муки", "2 шт. моркови", "Морковь — 2 шт.", "鸡蛋 2个", "200g面粉", "砂糖 大さじ2": the name, and the amount
+// as written (so units in any language stay as they are).
+function amountAndName(line, language) {
+  const text = String(line || '').replace(/\([^)]*\)|（[^）]*）/g, ' ').replace(/\s+/g, ' ').trim();
+  const amount = String.raw`(?:大さじ|小さじ|カップ)?\s*${AMOUNT_SOURCE}(?:\s*[-–~〜]\s*${AMOUNT_SOURCE})?`;
+  const cjk = CJK_AMOUNT_LANGUAGES.includes(language);
+  const first = cjk ? new RegExp(String.raw`^(${amount}\s*${CJK_UNIT}?)\s*(.+)$`, 'u').exec(text) : null;
+  if (first) return { name: first[2], amount: first[1].trim() };
+  if (!cjk && /^[\d¼½¾⅓⅔⅛]/.test(text)) {
+    const parsed = parseIngredient(text);
+    if (parsed.amount && parsed.name) {
+      // A unit word the catalog doesn't know ("стакан", "su bardağı") stays with the amount.
+      const unit = !parsed.unitText ? /^((?:ст|ч|стол|чайн)\.?\s*л\.?|стакан\p{L}*|столов\p{L}*\s+лож\p{L}*|чайн\p{L}*\s+лож\p{L}*|зубчик\p{L}*|щепотк\p{L}*|пуч\p{L}*|szklank\p{L}*|ząb\p{L}*|szczypt\p{L}*|pęcz\p{L}*|opakowan\p{L}*|cană|căni|cățel|căței|praf|legătur\p{L}*|yemek kaşığı|tatlı kaşığı|çay kaşığı|su bardağı|çay bardağı|diş|tutam|demet|paket)\s+(.+)$/iu.exec(parsed.name) : null;
+      const name = unit ? unit[2] : parsed.name;
+      return { name, amount: text.slice(0, text.length - name.length).trim() };
+    }
+  }
+  const last = new RegExp(String.raw`^(.+?)\s*[—–:-]?\s*(${amount}(?:\s*[^\d\s][^\d]{0,14})?)$`, 'u').exec(text);
+  if (last && !/\d/.test(last[1])) return { name: last[1].replace(/[\s—–:,-]+$/, ''), amount: last[2].replace(/[,;]$/, '').trim() };
+  return null;
+}
+
+function addStepAmountsByName(steps, ingredients, language) {
+  const cjk = CJK_AMOUNT_LANGUAGES.includes(language);
+  for (const line of ingredients) {
+    const found = amountAndName(line, language);
+    if (!found) continue;
+    const name = found.name.split(/[,，、]/)[0].trim().toLowerCase();
+    if (!name) continue;
+    const marked = `\u0001${found.amount}\u0002`;
+    for (const step of steps) {
+      const spot = cjk ? cjkMention(step.text, name, language) : wordMention(step.text, name);
+      if (!spot) continue;
+      const before = step.text.slice(0, spot.start);
+      const after = step.text.slice(spot.end);
+      // An amount already written right there ("200 г муки", "2个鸡蛋", "卵2個") stays as it is.
+      if (/[\d¼½¾⅓⅔⅛]\s*\S{0,6}\s*$/u.test(before) || /^\s*[（(]?\s*[\d¼½¾⅓⅔⅛]/.test(after) || /\u0002[^\u0001]{0,3}$/.test(before)) break;
+      const named = step.text.slice(spot.start, spot.end);
+      if (language === 'zh') step.text = `${before}${marked}${named}${after}`;
+      else if (language === 'ja') step.text = `${before}${named}（${marked}）${after}`;
+      else step.text = `${before}${named} (${marked})${after}`;
+      break;
+    }
+  }
+}
+
+// Chinese and Japanese: the ingredient's name, or one of its catalog names in that language, inside the sentence.
+function cjkMention(text, name, language) {
+  const record = ingredientRecord(name);
+  const names = [...new Set([name, ...(record ? catalogNames(record, language) : [])].map((entry) => String(entry).toLowerCase()).filter((entry) => entry.length >= 1 && CJK.test(entry)))]
+    .sort((first, second) => second.length - first.length);
+  const lower = text.toLowerCase();
+  const skip = [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
+  let best = null;
+  for (const entry of names) {
+    let index = lower.indexOf(entry);
+    while (index >= 0 && skip.some(([from, to]) => index >= from && index < to)) index = lower.indexOf(entry, index + 1);
+    if (index >= 0 && (!best || index < best.start)) best = { start: index, end: index + entry.length };
+  }
+  return best;
+}
+
+// Russian, Polish, Romanian, Turkish: the words of the name in a row, each matched by its stem (the word without
+// its last vowels), or else the longest word of the name on its own.
+function wordMention(text, name) {
+  const stem = (word) => { const cut = word.replace(ENDING_VOWELS, ''); return cut.length >= 3 ? cut : word; };
+  const matches = (word, part) => {
+    const lower = word.toLowerCase();
+    const base = stem(part);
+    return base.length < 3 ? lower === part || (lower.startsWith(part) && lower.length - part.length <= 3) : lower.startsWith(base) && lower.length <= base.length + 5;
+  };
+  const skip = [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
+  const words = [...text.matchAll(/[\p{L}-]+/gu)].filter((match) => !skip.some(([from, to]) => match.index >= from && match.index < to))
+    .map((match) => ({ text: match[0], start: match.index, end: match.index + match[0].length }));
+  const parts = name.split(/\s+/).filter(Boolean);
+  for (let index = 0; index + parts.length <= words.length; index++) {
+    if (parts.every((part, offset) => matches(words[index + offset].text, part))) return { start: words[index].start, end: words[index + parts.length - 1].end };
+  }
+  if (parts.length > 1) {
+    for (const part of [...parts].filter((entry) => entry.length >= 4).sort((first, second) => second.length - first.length)) {
+      const word = words.find((entry) => matches(entry.text, part));
+      if (word) return { start: word.start, end: word.end };
+    }
+  }
+  return null;
 }
 
 function buildCookBites(recipe) {
