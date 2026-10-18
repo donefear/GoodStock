@@ -847,3 +847,36 @@ html:not(.is-standalone) .phone-only { display: none; }
 .recipe-photo-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .recipe-photo-field .field-hint:empty { display: none; }
 .no-flex-gap .recipe-photo-field > * + * { margin-top: 8px; }
+
+/* Printing (0.14): a clean recipe page, or the shopping list with tick boxes, always light and without menus. */
+.print-only { display: none; }
+@media print {
+  @page { margin: 14mm; }
+  :root, :root[data-theme="dark"] { color-scheme: light; color: #111; background: #fff; --paper: #fff; --white: #fff; --ink: #111; --muted: #555; --line: #ccc; --green: #1f5c45; --green-dark: #1f5c45; --mint: #e8efe9; }
+  body { min-height: 0; background: #fff; font-size: 12pt; }
+  .sidebar, .topbar, .floating-timers, .undo-bar, dialog, .no-print, .recipe-back, .recipe-page-actions, .recipe-page-links,
+  .servings-control, .translation-panel, .shopping-heading-actions, .list-actions, .putaway-button, .shopping-source,
+  .page-heading .eyebrow, .shopping-row.checked, .shopping-group.is-done { display: none !important; }
+  .print-only { display: block; }
+  .main-area { margin: 0; min-height: 0; }
+  .view-container { max-width: none; padding: 0; animation: none; }
+  .page-heading { margin: 0 0 14px; padding: 0; display: block; }
+  .page-heading h1 { margin: 0 0 4px; font-size: 22pt; }
+  .page-heading p { margin: 0; color: #444; }
+  .section-block { padding: 0; border: 0; box-shadow: none; background: none; }
+  .recipe-page { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 24px; }
+  .recipe-page-photo { max-width: 260px; max-height: 170px; margin-bottom: 12px; }
+  .recipe-page-ingredients li { break-inside: avoid; }
+  .recipe-page-ingredients small { display: none; }
+  .recipe-page-ingredients li, .recipe-page-ingredients li span { color: #111 !important; }
+  .recipe-method-step { padding: 6px 0; break-inside: avoid; }
+  .recipe-method-step p { font-size: 11.5pt; line-height: 1.45; }
+  .recipe-step-number { border: 1px solid #999; background: none; color: #111; }
+  .recipe-method-step mark { padding: 0; background: none; font-weight: 700; }
+  .recipe-method-heading { break-after: avoid; }
+  .steps-tools li { border: 1px solid #ccc; background: none; }
+  .shopping-group { margin: 12px 0 2px; break-after: avoid; }
+  .shopping-row { min-height: 0; padding: 5px 0; break-inside: avoid; }
+  .custom-check { border: 1.5px solid #333; background: #fff; }
+  .print-footer { margin-top: 18px; color: #777; font-size: 9pt; }
+}

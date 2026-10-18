@@ -916,4 +916,5 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Remove photo": "写真を削除",
   "Change photo": "写真を変更",
   "That file could not be used as a photo.": "そのファイルは写真として使えません。",
+  "Print": "印刷",
 };

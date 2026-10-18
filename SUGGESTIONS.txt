@@ -100,10 +100,12 @@ EVERYDAY USE
     kitchen file, which stays fine for a few dozen photos. Imports in the phone apps keep the photo's web address,
     since the phone bridges only fetch text.
 
-0.14 Print a recipe or the shopping list.
-    There is no print style yet, so printing takes the whole screen with its menus. A short @media print section
-    gives a clean recipe page (ingredients, numbered steps with amounts) and a shopping list with tick boxes.
-    It's useful for the fridge door or for someone who shops without a phone.
+[x] DONE 0.14 Print a recipe or the shopping list. (v3.2.4)
+    Print on the recipe page and the shopping list. The @media print section at the end of styles.css leaves out
+    menus and buttons, prints light even in dark mode, and adds a small "Goodstock · date" footer (with the source
+    link for recipes). The recipe keeps its photo, ingredients, tools and numbered steps with amounts; the list
+    keeps only what is still unchecked, in its groups, with tick boxes. Not in the phone apps: their web views
+    can't print (Android would need its PrintManager through the bridge).
 
 0.15 Faster week planning.
     "Repeat last week" and "Copy this day to…" on the This week page, plus a "plan these first" hint that puts

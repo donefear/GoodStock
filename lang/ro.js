@@ -916,4 +916,5 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Remove photo": "Elimină fotografia",
   "Change photo": "Schimbă fotografia",
   "That file could not be used as a photo.": "Fișierul acesta nu poate fi folosit ca fotografie.",
+  "Print": "Tipărește",
 };

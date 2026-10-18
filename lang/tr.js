@@ -916,4 +916,5 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Remove photo": "Fotoğrafı kaldır",
   "Change photo": "Fotoğrafı değiştir",
   "That file could not be used as a photo.": "Bu dosya fotoğraf olarak kullanılamıyor.",
+  "Print": "Yazdır",
 };

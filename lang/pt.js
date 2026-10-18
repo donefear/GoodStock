@@ -916,4 +916,5 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "Remove photo": "Remover foto",
   "Change photo": "Trocar foto",
   "That file could not be used as a photo.": "Esse arquivo não pode ser usado como foto.",
+  "Print": "Imprimir",
 };

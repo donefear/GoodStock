@@ -916,4 +916,5 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Remove photo": "移除照片",
   "Change photo": "更换照片",
   "That file could not be used as a photo.": "该文件无法用作照片。",
+  "Print": "打印",
 };

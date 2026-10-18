@@ -916,4 +916,5 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Remove photo": "Удалить фото",
   "Change photo": "Заменить фото",
   "That file could not be used as a photo.": "Этот файл нельзя использовать как фото.",
+  "Print": "Печать",
 };
