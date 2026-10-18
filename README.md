@@ -109,7 +109,23 @@ You can set everything in the app under **Settings**. The environment variables 
 
 API keys set in Settings are stored on the server and are never sent back to the browser.
 
-> **Security note:** Goodstock is made for a trusted home network. Even with a household PIN, don't expose it directly to the internet without HTTPS in front of it.
+### HTTPS (optional)
+Browsers keep some features off on a plain `http://` address other than `localhost`: 🎤 voice commands, system notifications, barcode scanning in a phone's browser, and the offline app. The Compose file has an optional `https` service ([Caddy](https://caddyserver.com)) that turns them all on:
+
+1. Start it with the `https` profile, and give it the address your devices use:
+   ```sh
+   COMPOSE_PROFILES=https HTTPS_HOST=192.168.1.20 docker compose -f docker-compose.yml up --build -d
+   ```
+   In Portainer, add `COMPOSE_PROFILES=https` and `HTTPS_HOST=192.168.1.20` as environment variables of the stack.
+2. On each device, open `http://192.168.1.20:8485/goodstock-root.crt` and install the certificate. It is your server's own small certificate authority, made the first time the service starts and kept in the `goodstock-https` volume.
+   - **Android:** Settings → Security → Encryption & credentials → Install a certificate → CA certificate (on Android 4.4: Settings → Security → Install from storage).
+   - **iPhone / iPad:** open the downloaded profile in Settings, install it, then turn it on under General → About → Certificate Trust Settings.
+   - **Windows:** open the file → Install Certificate → Local Machine → "Trusted Root Certification Authorities". **macOS:** add it to Keychain Access and set it to Always Trust.
+3. Open `https://192.168.1.20:8443`.
+
+With a domain name that points at your home (ports 80 and 443 forwarded to 8485 and 8443), set `HTTPS_CERT` to your email address instead: Caddy then gets a free Let's Encrypt certificate, and nothing needs to be installed on the devices. Plain `http://<server-ip>:8484` keeps working next to it, for the phone apps' Home server connection and for anything that can't install the certificate. `bash tools/check-https.sh` tests the setup in Docker.
+
+> **Security note:** Goodstock is made for a trusted home network. Even with a household PIN and HTTPS, don't expose it directly to the internet.
 
 ## Phone apps
 

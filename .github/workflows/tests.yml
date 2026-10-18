@@ -23,3 +23,12 @@ jobs:
 
       - name: Run the tests
         run: npm test
+
+  # The optional HTTPS service (https/Caddyfile): certificate download, redirect, HTTPS and live events.
+  https:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check the HTTPS service
+        run: bash tools/check-https.sh

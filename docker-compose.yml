@@ -16,6 +16,27 @@ services:
     volumes:
       - goodstock-data:/data
 
+  # Optional HTTPS (README → HTTPS): turns on voice commands, browser notifications, barcode scanning in phone
+  # browsers and the offline app. Starts only with the "https" profile: COMPOSE_PROFILES=https (in Portainer, a
+  # stack environment variable), plus HTTPS_HOST set to the address the devices use. Then open
+  # https://<HTTPS_HOST>:8443, after installing http://<HTTPS_HOST>:8485/goodstock-root.crt on each device.
+  https:
+    build: ./https
+    profiles: ["https"]
+    container_name: goodstock-https
+    restart: unless-stopped
+    depends_on:
+      - goodstock
+    ports:
+      - "8443:443"
+      - "8485:80"
+    environment:
+      HTTPS_HOST: "${HTTPS_HOST:-localhost}"
+      HTTPS_CERT: "${HTTPS_CERT:-internal}"
+      HTTPS_PORT: "8443"
+    volumes:
+      - goodstock-https:/data
+
 volumes:
   goodstock-data:
-  
+  goodstock-https:

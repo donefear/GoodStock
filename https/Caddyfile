@@ -1,0 +1,38 @@
+# Optional HTTPS in front of Goodstock (the "https" service in docker-compose.yml). See README → HTTPS.
+#
+# HTTPS_HOST  the address the devices use: an IP address like 192.168.1.20, or a domain name.
+# HTTPS_CERT  "internal" (default): Caddy makes its own small certificate authority, and each device trusts it once
+#             by installing http://<HTTPS_HOST>:8485/goodstock-root.crt. Or an email address, for a free Let's
+#             Encrypt certificate when HTTPS_HOST is a public domain name (ports 80 and 443 forwarded to 8485/8443).
+# HTTPS_PORT  the host port for HTTPS (default 8443), used when sending plain-http visitors over.
+{
+	# Nothing is installed into this container's own trust store; the devices are the ones that need it.
+	skip_install_trust
+	# Devices that open an IP address send no server name; this picks the right certificate for them.
+	default_sni {$HTTPS_HOST}
+	# The plain-http block below does the redirect itself, to the right port.
+	auto_https disable_redirects
+}
+
+https://{$HTTPS_HOST} {
+	tls {$HTTPS_CERT:internal}
+	encode gzip
+	# Server-Sent Events (/api/events) are passed on straight away.
+	reverse_proxy goodstock:8080 {
+		flush_interval -1
+	}
+}
+
+# Plain http: the certificate to install on each device, and everything else sent to the HTTPS address.
+http:// {
+	handle /goodstock-root.crt {
+		root * /data/caddy/pki/authorities/local
+		rewrite * /root.crt
+		header Content-Type application/x-x509-ca-cert
+		header Content-Disposition "attachment; filename=goodstock-root.crt"
+		file_server
+	}
+	handle {
+		redir https://{host}:{$HTTPS_PORT:8443}{uri}
+	}
+}

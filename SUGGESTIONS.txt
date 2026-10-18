@@ -123,11 +123,15 @@ EVERYDAY USE
 SERVER VERSION
 --------------
 
-0.17 Easy HTTPS (biggest win for the server version).
-    Several features stay off on the plain-http home server: 🎤 voice commands, browser notifications, barcode
-    scanning in phone browsers, and the offline service worker on any address other than localhost. An optional
-    Caddy service in docker-compose.yml (with a local certificate, or a free certificate when you have a domain),
-    plus a short README section, turns them all on at once.
+[x] DONE 0.17 Easy HTTPS (biggest win for the server version). (v3.2.7)
+    An optional "https" service in docker-compose.yml and compose.yaml (Compose profile "https", so it stays off
+    unless asked for): Caddy built from https/ (Dockerfile + Caddyfile, so Portainer Git stacks need nothing on
+    the host). HTTPS_HOST is the devices' address (an IP works); by default Caddy makes its own certificate
+    authority, which each device installs once from http://<host>:8485/goodstock-root.crt; with HTTPS_CERT set to
+    an email address and a public domain it gets a Let's Encrypt certificate. HTTPS on port 8443, live events
+    passed straight through. README → HTTPS has the steps per device; tools/check-https.sh tests it in Docker and
+    runs on GitHub. Plain http on 8484 stays, for the phone apps (they don't trust a home-made certificate).
+    STILL FOR YOU: install the certificate on the kitchen tablet and check voice and notifications in Chrome 81.
 
 0.18 Automatic backups on the server.
     The phone apps make weekly backups, but the server keeps only one /data/state.json. One bad sync or a mistaken
