@@ -19,7 +19,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 
 ### 🥫 Inventory
 - **Everything you have, by location**: Fridge, Freezer, Pantry and any storage spots you add. You can see it as a **list** or as a visual **map** of your kitchen.
-- **Smart ingredient names.** A catalog of common ingredients in all 13 languages suggests names as you type. Recipes and search match across languages, so a Spanish "harina" finds the "Flour" in stock.
+- **Smart ingredient names.** A catalog of common ingredients in all 15 languages suggests names as you type. Recipes and search match across languages, so a Spanish "harina" finds the "Flour" in stock.
 - **Expiry dates, estimated for you.** Common perishables get a shelf-life estimate for their storage type. A date from the package always overrides the estimate.
 - **Opened and frozen.** "Opened today" shortens the date for things that keep less once open (milk, a can of tomatoes). Freezer items remember the day they were frozen, and their estimate counts from then.
 - **Use soon panel.** Shows items that expire within three days, and anything overdue, together with saved recipes that use them.
@@ -65,7 +65,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **Cooking terms.** A glossary (julienne, blanch, deglaze …), each term with a button that finds a how-to video.
 
 ### 🌍 Languages
-The interface is available in **English, Dutch, Spanish, French, German, Italian, Portuguese (Brazil), Russian, Chinese (simplified), Japanese, Romanian, Polish and Turkish**. The language is chosen per device, so people sharing one kitchen can each use their own. Without a choice, Goodstock uses the device's language when it has it.
+The interface is available in **English, Dutch, Spanish, French, German, Italian, Portuguese (Brazil), Russian, Chinese (simplified), Japanese, Romanian, Polish, Turkish, Arabic and Hebrew**, the last two right to left. The language is chosen per device, so people sharing one kitchen can each use their own. Without a choice, Goodstock uses the device's language when it has it.
 
 ### ✨ Everyday comforts
 - **Shared, live kitchen.** Every device on the server sees changes right away. If two people edit at once, both changes are merged item by item, so nothing is lost.

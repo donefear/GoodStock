@@ -1,6 +1,8 @@
 const fail = []; const log = [];
 const id = (text) => ingredientRecord(text)?.id || null;
 const cases = [
+  ['200 غ دقيق', 'flour'], ['الطحين', 'flour'], ['2 بيضة', 'egg'], ['زيت الزيتون', 'olive-oil'], ['1 كغ بطاطس', 'potato'],
+  ['200 גרם קמח', 'flour'], ['3 ביצים', 'egg'], ['1 ק״ג תפוחי אדמה', 'potato'], ['שמן זית', 'olive-oil'], ['פלפל שחור', 'black-pepper'],
   ['200 g flour', 'flour'], ['Bloem', 'flour'], ['300 g de harina', 'flour'], ['250 g Mehl', 'flour'], ['Farine', 'flour'],
   ['1 sweet potato', 'sweet-potato'], ['2 Süßkartoffeln', 'sweet-potato'], ['4 Kartoffeln', 'potato'], ['Patatas', 'potato'],
   ['500 ml молоко', 'milk'], ['500 ml 牛奶', 'milk'], ['牛乳 200ml', 'milk'], ['卵 2個', 'egg'], ['3 яйца', 'egg'],

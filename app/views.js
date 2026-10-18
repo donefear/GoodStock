@@ -237,7 +237,7 @@ function renderInventoryMap(rows) {
   const locations = [...new Set([...state.locations, ...rows.map((item) => item.location).filter(Boolean)])]
     .filter((location) => inventoryLocation === ALL_LOCATIONS || location === inventoryLocation);
   const categoryIcons = { Fruit: '🍎', Vegetables: '🥕', Herbs: '🌿', Dairy: '🥛', 'Meat and fish': '🍗', Bakery: '🍞', Baking: '🥣', Pantry: '🥫' };
-  const locationIcon = (location) => FREEZER_WORDS.test(location) || FRIDGE_WORDS.test(location) ? '❄' : PANTRY_WORDS.test(location) ? '▤' : /clean|schoonmaak|putz|nettoyage|limpieza|pulizia|limpeza|curățenie|sprzątan|temizlik|убор|清洁|掃除/i.test(location) ? '✦' : '⌂';
+  const locationIcon = (location) => FREEZER_WORDS.test(location) || FRIDGE_WORDS.test(location) ? '❄' : PANTRY_WORDS.test(location) ? '▤' : /clean|schoonmaak|putz|nettoyage|limpieza|pulizia|limpeza|curățenie|sprzątan|temizlik|убор|清洁|掃除|تنظيف|ניקיון/i.test(location) ? '✦' : '⌂';
   const itemIcon = (item) => item.kind === 'Household' ? '🧽' : categoryIcons[ingredientRecord(item.name)?.category] || '◌';
   return `<div class="storage-map">${locations.map((location) => {
     const items = rows.filter((item) => item.location === location);
@@ -588,8 +588,8 @@ function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
 // Splits pasted recipe text into name, ingredients and steps. Headings ("Ingredients", "Method", "Bereiding") help;
 // without them, short lines that start with an amount count as ingredients and everything else as steps.
 function parseRecipeText(text) {
-  const ingredientHeading = /^(?:ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden|zutaten|ingrédients|ingredientes|ingredienti|ingrediente|składniki|malzemeler|ингредиенты|材料|食材|用料)\s*[:：]?$/i;
-  const stepHeading = /^(?:instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze|zubereitung|préparation|instructions|preparación|elaboración|preparazione|procedimento|modo de preparo|preparo|mod de preparare|preparare|przygotowanie|sposób przygotowania|hazırlanışı|yapılışı|приготовление|способ приготовления|作り方|手順|做法|步骤)\s*[:：]?$/i;
+  const ingredientHeading = /^(?:ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden|zutaten|ingrédients|ingredientes|ingredienti|ingrediente|składniki|malzemeler|ингредиенты|材料|食材|用料|المكونات|المقادير|מצרכים|רכיבים)\s*[:：]?$/i;
+  const stepHeading = /^(?:instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze|zubereitung|préparation|instructions|preparación|elaboración|preparazione|procedimento|modo de preparo|preparo|mod de preparare|preparare|przygotowanie|sposób przygotowania|hazırlanışı|yapılışı|приготовление|способ приготовления|作り方|手順|做法|步骤|طريقة التحضير|الطريقة|الخطوات|אופן ההכנה|הוראות הכנה|הכנה)\s*[:：]?$/i;
   const clean = (line) => line.replace(/^(?:[-–•*▢☐□✓]\s*|(?:step\s*)?\d+[.)]\s+)/i, '').trim();
   const lines = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const hasHeadings = lines.some((line) => ingredientHeading.test(line) || stepHeading.test(line));
@@ -1003,6 +1003,8 @@ function textLanguage(value) {
   if (/[぀-ヿ]/.test(text)) return 'ja';
   if (/[一-鿿]/.test(text)) return 'zh';
   if (/[Ѐ-ӿ]/.test(text)) return 'ru';
+  if (/[؀-ۿ]/.test(text)) return 'ar';
+  if (/[֐-׿]/.test(text)) return 'he';
   let best = 'en';
   let bestCount = 0;
   for (const code of Object.keys(RECIPE_LANGUAGE_WORDS)) {

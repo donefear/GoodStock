@@ -6,13 +6,13 @@
 // Times in recipe steps, in the app's languages ("10 minutes", "10 Minuten", "10 minutos", "5 分钟", "1時間").
 // Longer words come before their short forms; the lookahead keeps "min" from matching inside "minced".
 const TIME_UNITS = [
-  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'oră', 'godzin[ayę]?', 'godz', 'saat', 'часов', 'часа', 'час', '小时', '小時', '時間', 'h',
-  'minutes?', 'minuten', 'minuut', 'minuti', 'minuto', 'minutos', 'minut[aeyę]?', 'dakika', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'mins?', 'min',
-  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundos?', 'seg', 'secunde', 'secundă', 'sekund[ayę]?', 'saniye', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'secs?',
+  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'oră', 'godzin[ayę]?', 'godz', 'saat', 'часов', 'часа', 'час', '小时', '小時', '時間', 'ساعات', 'ساعة', 'שעות', 'שעה', 'h',
+  'minutes?', 'minuten', 'minuut', 'minuti', 'minuto', 'minutos', 'minut[aeyę]?', 'dakika', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'دقائق', 'دقيقة', 'دقيقه', 'דקות', 'דקה', 'דק׳', "דק'", 'mins?', 'min',
+  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundos?', 'seg', 'secunde', 'secundă', 'sekund[ayę]?', 'saniye', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'ثوانٍ', 'ثوان', 'ثواني', 'ثانية', 'שניות', 'שנייה', 'שניה', 'שנ׳', 'secs?',
 ];
-const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|bis|à|a|al|do|до|至)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё])`, 'i');
-const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[aeă]|godz|saat|час|小时|小時|時間)/i;
-const SECOND_UNIT = /^(?:s|сек|秒)/i;
+const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|bis|à|a|al|do|до|至|إلى|עד)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё؀-ۿ֐-׿])`, 'i');
+const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[aeă]|godz|saat|час|小时|小時|時間|ساع|שע)/i;
+const SECOND_UNIT = /^(?:s|сек|秒|ثو|ثان|שנ)/i;
 const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
 let recipeDialogRecipe = null;
 let recipeDialogPlanId = '';
@@ -45,13 +45,14 @@ function stepMinutes(text) {
 }
 
 function isStepHeading(text) {
-  return text.length <= 40 && !/[.!?:。！？：]$/.test(text) && text.split(/\s+/).length <= 4;
+  return text.length <= 40 && !/[.!?:。！？：؟]$/.test(text) && text.split(/\s+/).length <= 4;
 }
 
 function splitIntoBites(text) {
   const cleaned = text.replace(/^\s*(?:step\s*)?\d+[.):]\s*/i, '').trim();
-  // Sentences end with . ! ? before a capital (Latin or Cyrillic), or with Chinese/Japanese 。！？.
-  const sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÝА-ЯЁ0-9¿¡])|(?<=[。！？])/).flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
+  // Sentences end with . ! ? before a capital (Latin or Cyrillic) or any Arabic or Hebrew letter (no capitals there),
+  // or with Chinese/Japanese 。！？.
+  const sentences = cleaned.split(/(?<=[.!?؟])\s+(?=[A-ZÀ-ÝА-ЯЁ0-9¿¡؀-ۿ֐-׿])|(?<=[。！？])/).flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
   // Chinese and Japanese say as much in far fewer characters, so "very short" is shorter there.
   const dense = /[぀-ヿ一-鿿]/.test(cleaned);
   return sentences.map((sentence) => sentence.trim()).filter(Boolean).reduce((bites, sentence) => {
@@ -167,8 +168,10 @@ function addStepAmounts(steps, ingredients) {
 // Amounts in the steps for languages without articles to replace. Russian, Polish, Romanian and Turkish change a
 // word's ending ("морковь" → "морковку"), so the amount goes in brackets after the word, matched by its stem:
 // "Натрите морковку (2 шт.)". Chinese puts it before the ingredient ("把2个鸡蛋打散"), Japanese in brackets after
-// it ("卵（2個）を溶く"); there the name is found inside the sentence, also by its catalog names.
-const BRACKET_AMOUNT_LANGUAGES = ['ru', 'pl', 'ro', 'tr'];
+// it ("卵（2個）を溶く"); there the name is found inside the sentence, also by its catalog names. Arabic and Hebrew
+// put small words in front instead ("الدقيق", "והקמח"), so there the word is the name with one of those prefixes.
+const BRACKET_AMOUNT_LANGUAGES = ['ru', 'pl', 'ro', 'tr', 'ar', 'he'];
+const WORD_PREFIXES = { ar: /^(?:وال|بال|فال|كال|لل|ال|و|ب|ف|ل)$/, he: /^(?:וה|וב|ול|ומ|שה|מה|כש|ה|ו|ב|ל|מ|ש|כ)$/ };
 const CJK_AMOUNT_LANGUAGES = ['zh', 'ja'];
 const ENDING_VOWELS = /[аеёиоуыэюяьйaeęiouóyąăâîıöü]{1,2}$/u;
 const CJK_UNIT = '(?:g|kg|ml|l|克|千克|公斤|毫升|升|个|個|根|片|枚|本|勺|杯|瓣|颗|只|袋|包|株|把|適量|少々)';
@@ -185,7 +188,7 @@ function amountAndName(line, language) {
     const parsed = parseIngredient(text);
     if (parsed.amount && parsed.name) {
       // A unit word the catalog doesn't know ("стакан", "su bardağı") stays with the amount.
-      const unit = !parsed.unitText ? /^((?:ст|ч|стол|чайн)\.?\s*л\.?|стакан\p{L}*|столов\p{L}*\s+лож\p{L}*|чайн\p{L}*\s+лож\p{L}*|зубчик\p{L}*|щепотк\p{L}*|пуч\p{L}*|szklank\p{L}*|ząb\p{L}*|szczypt\p{L}*|pęcz\p{L}*|opakowan\p{L}*|cană|căni|cățel|căței|praf|legătur\p{L}*|yemek kaşığı|tatlı kaşığı|çay kaşığı|su bardağı|çay bardağı|diş|tutam|demet|paket)\s+(.+)$/iu.exec(parsed.name) : null;
+      const unit = !parsed.unitText ? /^((?:ст|ч|стол|чайн)\.?\s*л\.?|стакан\p{L}*|столов\p{L}*\s+лож\p{L}*|чайн\p{L}*\s+лож\p{L}*|зубчик\p{L}*|щепотк\p{L}*|пуч\p{L}*|szklank\p{L}*|ząb\p{L}*|szczypt\p{L}*|pęcz\p{L}*|opakowan\p{L}*|cană|căni|cățel|căței|praf|legătur\p{L}*|yemek kaşığı|tatlı kaşığı|çay kaşığı|su bardağı|çay bardağı|diş|tutam|demet|paket|(?:ملعقة|ملاعق) (?:كبيرة|صغيرة)|فصوص|فص|رشة|حزمة|علبة|علب|كأس|שיני|שן|קורט|חבילה|קופסאות|קופסה|צרור|ענפי|ענף)\s+(.+)$/iu.exec(parsed.name) : null;
       const name = unit ? unit[2] : parsed.name;
       return { name, amount: text.slice(0, text.length - name.length).trim() };
     }
@@ -204,12 +207,14 @@ function addStepAmountsByName(steps, ingredients, language) {
     if (!name) continue;
     const marked = `\u0001${found.amount}\u0002`;
     for (const step of steps) {
-      const spot = cjk ? cjkMention(step.text, name, language) : wordMention(step.text, name);
+      const spot = cjk ? cjkMention(step.text, name, language) : wordMention(step.text, name, language);
       if (!spot) continue;
       const before = step.text.slice(0, spot.start);
       const after = step.text.slice(spot.end);
       // An amount already written right there ("200 г муки", "2个鸡蛋", "卵2個") stays as it is.
-      if (/[\d¼½¾⅓⅔⅛]\s*\S{0,6}\s*$/u.test(before) || /^\s*[（(]?\s*[\d¼½¾⅓⅔⅛]/.test(after) || /\u0002[^\u0001]{0,3}$/.test(before)) break;
+      // Amounts this put in brackets after the previous word don't count ("البيضة (2) وزيت الزيتون").
+      const lead = before.replace(/[（(]\u0001[^\u0002]*\u0002[）)]/g, '');
+      if (/[\d¼½¾⅓⅔⅛]\s*\S{0,6}\s*(?:من\s+)?$/u.test(lead) || /^\s*[（(]?\s*[\d¼½¾⅓⅔⅛]/.test(after) || /\u0002[^\u0001]{0,3}$/.test(lead)) break;
       const named = step.text.slice(spot.start, spot.end);
       if (language === 'zh') step.text = `${before}${marked}${named}${after}`;
       else if (language === 'ja') step.text = `${before}${named}（${marked}）${after}`;
@@ -237,15 +242,21 @@ function cjkMention(text, name, language) {
 
 // Russian, Polish, Romanian, Turkish: the words of the name in a row, each matched by its stem (the word without
 // its last vowels), or else the longest word of the name on its own.
-function wordMention(text, name) {
+function wordMention(text, name, language = '') {
   const stem = (word) => { const cut = word.replace(ENDING_VOWELS, ''); return cut.length >= 3 ? cut : word; };
+  const plain = (word) => word.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/ة/g, 'ه');
+  const prefixes = WORD_PREFIXES[language];
   const matches = (word, part) => {
+    if (prefixes) {
+      const [whole, bare] = [plain(word), plain(part)];
+      return whole === bare || (whole.endsWith(bare) && prefixes.test(whole.slice(0, whole.length - bare.length)));
+    }
     const lower = word.toLowerCase();
     const base = stem(part);
     return base.length < 3 ? lower === part || (lower.startsWith(part) && lower.length - part.length <= 3) : lower.startsWith(base) && lower.length <= base.length + 5;
   };
   const skip = [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
-  const words = [...text.matchAll(/[\p{L}-]+/gu)].filter((match) => !skip.some(([from, to]) => match.index >= from && match.index < to))
+  const words = [...text.matchAll(/[\p{L}\p{M}-]+/gu)].filter((match) => !skip.some(([from, to]) => match.index >= from && match.index < to))
     .map((match) => ({ text: match[0], start: match.index, end: match.index + match[0].length }));
   const parts = name.split(/\s+/).filter(Boolean);
   for (let index = 0; index + parts.length <= words.length; index++) {
@@ -564,11 +575,11 @@ let listening = false;
 const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const VOICE_COMMANDS = {
   // \b only knows Latin letters, so Russian, Chinese and Japanese words stand outside it.
-  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte|dalej|sonraki|ileri)\b|următorul|înainte|następny|дальше|далее|следующ|下一步|下一个|次へ|次/i,
-  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar|wstecz|cofnij|geri)\b|înapoi|назад|上一步|戻る|前へ/i,
-  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete|tekrar)\b|repetă|powtórz|повтори|重复|もう一度/i,
-  timer: /\b(?:timer|minuteur|temporizador|cronometro|cronometru|temporizator|minutnik)\b|zamanlayıcı|cronômetro|таймер|计时|タイマー/i,
-  stop: /\b(?:stop|stopp|para|ferma|pare|dur)\b|arrête|стоп|停止|止めて/i,
+  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte|dalej|sonraki|ileri)\b|următorul|înainte|następny|дальше|далее|следующ|下一步|下一个|次へ|次|التالي|بعده|הבא/i,
+  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar|wstecz|cofnij|geri)\b|înapoi|назад|上一步|戻る|前へ|رجوع|السابق|ارجع|אחורה|הקודם/i,
+  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete|tekrar)\b|repetă|powtórz|повтори|重复|もう一度|كرر|أعد|שוב|שוב פעם/i,
+  timer: /\b(?:timer|minuteur|temporizador|cronometro|cronometru|temporizator|minutnik)\b|zamanlayıcı|cronômetro|таймер|计时|タイマー|مؤقت|مؤقّت|טיימר/i,
+  stop: /\b(?:stop|stopp|para|ferma|pare|dur)\b|arrête|стоп|停止|止めて|توقف|أوقف|עצור|עצרי/i,
 };
 
 const canSpeak = () => (STANDALONE && nativeApp.canSpeak ? Boolean(nativeApp.canSpeak()) : 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function');
@@ -595,8 +606,9 @@ function stopSpeaking() {
 function speakCookStep() {
   if (!readAloud || !cookSession) return;
   const bite = cookSession.bites[cookSession.index];
-  const app = languageLocale();
-  const recipe = (LANGUAGES.find((language) => language.code === recipeLanguage(cookSession.recipe)) || LANGUAGES[0]).locale;
+  const app = speechLocale();
+  const spoken = LANGUAGES.find((language) => language.code === recipeLanguage(cookSession.recipe)) || LANGUAGES[0];
+  const recipe = spoken.speech || spoken.locale;
   if (bite.type === 'gather') speak([{ text: t('Get these out'), lang: app }, { text: bite.items.join(', '), lang: recipe }]);
   else if (bite.type === 'tools') speak([{ text: t("Tools you'll need"), lang: app }, { text: bite.tools.map((tool) => t(tool.name)).join(', '), lang: app }]);
   else if (bite.type === 'step') speak([{ text: bite.heading, lang: recipe }, { text: bite.text, lang: recipe }]);
@@ -643,7 +655,7 @@ function toggleListening(on = !listening) {
   listening = on;
   if (on) {
     voiceRecognition = new SpeechRecognitionApi();
-    voiceRecognition.lang = languageLocale();
+    voiceRecognition.lang = speechLocale();
     voiceRecognition.continuous = true;
     voiceRecognition.interimResults = false;
     voiceRecognition.onresult = (event) => {

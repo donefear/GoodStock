@@ -42,7 +42,7 @@ LOOSE ENDS FROM THE FIRST LIST AND FROM v3.0.2
 
 0.5 A real person reads the languages your household uses.
     [ ] ON HOLD (2026-10-18): waiting until people are found to test the languages.
-    From 1.3 and 6.4. All 13 languages have only had a machine proofread. One evening with a native speaker per
+    From 1.3 and 6.4. All 15 languages have only had a machine proofread (Arabic and Hebrew none at all yet). One evening with a native speaker per
     language catches what the checker can't, like the wrong tone, odd words and text that gets cut off on buttons.
 
 
@@ -165,8 +165,11 @@ LANGUAGES
     themselves. What people type (recipes, items, the list) keeps its own direction (unicode-bidi: plaintext), so
     an English recipe stays readable in an Arabic interface. tests/e2e/rtl-layout.mjs checks every view at
     tablet and phone width in a stand-in right-to-left language.
-    STILL OPEN: an actual Arabic or Hebrew translation (about 950 lines, and catalog names for the ingredients).
-    Only worth it when someone will use it and can read it over.
+    v3.2.13: Arabic and Hebrew added (938 lines each, machine-written like the others: see 0.5 for a real
+    read-through). Also: catalog names for all 63 ingredients, units (غ, مل, كوب, גרם, מ״ל, כף…), storage and
+    recipe-heading words, cook-mode times and voice commands, kitchen-tool words (with the small prefixes like
+    "ال" and "ה"), amounts in the steps in brackets, sentence splitting without capitals, DeepL, and the iOS
+    app's languages. Arabic dates use Western digits, like the amounts in recipes.
 
 
 KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)

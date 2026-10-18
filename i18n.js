@@ -17,6 +17,9 @@ const LANGUAGES = [
   { code: 'ro', name: 'Română', locale: 'ro-RO' },
   { code: 'pl', name: 'Polski', locale: 'pl-PL' },
   { code: 'tr', name: 'Türkçe', locale: 'tr-TR' },
+  // Western digits in dates and numbers, like the amounts in recipes.
+  { code: 'ar', name: 'العربية', locale: 'ar-u-nu-latn', speech: 'ar-SA', dir: 'rtl' },
+  { code: 'he', name: 'עברית', locale: 'he-IL', dir: 'rtl' },
 ];
 const LANGUAGE_KEY = 'goodstock-language-v1';
 
@@ -56,6 +59,8 @@ function tp(count, one, other, vars) {
 
 const languageInfo = (code = currentLanguage) => LANGUAGES.find((language) => language.code === code) || LANGUAGES[0];
 const languageLocale = () => languageInfo().locale;
+// Read aloud and voice commands want a plain language tag ("ar-SA", not the digit setting in the locale).
+const speechLocale = () => languageInfo().speech || languageLocale();
 const languageName = (code) => languageInfo(code).name;
 
 function preferredLanguage() {

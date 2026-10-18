@@ -19,6 +19,10 @@ const cases = [
   ['Preîncălziți cuptorul. Bateți ouăle cu telul într-un castron.', ['oven', 'whisk', 'bowl']],
   ['Rozgrzej piekarnik. Ubij jajka trzepaczką w misce.', ['oven', 'whisk', 'bowl']],
   ['Fırını önceden ısıtın. Yumurtaları bir kasede çırpın.', ['oven', 'bowl', 'whisk']],
+  ['سخّن الفرن مسبقًا. اخفق البيض بالمخفقة في وعاء.', ['oven', 'whisk', 'bowl']],
+  ['قطّع البصل على لوح التقطيع، ثم ضعه في المقلاة.', ['knife', 'cutting-board', 'skillet']],
+  ['חממו את התנור מראש. טרפו את הביצים במטרפה בקערה.', ['oven', 'whisk', 'bowl']],
+  ['הביאו סיר מים לרתיחה, ואז הסירו את הקליפה.', ['stock-pot']],
   ['Bake a lemon tart.', []],
 ];
 for (const [text, want] of cases) {
