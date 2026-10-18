@@ -25,7 +25,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **Use soon panel.** Shows items that expire within three days, and anything overdue, together with saved recipes that use them.
 - **Staples.** Give an item a "Keep at least" amount, and it goes on the shopping list by itself when it runs low.
 - **Less waste.** When you remove an item you can say whether it was used up or thrown away. A small "This month" card shows the count and what was thrown away most.
-- **Barcode scanning** in the phone apps fills in a product's name when you add it.
+- **Barcode scanning** in the phone apps (and Chrome on a phone over HTTPS) fills in a product's name and pack size when you add it or put the shopping away. Scan something from the cupboard on the Inventory page to use one, mark it used up or thrown away, or add it if it isn't there yet; the barcode is remembered with the item.
 - **Reminders.** In the browser you get notifications while the app is open. The phone apps send a daily "use soon" notification even when the app is closed.
 
 ### 📖 Recipes

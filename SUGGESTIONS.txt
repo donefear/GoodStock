@@ -78,9 +78,13 @@ EVERYDAY USE
     Inventory page then shows e.g. "1 used up · 2 thrown away · Thrown away: Bread ×2". The answers are kept for a
     year in the kitchen (state.log), synced like the rest. Not done yet: using them to tune the expiry estimates.
 
-0.11 Barcodes in "Put away", and scan to use up.
-    From 4.2. When putting the shopping away, scanning a product fills in its pack size and the right expiry
-    estimate. Scanning an item that's already in stock offers "Use up / Remove".
+[x] DONE 0.11 Barcodes in "Put away", and scan to use up. (v3.2.1)
+    "Put it away" has Scan barcode: it fills in the pack size and keeps the barcode with the item. When the catalog
+    knows the product's name and not the list's ("Volle melk" for "melk"), the expiry estimate uses the product.
+    The Inventory page has Scan: an item is found by its saved barcode, or else by the product's name (and the
+    barcode is then remembered). It offers Use one (for items counted in pieces), Used up, Thrown away and Edit;
+    an unknown product can be added from there with its barcode. The buttons show where the camera can scan: the
+    phone apps, and Chrome on a phone over HTTPS (see 0.17).
 
 0.12 Group the shared and downloaded shopping list too.
     From 4.6. The list in the app is in supermarket order, but the QR download and share text are still one flat

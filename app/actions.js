@@ -9,6 +9,10 @@ function openPutawayDialog(item) {
   form.elements.unit.value = item.unit || '';
   form.elements.expiresOn.value = '';
   form.elements.expiresOn.dataset.estimated = '';
+  form.elements.barcode.value = '';
+  form.elements.estimateName.value = '';
+  $('#putaway-scan-button').hidden = !canScanBarcodes();
+  $('#putaway-barcode-status').textContent = '';
   $('#putaway-item-name').textContent = item.name;
   fillLocationSelect(form.elements.location, state.locations[0]);
   updateExpirationSuggestion(item.name, form.elements.location.value, form.elements.expiresOn, $('#putaway-expiry-note'));
@@ -135,6 +139,9 @@ document.addEventListener('click', async (event) => {
   if (action === 'host-start') await beginHosting();
   if (action === 'host-stop') endHosting();
   if (action === 'scan-barcode') await scanBarcode();
+  if (action === 'scan-putaway') await scanPutaway();
+  if (action === 'scan-inventory') await scanInventory();
+  if (/^scan-(?:use-one|used|wasted|edit|add|close)$/.test(action)) handleScanAction(action);
   if (action === 'steps-read-aloud') toggleReadAloud();
   if (action === 'auto-backup-folder') await chooseAutoBackupFolder();
   if (action === 'auto-backup-off') turnOffAutoBackup();
@@ -363,7 +370,7 @@ document.addEventListener('change', async (event) => {
   }
   if (event.target.form?.getAttribute('id') === 'putaway-form' && event.target.name === 'location') {
     const form = event.target.form;
-    updateExpirationSuggestion($('#putaway-item-name').textContent, form.elements.location.value, form.elements.expiresOn, $('#putaway-expiry-note'));
+    updateExpirationSuggestion(form.elements.estimateName.value || $('#putaway-item-name').textContent, form.elements.location.value, form.elements.expiresOn, $('#putaway-expiry-note'));
   }
   if (event.target.id === 'week-date' && event.target.value) {
     const [year, month, day] = event.target.value.split('-').map(Number);
@@ -447,6 +454,7 @@ $('#item-form').addEventListener('submit', (event) => {
   });
   const minimum = Number(form.elements.minimum.value);
   if (minimum > 0) item.minimum = minimum;
+  if (form.elements.barcode.value) item.barcode = form.elements.barcode.value;
   // Still listed for restocking while below the same minimum, so saving doesn't add it to the list again.
   if (previous && previous.restockListed && minimum > 0) item.restockListed = true;
   if (form.elements.openedOn.value) item.openedOn = form.elements.openedOn.value;
@@ -484,8 +492,9 @@ $('#putaway-form').addEventListener('submit', (event) => {
     const location = form.elements.location.value;
     storeShoppingItem(shoppingItem, {
       quantity: Number(form.elements.quantity.value), unit: form.elements.unit.value.trim(), location,
-      expiration: resolvedExpiration(shoppingItem.name, location, form.elements.expiresOn),
+      expiration: resolvedExpiration(form.elements.estimateName.value || shoppingItem.name, location, form.elements.expiresOn),
       packageDate: Boolean(form.elements.expiresOn.value) && form.elements.expiresOn.dataset.estimated !== 'true',
+      barcode: form.elements.barcode.value,
     });
     persist();
   }
@@ -512,10 +521,11 @@ function addLeftovers(recipe) {
   state.inventory.unshift({ id: makeId(), name: t('Leftovers: {name}', { name: recipe.name }), quantity: 1, unit: '', expiresOn: dateKey(date), expirationSource: 'estimated', location, kind: 'Food', leftovers: true });
 }
 
-function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration, packageDate }) {
+function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration, packageDate, barcode = '' }) {
   const bought = metricInventoryItem({ quantity, unit });
   const existing = state.inventory.find((entry) => cleanIngredient(entry.name) === cleanIngredient(shoppingItem.name));
   if (existing) {
+    if (barcode) existing.barcode = barcode;
     const added = deductionAmount(`${bought.quantity} ${bought.unit}`.trim(), existing) || bought.quantity;
     existing.quantity = Math.round((Number(existing.quantity) + added) * 100) / 100;
     if (packageDate) Object.assign(existing, expiration);
@@ -525,6 +535,7 @@ function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration,
   } else {
     const item = { id: makeId(), name: shoppingItem.name, quantity: bought.quantity, unit: bought.unit, ...expiration, location, kind: 'Food' };
     if (Number(shoppingItem.keep) > 0) item.minimum = Number(shoppingItem.keep);
+    if (barcode) item.barcode = barcode;
     if (isFrozen(item)) item.frozenOn = dateKey(new Date());
     state.inventory.unshift(item);
   }

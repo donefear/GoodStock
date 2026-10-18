@@ -51,6 +51,7 @@
       <form id="item-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">INVENTORY</span><h2 id="item-dialog-title">Add an item</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <input type="hidden" name="id" />
+        <input type="hidden" name="barcode" />
         <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients, in your language and in English. A barcode number works too.</span></label>
         <div class="barcode-row"><button class="button button-outline button-small" type="button" data-action="scan-barcode" id="scan-barcode-button" hidden>Scan barcode</button><span class="field-hint" id="barcode-status" role="status" aria-live="polite"></span></div>
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
@@ -127,12 +128,21 @@
       <form id="putaway-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">GROCERIES</span><h2>Put it away</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <input type="hidden" name="shoppingId" />
+        <input type="hidden" name="barcode" />
+        <input type="hidden" name="estimateName" />
         <p class="putaway-item" id="putaway-item-name"></p>
+        <div class="barcode-row"><button class="button button-outline button-small" type="button" data-action="scan-putaway" id="putaway-scan-button" hidden>Scan barcode</button><span class="field-hint" id="putaway-barcode-status" role="status" aria-live="polite"></span></div>
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" value="1" required /></label><label>Unit<input name="unit" placeholder="e.g. cans" /></label></div>
         <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="putaway-expiry-note">An estimate is added for supported products.</span></label>
         <label>Stored in<select name="location"></select></label>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Add to inventory</button></div>
       </form>
+    </dialog>
+
+    <dialog id="scan-dialog" class="app-dialog scan-dialog">
+      <div class="dialog-heading"><div><span class="eyebrow">SCANNED</span><h2 id="scan-dialog-title">Product</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+      <p class="dialog-copy" id="scan-dialog-copy" role="status" aria-live="polite"></p>
+      <div class="dialog-actions scan-actions" id="scan-dialog-actions"></div>
     </dialog>
 
     <dialog id="share-dialog" class="app-dialog share-dialog">
@@ -201,7 +211,7 @@
         <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.2.0 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.2.1 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

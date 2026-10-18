@@ -5,6 +5,7 @@ window.confirm = () => { confirms++; return answer; };
 window.alert = () => {};
 const wait = () => new Promise((resolve) => setTimeout(resolve, 50));
 state.recipes = [{ id: 'r1', name: 'Soup', ingredients: ['1 onion'] }];
+state.log = [];
 state.inventory = [
   { id: 'i1', name: 'Rice', quantity: 1, unit: 'kg', location: state.locations[0], kind: 'Food' },
   { id: 'i2', name: 'Soap', quantity: 2, unit: '', location: state.locations[0], kind: 'Household' },

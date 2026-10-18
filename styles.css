@@ -223,7 +223,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .match-tag.has-missing { color: #a66c24; }
 .shopping-block { margin-top: 4px; }
 .shopping-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.recipe-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.recipe-heading-actions, .inventory-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Recipe page */
 .recipe-back { margin: -8px 0 10px; padding: 0; }
 .recipe-page-actions { display: flex; flex-wrap: wrap; gap: 8px; }

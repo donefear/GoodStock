@@ -186,7 +186,8 @@ function renderInventory() {
   });
   const foodCount = state.inventory.filter((item) => item.kind !== 'Household' && Number(item.quantity) > 0).length;
   const lowCount = state.inventory.filter((item) => Number(item.quantity) > 0 && Number(item.quantity) <= 1).length;
-  const action = `<button class="button button-primary" data-action="add-item"><span aria-hidden="true">＋</span> ${t('Add item')}</button>`;
+  const scan = canScanBarcodes() ? `<button class="button button-outline" data-action="scan-inventory" title="${t('Scan a product to use it up or add it')}"><span aria-hidden="true">▥</span> ${t('Scan')}</button>` : '';
+  const action = `<div class="inventory-heading-actions">${scan}<button class="button button-primary" data-action="add-item"><span aria-hidden="true">＋</span> ${t('Add item')}</button></div>`;
   return `${pageHeading(t('THE KITCHEN, AT A GLANCE'), t('Good things on hand.'), t('A clear picture of what is here, and where it lives.'), action)}
     <div class="stats-row"><div class="stat"><span class="stat-icon mint">▤</span><div><strong>${foodCount}</strong><span>${tp(foodCount, 'food item', 'food items')}</span></div></div><div class="stat"><span class="stat-icon coral">◷</span><div><strong>${lowCount}</strong><span>${t('running low')}</span></div></div><div class="stat"><span class="stat-icon yellow">⌂</span><div><strong>${state.locations.length}</strong><span>${tp(state.locations.length, 'storage spot', 'storage spots')}</span></div></div></div>
     ${renderExpirationPanel()}
@@ -1079,6 +1080,7 @@ async function fillFromBarcode(code) {
       return;
     }
     form.elements.name.value = product.name;
+    form.elements.barcode.value = code;
     if (product.amount) { form.elements.quantity.value = product.amount; form.elements.unit.value = product.unit; }
     status.textContent = t('Found: {name}', { name: product.name });
     updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'));
@@ -1092,14 +1094,122 @@ function canScanBarcodes() {
   return 'BarcodeDetector' in window && Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && window.isSecureContext;
 }
 
-async function scanBarcode() {
-  const status = $('#barcode-status');
+// One barcode from the camera: the phone app's scanner, or the browser's in a dialog. Empty when cancelled; a
+// status line gets the reason when the camera fails or the code is not a product barcode.
+async function readBarcode(status) {
   try {
-    const code = STANDALONE ? await nativeCall('scanBarcode') : await scanBarcodeInPage();
-    if (code && BARCODE.test(code)) await fillFromBarcode(code);
-    else if (code) status.textContent = t('That is not a product barcode.');
+    const code = String((STANDALONE ? await nativeCall('scanBarcode') : await scanBarcodeInPage()) || '').trim();
+    if (code && !BARCODE.test(code)) { status.textContent = t('That is not a product barcode.'); return ''; }
+    return code;
   } catch (error) {
     status.textContent = error?.message === 'cancelled' ? '' : t('The camera could not scan. Type the name or the barcode number instead.');
+    return '';
+  }
+}
+
+async function scanBarcode() {
+  const code = await readBarcode($('#barcode-status'));
+  if (code) await fillFromBarcode(code);
+}
+
+// Putting the shopping away: a scan fills in the pack size, keeps the barcode with the item, and, when the
+// catalog knows the product better than the list's name ("Volle melk" for "melk"), estimates its expiry from it.
+async function scanPutaway() {
+  const form = $('#putaway-form');
+  const status = $('#putaway-barcode-status');
+  const code = await readBarcode(status);
+  if (!code) return;
+  form.elements.barcode.value = code;
+  status.textContent = t('Looking up the product…');
+  try {
+    const product = await lookupBarcode(code);
+    if (!product) { status.textContent = t('Product not found. The barcode is kept with the item.'); return; }
+    if (product.amount) { form.elements.quantity.value = product.amount; form.elements.unit.value = product.unit; }
+    const listed = $('#putaway-item-name').textContent;
+    if (!ingredientRecord(listed) && ingredientRecord(product.name)) form.elements.estimateName.value = product.name;
+    updateExpirationSuggestion(form.elements.estimateName.value || listed, form.elements.location.value, form.elements.expiresOn, $('#putaway-expiry-note'));
+    status.textContent = t('Found: {name}', { name: product.name });
+  } catch {
+    status.textContent = t('Could not look up the barcode. The barcode is kept with the item.');
+  }
+}
+
+// Scan something from the cupboard: found by its saved barcode, or else by the product's name, then use it up,
+// throw it away or edit it. A product that isn't in the inventory yet can be added from here.
+let scanResult = null; // { code, item, product }
+
+async function scanInventory() {
+  const status = $('#scan-dialog-copy');
+  status.textContent = '';
+  const code = await readBarcode(status);
+  if (!code) { if (status.textContent) showScanResult({ message: status.textContent }); return; }
+  await showScannedCode(code);
+}
+
+async function showScannedCode(code) {
+  let item = state.inventory.find((entry) => entry.barcode === code);
+  let product = null;
+  let failed = false;
+  if (!item) {
+    showScanResult({ message: t('Looking up the product…') });
+    try { product = await lookupBarcode(code); } catch { failed = true; }
+    if (product) {
+      const key = cleanIngredient(product.name);
+      item = state.inventory.find((entry) => cleanIngredient(entry.name) === key) || matchingInventory(product.name);
+      // Remembered, so the next scan finds it straight away.
+      if (item && !item.barcode) { item.barcode = code; persist(); }
+    }
+  }
+  showScanResult({ code, item, product, failed });
+}
+
+const countsInPieces = (item) => !UNIT_SCALES[canonicalUnit(item.unit)];
+
+function showScanResult({ code = '', item = null, product = null, failed = false, message = '' }) {
+  scanResult = { code, item, product };
+  const title = $('#scan-dialog-title');
+  const copy = $('#scan-dialog-copy');
+  const button = (action, label, kind = 'button-outline') => `<button class="button ${kind}" type="button" data-action="${action}">${label}</button>`;
+  let actions = '';
+  if (message) {
+    title.textContent = t('Scan');
+    copy.textContent = message;
+  } else if (item) {
+    title.textContent = item.name;
+    copy.textContent = t('{amount} in {location}', { amount: `${item.quantity}${item.unit ? ` ${item.unit}` : ''}`, location: item.location });
+    actions = (countsInPieces(item) && Number(item.quantity) > 1 ? button('scan-use-one', t('Use one')) : '')
+      + button('scan-used', t('Used up'), 'button-primary') + button('scan-wasted', t('Thrown away')) + button('scan-edit', t('Edit'), 'button-quiet');
+  } else {
+    title.textContent = product ? product.name : t('Unknown product');
+    copy.textContent = product ? t('Not in your inventory yet.') : failed ? t('Could not look up the barcode. Add it by name; the barcode is kept with it.') : t('Not found in Open Food Facts. Add it by name; the barcode is kept with it.');
+    actions = button('scan-add', t('Add it'), 'button-primary');
+  }
+  $('#scan-dialog-actions').innerHTML = `${button('scan-close', t('Close'), 'button-quiet')}${actions}`;
+  const dialog = $('#scan-dialog');
+  if (!dialog.open) dialog.showModal();
+}
+
+function handleScanAction(action) {
+  const { code, item, product } = scanResult || {};
+  $('#scan-dialog').close();
+  if (action === 'scan-use-one' && item) {
+    withUndo(t('Used one {name}', { name: item.name }), ['inventory', 'shopping'], () => {
+      const current = state.inventory.find((entry) => entry.id === item.id);
+      if (current) current.quantity = Math.max(0, Number(current.quantity) - 1);
+    });
+  }
+  if (action === 'scan-used' && item) removeInventoryItem(item.id, 'used');
+  if (action === 'scan-wasted' && item) removeInventoryItem(item.id, 'wasted');
+  if (action === 'scan-edit' && item) openItemDialog(state.inventory.find((entry) => entry.id === item.id));
+  if (action === 'scan-add') {
+    openItemDialog();
+    const form = $('#item-form');
+    form.elements.barcode.value = code || '';
+    if (product) {
+      form.elements.name.value = product.name;
+      if (product.amount) { form.elements.quantity.value = product.amount; form.elements.unit.value = product.unit; }
+      updateExpirationSuggestion(product.name, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'), itemFormStartDate(form));
+    }
   }
 }
 
@@ -1148,6 +1258,7 @@ function openItemDialog(item) {
   $('#item-remove').hidden = !item;
   $('#item-remove-choice').hidden = true;
   form.elements.id.value = item?.id || '';
+  form.elements.barcode.value = item?.barcode || '';
   form.elements.name.value = item?.name || '';
   form.elements.quantity.value = item?.quantity ?? 1;
   form.elements.unit.value = item?.unit || '';
