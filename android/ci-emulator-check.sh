@@ -8,7 +8,8 @@
 #   4. BootReceiver schedules a saved use-soon reminder again after a "restart";
 #   5. nothing crashes.
 # Usage: bash android/ci-emulator-check.sh path/to/app-debug.apk   (a debug build: the check uses run-as)
-set -uo pipefail
+# No pipefail: "dumpsys … | grep -q" stops reading at the first match, and the broken pipe would count as a miss.
+set -u
 APK="$1"
 PKG=com.donefear.goodstock
 FAILED=0
