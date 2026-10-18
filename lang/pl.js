@@ -849,6 +849,8 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "This device already shares a kitchen through a home server. Disconnect it first.": "To urządzenie już dzieli kuchnię przez serwer domowy. Najpierw go rozłącz.",
   "Stop syncing through the shared folder? This device keeps its copy of the kitchen.": "Przestać synchronizować przez folder współdzielony? To urządzenie zachowa swoją kopię kuchni.",
   "Hosting could not start on this device.": "Nie udało się uruchomić hostowania na tym urządzeniu.",
+  "Sharing your kitchen": "Udostępniasz swoją kuchnię",
+  "Other devices on this Wi-Fi stay in step while this runs. Stop it in Settings → Connections.": "Inne urządzenia w tej sieci Wi-Fi są zsynchronizowane, dopóki to działa. Zatrzymasz to w Ustawienia → Połączenia.",
   "Stop hosting? The other devices keep their copy but no longer stay in step with this one.": "Przestać hostować? Inne urządzenia zachowają swoje kopie, ale nie będą już zgodne z tym urządzeniem.",
   "Off": "Wyłączone",
   "Not on a Wi-Fi network right now": "Brak połączenia z siecią Wi-Fi",

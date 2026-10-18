@@ -849,6 +849,8 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "This device already shares a kitchen through a home server. Disconnect it first.": "Acest dispozitiv împarte deja o bucătărie printr-un server de acasă. Deconectează-l mai întâi.",
   "Stop syncing through the shared folder? This device keeps its copy of the kitchen.": "Nu mai sincronizezi prin dosarul partajat? Dispozitivul își păstrează copia bucătăriei.",
   "Hosting could not start on this device.": "Găzduirea nu a putut porni pe acest dispozitiv.",
+  "Sharing your kitchen": "Îți partajezi bucătăria",
+  "Other devices on this Wi-Fi stay in step while this runs. Stop it in Settings → Connections.": "Celelalte dispozitive din această rețea Wi-Fi rămân sincronizate cât timp rulează. Oprește din Setări → Conexiuni.",
   "Stop hosting? The other devices keep their copy but no longer stay in step with this one.": "Oprești găzduirea? Celelalte dispozitive își păstrează copia, dar nu mai rămân sincronizate cu acesta.",
   "Off": "Oprit",
   "Not on a Wi-Fi network right now": "Nu ești conectat la o rețea Wi-Fi acum",

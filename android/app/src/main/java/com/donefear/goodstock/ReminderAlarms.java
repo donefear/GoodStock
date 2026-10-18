@@ -24,6 +24,7 @@ import java.util.Set;
 final class ReminderAlarms {
     private static final String PREFS = "goodstock-reminders";
     private static final String IDS = "ids";
+    private static final String LIST = "list";
 
     private ReminderAlarms() { }
 
@@ -50,7 +51,13 @@ final class ReminderAlarms {
         for (String id : previous) {
             if (!current.contains(id)) alarms.cancel(intent(context, id, "", ""));
         }
-        prefs.edit().putStringSet(IDS, current).apply();
+        prefs.edit().putStringSet(IDS, current).putString(LIST, json).apply();
+    }
+
+    /** After a restart Android has forgotten every alarm: schedule the last list again (BootReceiver). */
+    static void restore(Context context) {
+        String json = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(LIST, null);
+        if (json != null) sync(context, json);
     }
 
     private static PendingIntent intent(Context context, String id, String title, String text) {

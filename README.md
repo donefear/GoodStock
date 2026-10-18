@@ -115,7 +115,7 @@ The apps hold the whole kitchen on the device and need no server. A household ca
 
 - **Home server:** connect to your Goodstock server.
 - **Shared folder** (Android, iPhone, desktop): every device picks the same folder that a sync app keeps in step (iCloud Drive, Syncthing, Dropbox, OneDrive, Google Drive on a computer). Each device writes its own file there and merges in the others' changes, item by item. No device has to be switched on at the same time as another.
-- **Host this kitchen** (Android, desktop): one device becomes the home server on your Wi-Fi. The others connect under Home server with the address and PIN it shows, and stay in step instantly while Goodstock runs on the host.
+- **Host this kitchen** (Android, desktop): one device becomes the home server on your Wi-Fi. The others connect under Home server with the address and PIN it shows, and stay in step instantly while Goodstock runs on the host. On Android, hosting keeps running in the background, with a notification, until you stop it.
 
 ## Browser support
 

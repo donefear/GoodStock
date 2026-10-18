@@ -849,6 +849,8 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "This device already shares a kitchen through a home server. Disconnect it first.": "Dit apparaat deelt al een keuken via een thuisserver. Koppel die eerst los.",
   "Stop syncing through the shared folder? This device keeps its copy of the kitchen.": "Stoppen met synchroniseren via de gedeelde map? Dit apparaat houdt zijn kopie van de keuken.",
   "Hosting could not start on this device.": "Hosten kon niet starten op dit apparaat.",
+  "Sharing your kitchen": "Je keuken wordt gedeeld",
+  "Other devices on this Wi-Fi stay in step while this runs. Stop it in Settings → Connections.": "Andere apparaten op deze wifi blijven bijgewerkt zolang dit draait. Stoppen kan via Instellingen → Koppelingen.",
   "Stop hosting? The other devices keep their copy but no longer stay in step with this one.": "Stoppen met hosten? De andere apparaten houden hun kopie, maar blijven niet meer gelijk met dit apparaat.",
   "Off": "Uit",
   "Not on a Wi-Fi network right now": "Nu niet op een wifinetwerk",

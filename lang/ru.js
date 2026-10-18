@@ -849,6 +849,8 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "This device already shares a kitchen through a home server. Disconnect it first.": "Это устройство уже делит кухню через домашний сервер. Сначала отключите его.",
   "Stop syncing through the shared folder? This device keeps its copy of the kitchen.": "Остановить синхронизацию через общую папку? Это устройство сохранит свою копию кухни.",
   "Hosting could not start on this device.": "Не удалось запустить размещение кухни на этом устройстве.",
+  "Sharing your kitchen": "Кухня открыта для других",
+  "Other devices on this Wi-Fi stay in step while this runs. Stop it in Settings → Connections.": "Пока это работает, другие устройства в этой сети Wi-Fi синхронизируются. Остановить: Настройки → Подключения.",
   "Stop hosting? The other devices keep their copy but no longer stay in step with this one.": "Остановить размещение? Другие устройства сохранят свою копию, но больше не будут синхронизироваться с этим.",
   "Off": "Выкл.",
   "Not on a Wi-Fi network right now": "Сейчас нет подключения к Wi-Fi",

@@ -849,6 +849,8 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "This device already shares a kitchen through a home server. Disconnect it first.": "这台设备已经通过家庭服务器共享厨房。请先断开连接。",
   "Stop syncing through the shared folder? This device keeps its copy of the kitchen.": "停止通过共享文件夹同步？这台设备会保留厨房的副本。",
   "Hosting could not start on this device.": "无法在这台设备上开始托管。",
+  "Sharing your kitchen": "正在共享你的厨房",
+  "Other devices on this Wi-Fi stay in step while this runs. Stop it in Settings → Connections.": "运行期间，此 Wi-Fi 上的其他设备会保持同步。可在 设置 → 连接 中停止。",
   "Stop hosting? The other devices keep their copy but no longer stay in step with this one.": "停止托管？其他设备会保留各自的副本，但不再与这台设备同步。",
   "Off": "关闭",
   "Not on a Wi-Fi network right now": "当前未连接 Wi-Fi 网络",

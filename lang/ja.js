@@ -849,6 +849,8 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "This device already shares a kitchen through a home server. Disconnect it first.": "この端末はすでに自宅サーバーでキッチンを共有しています。先に接続を解除してください。",
   "Stop syncing through the shared folder? This device keeps its copy of the kitchen.": "共有フォルダでの同期を停止しますか？この端末のキッチンのコピーは残ります。",
   "Hosting could not start on this device.": "この端末でホストを開始できませんでした。",
+  "Sharing your kitchen": "キッチンを共有中",
+  "Other devices on this Wi-Fi stay in step while this runs. Stop it in Settings → Connections.": "実行中は、この Wi-Fi のほかの端末と同期されます。停止するには 設定 → 接続 を開いてください。",
   "Stop hosting? The other devices keep their copy but no longer stay in step with this one.": "ホストを停止しますか？ほかの端末のコピーは残りますが、この端末とは同期されなくなります。",
   "Off": "オフ",
   "Not on a Wi-Fi network right now": "現在 Wi-Fi に接続されていません",

@@ -849,6 +849,8 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "This device already shares a kitchen through a home server. Disconnect it first.": "Bu cihaz zaten bir ev sunucusu üzerinden mutfak paylaşıyor. Önce bağlantıyı kes.",
   "Stop syncing through the shared folder? This device keeps its copy of the kitchen.": "Paylaşılan klasör üzerinden senkronizasyon durdurulsun mu? Bu cihaz mutfağın kendi kopyasını tutar.",
   "Hosting could not start on this device.": "Bu cihazda sunucu başlatılamadı.",
+  "Sharing your kitchen": "Mutfağın paylaşılıyor",
+  "Other devices on this Wi-Fi stay in step while this runs. Stop it in Settings → Connections.": "Bu çalıştığı sürece bu Wi-Fi'deki diğer cihazlar eşit kalır. Durdurmak için Ayarlar → Bağlantılar.",
   "Stop hosting? The other devices keep their copy but no longer stay in step with this one.": "Sunuculuk durdurulsun mu? Diğer cihazlar kendi kopyalarını tutar ama artık bu cihazla senkronize kalmaz.",
   "Off": "Kapalı",
   "Not on a Wi-Fi network right now": "Şu an bir Wi-Fi ağına bağlı değil",

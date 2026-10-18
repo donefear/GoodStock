@@ -12,21 +12,27 @@ NEW SUGGESTIONS (after v3.0.2)
 LOOSE ENDS FROM THE FIRST LIST AND FROM v3.0.2
 ----------------------------------------------
 
-0.1 Keep "Host this kitchen" running on Android when the screen is off.
-    KitchenHost.java runs inside the normal app process, with no foreground service and no wake lock. Android
-    stops or freezes background apps after a few minutes, so the other phones lose the kitchen as soon as the host
-    phone is put away. A foreground service with a small "Goodstock is sharing your kitchen" notification (and a
-    Stop button) keeps it alive. This is what makes hosting usable in practice.
+[x] DONE 0.1 Keep "Host this kitchen" running on Android when the screen is off. (v3.0.4)
+    HostService, a foreground service, runs while hosting. It shows a quiet "Sharing your kitchen" notification in the
+    app's language, which opens the app when tapped, and holds a wake lock and a Wi-Fi lock. If Android stops the
+    app, the service restarts and resumes the host with the same PIN and kitchen. Stopping hosting in Settings ends
+    the service too. There's no Stop button on the notification: stopping from there would leave the page thinking it
+    still hosts. Some makers (Samsung, Xiaomi…) still close background apps; android/README says to set battery use to
+    Unrestricted.
+    STILL TO CHECK on a real phone: the other devices stay in step with the host's screen off for an hour.
 
-0.2 Try the two new ways of sharing (v3.0.2) on real devices.
-    Shared folder and hosting were tested in code, not in daily use. Check them with a real sync app: Syncthing and
-    iCloud Drive can take minutes to deliver a file, and may create "conflict" copies of a file. The app should
-    ignore those copies, or merge them in. Also check what the other phones show when the host goes away (a clear
-    "host not reachable, working offline" message, not an error).
+[x] DONE 0.2 Try the two new ways of sharing (v3.0.2) on real devices. (v3.0.4, the part that can be done in code)
+    Conflict copies: Syncthing, Dropbox, iCloud ("… 2.json") and Google Drive copies were already ignored, because
+    their names don't match. OneDrive's "goodstock-sync-<id>-PCNAME.json" did match: it was read as a new device, and
+    an old copy brought back items deleted since. Now a file is only read when the device named inside it matches
+    its file name. The shared-folder test checks four kinds of conflict copy; without the fix it fails. iCloud
+    placeholders (".name.icloud") were already downloaded first. When the host goes away, the others already show
+    "Working offline · Home server not reachable · will try again" and keep their changes.
+    STILL FOR YOU: a week of real use with your sync app, to see how long files take to arrive.
 
-0.3 Re-schedule the daily reminders after an Android restart.
-    From 4.3: after a reboot, Android forgets the alarms until Goodstock is opened once. A BOOT_COMPLETED receiver
-    that re-schedules them from the last saved list fixes this. It's small, and it makes the reminders reliable.
+[x] DONE 0.3 Re-schedule the daily reminders after an Android restart. (v3.0.4)
+    BootReceiver schedules the use-soon reminders and running timers again from the last lists the app gave, after a
+    restart and after an app update, without opening Goodstock.
 
 0.4 Run the iPhone app on a real iPhone.
     [ ] ON HOLD (2026-10-18): waiting until a Mac that can build the app is available.

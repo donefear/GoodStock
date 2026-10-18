@@ -50,6 +50,8 @@ export default async function run({ browser, base, phoneShim }) {
     if (!first.includes('Phone A Milk')) fail.push('phone B did not get phone A\'s item');
     if (first.filter((name) => name === 'Eggs').length !== 1) fail.push(`the starting kitchens were doubled: ${first.join(', ')}`);
     if (JSON.stringify(await inventory(a)) !== JSON.stringify(await inventory(b))) fail.push('the two phones did not settle on the same kitchen');
+    // Kept for later: phone A's file as it is now, with the potatoes still in it.
+    const oldFileA = await a.evaluate((n) => window.__folder[n], await ownFile(a));
 
     // B deletes the potatoes and changes the eggs; A adds bread. All three arrive on both phones.
     await b.evaluate(() => {
@@ -68,6 +70,19 @@ export default async function run({ browser, base, phoneShim }) {
       if (!eggs || eggs.quantity !== 12) fail.push(`phone ${label} eggs: ${JSON.stringify(eggs)}`);
     }
     if (JSON.stringify(await inventory(a)) !== JSON.stringify(await inventory(b))) fail.push('the phones differ after the changes');
+
+    // Sync apps leave conflict copies of a file: OneDrive "goodstock-sync-<id>-LAPTOP.json", Syncthing
+    // "….sync-conflict-….json", Dropbox "… (conflicted copy …).json", iCloud "… 2.json". An old copy of A's file must
+    // not count as another device, nor bring back the potatoes deleted since.
+    const nameA = await ownFile(a);
+    const copies = [nameA.replace('.json', '-LAPTOP.json'), nameA.replace('.json', '.sync-conflict-20261018-101500-ABCDEFG.json'), nameA.replace('.json', ' (conflicted copy 2026-10-18).json'), nameA.replace('.json', ' 2.json')];
+    await b.evaluate((names, file) => { for (const name of names) window.__folder[name] = { content: file.content, modified: Date.now() }; }, copies, oldFileA);
+    await sync(b);
+    const afterCopies = await names(b);
+    if (afterCopies.includes('Potatoes')) fail.push('a conflict copy of an old file brought the deleted potatoes back');
+    const devicesB = await b.evaluate(() => Object.keys(readFolderBases()).length);
+    if (devicesB !== 1) fail.push(`conflict copies were counted as devices: ${devicesB} other devices`);
+    await b.evaluate((names) => { for (const name of names) delete window.__folder[name]; }, copies);
 
     // Nothing changed: a sync writes nothing new.
     const before = await a.evaluate((n) => window.__folder[n].modified, await ownFile(a));

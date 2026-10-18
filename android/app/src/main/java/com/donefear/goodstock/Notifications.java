@@ -14,7 +14,9 @@ import android.os.Build;
 final class Notifications {
     private static final String TIMERS = "timers";
     private static final String REMINDERS = "reminders";
+    private static final String HOSTING = "hosting";
     private static final int REMINDER_ID = 1;
+    static final int HOSTING_ID = 2;
     private static final long[] TIMER_VIBRATION = {0, 600, 300, 600, 300, 600};
 
     private Notifications() { }
@@ -32,8 +34,12 @@ final class Notifications {
         timers.setVibrationPattern(TIMER_VIBRATION);
         NotificationChannel reminders = new NotificationChannel(REMINDERS, "Use-soon reminders", NotificationManager.IMPORTANCE_DEFAULT);
         reminders.setDescription("Daily note about food that expires soon");
+        NotificationChannel hosting = new NotificationChannel(HOSTING, "Sharing the kitchen", NotificationManager.IMPORTANCE_LOW);
+        hosting.setDescription("Shown while this phone hosts the kitchen for other devices");
+        hosting.setShowBadge(false);
         manager(context).createNotificationChannel(timers);
         manager(context).createNotificationChannel(reminders);
+        manager(context).createNotificationChannel(hosting);
     }
 
     static boolean allowed(Context context) {
@@ -51,7 +57,9 @@ final class Notifications {
     private static Notification.Builder builder(Context context, String channel) {
         if (Build.VERSION.SDK_INT >= 26) return new Notification.Builder(context, channel);
         Notification.Builder builder = new Notification.Builder(context);
-        if (TIMERS.equals(channel)) {
+        if (HOSTING.equals(channel)) {
+            builder.setPriority(Notification.PRIORITY_LOW);
+        } else if (TIMERS.equals(channel)) {
             builder.setPriority(Notification.PRIORITY_MAX)
                     .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM), alarmAudio())
                     .setVibrate(TIMER_VIBRATION);
@@ -90,6 +98,20 @@ final class Notifications {
                 .setAutoCancel(true)
                 .build();
         manager(context).notify(REMINDER_ID, notification);
+    }
+
+    /** The lasting, quiet notification of HostService; it stays while hosting and opens the app when tapped. */
+    static Notification hosting(Context context, String title, String text) {
+        ensureChannels(context);
+        return builder(context, HOSTING)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(new Notification.BigTextStyle().bigText(text))
+                .setContentIntent(openApp(context))
+                .setOngoing(true)
+                .setShowWhen(false)
+                .build();
     }
 
     static void cancelTimer(Context context, String id) {

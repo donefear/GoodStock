@@ -563,6 +563,9 @@ async function syncFolderNow() {
       let parsed = null;
       try { parsed = JSON.parse(await nativeCall('readSyncFile', file.name)); } catch { continue; }
       if (!parsed || parsed.app !== 'goodstock' || !parsed.state || !Array.isArray(parsed.state.inventory)) continue;
+      // A copy the sync app made of a device's file (OneDrive names a conflict "goodstock-sync-<id>-PCNAME.json")
+      // still names the original device inside. Reading it as a new device would bring back what was deleted since.
+      if (String(parsed.device || '') !== device) continue;
       const remote = normalizeState(parsed.state);
       const print = stamp(JSON.stringify(remote));
       if (!known || known.stamp !== print) {
@@ -661,7 +664,8 @@ function hosting() {
 
 // Starts the host, or resumes it after a restart. The native side keeps the port, PIN and kitchen between starts.
 async function startHosting(resume = false) {
-  const info = JSON.parse(await nativeCall('startKitchenHost'));
+  // Android keeps hosting in the background with a lasting notification; these are its two lines.
+  const info = JSON.parse(await nativeCall('startKitchenHost', t('Sharing your kitchen'), t('Other devices on this Wi-Fi stay in step while this runs. Stop it in Settings → Connections.')));
   localStorage.setItem(HOST_KEY, JSON.stringify({ port: info.port, addresses: info.addresses || [], pin: info.pin }));
   localStorage.setItem(HOME_TOKEN_KEY, info.token);
   localStorage.setItem(HOME_SERVER_KEY, `http://127.0.0.1:${info.port}`);

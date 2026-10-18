@@ -98,8 +98,38 @@ final class KitchenHost {
         return new JSONObject().put("port", running.socket.getLocalPort()).put("addresses", addresses).put("pin", pin).put("token", token).toString();
     }
 
+    /**
+     * Brings the host back with its saved PIN, token and kitchen (HostService, after Android restarted it). False when
+     * hosting was stopped, so there is nothing to resume.
+     */
+    static synchronized boolean resume(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String pin = prefs.getString("pin", null);
+        String token = prefs.getString("token", null);
+        if (pin == null || token == null) return false;
+        if (running == null) {
+            try {
+                running = new KitchenHost(context.getApplicationContext(), pin, token);
+            } catch (Exception error) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** The notification's title and text: the page's (in its language) when given, else the last ones it gave. */
+    static String[] notice(Context context, String title, String text) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (title != null && !title.isEmpty()) prefs.edit().putString("noticeTitle", title).putString("noticeText", text == null ? "" : text).apply();
+        return new String[]{
+                prefs.getString("noticeTitle", "Sharing your kitchen"),
+                prefs.getString("noticeText", "Other devices on this Wi-Fi stay in step while this runs."),
+        };
+    }
+
     /** Stops hosting and forgets the PIN, token and kitchen; the next start is a new household link. */
     static synchronized void stop(Context context) {
+        HostService.stop(context);
         if (running != null) {
             try { running.socket.close(); } catch (Exception ignored) { /* Already closed. */ }
             running.workers.shutdownNow();

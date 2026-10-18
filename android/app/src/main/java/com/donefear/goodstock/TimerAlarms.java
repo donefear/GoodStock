@@ -20,6 +20,7 @@ import java.util.Set;
 final class TimerAlarms {
     private static final String PREFS = "goodstock-timers";
     private static final String IDS = "ids";
+    private static final String LIST = "list";
 
     private TimerAlarms() { }
 
@@ -49,7 +50,13 @@ final class TimerAlarms {
             alarms.cancel(alarmIntent(context, id, "", ""));
             Notifications.cancelTimer(context, id);
         }
-        prefs.edit().putStringSet(IDS, current).apply();
+        prefs.edit().putStringSet(IDS, current).putString(LIST, json).apply();
+    }
+
+    /** After a restart Android has forgotten every alarm: schedule the timers still running again (BootReceiver). */
+    static void restore(Context context) {
+        String json = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(LIST, null);
+        if (json != null) sync(context, json);
     }
 
     static Set<String> ids(Context context) {

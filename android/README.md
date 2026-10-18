@@ -8,9 +8,9 @@ Runs on Android 5.0 (2014) and newer. On Android 5–7, keep **Android System We
 
 - **Data lives on the phone.** Use **Settings → Back up** to save a file, and **Restore** to load it on another phone. A household without a server can share one kitchen under **Settings → Connections**:
   - **Shared folder:** pick the same folder on each device. It must be a folder that a sync app keeps in step, such as Syncthing, Dropbox, OneDrive, or the Google Drive desktop app on a computer. Google Drive's own Android app cannot share a folder this way.
-  - **Host this kitchen:** the phone runs a small home server on the Wi-Fi (port 8486). The others join with its address and PIN. Sync works while Goodstock is running on the host, so use a phone that stays at home on the charger.
+  - **Host this kitchen:** the phone runs a small home server on the Wi-Fi (port 8486). The others join with its address and PIN. While hosting, a foreground service (`HostService`, with a lasting notification, a wake lock and a Wi-Fi lock) keeps it answering with the screen off or the app in the background, and Android restarts it if it stops the app. Use a phone that stays at home on the charger. Some makers (Samsung, Xiaomi…) still close background apps: set Goodstock's battery use to Unrestricted.
 - **Timers are real Android alarms.** They ring with the app in the background or the screen off, and keep ringing until you open or dismiss them.
-- **Use-soon reminders** are Android notifications.
+- **Use-soon reminders** are Android notifications. They and running timers are scheduled again after the phone restarts (`BootReceiver`), without opening the app.
 - **Recipe links** are fetched by the phone itself. Some sites block this; pasting the recipe text always works.
 - **The shopping list** is shared through the Android share sheet instead of a QR code.
 - **Translation** uses DeepL: add your DeepL API key in **Settings** (saved on the phone).

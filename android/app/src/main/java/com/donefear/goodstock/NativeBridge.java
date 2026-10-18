@@ -420,7 +420,17 @@ final class NativeBridge {
 
     @JavascriptInterface
     public void startKitchenHost(String callbackId) {
-        inBackground(callbackId, () -> KitchenHost.start(activity));
+        startKitchenHost(callbackId, null, null);
+    }
+
+    /** Also keeps the host running in the background (HostService), with a notification in the page's language. */
+    @JavascriptInterface
+    public void startKitchenHost(String callbackId, String title, String text) {
+        inBackground(callbackId, () -> {
+            String info = KitchenHost.start(activity);
+            HostService.start(activity.getApplicationContext(), title, text);
+            return info;
+        });
     }
 
     @JavascriptInterface
