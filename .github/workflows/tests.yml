@@ -32,3 +32,23 @@ jobs:
 
       - name: Check the HTTPS service
         run: bash tools/check-https.sh
+
+  # The kitchen tablet runs Chrome 81: the app in Chromium 80 (puppeteer 2.1.1), failing on any script error.
+  chrome80:
+    name: Kitchen tablet (Chromium 80)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install
+        run: |
+          npm install --omit=dev --no-audit --no-fund
+          cd tests/chrome80 && npm install --no-audit --no-fund --no-package-lock
+          sudo apt-get update -qq && (sudo apt-get install -y -qq libnss3 libgbm1 libxss1 libasound2t64 || sudo apt-get install -y -qq libnss3 libgbm1 libxss1 libasound2)
+
+      - name: Run the app in Chromium 80
+        run: node tests/chrome80/run.cjs

@@ -1,0 +1,8 @@
+{
+  "name": "goodstock-chrome80-check",
+  "private": true,
+  "description": "The kitchen tablet runs Chrome 81; puppeteer 2.1.1 brings Chromium 80 to test the app on the same engine.",
+  "dependencies": {
+    "puppeteer": "2.1.1"
+  }
+}

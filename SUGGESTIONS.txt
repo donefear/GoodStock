@@ -172,9 +172,12 @@ LANGUAGES
 KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
 --------------------------------------------------
 
-0.22 Test the kitchen tablet automatically.
-    From 6.1: Chrome 81 is still only checked by hand. A CI job with puppeteer 2.1.1 (Chromium 80) that opens every
-    view and fails on a script error would catch a stray `??=` or `.at()` before it reaches the tablet.
+[x] DONE 0.22 Test the kitchen tablet automatically. (v3.2.12)
+    tests/chrome80/run.cjs (own package.json with puppeteer 2.1.1, so Chromium 80): a fresh server, every page at
+    1280×800, the Tools tabs, a recipe page, Settings with its tabs, the item and recipe dialogs, a few steps of
+    cook mode, Dutch, and phone width; any script or console error fails it, and it checks that the no-flex-gap
+    fallback is on. Tried with a `??=` added on purpose: it failed as it should. GitHub runs it as "Kitchen tablet
+    (Chromium 80)" in the Tests workflow, next to the HTTPS check.
 
 0.23 One command to bump the version.
     Every change bumps the label in index.html and the cache name in sw.js, by hand, and the APK reads its version

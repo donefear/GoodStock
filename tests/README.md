@@ -10,8 +10,14 @@ Without Node on the computer, run it in Docker (from the repository folder):
     docker run --rm --user root -v "$PWD":/app -v goodstock-test-cache:/root/.cache -w /app \
       ghcr.io/puppeteer/puppeteer:latest sh -c "npm install --no-audit --no-fund && node tests/run.mjs"
 
-The suite uses a current Chromium. The kitchen tablet runs Chrome 81, so after bigger changes also open the app on
-the tablet (or in Chromium 80 through puppeteer 2.1.1, which needs its own small script because its API is older).
+The suite uses a current Chromium. The kitchen tablet runs Chrome 81, so `tests/chrome80/run.cjs` also opens every
+page, the main dialogs and cook mode in Chromium 80 (puppeteer 2.1.1, in its own folder because its API is older),
+and fails on any script error. GitHub runs it as "Kitchen tablet (Chromium 80)". Locally:
+
+    cd tests/chrome80 && npm install && node run.cjs
+
+In Docker it needs a Debian image (`node:22-bookworm`) with Chromium's libraries (libnss3, libgbm1, libgtk-3-0,
+libasound2…). The optional HTTPS service has its own check, `bash tools/check-https.sh`.
 
 Writing tests:
 
