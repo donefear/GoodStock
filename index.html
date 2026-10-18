@@ -54,8 +54,13 @@
         <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients, in your language and in English. A barcode number works too.</span></label>
         <div class="barcode-row"><button class="button button-outline button-small" type="button" data-action="scan-barcode" id="scan-barcode-button" hidden>Scan barcode</button><span class="field-hint" id="barcode-status" role="status" aria-live="polite"></span></div>
         <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
-        <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label>
+        <label>Keep at least<input name="minimum" type="number" min="0" step="any" inputmode="decimal" placeholder="Optional" /><span class="field-hint">For staples. Below this amount it goes on the shopping list by itself.</span></label>
         <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option value="Food">Food</option><option value="Household">Household</option></select></label></div>
+        <label id="frozen-field" hidden>Frozen on<input name="frozenOn" type="date" /><span class="field-hint">The freezer estimate counts from this day.</span></label>
+        <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label>
+        <input type="hidden" name="openedOn" />
+        <div class="opened-row" id="opened-row" hidden><button class="button button-outline button-small" type="button" data-action="item-opened" id="item-opened-button">Opened today</button><span class="field-hint" id="item-opened-note" role="status" aria-live="polite"></span></div>
+        <div class="remove-choice" id="item-remove-choice" hidden><span>Why is it gone?</span><button class="button button-outline button-small" type="button" data-action="remove-used">Used up</button><button class="button button-outline button-small" type="button" data-action="remove-wasted">Thrown away</button><button class="button button-quiet button-small" type="button" data-action="remove-plain">Just remove</button></div>
         <div class="dialog-actions"><button class="button button-quiet item-remove-button" type="button" data-action="remove-item" id="item-remove" hidden>Remove item</button><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save item</button></div>
       </form>
     </dialog>
@@ -65,6 +70,7 @@
         <div class="dialog-heading"><div><span class="eyebrow">MARK AS COOKED</span><h2 id="cook-title">What did you use?</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <p class="dialog-copy">Ticked ingredients are removed from your stock by the amount the recipe uses. Change an amount if you used more or less, or untick anything you didn't use. Nothing changes until you confirm.</p>
         <div class="ingredient-checks" id="cook-ingredients"></div>
+        <label class="leftovers-check"><input type="checkbox" name="leftovers" /> <span>Put leftovers in the fridge</span><span class="field-hint">They go into the inventory with 3 days to eat them, so they show up in Use soon.</span></label>
         <input type="hidden" name="planId" />
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Not yet</button><button class="button button-primary" type="submit">Cooked · update stock</button></div>
       </form>
@@ -195,7 +201,7 @@
         <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.1.3 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.2.0 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

@@ -204,6 +204,7 @@ async function pushPendingState() {
 }
 
 function persist() {
+  restockStaples();
   const snapshot = JSON.stringify(state);
   localStorage.setItem(STORAGE_KEY, snapshot);
   if (isShared()) localStorage.setItem(PENDING_KEY, snapshot);
@@ -255,7 +256,7 @@ function stamp(text) {
   return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
 }
 
-const MERGED_LISTS = ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets'];
+const MERGED_LISTS = ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets', 'log'];
 const itemStamp = (item) => stamp(String(JSON.stringify(item)));
 
 // A kitchen as fingerprints ({ inventory: { id: stamp }, …, locations: stamp }): all that mergeStates needs of a base.

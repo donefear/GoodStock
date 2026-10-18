@@ -49,30 +49,34 @@ LOOSE ENDS FROM THE FIRST LIST AND FROM v3.0.2
 EVERYDAY USE
 ------------
 
-0.6 Search in the inventory and in recipes.
-    There is no search field anywhere yet. Once a kitchen has 80 items and 40 recipes, scrolling gets slow,
-    especially on the tablet. One search box per page, using the catalog matching that already exists (typing
-    "harina" finds "Flour", "eieren" finds "Eggs"). It's cheap to build and you'd use it every day.
+[x] DONE 0.6 Search in the inventory and in recipes. (v3.2.0)
+    Correction: both pages already had a search field ("Find something", "Search recipes or ingredients"). I missed
+    them because those pages are built in app/views.js, not index.html. What was missing was the catalog: search
+    was plain text only. Now a search also goes through the ingredient catalog in all 13 languages, so "harina" or
+    "farine" finds Flour, "Eier" or "яйц" finds Eggs, and "salsa de soja" finds a recipe with soy sauce. Catalog
+    matches start at three letters (one for Chinese and Japanese).
 
-0.7 Staples: "always keep at least …".
-    Let an item have an optional minimum amount (2 L milk, 1 bag of rice). When "Cooked ✓" or Remove brings it
-    under that amount, it goes onto the shopping list by itself, with a small "restock" tag. Today the list is
-    only built from the week's plan, so everyday basics get forgotten.
+[x] DONE 0.7 Staples: "always keep at least …". (v3.2.0)
+    The item dialog has "Keep at least". Below that amount (after −, "Cooked ✓" or an edit) the item goes onto the
+    shopping list once, with a "restock" tag. If you take it off the list, it isn't added again until it has been
+    back above the minimum. Removing a staple also lists it, and putting it away keeps it a staple.
 
-0.8 "Opened" and "frozen on" dates.
-    An opened jar of pesto or carton of milk keeps far shorter than a closed one. An "Opened today" button in the
-    edit dialog would shorten the estimate (ingredients.json gets an optional "opened" number of days). Freezer
-    items get a "frozen on" date, so that "chicken, frozen 5 months ago" shows up in Use soon. The package date
-    still wins, as it does now.
+[x] DONE 0.8 "Opened" and "frozen on" dates. (v3.2.0)
+    "Opened today" in the edit dialog shortens the date to how long the item keeps once open (milk 4 days, canned
+    tomatoes 4, peanut butter 90; 13 catalog items have an "opened" value, Dairy and Meat/fish have category
+    defaults, unknown items 5 days). A date that is already sooner stays. Dry goods, fruit and vegetables show no
+    button. Unlike my note above, an opened item's shorter date also replaces a package date, since that date only
+    holds while closed. Freezer items have a "Frozen on" date (today for new ones), and the estimate counts from it.
+    The row shows "opened …" or "frozen …".
 
-0.9 Leftovers after cooking.
-    After "Cooked ✓", offer "Put leftovers in the fridge". This adds "Leftovers: Pea soup" with a 3-day estimate,
-    so leftovers appear in Use soon instead of being forgotten at the back of the fridge.
+[x] DONE 0.9 Leftovers after cooking. (v3.2.0)
+    The "Cooked ✓" dialog has "Put leftovers in the fridge" (not ticked by default). It adds "Leftovers: <recipe>"
+    to the fridge, due in 3 days, so it shows in Use soon.
 
-0.10 Used up or thrown away? A small waste overview.
-    "Remove item" (v3.0.2) could ask one optional question: Used up / Thrown away. Settings → Your data, or a small
-    card on the inventory page, then shows "this month: 3 items thrown away (bread ×2, yoghurt)". Seeing it is the
-    simplest way to waste less, and the expiry estimates can learn from it later.
+[x] DONE 0.10 Used up or thrown away? A small waste overview. (v3.2.0)
+    "Remove item" asks "Why is it gone?": Used up, Thrown away, or Just remove. A "This month" card on the
+    Inventory page then shows e.g. "1 used up · 2 thrown away · Thrown away: Bread ×2". The answers are kept for a
+    year in the kitchen (state.log), synced like the rest. Not done yet: using them to tune the expiry estimates.
 
 0.11 Barcodes in "Put away", and scan to use up.
     From 4.2. When putting the shopping away, scanning a product fills in its pack size and the right expiry

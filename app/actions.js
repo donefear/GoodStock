@@ -216,9 +216,14 @@ document.addEventListener('click', async (event) => {
   if (action === 'add-item') openItemDialog();
   if (action === 'edit-item') openItemDialog(state.inventory.find((item) => item.id === id));
   if (action === 'remove-item') {
-    removeInventoryItem($('#item-form').elements.id.value);
+    $('#item-remove-choice').hidden = false;
+    $('#item-remove-choice button').focus();
+  }
+  if (action === 'remove-used' || action === 'remove-wasted' || action === 'remove-plain') {
+    removeInventoryItem($('#item-form').elements.id.value, { 'remove-used': 'used', 'remove-wasted': 'wasted' }[action] || '');
     $('#item-dialog').close();
   }
+  if (action === 'item-opened') markItemOpened($('#item-form'));
   if (action === 'adjust') {
     const item = state.inventory.find((entry) => entry.id === id);
     if (item) { item.quantity = Math.max(0, Number(item.quantity) + Number(button.dataset.delta)); persist(); }
@@ -328,7 +333,7 @@ document.addEventListener('input', (event) => {
   if (event.target.id === 'recipe-search') recipeQuery = event.target.value;
   if (event.target.form?.getAttribute('id') === 'item-form' && event.target.name === 'name') {
     const form = event.target.form;
-    updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'));
+    updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'), itemFormStartDate(form));
   }
   if (event.target.name === 'expiresOn' && ['item-form', 'putaway-form'].includes(event.target.form?.getAttribute('id'))) {
     event.target.dataset.estimated = 'false';
@@ -349,9 +354,12 @@ document.addEventListener('change', async (event) => {
     await fillFromBarcode(event.target.value.trim());
     return;
   }
-  if (event.target.form?.getAttribute('id') === 'item-form' && event.target.name === 'location') {
+  // Moving an item into or out of the freezer, or changing its freezer date, redoes the estimate from that day.
+  if (event.target.form?.getAttribute('id') === 'item-form' && ['location', 'kind', 'frozenOn'].includes(event.target.name)) {
     const form = event.target.form;
-    updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'));
+    updateFrozenField(form);
+    updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'), itemFormStartDate(form));
+    updateOpenedRow(form, Boolean(form.elements.id.value));
   }
   if (event.target.form?.getAttribute('id') === 'putaway-form' && event.target.name === 'location') {
     const form = event.target.form;
@@ -424,10 +432,12 @@ $('#item-form').addEventListener('submit', (event) => {
   const form = event.currentTarget;
   const name = form.elements.name.value.trim();
   const location = form.elements.location.value;
-  const resolved = resolvedExpiration(name, location, form.elements.expiresOn);
+  const resolved = resolvedExpiration(name, location, form.elements.expiresOn, itemFormStartDate(form));
   const expiration = form.elements.kind.value === 'Household' && resolved.expirationSource === 'estimated' ? { expiresOn: '', expirationSource: '' } : resolved;
+  const id = form.elements.id.value || makeId();
+  const previous = state.inventory.find((entry) => entry.id === id);
   const item = metricInventoryItem({
-    id: form.elements.id.value || makeId(),
+    id,
     name,
     quantity: Number(form.elements.quantity.value),
     unit: form.elements.unit.value.trim(),
@@ -435,6 +445,12 @@ $('#item-form').addEventListener('submit', (event) => {
     location,
     kind: form.elements.kind.value,
   });
+  const minimum = Number(form.elements.minimum.value);
+  if (minimum > 0) item.minimum = minimum;
+  // Still listed for restocking while below the same minimum, so saving doesn't add it to the list again.
+  if (previous && previous.restockListed && minimum > 0) item.restockListed = true;
+  if (form.elements.openedOn.value) item.openedOn = form.elements.openedOn.value;
+  if (isFrozen(item)) item.frozenOn = form.elements.frozenOn.value || dateKey(new Date());
   const existingIndex = state.inventory.findIndex((entry) => entry.id === item.id);
   if (existingIndex < 0) state.inventory.unshift(item); else state.inventory[existingIndex] = item;
   persist();
@@ -453,6 +469,7 @@ $('#cook-form').addEventListener('submit', (event) => {
       const used = Number(form.elements[`amount-${index}`]?.value);
       if (item && used > 0) item.quantity = Math.max(0, Math.round((Number(item.quantity) - used) * 100) / 100);
     }
+    if (form.elements.leftovers.checked) addLeftovers(recipe);
     plan.cooked = true;
     persist();
   }
@@ -485,6 +502,16 @@ function defaultStorageLocation(name) {
   return state.locations.find((location) => pattern.test(location)) || state.locations[0];
 }
 
+// Leftovers from a cooked meal: one portion in the fridge, to eat within LEFTOVER_DAYS, so they show in Use soon.
+const LEFTOVER_DAYS = 3;
+
+function addLeftovers(recipe) {
+  const location = state.locations.find((place) => FRIDGE_WORDS.test(place)) || state.locations[0];
+  const date = new Date();
+  date.setDate(date.getDate() + LEFTOVER_DAYS);
+  state.inventory.unshift({ id: makeId(), name: t('Leftovers: {name}', { name: recipe.name }), quantity: 1, unit: '', expiresOn: dateKey(date), expirationSource: 'estimated', location, kind: 'Food', leftovers: true });
+}
+
 function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration, packageDate }) {
   const bought = metricInventoryItem({ quantity, unit });
   const existing = state.inventory.find((entry) => cleanIngredient(entry.name) === cleanIngredient(shoppingItem.name));
@@ -493,8 +520,13 @@ function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration,
     existing.quantity = Math.round((Number(existing.quantity) + added) * 100) / 100;
     if (packageDate) Object.assign(existing, expiration);
     else if (!existing.expiresOn && expiration.expiresOn) Object.assign(existing, expiration);
+    // A fresh pack replaces the opened one's shorter date.
+    if (existing.openedOn) { delete existing.openedOn; if (!packageDate && expiration.expiresOn) Object.assign(existing, expiration); }
   } else {
-    state.inventory.unshift({ id: makeId(), name: shoppingItem.name, quantity: bought.quantity, unit: bought.unit, ...expiration, location, kind: 'Food' });
+    const item = { id: makeId(), name: shoppingItem.name, quantity: bought.quantity, unit: bought.unit, ...expiration, location, kind: 'Food' };
+    if (Number(shoppingItem.keep) > 0) item.minimum = Number(shoppingItem.keep);
+    if (isFrozen(item)) item.frozenOn = dateKey(new Date());
+    state.inventory.unshift(item);
   }
   state.shopping = state.shopping.filter((entry) => entry.id !== shoppingItem.id);
 }

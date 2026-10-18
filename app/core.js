@@ -160,6 +160,7 @@ function freshState() {
     shopping: [],
     locations: localDefaultLocations(),
     timerPresets: [],
+    log: [],
   };
 }
 
@@ -187,6 +188,8 @@ function normalizeState(value) {
     shopping: Array.isArray(value.shopping) ? value.shopping.map(metricInventoryItem) : [],
     locations: Array.isArray(value.locations) && value.locations.length ? value.locations : defaults.locations,
     timerPresets: Array.isArray(value.timerPresets) ? value.timerPresets : [],
+    // What happened to removed items ({ id, name, date, outcome: 'used' | 'wasted' }), for the month overview.
+    log: Array.isArray(value.log) ? value.log : [],
   };
 }
 
@@ -611,20 +614,106 @@ function backfillMissingExpirations() {
   return changed;
 }
 
-function suggestedExpiration(name, location) {
+// From today, or for frozen food from the day it went into the freezer.
+function suggestedExpiration(name, location, from = new Date()) {
   const days = shelfLifeDaysFor(name, location);
   if (days === null) return null;
-  const date = new Date();
+  const date = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   date.setDate(date.getDate() + days);
   return { date: dateKey(date), days };
 }
 
-function updateExpirationSuggestion(name, location, input, note) {
+const dateFromKey = (key) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || '');
+  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+};
+
+// Once opened, some things keep far shorter (milk, a can of tomatoes, a jar of something unknown); dry goods,
+// fruit and vegetables don't change. The catalog's "opened" value wins, then the category's. Null: no change.
+const OPENED_SHELF_LIFE_DAYS = { Dairy: 5, 'Meat and fish': 2 };
+const UNKNOWN_OPENED_DAYS = 5;
+
+function openedShelfLifeDays(name) {
+  const record = ingredientRecord(name);
+  if (!record) return UNKNOWN_OPENED_DAYS;
+  const days = record.shelfLifeDays?.opened ?? OPENED_SHELF_LIFE_DAYS[record.category];
+  return Number.isFinite(days) ? days : null;
+}
+
+// The expiry after opening today: the opened shelf life, unless the date it already had is sooner.
+function expiryAfterOpening(name, expiresOn) {
+  const days = openedShelfLifeDays(name);
+  if (days === null) return null;
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  const opened = dateKey(date);
+  return { date: expiresOn && expiresOn < opened ? expiresOn : opened, days };
+}
+
+const isFrozen = (item) => item && item.kind !== 'Household' && FREEZER_WORDS.test(item.location || '');
+
+// Search on the Inventory and Recipes pages: the plain text, and the ingredient catalog in every language, so
+// "harina" finds Flour and "eieren" finds Eggs. Catalog names containing what was typed count from three letters
+// (one for Chinese and Japanese). The matching catalog entries are remembered per search text.
+let searchRecordCache = { source: null, query: null, records: new Set() };
+
+function searchRecords(query) {
+  const cleaned = cleanIngredient(query);
+  if (searchRecordCache.source === ingredientCatalog && searchRecordCache.query === cleaned) return searchRecordCache.records;
+  const records = new Set();
+  if (cleaned.length >= 3 || (cleaned && CJK.test(cleaned))) {
+    for (const { ingredient, aliases } of catalogAliases()) if (aliases.some((alias) => alias.includes(cleaned))) records.add(ingredient);
+  }
+  searchRecordCache = { source: ingredientCatalog, query: cleaned, records };
+  return records;
+}
+
+function matchesSearch(query, text, names = []) {
+  const wanted = String(query || '').trim().toLowerCase();
+  if (!wanted || String(text || '').toLowerCase().includes(wanted)) return true;
+  const records = searchRecords(wanted);
+  return records.size > 0 && names.some((name) => records.has(ingredientRecord(name)));
+}
+
+// Staples: an item with "Keep at least" goes onto the shopping list by itself when it drops below that amount
+// (once; it may go on the list again after it was back above it). Runs before every save.
+function restockStaples() {
+  for (const item of state.inventory) {
+    const minimum = Number(item.minimum);
+    if (!(minimum > 0) || Number(item.quantity) >= minimum) {
+      if (item.restockListed) delete item.restockListed;
+      continue;
+    }
+    if (item.restockListed) continue;
+    item.restockListed = true;
+    addRestockEntry(item);
+  }
+}
+
+// A staple onto the shopping list, unless it's already there. It carries its minimum, so putting it away again
+// keeps it a staple even when the item had been removed.
+function addRestockEntry(item) {
+  const key = cleanIngredient(item.name);
+  if (state.shopping.some((entry) => !entry.checked && cleanIngredient(entry.name) === key)) return;
+  state.shopping.push({ id: makeId(), name: item.name, quantity: Number(item.minimum), unit: item.unit || '', checked: false, restock: true, keep: Number(item.minimum) });
+}
+
+// Removed items for the month overview, kept for a year.
+const LOG_KEEP_DAYS = 400;
+
+function logRemoval(item, outcome) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - LOG_KEEP_DAYS);
+  state.log = state.log.filter((entry) => entry.date >= dateKey(cutoff));
+  state.log.push({ id: makeId(), name: item.name, date: dateKey(new Date()), outcome });
+}
+
+function updateExpirationSuggestion(name, location, input, note, from = new Date()) {
   if (input.value && input.dataset.estimated !== 'true') {
     note.textContent = t('Using your chosen package date.');
     return;
   }
-  const suggestion = suggestedExpiration(name, location);
+  const suggestion = suggestedExpiration(name, location, from);
   if (!suggestion) {
     input.value = '';
     input.dataset.estimated = '';
@@ -636,11 +725,11 @@ function updateExpirationSuggestion(name, location, input, note) {
   note.textContent = tp(suggestion.days, 'Estimated {count} day for {location}. Check or override with the package date.', 'Estimated {count} days for {location}. Check or override with the package date.', { location });
 }
 
-function resolvedExpiration(name, location, input) {
+function resolvedExpiration(name, location, input, from = new Date()) {
   if (input.value) {
     return { expiresOn: input.value, expirationSource: input.dataset.estimated === 'true' ? 'estimated' : 'manual' };
   }
-  const suggestion = suggestedExpiration(name, location);
+  const suggestion = suggestedExpiration(name, location, from);
   return suggestion
     ? { expiresOn: suggestion.date, expirationSource: 'estimated' }
     : { expiresOn: '', expirationSource: '' };

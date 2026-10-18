@@ -20,6 +20,12 @@ await wait();
 if ($('#item-remove').hidden) fail.push('Remove item is missing when editing an item');
 $('#item-remove').click();
 await wait();
+// Remove first asks why (v3.2); "Just remove" removes without counting it in the month overview.
+if ($('#item-remove-choice').hidden) fail.push('Remove item did not ask why it is gone');
+if (state.inventory.length !== 2) fail.push('Remove item removed before the answer');
+document.querySelector('[data-action="remove-plain"]').click();
+await wait();
+if (state.log.length) fail.push('Just remove was logged');
 log.push(`after remove: ${state.inventory.map((item) => item.name)}, dialog open ${$('#item-dialog').open}, bar "${$('#undo-bar span').textContent}"`);
 if (state.inventory.length !== 1 || state.inventory[0].id !== 'i2') fail.push('Remove item did not remove just that item');
 if ($('#item-dialog').open) fail.push('item dialog stayed open after removing');

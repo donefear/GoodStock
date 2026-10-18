@@ -19,9 +19,12 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 
 ### 🥫 Inventory
 - **Everything you have, by location**: Fridge, Freezer, Pantry and any storage spots you add. You can see it as a **list** or as a visual **map** of your kitchen.
-- **Smart ingredient names.** A catalog of common ingredients in all 13 languages suggests names as you type. Recipes match across languages, so a Spanish "harina" finds the "Flour" in stock.
+- **Smart ingredient names.** A catalog of common ingredients in all 13 languages suggests names as you type. Recipes and search match across languages, so a Spanish "harina" finds the "Flour" in stock.
 - **Expiry dates, estimated for you.** Common perishables get a shelf-life estimate for their storage type. A date from the package always overrides the estimate.
+- **Opened and frozen.** "Opened today" shortens the date for things that keep less once open (milk, a can of tomatoes). Freezer items remember the day they were frozen, and their estimate counts from then.
 - **Use soon panel.** Shows items that expire within three days, and anything overdue, together with saved recipes that use them.
+- **Staples.** Give an item a "Keep at least" amount, and it goes on the shopping list by itself when it runs low.
+- **Less waste.** When you remove an item you can say whether it was used up or thrown away. A small "This month" card shows the count and what was thrown away most.
 - **Barcode scanning** in the phone apps fills in a product's name when you add it.
 - **Reminders.** In the browser you get notifications while the app is open. The phone apps send a daily "use soon" notification even when the app is closed.
 
@@ -42,7 +45,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **Oven heads-up.** Goodstock tells you to preheat early, before you reach the step that needs the oven.
 - **Hands-free.** 🔊 **Read aloud** speaks each step, and 🎙 **voice commands** ("next", "back", "repeat", "start timer") move you through the recipe.
 - **Picks up where you left off** if you close it halfway through.
-- **"Cooked ✓"** takes the amounts you used out of your inventory. You can adjust each amount first.
+- **"Cooked ✓"** takes the amounts you used out of your inventory. You can adjust each amount first, and put the leftovers in the fridge with three days to eat them.
 
 ### 📅 This week
 - **Plan meals by day.** Pick recipes for the week, with servings for each meal.

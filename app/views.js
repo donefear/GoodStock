@@ -181,7 +181,7 @@ const ALL_LOCATIONS = N_('All locations');
 function renderInventory() {
   const locations = [ALL_LOCATIONS, ...state.locations];
   const rows = state.inventory.filter((item) => {
-    const matchesText = `${item.name} ${item.kind} ${kindLabel(item.kind)}`.toLowerCase().includes(inventoryQuery.toLowerCase());
+    const matchesText = matchesSearch(inventoryQuery, `${item.name} ${item.kind} ${kindLabel(item.kind)}`, [item.name]);
     return matchesText && (inventoryLocation === ALL_LOCATIONS || item.location === inventoryLocation);
   });
   const foodCount = state.inventory.filter((item) => item.kind !== 'Household' && Number(item.quantity) > 0).length;
@@ -190,8 +190,33 @@ function renderInventory() {
   return `${pageHeading(t('THE KITCHEN, AT A GLANCE'), t('Good things on hand.'), t('A clear picture of what is here, and where it lives.'), action)}
     <div class="stats-row"><div class="stat"><span class="stat-icon mint">▤</span><div><strong>${foodCount}</strong><span>${tp(foodCount, 'food item', 'food items')}</span></div></div><div class="stat"><span class="stat-icon coral">◷</span><div><strong>${lowCount}</strong><span>${t('running low')}</span></div></div><div class="stat"><span class="stat-icon yellow">⌂</span><div><strong>${state.locations.length}</strong><span>${tp(state.locations.length, 'storage spot', 'storage spots')}</span></div></div></div>
     ${renderExpirationPanel()}
+    ${renderMonthOverview()}
     <section class="section-block"><div class="section-heading"><div><h2>${t('Everything in its place')}</h2><span class="muted">${tp(rows.length, '{count} item', '{count} items')}</span></div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="${t('Find something')}" aria-label="${t('Find an item')}" /></label><select id="location-filter" aria-label="${t('Filter by location')}">${locations.map((location) => `<option value="${escapeHtml(location)}" ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location === ALL_LOCATIONS ? t(ALL_LOCATIONS) : location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="${t('Inventory display mode')}"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">${t('List')}</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">${t('Map')}</button></div></div></div>
-    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><span>${escapeHtml(item.quantity)} <small>${escapeHtml(item.unit || '')}</small></span><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
+    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><span>${escapeHtml(item.quantity)} <small>${escapeHtml(item.unit || '')}</small></span><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
+}
+
+// Extra notes on an inventory row: a staple's minimum, when it was opened, when it went into the freezer.
+function itemDetails(item) {
+  const notes = [];
+  if (Number(item.minimum) > 0) notes.push(t('keep at least {amount}', { amount: `${item.minimum}${item.unit ? ` ${item.unit}` : ''}` }));
+  if (item.openedOn && dateFromKey(item.openedOn)) notes.push(t('opened {date}', { date: expirationDateText(item.openedOn) }));
+  if (isFrozen(item) && item.frozenOn && dateFromKey(item.frozenOn)) notes.push(t('frozen {date}', { date: expirationDateText(item.frozenOn) }));
+  return notes.map((note) => ` <i>·</i> ${escapeHtml(note)}`).join('');
+}
+
+// This month's removed items: how many were used up and how many thrown away (with the most thrown-away names).
+// Shown once something was removed with a reason this month.
+function renderMonthOverview() {
+  const month = dateKey(new Date()).slice(0, 7);
+  const entries = state.log.filter((entry) => String(entry.date || '').startsWith(month));
+  if (!entries.length) return '';
+  const used = entries.filter((entry) => entry.outcome === 'used').length;
+  const wasted = entries.filter((entry) => entry.outcome === 'wasted');
+  const counts = new Map();
+  for (const entry of wasted) counts.set(entry.name, (counts.get(entry.name) || 0) + 1);
+  const names = [...counts].sort((first, second) => second[1] - first[1]).slice(0, 4).map(([name, count]) => (count > 1 ? `${name} ×${count}` : name));
+  const summary = `${tp(used, '{count} used up', '{count} used up')} · ${tp(wasted.length, '{count} thrown away', '{count} thrown away')}`;
+  return `<section class="month-overview" aria-label="${t('This month')}"><span class="eyebrow">${t('THIS MONTH')}</span><strong>${escapeHtml(summary)}</strong>${names.length ? `<span class="muted">${escapeHtml(t('Thrown away: {items}', { items: names.join(', ') }))}</span>` : ''}</section>`;
 }
 
 function renderInventoryMap(rows) {
@@ -263,7 +288,7 @@ function shoppingGroups(items) {
 
 function renderShopping() {
   const remaining = state.shopping.filter((item) => !item.checked).length;
-  const row = (item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}</span></label><span class="shopping-amount">${escapeHtml(item.quantity || '')} ${escapeHtml(item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">${t('Put away')}</button>` : `<span class="shopping-source">${escapeHtml(item.source || t('Shopping list'))}</span>`}</article>`;
+  const row = (item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}${item.restock ? ` <small class="restock-tag">${t('restock')}</small>` : ''}</span></label><span class="shopping-amount">${escapeHtml(item.quantity || '')} ${escapeHtml(item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">${t('Put away')}</button>` : `<span class="shopping-source">${escapeHtml(item.source || t('Shopping list'))}</span>`}</article>`;
   const groups = shoppingGroups(state.shopping);
   const rows = groups.length > 1
     ? groups.map((group) => `<h3 class="shopping-group">${escapeHtml(t(group.key))} <span>${group.items.filter((item) => !item.checked).length || '✓'}</span></h3>${group.items.map(row).join('')}`).join('')
@@ -630,11 +655,14 @@ function undoLastChange() {
   persist();
 }
 
-function removeInventoryItem(id) {
+// Removing asks why: used up or thrown away goes into the month overview; a staple goes on the shopping list.
+function removeInventoryItem(id, outcome = '') {
   const item = state.inventory.find((entry) => entry.id === id);
   if (!item) return;
-  withUndo(t('Removed “{name}”', { name: item.name }), ['inventory'], () => {
+  withUndo(t('Removed “{name}”', { name: item.name }), ['inventory', 'shopping', 'log'], () => {
     state.inventory = state.inventory.filter((entry) => entry.id !== id);
+    if (outcome) logRemoval(item, outcome);
+    if (Number(item.minimum) > 0) addRestockEntry(item);
   });
 }
 
@@ -996,7 +1024,7 @@ function recipeCard(recipe, isRemote = false) {
 }
 
 function renderRecipes() {
-  const localRecipes = state.recipes.filter((recipe) => `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`.toLowerCase().includes(recipeQuery.toLowerCase()));
+  const localRecipes = state.recipes.filter((recipe) => matchesSearch(recipeQuery, `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`, recipe.ingredients || []));
   const sorted = [...localRecipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   const actions = `<div class="recipe-heading-actions"><button class="button button-primary" data-action="new-recipe">＋ ${t('New recipe')}</button><button class="button button-outline" data-action="open-recipe-import">${t('Import')} <span aria-hidden="true">↓</span></button></div>`;
   return `${pageHeading(t('FROM YOUR SHELF'), t('What sounds good?'), t('Find something to make with what you have, or a few things you could grab.'), actions)}
@@ -1118,21 +1146,62 @@ function openItemDialog(item) {
   $('#barcode-status').textContent = '';
   $('#item-dialog-title').textContent = item ? t('Edit item') : t('Add an item');
   $('#item-remove').hidden = !item;
+  $('#item-remove-choice').hidden = true;
   form.elements.id.value = item?.id || '';
   form.elements.name.value = item?.name || '';
   form.elements.quantity.value = item?.quantity ?? 1;
   form.elements.unit.value = item?.unit || '';
+  form.elements.minimum.value = Number(item?.minimum) > 0 ? item.minimum : '';
   form.elements.expiresOn.value = item?.expiresOn || '';
   form.elements.expiresOn.dataset.estimated = item?.expirationSource === 'estimated' ? 'true' : 'false';
   form.elements.kind.value = item?.kind || 'Food';
+  form.elements.openedOn.value = item?.openedOn || '';
+  form.elements.frozenOn.value = item?.frozenOn || '';
   fillLocationSelect(form.elements.location, item?.location || state.locations[0]);
+  updateFrozenField(form);
   if (item?.expiresOn) {
     $('#expiry-estimate-note').textContent = item.expirationSource === 'estimated' ? t('Approximate estimate based on storage and typical shelf life. Check the package date.') : t('Using your chosen package date.');
   } else {
-    updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'));
+    updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'), itemFormStartDate(form));
   }
+  updateOpenedRow(form, Boolean(item));
   dialog.showModal();
   form.elements.name.focus();
+}
+
+// The item dialog's "Frozen on" date shows for food stored in a freezer; new freezer items start at today.
+function updateFrozenField(form) {
+  const frozen = isFrozen({ kind: form.elements.kind.value, location: form.elements.location.value });
+  $('#frozen-field').hidden = !frozen;
+  if (frozen && !form.elements.frozenOn.value) form.elements.frozenOn.value = dateKey(new Date());
+}
+
+// Where the shelf-life estimate counts from: the freezer date for frozen food, else today.
+function itemFormStartDate(form) {
+  const frozen = isFrozen({ kind: form.elements.kind.value, location: form.elements.location.value });
+  return (frozen && dateFromKey(form.elements.frozenOn.value)) || new Date();
+}
+
+// "Opened today", for food already in the inventory that keeps shorter once open (not in the freezer).
+function updateOpenedRow(form, existing) {
+  const name = form.elements.name.value;
+  const openedOn = form.elements.openedOn.value;
+  const frozen = isFrozen({ kind: form.elements.kind.value, location: form.elements.location.value });
+  const canOpen = existing && form.elements.kind.value !== 'Household' && !frozen && openedShelfLifeDays(name) !== null;
+  $('#opened-row').hidden = !canOpen && !openedOn;
+  $('#item-opened-button').hidden = Boolean(openedOn) || !canOpen;
+  $('#item-opened-note').textContent = openedOn && dateFromKey(openedOn) ? t('Opened {date}.', { date: expirationDateText(openedOn) }) : '';
+}
+
+function markItemOpened(form) {
+  const after = expiryAfterOpening(form.elements.name.value, form.elements.expiresOn.value);
+  if (!after) return;
+  form.elements.openedOn.value = dateKey(new Date());
+  form.elements.expiresOn.value = after.date;
+  form.elements.expiresOn.dataset.estimated = 'true';
+  updateOpenedRow(form, true);
+  $('#item-opened-note').textContent = tp(after.days, 'Opened today: keeps about {count} day once open.', 'Opened today: keeps about {count} days once open.');
+  $('#expiry-estimate-note').textContent = t('Approximate estimate based on storage and typical shelf life. Check the package date.');
 }
 
 function openCookDialog(plan) {
@@ -1140,6 +1209,7 @@ function openCookDialog(plan) {
   if (!recipe) return;
   $('#cook-title').textContent = t('Cooked {name}?', { name: recipe.name });
   $('#cook-form').elements.planId.value = plan.id;
+  $('#cook-form').elements.leftovers.checked = false;
   $('#cook-ingredients').innerHTML = recipe.ingredients.map((ingredient, index) => {
     const item = matchingInventory(ingredient);
     const amount = item ? `<span class="cook-amount"><span>${t('Remove')}</span><input type="number" name="amount-${index}" min="0" step="any" value="${Math.round(Math.min(deductionAmount(ingredient, item), Number(item.quantity)) * 100) / 100}" inputmode="decimal" aria-label="${t('Amount of {name} to remove', { name: escapeHtml(item.name) })}"><span>${escapeHtml(item.unit || t('pcs'))} <i>${t('of {quantity}', { quantity: escapeHtml(item.quantity) })}</i></span></span>` : '';

@@ -19,6 +19,8 @@ note() { echo "note: $*"; echo "::warning title=Emulator check::$*"; }
 pass() { echo "ok:   $*"; echo "::notice title=Emulator check::$*"; }
 sh_() { adb shell "$@" | tr -d '\r'; }
 service() { sh_ dumpsys activity services "$PKG/.HostService"; }
+# Only the wake locks held now: Android 14 also lists recently released ones further down (the wake lock log).
+held_locks() { sh_ dumpsys power | sed -n '/^Wake Locks: size=/,/^$/p'; }
 
 adb root > /dev/null 2>&1; sleep 3; adb wait-for-device
 echo "Android $(sh_ getprop ro.build.version.release) (API $(sh_ getprop ro.build.version.sdk))"
@@ -40,7 +42,7 @@ sh_ am start-foreground-service -n "$PKG/.HostService" --es title "Sharing your 
 sleep 4
 service | grep -q 'isForeground=true' && pass "HostService is a foreground service" || fail "HostService is not in the foreground"
 sh_ dumpsys notification --noredact | grep -qE "channel=hosting|mId='hosting'" && pass "the hosting notification is shown" || fail "no hosting notification"
-sh_ dumpsys power | grep -q 'goodstock:host' && pass "wake lock held" || fail "no wake lock"
+held_locks | grep -q 'goodstock:host' && pass "wake lock held" || fail "no wake lock"
 sh_ dumpsys wifi | grep -q 'goodstock:host' && pass "Wi-Fi lock held" || note "Wi-Fi lock not listed (the emulator may have no Wi-Fi)"
 
 echo "== 2. App in the background for 30 s"
@@ -74,7 +76,7 @@ echo "== 4. Stop"
 sh_ am stopservice -n "$PKG/.HostService" > /dev/null
 sleep 3
 service | grep -q 'ServiceRecord' && fail "HostService still runs after stop" || pass "stopped"
-sh_ dumpsys power | grep -q 'goodstock:host' && fail "wake lock still held after stop" || pass "wake lock released"
+held_locks | grep -q 'goodstock:host' && fail "wake lock still held after stop" || pass "wake lock released"
 
 echo "== 5. Phone restart with a saved reminder"
 sh_ am force-stop "$PKG"

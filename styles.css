@@ -754,6 +754,22 @@ html:not(.is-standalone) .phone-only { display: none; }
 /* Barcode scanning in the add-item dialog. */
 .barcode-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: -4px 0 12px; }
 .barcode-row .field-hint:empty { display: none; }
+
+/* Staples, opened and frozen dates, leftovers and the month overview (v3.2). */
+/* Labels and buttons set their own display, which would show them despite the hidden attribute. */
+#item-dialog [hidden] { display: none !important; }
+.opened-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: -4px 0 12px; }
+.opened-row .field-hint:empty { display: none; }
+.remove-choice { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); font-size: 13px; }
+.remove-choice > span { margin-right: 4px; font-weight: 700; }
+.no-flex-gap .remove-choice > span { margin-right: 10px; }
+.app-dialog label.leftovers-check { display: block; margin: 14px 0 4px; color: var(--ink); font-size: 13px; }
+.app-dialog label.leftovers-check > input { width: auto; height: auto; margin: 0 6px 0 0; vertical-align: middle; }
+.app-dialog label.leftovers-check .field-hint { display: block; margin-top: 4px; font-weight: 400; }
+.restock-tag { margin-left: 6px; padding: 1px 6px; border-radius: 10px; background: var(--mint); color: var(--green-dark); font-size: 10px; font-weight: 700; letter-spacing: .3px; vertical-align: middle; }
+.month-overview { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: -15px 0 30px; padding: 14px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
+.month-overview strong { font-size: 14px; }
+.no-flex-gap .month-overview > * { margin-right: 14px; }
 .barcode-dialog video { width: 100%; max-height: 50vh; border-radius: 8px; background: #000; object-fit: cover; }
 
 /* Hands-free cook mode: read aloud and voice commands. */
