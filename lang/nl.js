@@ -933,4 +933,10 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Favourites": "Favorieten",
   "{count} days ago": { "one": "{count} dag geleden", "other": "{count} dagen geleden" },
   "Cooked {count} times, last {when}": { "one": "Eén keer gekookt, laatst {when}", "other": "{count} keer gekookt, laatst {when}" },
+  "before a big change": "vóór een grote wijziging",
+  "No backups yet. The first one is made with the first change of the day.": "Nog geen back-ups. De eerste wordt gemaakt bij de eerste wijziging van de dag.",
+  "Server backups are unavailable while offline.": "Serverback-ups zijn niet beschikbaar zolang je offline bent.",
+  "That backup could not be loaded.": "Die back-up kon niet worden geladen.",
+  "Server backups": "Back-ups op de server",
+  "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "Elke dag bewaart de server een kopie van de keuken van vóór de eerste wijziging, en een vóór elke wijziging die het meeste ervan weghaalt. De nieuwste 14 blijven bewaard.",
 };

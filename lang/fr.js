@@ -933,4 +933,10 @@ window.GOODSTOCK_TRANSLATIONS.fr = {
   "Favourites": "Favoris",
   "{count} days ago": { "one": "il y a {count} jour", "other": "il y a {count} jours" },
   "Cooked {count} times, last {when}": { "one": "Cuisiné une fois, dernière fois {when}", "other": "Cuisiné {count} fois, dernière fois {when}" },
+  "before a big change": "avant un grand changement",
+  "No backups yet. The first one is made with the first change of the day.": "Pas encore de sauvegarde. La première est faite au premier changement de la journée.",
+  "Server backups are unavailable while offline.": "Les sauvegardes du serveur ne sont pas disponibles hors ligne.",
+  "That backup could not be loaded.": "Cette sauvegarde n’a pas pu être chargée.",
+  "Server backups": "Sauvegardes sur le serveur",
+  "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "Chaque jour, le serveur garde une copie de la cuisine d’avant le premier changement, et une avant tout changement qui en retire la plus grande partie. Les 14 plus récentes sont conservées.",
 };

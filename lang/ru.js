@@ -933,4 +933,10 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Favourites": "Избранное",
   "{count} days ago": { "one": "{count} день назад", "few": "{count} дня назад", "many": "{count} дней назад", "other": "{count} дня назад" },
   "Cooked {count} times, last {when}": { "one": "Приготовлено {count} раз, последний — {when}", "few": "Приготовлено {count} раза, последний — {when}", "many": "Приготовлено {count} раз, последний — {when}", "other": "Приготовлено {count} раза, последний — {when}" },
+  "before a big change": "перед большим изменением",
+  "No backups yet. The first one is made with the first change of the day.": "Копий пока нет. Первая появится при первом изменении за день.",
+  "Server backups are unavailable while offline.": "Копии на сервере недоступны без сети.",
+  "That backup could not be loaded.": "Не удалось загрузить эту копию.",
+  "Server backups": "Резервные копии на сервере",
+  "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "Каждый день сервер сохраняет копию кухни перед первым изменением, а также перед любым изменением, которое удаляет большую её часть. Хранятся 14 последних.",
 };

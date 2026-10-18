@@ -133,10 +133,12 @@ SERVER VERSION
     runs on GitHub. Plain http on 8484 stays, for the phone apps (they don't trust a home-made certificate).
     STILL FOR YOU: install the certificate on the kitchen tablet and check voice and notifications in Chrome 81.
 
-0.18 Automatic backups on the server.
-    The phone apps make weekly backups, but the server keeps only one /data/state.json. One bad sync or a mistaken
-    "Wipe all data" and it's gone. A daily copy into /data/backups (keeping the last 14), with a "Restore from a
-    server backup" list in Settings → Your data, needs no extra setup.
+[x] DONE 0.18 Automatic backups on the server. (v3.2.8)
+    Before the first save of each day the server copies the kitchen to /data/backups/state-YYYY-MM-DD.json. Before
+    a save that removes more than half of the inventory and recipes (from at least six) it also makes a safety
+    copy, "…-before-HHMM.json", so a mistaken Wipe or a bad sync during the day loses nothing. The newest 14 are
+    kept. Settings → Your data lists them (date, counts, "before a big change") with Restore, which asks first and
+    then works like restoring a backup file.
 
 0.19 Restart the container when it is unhealthy.
     From 6.3. Docker only restarts a container that has stopped, not one that is unhealthy. An optional "autoheal"

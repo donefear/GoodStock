@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import QRCode from 'qrcode';
 import { extractRecipeFromHtml, NO_RECIPE_MESSAGE } from './recipe-import.mjs';
@@ -163,6 +163,58 @@ function openLiveStream(request, response) {
   });
 }
 
+// Server backups: the kitchen as it was before the first save of each day, plus a safety copy before a save that
+// removes most of the inventory and recipes at once (a mistaken wipe, a bad sync). The newest BACKUP_KEEP files are
+// kept in /data/backups and can be restored from Settings → Your data.
+const backupsDirectory = join(dataDirectory, 'backups');
+const BACKUP_KEEP = 14;
+const BACKUP_NAME = /^state-\d{4}-\d{2}-\d{2}(?:-before-\d{4})?\.json$/;
+// Oldest first: each day's daily copy, then that day's safety copies in time order.
+const byAge = (first, second) => {
+  const [a, b] = [first, second].map((name) => name.replace(/\.json$/, ''));
+  return a < b ? -1 : a > b ? 1 : 0;
+};
+const localDay = (date = new Date()) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+async function writeBackup(name, state) {
+  await mkdir(backupsDirectory, { recursive: true });
+  const path = join(backupsDirectory, name);
+  await writeFile(`${path}.tmp`, JSON.stringify({ app: 'goodstock', backupVersion: 1, exportedAt: new Date().toISOString(), state }), 'utf8');
+  await rename(`${path}.tmp`, path);
+  const names = (await readdir(backupsDirectory)).filter((file) => BACKUP_NAME.test(file)).sort(byAge);
+  for (const old of names.slice(0, Math.max(0, names.length - BACKUP_KEEP))) await unlink(join(backupsDirectory, old)).catch(() => {});
+}
+
+async function backupBeforeSave(next) {
+  const current = kitchen.state;
+  if (!current) return;
+  try {
+    const daily = `state-${localDay()}.json`;
+    const names = await readdir(backupsDirectory).catch(() => []);
+    if (!names.includes(daily)) await writeBackup(daily, current);
+    const size = (state) => (state.inventory?.length || 0) + (state.recipes?.length || 0);
+    if (size(current) >= 6 && size(next) < size(current) / 2) {
+      const time = new Date().toTimeString().slice(0, 5).replace(':', '');
+      await writeBackup(`state-${localDay()}-before-${time}.json`, current);
+    }
+  } catch (error) {
+    console.error('Could not write a backup:', error.message);
+  }
+}
+
+async function listBackups() {
+  const names = (await readdir(backupsDirectory).catch(() => [])).filter((file) => BACKUP_NAME.test(file)).sort(byAge).reverse();
+  return Promise.all(names.map(async (name) => {
+    try {
+      const [{ size }, saved] = await Promise.all([stat(join(backupsDirectory, name)), readFile(join(backupsDirectory, name), 'utf8').then(JSON.parse)]);
+      const state = saved?.state || {};
+      return { name, savedAt: saved?.exportedAt || '', size, inventory: state.inventory?.length || 0, recipes: state.recipes?.length || 0, safety: name.includes('-before-') };
+    } catch {
+      return { name, savedAt: '', size: 0, inventory: 0, recipes: 0, safety: name.includes('-before-') };
+    }
+  }));
+}
+
 async function receiveKitchen(payload) {
   // New pages send { state, baseRevision, client }; older cached pages send the bare state and simply overwrite.
   const tracked = payload && typeof payload === 'object' && payload.state && Object.hasOwn(payload, 'baseRevision');
@@ -174,6 +226,7 @@ async function receiveKitchen(payload) {
     return { status: 409, body: { error: 'The kitchen changed on another device.', revision: kitchen.revision, state: kitchen.state } };
   }
   const { _revision, ...clean } = state;
+  await backupBeforeSave(clean);
   kitchen = { revision: kitchen.revision + 1, state: clean };
   await writeKitchen();
   broadcast('state', { revision: kitchen.revision, origin: tracked ? String(payload.client || '') : '' });
@@ -449,6 +502,22 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === 'GET' && url.pathname === '/api/events') {
       openLiveStream(request, response);
+      return;
+    }
+    if (request.method === 'GET' && url.pathname === '/api/backups') {
+      sendJson(response, 200, { backups: await listBackups() });
+      return;
+    }
+    const backupMatch = /^\/api\/backups\/([^/]+)$/.exec(url.pathname);
+    if (request.method === 'GET' && backupMatch) {
+      if (!BACKUP_NAME.test(backupMatch[1])) return sendJson(response, 400, { error: 'Not a backup name' });
+      try {
+        const contents = await readFile(join(backupsDirectory, backupMatch[1]));
+        response.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+        response.end(contents);
+      } catch {
+        sendJson(response, 404, { error: 'That backup is gone.' });
+      }
       return;
     }
     if (request.method === 'POST' && url.pathname === '/api/state') {

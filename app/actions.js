@@ -158,6 +158,7 @@ document.addEventListener('click', async (event) => {
   }
   if (action === 'settings-tab') showSettingsTab(button.dataset.tab);
   if (action === 'restore-data') $('#restore-file').click();
+  if (action === 'restore-server-backup') await restoreServerBackup(button.dataset.name);
   if (action === 'view-recipe') {
     if (button.dataset.remote === 'true') openRecipeDialog(id, true);
     else openRecipePage(id);
@@ -696,9 +697,44 @@ async function backupKitchen() {
 }
 
 async function restoreKitchen(file) {
-  const status = $('#backup-status');
   let parsed;
-  try { parsed = JSON.parse(await file.text()); } catch { status.textContent = t('That file is not a Goodstock backup.'); return; }
+  try { parsed = JSON.parse(await file.text()); } catch { $('#backup-status').textContent = t('That file is not a Goodstock backup.'); return; }
+  restoreKitchenData(parsed);
+}
+
+// Server backups (server version): listed in Settings → Your data, restored like a backup file.
+async function fillServerBackups() {
+  const zone = $('#server-backups-zone');
+  zone.hidden = STANDALONE;
+  if (STANDALONE) return;
+  const list = $('#server-backups');
+  try {
+    const { backups } = await (await fetch('/api/backups')).json();
+    list.innerHTML = backups.length
+      ? backups.map((backup) => {
+        const when = backup.savedAt ? formatDate(new Date(backup.savedAt), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : backup.name;
+        const what = t('{items} inventory items and {recipes} recipes', { items: backup.inventory, recipes: backup.recipes });
+        return `<li><span><b>${escapeHtml(when)}</b>${backup.safety ? ` <i>${t('before a big change')}</i>` : ''}<br/>${escapeHtml(what)}</span><button class="button button-small button-quiet" type="button" data-action="restore-server-backup" data-name="${escapeHtml(backup.name)}">${t('Restore')}</button></li>`;
+      }).join('')
+      : `<li class="muted">${t('No backups yet. The first one is made with the first change of the day.')}</li>`;
+  } catch {
+    list.innerHTML = `<li class="muted">${t('Server backups are unavailable while offline.')}</li>`;
+  }
+}
+
+async function restoreServerBackup(name) {
+  try {
+    const response = await fetch(`/api/backups/${encodeURIComponent(name)}`);
+    if (!response.ok) throw new Error('gone');
+    restoreKitchenData(await response.json());
+  } catch {
+    $('#backup-status').textContent = t('That backup could not be loaded.');
+  }
+  await fillServerBackups();
+}
+
+function restoreKitchenData(parsed) {
+  const status = $('#backup-status');
   const restored = parsed?.state || parsed;
   if (!restored || !Array.isArray(restored.inventory) || !Array.isArray(restored.recipes)) { status.textContent = t('That file is not a Goodstock backup.'); return; }
   const summary = t('{items} inventory items and {recipes} recipes', { items: restored.inventory.length, recipes: restored.recipes.length });
@@ -823,7 +859,7 @@ async function fillSettings() {
   fillFolderSyncSettings();
   fillHostSettings();
   fillAutoBackup();
-  await Promise.all([loadMealieSettings(), loadDeeplSettings(), fillPinSettings()]);
+  await Promise.all([loadMealieSettings(), loadDeeplSettings(), fillPinSettings(), fillServerBackups()]);
 }
 
 function fillSettingsMode() {

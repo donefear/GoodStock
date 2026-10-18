@@ -933,4 +933,10 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Favourites": "Favorite",
   "{count} days ago": { "one": "acum {count} zi", "few": "acum {count} zile", "other": "acum {count} de zile" },
   "Cooked {count} times, last {when}": { "one": "Gătită o dată, ultima dată {when}", "few": "Gătită de {count} ori, ultima dată {when}", "other": "Gătită de {count} de ori, ultima dată {when}" },
+  "before a big change": "înainte de o schimbare mare",
+  "No backups yet. The first one is made with the first change of the day.": "Încă nu există copii. Prima se face la prima schimbare din zi.",
+  "Server backups are unavailable while offline.": "Copiile de pe server nu sunt disponibile offline.",
+  "That backup could not be loaded.": "Copia aceasta nu a putut fi încărcată.",
+  "Server backups": "Copii de siguranță pe server",
+  "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "În fiecare zi, serverul păstrează o copie a bucătăriei de dinaintea primei schimbări și una înaintea oricărei schimbări care șterge cea mai mare parte. Se păstrează cele mai noi 14.",
 };

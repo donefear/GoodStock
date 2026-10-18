@@ -905,3 +905,12 @@ html:not(.is-standalone) .phone-only { display: none; }
 .no-flex-gap .recipe-results-tools > * + * { margin-left: 14px; }
 @media print { .recipe-cooked-note, .favourite-button { display: none !important; } }
 .recipe-card-top .recipe-ingredient-count { margin-left: auto; }
+
+/* Server backups (0.18) in Settings → Your data. */
+.server-backups-zone > div { width: 100%; }
+.test-zone .server-backups-zone span, .server-backups-zone > div > span { max-width: none; }
+.server-backups { margin: 10px 0 0; padding: 0; list-style: none; }
+.server-backups li { padding: 7px 0; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; }
+.server-backups li span { max-width: none; margin: 0; color: var(--ink); }
+.server-backups li i { color: var(--coral); font-style: normal; font-weight: 700; }
+.server-backups li.muted { color: var(--muted); }

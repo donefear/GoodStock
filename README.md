@@ -73,7 +73,7 @@ The interface is available in **English, Dutch, Spanish, French, German, Italian
 - **Undo** instead of "are you sure?" pop-ups.
 - **Light and dark themes**, and **Large / Extra large text** for a tablet across the room.
 - **Household PIN (optional).** Locks the server version so only your devices can use it.
-- **Backups.** Export and import your whole kitchen as a file. The phone apps can also make an automatic weekly backup to a folder you choose, such as Google Drive or iCloud.
+- **Backups.** Export and import your whole kitchen as a file. The phone apps can also make an automatic weekly backup to a folder you choose, such as Google Drive or iCloud. The server keeps a daily copy by itself (and one before any change that removes most of the kitchen), ready to restore from Settings → Your data.
 
 ---
 

@@ -933,4 +933,10 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Favourites": "Favoriler",
   "{count} days ago": { "one": "{count} gün önce", "other": "{count} gün önce" },
   "Cooked {count} times, last {when}": { "one": "Bir kez pişirildi, en son {when}", "other": "{count} kez pişirildi, en son {when}" },
+  "before a big change": "büyük bir değişiklikten önce",
+  "No backups yet. The first one is made with the first change of the day.": "Henüz yedek yok. İlki günün ilk değişikliğinde alınır.",
+  "Server backups are unavailable while offline.": "Sunucu yedekleri çevrimdışıyken kullanılamaz.",
+  "That backup could not be loaded.": "Bu yedek yüklenemedi.",
+  "Server backups": "Sunucu yedekleri",
+  "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "Sunucu her gün mutfağın ilk değişiklikten önceki bir kopyasını ve büyük kısmını silen her değişiklikten önce bir kopyasını saklar. En yeni 14 tanesi tutulur.",
 };

@@ -933,4 +933,10 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Favourites": "お気に入り",
   "{count} days ago": "{count} 日前",
   "Cooked {count} times, last {when}": "{count} 回作りました（最後は{when}）",
+  "before a big change": "大きな変更の前",
+  "No backups yet. The first one is made with the first change of the day.": "まだバックアップはありません。その日最初の変更時に作られます。",
+  "Server backups are unavailable while offline.": "オフラインの間はサーバーのバックアップを使えません。",
+  "That backup could not be loaded.": "そのバックアップを読み込めませんでした。",
+  "Server backups": "サーバーのバックアップ",
+  "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "サーバーは毎日、最初の変更前のキッチンのコピーと、大部分を削除する変更の前のコピーを保存します。最新の 14 件が残ります。",
 };

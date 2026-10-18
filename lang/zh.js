@@ -933,4 +933,10 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Favourites": "收藏",
   "{count} days ago": "{count} 天前",
   "Cooked {count} times, last {when}": "做过 {count} 次，最近一次是{when}",
+  "before a big change": "大改动之前",
+  "No backups yet. The first one is made with the first change of the day.": "还没有备份。每天第一次修改时会生成第一份。",
+  "Server backups are unavailable while offline.": "离线时无法查看服务器备份。",
+  "That backup could not be loaded.": "无法加载该备份。",
+  "Server backups": "服务器备份",
+  "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "服务器每天会在第一次修改前保存一份厨房副本，在删除大部分内容的修改前也会保存一份。保留最新的 14 份。",
 };
