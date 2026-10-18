@@ -911,4 +911,9 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Used one {name}": "Folosit: {name} (1)",
   "SCANNED": "SCANAT",
   "Product": "Produs",
+  "Photo": "Fotografie",
+  "Add a photo": "Adaugă o fotografie",
+  "Remove photo": "Elimină fotografia",
+  "Change photo": "Schimbă fotografia",
+  "That file could not be used as a photo.": "Fișierul acesta nu poate fi folosit ca fotografie.",
 };

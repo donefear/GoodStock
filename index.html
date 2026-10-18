@@ -117,6 +117,7 @@
         <input type="hidden" name="sourceUrl" />
         <label>Name<input name="name" required maxlength="120" placeholder="e.g. Grandma's pea soup" /></label>
         <label>Short description<input name="description" maxlength="400" placeholder="Optional" /></label>
+        <div class="recipe-photo-field"><span class="recipe-photo-label">Photo</span><input type="hidden" name="photo" /><img class="recipe-photo-preview" id="recipe-photo-preview" alt="" hidden /><div class="recipe-photo-buttons"><button class="button button-outline button-small" type="button" data-action="recipe-photo-pick" id="recipe-photo-pick">Add a photo</button><button class="button button-quiet button-small" type="button" data-action="recipe-photo-remove" id="recipe-photo-remove" hidden>Remove photo</button><input type="file" accept="image/*" id="recipe-photo-file" hidden /></div><span class="field-hint" id="recipe-photo-status" role="status" aria-live="polite"></span></div>
         <label>Servings <span class="field-hint">How many people the amounts are for. Optional; lets you scale the recipe.</span><input name="servings" type="number" min="1" max="100" step="1" inputmode="numeric" placeholder="Optional" /></label>
         <label>Ingredients <span class="field-hint">One per line, amount first: “200 g pasta”, “2 eggs”, “1 tbsp olive oil”.</span><textarea name="ingredients" rows="7" placeholder="200 g pasta&#10;2 eggs&#10;1 tbsp olive oil"></textarea></label>
         <label>Steps <span class="field-hint">One step per line. A short line without a full stop, like “Sauce”, becomes a section heading.</span><textarea name="instructions" rows="8" placeholder="Bring a big pot of salted water to the boil.&#10;Cook the pasta for 10 minutes."></textarea></label>
@@ -211,7 +212,7 @@
         <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.2.2 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.2.3 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

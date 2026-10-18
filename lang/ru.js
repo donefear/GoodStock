@@ -911,4 +911,9 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Used one {name}": "Использовано: {name}, 1 шт.",
   "SCANNED": "ОТСКАНИРОВАНО",
   "Product": "Продукт",
+  "Photo": "Фото",
+  "Add a photo": "Добавить фото",
+  "Remove photo": "Удалить фото",
+  "Change photo": "Заменить фото",
+  "That file could not be used as a photo.": "Этот файл нельзя использовать как фото.",
 };

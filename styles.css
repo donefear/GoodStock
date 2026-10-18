@@ -833,3 +833,17 @@ html:not(.is-standalone) .phone-only { display: none; }
 .ideas-panel .recipe-results-heading { flex-wrap: wrap; gap: 10px; }
 .ideas-panel .recipe-results-heading > div { min-width: 0; }
 .no-flex-gap .ideas-panel .recipe-results-heading > * + * { margin-left: 0; margin-top: 10px; }
+
+/* Recipe photos (0.13): on the card's top edge, on the recipe page, and the editor's preview. */
+.recipe-card.has-photo { padding-top: 0; overflow: hidden; }
+.recipe-card-photo { display: block; width: calc(100% + 32px); height: 140px; margin: 0 -16px 14px; object-fit: cover; background: var(--line); }
+.recipe-page-photo { display: block; width: 100%; max-width: 520px; max-height: 260px; margin: 0 0 22px; border-radius: var(--radius); object-fit: cover; }
+.recipe-photo[hidden] { display: none; }
+.recipe-photo-field { display: grid; gap: 8px; margin: 0 0 14px; }
+.recipe-photo-label { color: #657268; font-size: 11px; font-weight: 700; }
+:root[data-theme="dark"] .recipe-photo-label { color: #becbbf; }
+.recipe-photo-preview { display: block; width: 160px; height: 110px; border-radius: 10px; object-fit: cover; }
+.recipe-photo-preview[hidden] { display: none; }
+.recipe-photo-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.recipe-photo-field .field-hint:empty { display: none; }
+.no-flex-gap .recipe-photo-field > * + * { margin-top: 8px; }

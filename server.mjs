@@ -494,6 +494,24 @@ const server = createServer(async (request, response) => {
       }
       return;
     }
+    // A recipe photo from a website, fetched once when a recipe is imported; the page shrinks it and keeps it with
+    // the recipe. Only images, at most 8 MB.
+    if (request.method === 'GET' && url.pathname === '/api/photo') {
+      try {
+        const target = new URL(url.searchParams.get('url') || '');
+        if (!/^https?:$/.test(target.protocol)) throw Object.assign(new Error('Only http and https links can be imported.'), { status: 400 });
+        const result = await fetch(target, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; GoodstockRecipeImport/1.0)', accept: 'image/*' }, redirect: 'follow', signal: AbortSignal.timeout(12000) });
+        const type = String(result.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+        if (!result.ok || !/^image\/(?:jpeg|png|webp|gif|avif)$/.test(type)) throw Object.assign(new Error('That photo could not be loaded.'), { status: 502 });
+        const bytes = Buffer.from(await result.arrayBuffer());
+        if (bytes.length > 8_000_000) throw Object.assign(new Error('That photo is too large.'), { status: 413 });
+        response.writeHead(200, { 'content-type': type, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
+        response.end(bytes);
+      } catch (error) {
+        sendJson(response, error?.status || 502, { error: error?.status ? error.message : 'That photo could not be loaded.' });
+      }
+      return;
+    }
     if (url.pathname === '/api/translate/status' || url.pathname === '/api/translate/config' || url.pathname === '/api/translate') {
       try {
         if (request.method === 'GET' && url.pathname === '/api/translate/status') sendJson(response, 200, await deeplStatus());
@@ -606,7 +624,7 @@ const server = createServer(async (request, response) => {
       const search = url.searchParams.get('search') || '';
       const query = new URLSearchParams({ search, perPage: '40' });
       const payload = await fetchMealie(`/recipes?${query}`);
-      sendJson(response, 200, mealieRows(payload).map(mapMealieRecipe));
+      sendJson(response, 200, mealieRows(payload).map((row) => mapMealieRecipe(row, mealiePublicUrl())));
       return;
     }
     if (request.method === 'GET' && url.pathname.startsWith('/api/mealie/open/')) {
@@ -626,7 +644,7 @@ const server = createServer(async (request, response) => {
       }
       const slug = decodeURIComponent(url.pathname.slice('/api/mealie/recipes/'.length));
       const recipe = await fetchMealie(`/recipes/${encodeURIComponent(slug)}`);
-      sendJson(response, 200, mapMealieRecipe(recipe));
+      sendJson(response, 200, mapMealieRecipe(recipe, mealiePublicUrl()));
       return;
     }
     // Bundled fonts: only plain names from the fonts folder, never other paths.

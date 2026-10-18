@@ -95,9 +95,24 @@ export function extractRecipeFromHtml(html, sourceUrl = '') {
       ingredients,
       instructions,
       sourceUrl,
+      image: imageFrom(recipe.image, sourceUrl),
     };
   }
   return null;
+}
+
+// The recipe's photo: schema.org "image" is a URL, a list of them, or an ImageObject ({ url }). The first web
+// address, made absolute against the page.
+export function imageFrom(value, base = '') {
+  for (const entry of [].concat(value ?? [])) {
+    const address = typeof entry === 'string' ? entry : entry?.url || entry?.contentUrl || '';
+    if (!address) continue;
+    try {
+      const url = new URL(String(address).trim(), base || undefined);
+      if (/^https?:$/.test(url.protocol)) return url.href;
+    } catch { /* Try the next one. */ }
+  }
+  return '';
 }
 
 // "4", 4, "4 servings", "Serves 4-6", ["4", "4 people"]: the first whole number, when it is a sensible count.

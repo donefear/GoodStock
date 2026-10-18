@@ -911,4 +911,9 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Used one {name}": "{name}を1つ使いました",
   "SCANNED": "スキャン済み",
   "Product": "商品",
+  "Photo": "写真",
+  "Add a photo": "写真を追加",
+  "Remove photo": "写真を削除",
+  "Change photo": "写真を変更",
+  "That file could not be used as a photo.": "そのファイルは写真として使えません。",
 };

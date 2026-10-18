@@ -501,6 +501,8 @@ function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
   form.elements.servings.value = recipe?.servings || '';
   form.elements.ingredients.value = (recipe?.ingredients || []).join('\n');
   form.elements.instructions.value = recipeInstructions(recipe || {}).join('\n');
+  setEditorPhoto(recipe?.photo || '');
+  $('#recipe-photo-status').textContent = '';
   $('#recipe-edit-title').textContent = recipe ? t('Edit {name}', { name: recipe.name }) : t('New recipe');
   $('#recipe-edit-eyebrow').textContent = recipe ? t('EDIT RECIPE') : t('YOUR RECIPE');
   $('#recipe-import').hidden = Boolean(recipe);
@@ -556,7 +558,70 @@ function fillRecipeEditor(recipe, message) {
   if (recipe.ingredients?.length) form.elements.ingredients.value = recipe.ingredients.join('\n');
   if (recipe.instructions?.length) form.elements.instructions.value = recipe.instructions.join('\n');
   if (recipe.sourceUrl) form.elements.sourceUrl.value = recipe.sourceUrl;
+  if (recipe.photo) setEditorPhoto(recipe.photo);
   $('#recipe-import-status').textContent = message;
+}
+
+// Recipe photos are kept small (at most PHOTO_SIZE pixels on the long side, as JPEG, roughly 20–40 KB) and saved
+// with the recipe, so they sync, back up and work offline like the rest of the kitchen, in every mode. Mealie
+// photos and photos imported in the phone apps (which can't fetch pictures for the page) stay web addresses.
+const PHOTO_SIZE = 480;
+const safePhoto = (value) => (/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(value || '') || /^https?:\/\/[^\s"'<>]+$/i.test(value || '') ? value : '');
+const recipePhoto = (recipe, className) => (safePhoto(recipe.photo) ? `<img class="recipe-photo ${className}" src="${escapeHtml(recipe.photo)}" alt="" loading="lazy" />` : '');
+
+function shrinkPhoto(blob) {
+  return new Promise((resolve, reject) => {
+    const address = URL.createObjectURL(blob);
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, PHOTO_SIZE / Math.max(image.naturalWidth, image.naturalHeight, 1));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(address);
+      resolve(canvas.toDataURL('image/jpeg', 0.72));
+    };
+    image.onerror = () => { URL.revokeObjectURL(address); reject(new Error('not an image')); };
+    image.src = address;
+  });
+}
+
+function setEditorPhoto(photo) {
+  const value = safePhoto(photo);
+  $('#recipe-edit-form').elements.photo.value = value;
+  const preview = $('#recipe-photo-preview');
+  preview.hidden = !value;
+  if (value) preview.src = value; else preview.removeAttribute('src');
+  $('#recipe-photo-remove').hidden = !value;
+  $('#recipe-photo-pick').textContent = value ? t('Change photo') : t('Add a photo');
+}
+
+async function pickRecipePhoto(file) {
+  if (!file) return;
+  const status = $('#recipe-photo-status');
+  try {
+    setEditorPhoto(await shrinkPhoto(file));
+    status.textContent = '';
+  } catch {
+    status.textContent = t('That file could not be used as a photo.');
+  }
+}
+
+// An imported recipe's photo: downloaded once through the server and shrunk. Without a server it stays a link.
+async function importedPhoto(address) {
+  if (!/^https?:\/\//i.test(address || '')) return '';
+  if (STANDALONE) return address;
+  try {
+    const response = await fetch(`/api/photo?url=${encodeURIComponent(address)}`);
+    if (!response.ok) return '';
+    return await shrinkPhoto(await response.blob());
+  } catch {
+    return '';
+  }
 }
 
 async function importRecipeFromUrl() {
@@ -581,6 +646,7 @@ async function importRecipeFromUrl() {
     }
     const host = (() => { try { return new URL(result.sourceUrl).hostname.replace(/^www\./, ''); } catch { return t('the website'); } })();
     result.instructions = tidyImportedSteps(result.instructions);
+    result.photo = await importedPhoto(result.image);
     fillRecipeEditor(result, t('Imported from {host}: {ingredients} ingredients, {steps} steps. Check it, then save.', { host, ingredients: result.ingredients.length, steps: result.instructions.length }));
   } catch (error) {
     if (STANDALONE) status.textContent = navigator.onLine ? (error?.message ? t('Could not load that page ({reason}).', { reason: error.message }) : t('Could not load that page.')) : t('You are offline. Paste the recipe text instead.');
@@ -626,8 +692,11 @@ function saveRecipeFromEditor(form) {
     instructions: lines(form.elements.instructions.value),
     source: existing?.source || (sourceUrl ? 'Imported' : 'My recipes'),
     sourceUrl: sourceUrl || existing?.sourceUrl || '',
+    photo: safePhoto(form.elements.photo.value),
   });
+  if (!recipe.photo) delete recipe.photo;
   if (!recipe.name) return;
+  if (existing && !recipe.photo) delete existing.photo;
   if (existing) Object.assign(existing, recipe); else state.recipes.unshift(recipe);
   // Steps may have changed, so a saved cook-mode position no longer lines up.
   const progress = readCookProgress();
@@ -780,6 +849,7 @@ function renderRecipePage() {
   return `<button class="text-button recipe-back" type="button" data-action="back-to-recipes">‹ ${t('All recipes')}</button>
     ${pageHeading(escapeHtml(sourceLabel(recipe.source).toUpperCase()), escapeHtml(recipe.name), escapeHtml(recipe.description || ''), actions)}
     <div class="recipe-page-links">${links}</div>
+    ${recipePhoto(recipe, 'recipe-page-photo')}
     ${renderTranslationPanel(recipe)}
     <div class="recipe-page">
       <section class="section-block recipe-page-side"><div class="section-heading"><div><h2>${t('Ingredients')}</h2><span class="muted">${ingredients.length ? (missing.length ? tp(missing.length, '{count} missing', '{count} missing') : t('All in stock')) : ''}</span></div>${ingredients.length ? servingsControl : ''}</div>${ingredientList}</section>
@@ -922,6 +992,7 @@ function saveRecipeTranslation() {
     sourceUrl: original.sourceUrl || '',
     language: recipeTranslation.target,
     translatedFrom: original.id,
+    ...(original.photo ? { photo: original.photo } : {}),
   });
   state.recipes.unshift(copy);
   recipeTranslation = null;
@@ -1037,7 +1108,7 @@ function recipeCard(recipe, isRemote = false) {
   const button = isRemote
     ? `<button class="button button-small button-dark" data-action="import-recipe" data-id="${escapeHtml(recipe.slug || recipe.id)}">${t('Add to library')} <span aria-hidden="true">＋</span></button>`
     : `<button class="button button-small ${planned ? 'button-outline' : 'button-dark'}" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${planned ? t('Plan another day') : t('Plan this week')} <span aria-hidden="true">→</span></button>`;
-  return `<article class="recipe-card"><div class="recipe-card-top"><span class="recipe-source">${escapeHtml(sourceLabel(recipe.source))}</span><span class="recipe-ingredient-count">${tp(recipe.ingredients?.length || 0, '{count} INGREDIENT', '{count} INGREDIENTS')}</span></div><h3><button class="recipe-title-link recipe-card-title" type="button" data-action="view-recipe" data-id="${escapeHtml(isRemote ? recipe.slug || recipe.id : recipe.id)}" data-remote="${isRemote}" title="${t('Show recipe')}">${escapeHtml(recipe.name)}</button></h3><p>${escapeHtml(recipe.description || t('A recipe from your collection.'))}</p><div class="recipe-missing ${missing.length ? 'has-missing' : ''}"><span aria-hidden="true">${missing.length ? '◷' : '✓'}</span>${escapeHtml(status)}</div><div class="recipe-card-bottom">${button}</div></article>`;
+  return `<article class="recipe-card${safePhoto(recipe.photo) ? ' has-photo' : ''}">${recipePhoto(recipe, 'recipe-card-photo')}<div class="recipe-card-top"><span class="recipe-source">${escapeHtml(sourceLabel(recipe.source))}</span><span class="recipe-ingredient-count">${tp(recipe.ingredients?.length || 0, '{count} INGREDIENT', '{count} INGREDIENTS')}</span></div><h3><button class="recipe-title-link recipe-card-title" type="button" data-action="view-recipe" data-id="${escapeHtml(isRemote ? recipe.slug || recipe.id : recipe.id)}" data-remote="${isRemote}" title="${t('Show recipe')}">${escapeHtml(recipe.name)}</button></h3><p>${escapeHtml(recipe.description || t('A recipe from your collection.'))}</p><div class="recipe-missing ${missing.length ? 'has-missing' : ''}"><span aria-hidden="true">${missing.length ? '◷' : '✓'}</span>${escapeHtml(status)}</div><div class="recipe-card-bottom">${button}</div></article>`;
 }
 
 function renderRecipes() {

@@ -911,4 +911,9 @@ window.GOODSTOCK_TRANSLATIONS.de = {
   "Used one {name}": "Ein(e) {name} verbraucht",
   "SCANNED": "GESCANNT",
   "Product": "Produkt",
+  "Photo": "Foto",
+  "Add a photo": "Foto hinzufügen",
+  "Remove photo": "Foto entfernen",
+  "Change photo": "Foto ändern",
+  "That file could not be used as a photo.": "Diese Datei kann nicht als Foto verwendet werden.",
 };

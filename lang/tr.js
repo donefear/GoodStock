@@ -911,4 +911,9 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Used one {name}": "Bir {name} kullanıldı",
   "SCANNED": "TARANDI",
   "Product": "Ürün",
+  "Photo": "Fotoğraf",
+  "Add a photo": "Fotoğraf ekle",
+  "Remove photo": "Fotoğrafı kaldır",
+  "Change photo": "Fotoğrafı değiştir",
+  "That file could not be used as a photo.": "Bu dosya fotoğraf olarak kullanılamıyor.",
 };

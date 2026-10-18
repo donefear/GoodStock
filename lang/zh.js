@@ -911,4 +911,9 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Used one {name}": "用掉一个{name}",
   "SCANNED": "已扫描",
   "Product": "商品",
+  "Photo": "照片",
+  "Add a photo": "添加照片",
+  "Remove photo": "移除照片",
+  "Change photo": "更换照片",
+  "That file could not be used as a photo.": "该文件无法用作照片。",
 };

@@ -96,10 +96,12 @@ async function phoneMealieGet(path, config = phoneMealie()) {
   try { return JSON.parse(response.body); } catch { throw new Error(t('Found a website at {url}, but not the Mealie API. Check the address.', { url: config.url })); }
 }
 
+const phoneMealieMedia = () => { const config = phoneMealie(); return config ? config.publicUrl || config.url : ''; };
+
 async function mealieSearch(term) {
   if (STANDALONE) {
     const { mealieRows, mapMealieRecipe } = window.GoodstockMealie;
-    return mealieRows(await phoneMealieGet(`/recipes?${new URLSearchParams({ search: term, perPage: '40' })}`)).map(mapMealieRecipe);
+    return mealieRows(await phoneMealieGet(`/recipes?${new URLSearchParams({ search: term, perPage: '40' })}`)).map((row) => mapMealieRecipe(row, phoneMealieMedia()));
   }
   const response = await fetch(`/api/mealie/recipes?search=${encodeURIComponent(term)}`);
   if (!response.ok) throw new Error(t('Mealie search failed.'));
@@ -107,7 +109,7 @@ async function mealieSearch(term) {
 }
 
 async function mealieRecipe(slug) {
-  if (STANDALONE) return window.GoodstockMealie.mapMealieRecipe(await phoneMealieGet(`/recipes/${encodeURIComponent(slug)}`));
+  if (STANDALONE) return window.GoodstockMealie.mapMealieRecipe(await phoneMealieGet(`/recipes/${encodeURIComponent(slug)}`), phoneMealieMedia());
   const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(slug)}`);
   if (!response.ok) throw new Error(t('That Mealie recipe is unavailable.'));
   return response.json();

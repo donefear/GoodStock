@@ -305,6 +305,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'edit-recipe') openRecipeEditor(recipeById(id));
   if (action === 'delete-recipe') deleteRecipe(id);
   if (action === 'recipe-import-url') await importRecipeFromUrl();
+  if (action === 'recipe-photo-pick') $('#recipe-photo-file').click();
+  if (action === 'recipe-photo-remove') setEditorPhoto('');
   if (action === 'recipe-import-text') {
     const parsed = parseRecipeText($('#recipe-edit-form').elements.importText.value);
     parsed.instructions = tidyImportedSteps(parsed.instructions);
@@ -354,6 +356,12 @@ document.addEventListener('change', async (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (file) await restoreKitchen(file);
+    return;
+  }
+  if (event.target.id === 'recipe-photo-file') {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    await pickRecipePhoto(file);
     return;
   }
   if (event.target.id === 'location-filter') { inventoryLocation = event.target.value; render(); }
@@ -918,6 +926,11 @@ async function disconnectMealie() {
 document.addEventListener('click', (event) => {
   if (event.target.matches('[data-close]')) event.target.closest('dialog').close();
 });
+
+// A recipe photo that can't load (a web address while offline, a Mealie server that's off) is simply left out.
+document.addEventListener('error', (event) => {
+  if (event.target.classList && event.target.classList.contains('recipe-photo')) event.target.hidden = true;
+}, true);
 
 $('#steps-body').addEventListener('change', (event) => {
   const key = event.target.dataset.stepsItem;

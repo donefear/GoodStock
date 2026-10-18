@@ -7,7 +7,8 @@ export function normalizeMealieUrl(value) {
   return trimmed && !/^https?:\/\//i.test(trimmed) ? `https://${trimmed}` : trimmed;
 }
 
-export function mapMealieRecipe(recipe) {
+// mediaBase: the Mealie address the browser can reach; recipe photos are served from there without a key.
+export function mapMealieRecipe(recipe, mediaBase = '') {
   const ingredientRows = recipe.recipeIngredient || recipe.ingredients || [];
   const ingredients = ingredientRows.map((row) => {
     if (typeof row === 'string') return row.trim();
@@ -26,6 +27,7 @@ export function mapMealieRecipe(recipe) {
     name: recipe.name || 'Untitled recipe',
     description: recipe.description || '',
     image: recipe.image || recipe.recipeImage || '',
+    photo: mediaBase && recipe.id && (recipe.image || recipe.recipeImage) ? `${mediaBase}/api/media/recipes/${encodeURIComponent(recipe.id)}/images/min-original.webp` : '',
     servings: Number(recipe.recipeServings) >= 1 ? Math.round(Number(recipe.recipeServings)) : (Number(/\d+/.exec(String(recipe.recipeYield || ''))?.[0]) || null),
     ingredients,
     instructions,

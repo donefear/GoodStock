@@ -90,10 +90,15 @@ EVERYDAY USE
     The phone apps' share text and the QR download have the same supermarket groups as the list on screen, with
     the headings (and the title) in the app's language. A list with only one group has no headings.
 
-0.13 Recipe photos.
-    Website imports nearly always come with a photo (schema.org "image"), and Mealie recipes have one too, but own
-    recipes show no picture. Keep the imported photo (downloaded once, small, saved next to the kitchen data rather
-    than inside it), and let you add a photo to your own recipes. Recipe cards are much easier to scan with photos.
+[x] DONE 0.13 Recipe photos. (v3.2.3)
+    The recipe editor has Add a photo (camera or gallery). Imports read schema.org "image"; on the server version
+    the server fetches it once (/api/photo, images only). Photos are shrunk in the page to 480 px as JPEG (about
+    20–40 KB) and shown on the recipe card and page. Mealie recipes show their photo from Mealie.
+    Changed from my note above: the small photo is saved inside the recipe, not next to the kitchen data. A separate
+    photo store would have needed its own sync for each way of sharing (server, phone joined to a server, hosting,
+    shared folder) and for backups; inside the recipe it works offline and everywhere. The cost is a larger
+    kitchen file, which stays fine for a few dozen photos. Imports in the phone apps keep the photo's web address,
+    since the phone bridges only fetch text.
 
 0.14 Print a recipe or the shopping list.
     There is no print style yet, so printing takes the whole screen with its menus. A short @media print section

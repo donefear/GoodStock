@@ -31,6 +31,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 ### 📖 Recipes
 - **Your own recipe box.** Write a recipe, paste one as text, or **import from a website**. Most recipe sites work, because Goodstock reads the recipe data built into their pages.
 - **Full recipe pages** with ingredients, the kitchen tools you'll need, and numbered steps that have amounts written in ("Add **200 g** flour…").
+- **Photos.** Imported recipes keep their photo, and you can add one to your own (a small copy is saved with the recipe, so it works offline). Mealie recipes show their Mealie photo.
 - **Servings and scaling.** Make a recipe for 2 or for 8 and every amount changes with it.
 - **Metric throughout.** Pounds, ounces and °F are converted automatically. Cups and spoons stay as written.
 - **What you have.** Every recipe page marks which ingredients are in stock and how many are missing.
