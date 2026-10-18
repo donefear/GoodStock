@@ -533,7 +533,9 @@ const server = createServer(async (request, response) => {
         quantity: safeExportText(item?.quantity, 30),
         unit: safeExportText(item?.unit, 30),
         checked: Boolean(item?.checked),
+        group: safeExportText(item?.group, 60),
       })).filter((item) => item.name);
+      const title = safeExportText(payload.title, 60) || 'Shopping list';
       if (!items.length) {
         sendJson(response, 400, { error: 'The shopping list has no named items' });
         return;
@@ -542,7 +544,7 @@ const server = createServer(async (request, response) => {
       for (const [token, share] of shoppingShares) if (share.expiresAt <= now) shoppingShares.delete(token);
       const token = randomBytes(18).toString('base64url');
       const expiresAt = now + shoppingShareLifetime;
-      shoppingShares.set(token, { items, expiresAt });
+      shoppingShares.set(token, { items, title, expiresAt });
       let shareOrigin;
       try {
         const origin = new URL(request.headers.origin || '');
@@ -575,15 +577,18 @@ const server = createServer(async (request, response) => {
         response.end('This shopping-list download link has expired. Create a new QR code in Goodstock.');
         return;
       }
-      const lines = [
-        'Goodstock shopping list',
-        `Created: ${new Date().toLocaleString()}`,
-        '',
-        ...share.items.map((item) => {
-          const amount = [item.quantity, item.unit].filter(Boolean).join(' ');
-          return `[${item.checked ? 'x' : ' '}] ${item.name}${amount ? ` (${amount})` : ''}`;
-        }),
-      ];
+      // Grouped like the list in the app (the page sends each item's heading in its own language).
+      const lines = [`Goodstock · ${share.title || 'Shopping list'}`, new Date().toISOString().slice(0, 10)];
+      let group = null;
+      for (const item of share.items) {
+        if (group === null || item.group !== group) {
+          group = item.group;
+          lines.push('');
+          if (group) lines.push(group.toUpperCase());
+        }
+        const amount = [item.quantity, item.unit].filter(Boolean).join(' ');
+        lines.push(`[${item.checked ? 'x' : ' '}] ${item.name}${amount ? ` (${amount})` : ''}`);
+      }
       response.writeHead(200, {
         'content-type': 'text/plain; charset=utf-8',
         'content-disposition': 'attachment; filename="goodstock-shopping-list.txt"',

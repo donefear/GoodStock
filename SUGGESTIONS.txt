@@ -86,9 +86,9 @@ EVERYDAY USE
     an unknown product can be added from there with its barcode. The buttons show where the camera can scan: the
     phone apps, and Chrome on a phone over HTTPS (see 0.17).
 
-0.12 Group the shared and downloaded shopping list too.
-    From 4.6. The list in the app is in supermarket order, but the QR download and share text are still one flat
-    list. The same groups as headings in the text make it easy to follow in the shop.
+[x] DONE 0.12 Group the shared and downloaded shopping list too. (v3.2.2)
+    The phone apps' share text and the QR download have the same supermarket groups as the list on screen, with
+    the headings (and the title) in the app's language. A list with only one group has no headings.
 
 0.13 Recipe photos.
     Website imports nearly always come with a photo (schema.org "image"), and Mealie recipes have one too, but own

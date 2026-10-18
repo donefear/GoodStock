@@ -54,7 +54,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 ### 🛒 Shopping list
 - **Grouped in supermarket order**: vegetables, fruit, bakery, dairy and so on.
 - **Put it away.** Checked items go into the inventory in one step.
-- **Share to phone.** Scan a QR code to download the list onto your phone (server version). The phone apps use the normal share menu.
+- **Share to phone.** Scan a QR code to download the list onto your phone (server version). The phone apps use the normal share menu. The shared list keeps the supermarket groups as headings.
 
 ### 🧰 Kitchen tools
 - **Timers.** Several named timers at once.

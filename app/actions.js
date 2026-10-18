@@ -89,7 +89,7 @@ async function openShoppingShare() {
     const response = await fetch('/api/shopping/share', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ items: state.shopping }),
+      body: JSON.stringify({ items: groupedShoppingItems(state.shopping), title: t('Shopping list') }),
     });
     const result = await response.json();
     if (!response.ok) throw serverError(result, N_('Could not create the download link'));

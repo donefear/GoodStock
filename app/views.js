@@ -588,12 +588,28 @@ async function importRecipeFromUrl() {
   }
 }
 
-// The Android app has no server for the QR link, so the list goes to the Android share sheet instead.
+// The shopping list for sharing and the QR download, in the same supermarket groups as on screen (headings in the
+// chosen language), when there is more than one group.
+function groupedShoppingItems(items) {
+  const groups = shoppingGroups(items);
+  return groups.length > 1 ? groups.flatMap((group) => group.items.map((item) => ({ ...item, group: t(group.key) }))) : items;
+}
+
+function shoppingListText(items) {
+  const lines = [t('Shopping list')];
+  let group = '';
+  for (const item of groupedShoppingItems(items)) {
+    if (item.group && item.group !== group) { group = item.group; lines.push('', group.toUpperCase()); }
+    lines.push(`☐ ${item.name}${item.quantity ? ` · ${item.quantity}${item.unit ? ` ${item.unit}` : ''}` : ''}`);
+  }
+  return lines.join('\n');
+}
+
+// The phone apps have no server for the QR link, so the list goes to the share sheet instead.
 function shareShoppingText() {
-  const lines = state.shopping.filter((item) => !item.checked).map((item) => `☐ ${item.name}${item.quantity ? ` · ${item.quantity}${item.unit ? ` ${item.unit}` : ''}` : ''}`);
-  if (!lines.length) return;
-  const text = `${t('Shopping list')}\n${lines.join('\n')}`;
-  try { nativeApp.share(text); } catch { /* Sharing is optional. */ }
+  const items = state.shopping.filter((item) => !item.checked);
+  if (!items.length) return;
+  try { nativeApp.share(shoppingListText(items)); } catch { /* Sharing is optional. */ }
 }
 
 function saveRecipeFromEditor(form) {
