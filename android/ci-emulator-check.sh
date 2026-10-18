@@ -12,8 +12,10 @@ set -uo pipefail
 APK="$1"
 PKG=com.donefear.goodstock
 FAILED=0
-fail() { echo "FAIL: $*"; FAILED=1; }
-pass() { echo "ok:   $*"; }
+# Each result is also a GitHub annotation, readable on the run page and through the API without logging in.
+fail() { echo "FAIL: $*"; echo "::error title=Emulator check::$*"; FAILED=1; }
+note() { echo "note: $*"; echo "::warning title=Emulator check::$*"; }
+pass() { echo "ok:   $*"; echo "::notice title=Emulator check::$*"; }
 sh_() { adb shell "$@" | tr -d '\r'; }
 service() { sh_ dumpsys activity services "$PKG/.HostService"; }
 
@@ -36,9 +38,9 @@ echo "== 1. Start the hosting service"
 sh_ am start-foreground-service -n "$PKG/.HostService" --es title "Sharing your kitchen" --es text "CI check" > /dev/null
 sleep 4
 service | grep -q 'isForeground=true' && pass "HostService is a foreground service" || fail "HostService is not in the foreground"
-sh_ dumpsys notification --noredact | grep -q "channel=hosting" && pass "the hosting notification is shown" || fail "no hosting notification"
+sh_ dumpsys notification --noredact | grep -qE "channel=hosting|mId='hosting'" && pass "the hosting notification is shown" || fail "no hosting notification"
 sh_ dumpsys power | grep -q 'goodstock:host' && pass "wake lock held" || fail "no wake lock"
-sh_ dumpsys wifi | grep -q 'goodstock:host' && pass "Wi-Fi lock held" || echo "note: Wi-Fi lock not listed (the emulator may have no Wi-Fi)"
+sh_ dumpsys wifi | grep -q 'goodstock:host' && pass "Wi-Fi lock held" || note "Wi-Fi lock not listed (the emulator may have no Wi-Fi)"
 
 echo "== 2. App in the background for 30 s"
 sh_ input keyevent KEYCODE_HOME
@@ -58,10 +60,10 @@ if [ -n "$PID" ]; then
     adb forward tcp:8486 tcp:8486 > /dev/null
     sleep 3
     if curl -fsS --max-time 5 http://127.0.0.1:8486/api/health | grep -q '"host":true'; then pass "restarted after being killed; the host answers again"
-    else echo "note: the service restarted but the host did not answer on 8486"; fi
+    else note "the service restarted but the host did not answer on 8486"; fi
     adb forward --remove tcp:8486 > /dev/null 2>&1
   else
-    echo "note: Android did not restart the service within 2 minutes (it resumes when Goodstock is opened)"
+    note "Android did not restart the service within 2 minutes (it resumes when Goodstock is opened)"
   fi
 else
   fail "no app process to kill"
@@ -85,6 +87,7 @@ sh_ dumpsys alarm | grep -q "$PKG.REMINDER" && pass "the reminder is scheduled a
 
 echo "== 6. Crashes"
 CRASHES=$(adb logcat -d | grep -E "FATAL EXCEPTION|AndroidRuntime.*$PKG|Process: $PKG" | head -20)
-if [ -n "$CRASHES" ]; then fail "the app crashed:"; echo "$CRASHES"; adb logcat -d | grep -A25 'FATAL EXCEPTION' | head -60; else pass "no crashes"; fi
+if [ -n "$CRASHES" ]; then fail "the app crashed: $(adb logcat -d | grep -A6 "FATAL EXCEPTION" | head -8 | tr "
+" " ")"; echo "$CRASHES"; adb logcat -d | grep -A25 'FATAL EXCEPTION' | head -60; else pass "no crashes"; fi
 
 exit $FAILED
