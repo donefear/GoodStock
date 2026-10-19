@@ -122,6 +122,40 @@ let kitchen = { revision: 0, state: null };
 let kitchenWrites = Promise.resolve();
 const liveClients = new Set();
 
+// A small read-only summary for Home Assistant and dashboards (0.37): what to use soon (past its date or due within
+// three days, like the app's Use soon), the shopping list, and the meals planned for today and tomorrow. Dates use the
+// server's clock. Behind the household PIN like the rest of /api/ (a bearer token from /api/auth/login).
+const SUMMARY_DAYS = 3;
+function kitchenSummary(state, revision, now = new Date()) {
+  const dayKey = (offset) => {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+  const daysUntil = (key) => {
+    const [year, month, day] = key.split('-').map(Number);
+    return Math.round((Date.UTC(year, month - 1, day) - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86_400_000);
+  };
+  const useSoon = (state?.inventory || [])
+    .filter((item) => Number(item.quantity) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(item.expiresOn || ''))
+    .map((item) => ({ name: String(item.name || ''), location: String(item.location || ''), quantity: Number(item.quantity), unit: String(item.unit || ''), expiresOn: item.expiresOn, daysLeft: daysUntil(item.expiresOn) }))
+    .filter((item) => item.daysLeft <= SUMMARY_DAYS)
+    .sort((first, second) => first.daysLeft - second.daysLeft);
+  const shopping = (state?.shopping || []).filter((entry) => !entry.checked).map((entry) => String(entry.name || ''));
+  const recipeName = (id) => ((state?.recipes || []).find((recipe) => recipe.id === id || recipe.slug === id) || {}).name || '';
+  const meals = (date) => (state?.plan || []).filter((entry) => entry.date === date && recipeName(entry.recipeId))
+    .map((entry) => ({ name: recipeName(entry.recipeId), cooked: Boolean(entry.cooked) }));
+  return {
+    useSoonCount: useSoon.length,
+    useSoon,
+    shoppingCount: shopping.length,
+    shopping,
+    today: meals(dayKey(0)),
+    tomorrow: meals(dayKey(1)),
+    revision: Number(revision) || 0,
+    updated: now.toISOString(),
+  };
+}
+
 async function loadKitchen() {
   const saved = await readState();
   if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
@@ -495,6 +529,10 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === 'GET' && url.pathname === '/api/state') {
       sendJson(response, 200, kitchen.state ? { ...kitchen.state, _revision: kitchen.revision } : null);
+      return;
+    }
+    if (request.method === 'GET' && url.pathname === '/api/summary') {
+      sendJson(response, 200, kitchenSummary(kitchen.state, kitchen.revision));
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/state/revision') {

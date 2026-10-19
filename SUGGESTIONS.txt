@@ -110,10 +110,12 @@ PHONE AND DESKTOP APPS
 SERVER VERSION
 --------------
 
-0.37 A small summary for Home Assistant and dashboards.
-    A read-only /api/summary (use soon with dates, shopping list count, today's meals) that the household PIN's
-    tokens can read. Home Assistant's REST sensor could then show "3 things to use soon" on a wall tablet or
-    announce tonight's dinner, without anyone writing code for the app's full state.
+[x] DONE 0.37 A small summary for Home Assistant and dashboards. (v3.3.14)
+    GET /api/summary on the server version answers with useSoonCount/useSoon (past their date or due within three days,
+    like Use soon, with daysLeft), shoppingCount/shopping (what isn't ticked off) and the meals planned for today and
+    tomorrow (with "cooked"). It is behind the household PIN like the rest: a token from /api/auth/login works as
+    "Authorization: Bearer …". README → "Home Assistant and dashboards" has a ready REST sensor (use soon, shopping list,
+    dinner tonight). Read-only; it never changes the kitchen.
 
 0.38 Copy the server backups somewhere else.
     The daily backups (0.18) sit in /data/backups, on the same disk and volume as the kitchen itself, so a dead disk

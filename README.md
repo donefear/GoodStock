@@ -128,6 +128,26 @@ With a domain name that points at your home (ports 80 and 443 forwarded to 8485 
 ### Restart when unhealthy (optional)
 Docker restarts Goodstock when it stops, but not when it hangs while still running. Add the `autoheal` profile (`COMPOSE_PROFILES=autoheal`, or `https,autoheal` together with HTTPS) and a small [autoheal](https://github.com/willfarrell/docker-autoheal) container restarts Goodstock whenever its health check fails. It uses the Docker socket and only touches containers labelled `autoheal-goodstock`.
 
+### Home Assistant and dashboards (optional)
+`GET /api/summary` answers with a small JSON summary: `useSoonCount` and `useSoon` (past their date or due within three days, with `daysLeft`), `shoppingCount` and `shopping` (what isn't ticked off), and the meals planned for `today` and `tomorrow`. With a household PIN, get a token once with `curl -X POST -H 'content-type: application/json' -d '{"pin":"1234"}' http://<host>:8484/api/auth/login` and send it as `Authorization: Bearer <token>`. A Home Assistant REST sensor:
+
+```yaml
+rest:
+  - resource: http://<host>:8484/api/summary
+    headers:
+      Authorization: !secret goodstock_token   # "Bearer <token>"; leave out without a PIN
+    scan_interval: 600
+    sensor:
+      - name: Kitchen use soon
+        value_template: "{{ value_json.useSoonCount }}"
+        json_attributes: [useSoon]
+      - name: Shopping list
+        value_template: "{{ value_json.shoppingCount }}"
+        json_attributes: [shopping]
+      - name: Dinner tonight
+        value_template: "{{ value_json.today | map(attribute='name') | join(', ') or 'Nothing planned' }}"
+```
+
 > **Security note:** Goodstock is made for a trusted home network. Even with a household PIN and HTTPS, don't expose it directly to the internet.
 
 ## Phone apps
@@ -156,7 +176,7 @@ Goodstock is plain HTML, CSS and JavaScript, with no framework and no build step
 |---|---|
 | `index.html`, `styles.css` | The page and its responsive light/dark styles |
 | `app/*.js` | The client: `core` (state, ingredients, quantities), `sync`, `views` (the other pages and dialogs), `recipes`, `cook`, `ideas` and `actions` |
-| `server.mjs` | Static files, the shared-state API with live updates, and proxies for Mealie, DeepL, recipe import and TheMealDB |
+| `server.mjs` | Static files, the shared-state API with live updates, a summary for dashboards (`/api/summary`), and proxies for Mealie, DeepL, recipe import and TheMealDB |
 | `i18n.js`, `lang/*.js` | Interface translations, keyed by the English text |
 | `ingredients.json` | The multilingual ingredient catalog with shelf-life estimates |
 | `kitchen-reference.js`, `kitchen-tools.js` | Converter data, the cooking-terms glossary and kitchen-tool detection |
