@@ -1,6 +1,7 @@
 # Goodstock tests
 
-`npm test` runs everything: the translation check, the page tests in `tests/page/` (run inside the real app in
+`npm test` runs everything: the translation check, the version check (the `sw.js` cache name matches the
+`index.html` label, see `npm run bump`), the page tests in `tests/page/` (run inside the real app in
 Chromium) and the end-to-end tests in `tests/e2e/`, each against its own fresh server with an empty data folder, so
 your kitchen is never touched. `node tests/run.mjs pin sync` runs only the tests whose names contain those words;
 `VERBOSE=1` prints what each test saw. GitHub runs the suite on every push (`.github/workflows/tests.yml`).

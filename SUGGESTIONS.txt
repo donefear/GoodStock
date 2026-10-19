@@ -182,10 +182,10 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     fallback is on. Tried with a `??=` added on purpose: it failed as it should. GitHub runs it as "Kitchen tablet
     (Chromium 80)" in the Tests workflow, next to the HTTPS check.
 
-0.23 One command to bump the version.
-    Every change bumps the label in index.html and the cache name in sw.js, by hand, and the APK reads its version
-    from the label. A small `npm run bump` script that updates both (and checks they match in the tests) stops a
-    forgotten cache bump from serving old files.
+[x] DONE 0.23 One command to bump the version. (v3.2.14)
+    `npm run bump` (tools/bump-version.mjs) bumps the patch number of the index.html label and sets the sw.js cache
+    name to goodstock-shell-v<version>; `-- minor`, `-- major` or `-- X.Y.Z` for other steps. `npm test` runs it with
+    --check, so a label and cache name that disagree fail the tests (and on GitHub).
 
 0.24 Split app/views.js.
     At about 87 KB it's twice the size of any other client file. It holds every page plus the recipe editor and

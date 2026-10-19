@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node tests/run.mjs"
+    "test": "node tests/run.mjs",
+    "bump": "node tools/bump-version.mjs"
   },
   "dependencies": {
     "qrcode": "1.5.4"

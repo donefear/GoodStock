@@ -177,7 +177,7 @@ Write it in English inside `t('…')`, then run `node lang/check-translations.mj
 The layout is ready for Arabic, Hebrew and other right-to-left languages: give the language `dir: 'rtl'` in `LANGUAGES` (`i18n.js`) and the page mirrors itself. In `styles.css`, use `margin-inline-start` and similar logical properties instead of left and right; positioned elements get a `[dir="rtl"]` rule at the end of the file. `tests/e2e/rtl-layout.mjs` checks every view in a right-to-left stand-in language.
 
 ### Versioning
-Every change bumps the patch number in the `Goodstock vX.Y.Z` label in `index.html` and the cache name in `sw.js`. The phone apps take their version from that label.
+Every change bumps the patch number in the `Goodstock vX.Y.Z` label in `index.html` and the cache name in `sw.js`: `npm run bump` does both (`npm run bump -- minor` for a new X.Y.0), and `npm test` fails if they don't match. The phone apps take their version from that label.
 
 Every X.Y.0 version is also backed up with `bash tools/backup-version.sh` (Git Bash or WSL). It tags the commit `vX.Y.0` and pushes the tag, so GitHub writes the release notes (the changes since the previous tag, and which file to download; `.github/workflows/release.yml`) and attaches the APK, desktop apps and iOS `.ipa` to that release. It also saves the source as a zip, plus any local builds, in `backups/vX.Y.0/` (not committed). To add the iOS `.ipa` to an older release, run the *iOS app* workflow by hand on GitHub and enter the tag.
 

@@ -59,6 +59,10 @@ async function main() {
     const check = spawnSync(process.execPath, ['lang/check-translations.mjs'], { cwd: root, encoding: 'utf8' });
     report('translations', { fail: check.status === 0 ? [] : check.stdout.split('\n').filter((line) => /missing|fix:/.test(line)).slice(0, 10), log: check.stdout.trim().split('\n') });
   }
+  if (wanted('version')) {
+    const check = spawnSync(process.execPath, ['tools/bump-version.mjs', '--check'], { cwd: root, encoding: 'utf8' });
+    report('version', { fail: check.status === 0 ? [] : [(check.stdout + check.stderr).trim()], log: [check.stdout.trim()] });
+  }
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-fake-ui-for-media-stream'] });
   try {
     const pageTests = (await readdir(join(root, 'tests/page'))).filter((file) => file.endsWith('.js') && wanted(file)).sort();
