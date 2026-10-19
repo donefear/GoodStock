@@ -202,6 +202,7 @@ function renderInventory() {
   const action = `<div class="inventory-heading-actions">${scan}<button class="button button-primary" data-action="add-item"><span aria-hidden="true">＋</span> ${t('Add item')}</button></div>`;
   return `${pageHeading(t('THE KITCHEN, AT A GLANCE'), t('Good things on hand.'), t('A clear picture of what is here, and where it lives.'), action)}
     <div class="stats-row"><div class="stat"><span class="stat-icon mint">▤</span><div><strong>${foodCount}</strong><span>${tp(foodCount, 'food item', 'food items')}</span></div></div><div class="stat"><span class="stat-icon coral">◷</span><div><strong>${lowCount}</strong><span>${t('running low')}</span></div></div><div class="stat"><span class="stat-icon yellow">⌂</span><div><strong>${state.locations.length}</strong><span>${tp(state.locations.length, 'storage spot', 'storage spots')}</span></div></div></div>
+    ${renderThawPanel()}
     ${renderExpirationPanel()}
     ${renderMonthOverview()}
     <section class="section-block"><div class="section-heading"><div><h2>${t('Everything in its place')}</h2><span class="muted">${tp(rows.length, '{count} item', '{count} items')}</span></div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="${t('Find something')}" aria-label="${t('Find an item')}" /></label><select id="location-filter" aria-label="${t('Filter by location')}">${locations.map((location) => `<option value="${escapeHtml(location)}" ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location === ALL_LOCATIONS ? t(ALL_LOCATIONS) : location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="${t('Inventory display mode')}"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">${t('List')}</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">${t('Map')}</button></div></div></div>
@@ -243,6 +244,16 @@ function renderInventoryMap(rows) {
     const items = rows.filter((item) => item.location === location);
     return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${tp(items.length, '{count} item', '{count} items')}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(kindLabel(item.kind))}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(item.quantity)}</strong><small>${escapeHtml(item.unit || t('items'))}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<p class="storage-zone-empty">${t('Nothing stored here yet')}</p>`}</section>`;
   }).join('')}</div>`;
+}
+
+// "Take out of the freezer": what today's and tomorrow's meals need that is only in the freezer.
+function renderThawPanel() {
+  const today = new Date();
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  const rows = [[today, t('today')], [tomorrow, t('tomorrow')]].flatMap(([date, when]) => thawNeeds(date).map((need) => ({ ...need, when })));
+  if (!rows.length) return '';
+  const list = rows.map(({ item, recipe, when }) => `<article class="expiry-row thaw-row"><div class="expiry-item-info"><span class="expiry-mark" aria-hidden="true">❄</span><div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(t('for {recipe} {when}', { recipe: recipe.name, when }))} · ${escapeHtml(item.location)}</span></div></div><div class="expiry-suggestions"><button class="button button-small button-outline" type="button" data-action="thaw-item" data-id="${escapeHtml(item.id)}">${t('Moved to the fridge')}</button></div></article>`).join('');
+  return `<section class="expiration-panel thaw-panel" aria-label="${t('Take out of the freezer')}"><header><div><span class="eyebrow">${t('TAKE OUT OF THE FREEZER')}</span><h2>${tp(rows.length, '{count} thing to thaw for your meals', '{count} things to thaw for your meals')}</h2></div></header><div class="expiry-list">${list}</div></section>`;
 }
 
 function renderExpirationPanel() {

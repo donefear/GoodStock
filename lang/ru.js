@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Check once a day": "Проверять раз в день",
   "Check now": "Проверить сейчас",
   "Download": "Скачать",
+  "{name} moved to the fridge": "{name}: перенесено в холодильник",
+  "{name} for {recipe}": "{name} для «{recipe}»",
+  "tomorrow": "завтра",
+  "for {recipe} {when}": "для «{recipe}» {when}",
+  "Moved to the fridge": "Переложено в холодильник",
+  "Take out of the freezer": "Достать из морозилки",
+  "TAKE OUT OF THE FREEZER": "ДОСТАТЬ ИЗ МОРОЗИЛКИ",
+  "{count} things to take out of the freezer": { "one": "{count} продукт достать из морозилки", "few": "{count} продукта достать из морозилки", "many": "{count} продуктов достать из морозилки", "other": "{count} продукта достать из морозилки" },
+  "{count} things to thaw for your meals": { "one": "{count} продукт разморозить к еде", "few": "{count} продукта разморозить к еде", "many": "{count} продуктов разморозить к еде", "other": "{count} продукта разморозить к еде" },
 };

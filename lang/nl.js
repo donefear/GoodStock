@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Check once a day": "Eén keer per dag controleren",
   "Check now": "Nu controleren",
   "Download": "Downloaden",
+  "{name} moved to the fridge": "{name} naar de koelkast verplaatst",
+  "{name} for {recipe}": "{name} voor {recipe}",
+  "tomorrow": "morgen",
+  "for {recipe} {when}": "voor {recipe} {when}",
+  "Moved to the fridge": "In de koelkast gezet",
+  "Take out of the freezer": "Uit de vriezer halen",
+  "TAKE OUT OF THE FREEZER": "UIT DE VRIEZER HALEN",
+  "{count} things to take out of the freezer": { "one": "{count} ding uit de vriezer halen", "other": "{count} dingen uit de vriezer halen" },
+  "{count} things to thaw for your meals": { "one": "{count} ding ontdooien voor je maaltijden", "other": "{count} dingen ontdooien voor je maaltijden" },
 };

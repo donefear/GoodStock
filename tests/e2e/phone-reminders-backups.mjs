@@ -26,6 +26,20 @@ export default async function run({ browser, base, phoneShim }) {
   if (!/Cheese/.test(reminders.on[reminders.on.length - 1].text)) fail.push('later mornings should include items due by then');
   if (reminders.off.length) fail.push('turning reminders off did not cancel them');
 
+  // Thawing (0.27): at 19:00 the evening before a meal that needs something only in the freezer.
+  const thaw = await page.evaluate(() => {
+    const inDays = (n) => { const day = new Date(); day.setDate(day.getDate() + n); return dateKey(day); };
+    state.recipes = [{ id: 'r1', name: 'Fish pie', ingredients: ['400 g salmon'] }];
+    state.plan = [{ id: 'p1', date: inDays(3), recipeId: 'r1', cooked: false }];
+    state.inventory = [{ id: 'c', name: 'Salmon', quantity: 400, unit: 'g', location: 'Freezer', kind: 'Food' }];
+    localStorage.setItem('goodstock-expiry-reminders-v1', 'true');
+    scheduleExpiryReminders();
+    localStorage.removeItem('goodstock-expiry-reminders-v1');
+    return window.__reminders.filter((reminder) => /^thaw-/.test(reminder.id)).map((reminder) => ({ ...reminder, hour: new Date(reminder.at).getHours(), day: dateKey(new Date(reminder.at)), expected: inDays(2) }));
+  });
+  log.push(...thaw.map((reminder) => `${reminder.day} ${reminder.hour}:00 ${reminder.title}: ${reminder.text}`));
+  if (thaw.length !== 1 || thaw[0].hour !== 19 || thaw[0].day !== thaw[0].expected || !/Salmon for Fish pie/.test(thaw[0].text)) fail.push('no thaw reminder at 19:00 the evening before the fish pie');
+
   await page.evaluate(() => document.querySelector('#settings-button').click());
   await wait(300);
   if (await page.evaluate(() => document.querySelector('#auto-backup-zone').hidden)) fail.push('automatic backup hidden in the phone app');

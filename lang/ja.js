@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Check once a day": "1 日 1 回確認する",
   "Check now": "今すぐ確認",
   "Download": "ダウンロード",
+  "{name} moved to the fridge": "{name}を冷蔵庫に移しました",
+  "{name} for {recipe}": "{recipe}用の{name}",
+  "tomorrow": "明日",
+  "for {recipe} {when}": "{when}の{recipe}用",
+  "Moved to the fridge": "冷蔵庫に移した",
+  "Take out of the freezer": "冷凍庫から出す",
+  "TAKE OUT OF THE FREEZER": "冷凍庫から出す",
+  "{count} things to take out of the freezer": "冷凍庫から出すもの {count} 件",
+  "{count} things to thaw for your meals": "食事のために解凍するもの {count} 件",
 };

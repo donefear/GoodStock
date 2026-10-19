@@ -25,11 +25,13 @@ EVERYDAY USE
     Portuguese "leite" and "queijo", Turkish "un" in Romanian "pătrunjel"), so milk, cheese and salt counted as
     "Eggs" in stock and parsley as "Flour". A name now only counts inside another when it is longer than three letters.
 
-0.27 Thaw reminders the evening before.
-    Frozen food has a "Frozen on" date and the week has planned meals, but nothing connects them. When tomorrow's
-    meal needs something that is only in the freezer, show "Move the chicken to the fridge" in Use soon the evening
-    before, and as a reminder notification where those already work (phone apps, HTTPS browsers). It's the one step
-    that most often ruins a planned meal.
+[x] DONE 0.27 Thaw reminders the evening before. (v3.3.4)
+    The Inventory page has a "Take out of the freezer" box (above Use soon) when today's or tomorrow's meals need
+    something that is only in the freezer, with nothing of it in the fridge or cupboard: "Chicken · for Chicken curry
+    tomorrow · Freezer". "Moved to the fridge" moves it there (the first fridge location), drops the frozen-on date and
+    gives it two days, with Undo. With use-soon reminders on, the phone apps and the desktop app schedule a
+    notification at 19:00 the evening before ("1 thing to take out of the freezer: Chicken for Chicken curry"); the
+    browser version sends it after 19:00 while it is open, once a day.
 
 0.28 "What can I make with it?" from Use soon.
     Use soon lists what is about to go off, and the week planner already puts recipes that use it first, but only

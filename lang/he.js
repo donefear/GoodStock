@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Check once a day": "לבדוק פעם ביום",
   "Check now": "לבדוק עכשיו",
   "Download": "הורדה",
+  "{name} moved to the fridge": "{name} הועבר למקרר",
+  "{name} for {recipe}": "{name} ל{recipe}",
+  "tomorrow": "מחר",
+  "for {recipe} {when}": "ל{recipe} {when}",
+  "Moved to the fridge": "הועבר למקרר",
+  "Take out of the freezer": "להוציא מהמקפיא",
+  "TAKE OUT OF THE FREEZER": "להוציא מהמקפיא",
+  "{count} things to take out of the freezer": { "one": "דבר אחד להוציא מהמקפיא", "two": "שני דברים להוציא מהמקפיא", "other": "{count} דברים להוציא מהמקפיא" },
+  "{count} things to thaw for your meals": { "one": "דבר אחד להפשיר לארוחות", "two": "שני דברים להפשיר לארוחות", "other": "{count} דברים להפשיר לארוחות" },
 };

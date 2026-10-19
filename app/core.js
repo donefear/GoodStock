@@ -486,9 +486,14 @@ function deductionAmount(ingredient, item) {
 }
 
 function matchingInventory(ingredient) {
+  return inventoryMatches(ingredient)[0];
+}
+
+// Every item in stock that a recipe line could mean, in inventory order.
+function inventoryMatches(ingredient) {
   const wantedTerms = ingredientTerms(ingredient).filter(Boolean);
-  if (!wantedTerms.length) return undefined;
-  return state.inventory.find((item) => {
+  if (!wantedTerms.length) return [];
+  return state.inventory.filter((item) => {
     if (Number(item.quantity) <= 0) return false;
     const availableTerms = ingredientTerms(item.name).filter(Boolean);
     // A name only counts inside a longer one when it is longer than three letters itself, in both directions: short
@@ -569,11 +574,45 @@ function scheduleExpiryReminders() {
       const { title, body } = expiryReminderText(items);
       reminders.push({ id: dateKey(at), at: at.getTime(), title, text: body });
     }
+    // The evening before a meal that needs something from the freezer.
+    for (let day = 0; day < 7; day++) {
+      const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, THAW_HOUR);
+      const needs = at > now ? thawNeeds(new Date(now.getFullYear(), now.getMonth(), now.getDate() + day + 1)) : [];
+      if (!needs.length) continue;
+      const { title, body } = thawReminderText(needs);
+      reminders.push({ id: `thaw-${dateKey(at)}`, at: at.getTime(), title, text: body });
+    }
   }
   const signature = JSON.stringify(reminders);
   if (signature === scheduledRemindersSignature) return;
   scheduledRemindersSignature = signature;
   try { nativeApp.setReminders(signature); } catch { /* The in-app panel still shows them. */ }
+}
+
+// Thawing: what the meals planned for a day need that is only in the freezer (nothing of it in the fridge or
+// cupboard), so it can go to the fridge the evening before. [{ item, recipe }], one per freezer item.
+const THAW_HOUR = 19;
+const LAST_THAW_REMINDER_KEY = 'goodstock-last-thaw-reminder-v1';
+
+function thawNeeds(date) {
+  const day = dateKey(date);
+  const needs = [];
+  for (const plan of state.plan.filter((entry) => entry.date === day && !entry.cooked)) {
+    const recipe = recipeById(plan.recipeId);
+    for (const ingredient of recipe?.ingredients || []) {
+      const matches = inventoryMatches(ingredient);
+      if (!matches.length || matches.some((item) => !FREEZER_WORDS.test(item.location || ''))) continue;
+      if (!needs.some((need) => need.item.id === matches[0].id)) needs.push({ item: matches[0], recipe });
+    }
+  }
+  return needs;
+}
+
+function thawReminderText(needs) {
+  return {
+    title: tp(needs.length, '{count} thing to take out of the freezer', '{count} things to take out of the freezer'),
+    body: needs.map((need) => t('{name} for {recipe}', { name: need.item.name, recipe: need.recipe.name })).join(', '),
+  };
 }
 
 function recipesUsingInventoryItem(item) {
@@ -754,6 +793,7 @@ function inventoryExpiryMarkup(item, tag) {
 
 function checkExpiryReminders() {
   scheduleExpiryReminders();
+  checkThawReminder();
   const items = itemsNeedingExpiryAttention();
   if (!items.length || sendingExpiryReminder || localStorage.getItem(EXPIRY_REMINDERS_KEY) !== 'true') return;
   // Phones with scheduled reminders get today's at 9:00; only after 9:00 does opening the app send it straight away.
@@ -778,6 +818,27 @@ function checkExpiryReminders() {
     return new Notification(title, options);
   };
   showReminder().then(markSent).catch(resetSending);
+}
+
+// The browser version reminds about thawing once in the evening while it is open; the apps have it scheduled.
+function checkThawReminder() {
+  if (localStorage.getItem(EXPIRY_REMINDERS_KEY) !== 'true' || new Date().getHours() < THAW_HOUR) return;
+  if (STANDALONE || !window.isSecureContext || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const today = dateKey(new Date());
+  if (localStorage.getItem(LAST_THAW_REMINDER_KEY) === today) return;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const needs = thawNeeds(tomorrow);
+  if (!needs.length) return;
+  localStorage.setItem(LAST_THAW_REMINDER_KEY, today);
+  const { title, body } = thawReminderText(needs);
+  const options = { body, tag: 'goodstock-thaw-reminder' };
+  const show = async () => {
+    const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if (registration && registration.showNotification) return registration.showNotification(title, options);
+    return new Notification(title, options);
+  };
+  show().catch(() => localStorage.removeItem(LAST_THAW_REMINDER_KEY));
 }
 
 function missingIngredients(recipe) {

@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Check once a day": "每天检查一次",
   "Check now": "立即检查",
   "Download": "下载",
+  "{name} moved to the fridge": "{name}已移到冰箱冷藏",
+  "{name} for {recipe}": "{name}（用于{recipe}）",
+  "tomorrow": "明天",
+  "for {recipe} {when}": "{when}做{recipe}用",
+  "Moved to the fridge": "已移到冷藏",
+  "Take out of the freezer": "从冷冻室取出",
+  "TAKE OUT OF THE FREEZER": "从冷冻室取出",
+  "{count} things to take out of the freezer": "{count} 样东西要从冷冻室取出",
+  "{count} things to thaw for your meals": "{count} 样食材要为餐食解冻",
 };

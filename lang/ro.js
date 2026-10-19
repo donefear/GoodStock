@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Check once a day": "Verifică o dată pe zi",
   "Check now": "Verifică acum",
   "Download": "Descarcă",
+  "{name} moved to the fridge": "{name} mutat în frigider",
+  "{name} for {recipe}": "{name} pentru {recipe}",
+  "tomorrow": "mâine",
+  "for {recipe} {when}": "pentru {recipe} {when}",
+  "Moved to the fridge": "Mutat în frigider",
+  "Take out of the freezer": "Scoate din congelator",
+  "TAKE OUT OF THE FREEZER": "SCOATE DIN CONGELATOR",
+  "{count} things to take out of the freezer": { "one": "{count} lucru de scos din congelator", "few": "{count} lucruri de scos din congelator", "other": "{count} de lucruri de scos din congelator" },
+  "{count} things to thaw for your meals": { "one": "{count} lucru de decongelat pentru mese", "few": "{count} lucruri de decongelat pentru mese", "other": "{count} de lucruri de decongelat pentru mese" },
 };

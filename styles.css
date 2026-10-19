@@ -96,6 +96,10 @@ h3 { margin: 0; font: 500 21px/1.25 'Fraunces', Georgia, serif; }
 .expiry-row:last-child { border-bottom: 0; }
 .expiry-item-info { min-width: 0; display: flex; align-items: center; gap: 10px; }
 .expiry-mark { width: 29px; height: 29px; flex: 0 0 29px; border-radius: 50%; display: grid; place-items: center; background: #f0dca6; color: #896b24; font-size: 16px; font-weight: 700; }
+.thaw-panel { border-color: #b7d3e6; background: #eef6fb; }
+.thaw-panel > header h2 { color: #2f4f66; }
+.thaw-panel .expiry-list, .thaw-panel .expiry-row { border-color: #cfe1ee; }
+.thaw-panel .expiry-mark { background: #d6e8f4; color: #3d6d8f; }
 .expiry-item-info strong, .expiry-item-info > div > span { display: block; }
 .expiry-item-info strong { color: #3d4337; font-size: 12px; }
 .expiry-item-info > div > span { margin-top: 4px; font-size: 10px; }
@@ -576,6 +580,10 @@ html:not(.is-standalone) .phone-only { display: none; }
 :root[data-theme="dark"] .expiration-panel > header h2 { color: #f0d996; }
 :root[data-theme="dark"] .expiry-list, :root[data-theme="dark"] .expiry-row { border-color: #51452b; }
 :root[data-theme="dark"] .expiry-mark { background: #514326; color: #f0d996; }
+:root[data-theme="dark"] .thaw-panel { border-color: #2f4a5e; background: #18242d; }
+:root[data-theme="dark"] .thaw-panel > header h2 { color: #a9d0ec; }
+:root[data-theme="dark"] .thaw-panel .expiry-list, :root[data-theme="dark"] .thaw-panel .expiry-row { border-color: #2a3e4d; }
+:root[data-theme="dark"] .thaw-panel .expiry-mark { background: #263b4a; color: #a9d0ec; }
 :root[data-theme="dark"] .expiry-item-info strong { color: #efe8d3; }
 :root[data-theme="dark"] .expiry-suggestions > span, :root[data-theme="dark"] .expiry-no-recipe { color: #c8b98f; }
 :root[data-theme="dark"] .item-expiry.expiring { color: #f0d083 !important; }

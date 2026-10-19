@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.it = {
   "Check once a day": "Controlla una volta al giorno",
   "Check now": "Controlla ora",
   "Download": "Scarica",
+  "{name} moved to the fridge": "{name} spostato in frigo",
+  "{name} for {recipe}": "{name} per {recipe}",
+  "tomorrow": "domani",
+  "for {recipe} {when}": "per {recipe} {when}",
+  "Moved to the fridge": "Spostato in frigo",
+  "Take out of the freezer": "Togli dal congelatore",
+  "TAKE OUT OF THE FREEZER": "TOGLI DAL CONGELATORE",
+  "{count} things to take out of the freezer": { "one": "{count} cosa da togliere dal congelatore", "other": "{count} cose da togliere dal congelatore" },
+  "{count} things to thaw for your meals": { "one": "{count} cosa da scongelare per i tuoi pasti", "other": "{count} cose da scongelare per i tuoi pasti" },
 };

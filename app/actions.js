@@ -97,6 +97,24 @@ function shoppingNeeds() {
   return short;
 }
 
+// "Moved to the fridge" (Take out of the freezer): the item goes to the fridge and, thawed, keeps about two days there.
+const THAWED_DAYS = 2;
+function thawItem(id) {
+  const item = state.inventory.find((entry) => entry.id === id);
+  if (!item) return;
+  withUndo(t('{name} moved to the fridge', { name: item.name }), ['inventory', 'locations'], () => {
+    let fridge = state.locations.find((place) => FRIDGE_WORDS.test(place));
+    if (!fridge) { fridge = 'Fridge'; state.locations.push(fridge); }
+    const thawed = new Date();
+    thawed.setDate(thawed.getDate() + THAWED_DAYS);
+    item.location = fridge;
+    delete item.frozenOn;
+    item.expiresOn = dateKey(thawed);
+    item.expirationSource = 'estimated';
+  });
+  render();
+}
+
 function generateShopping() {
   const additions = shoppingNeeds()
     .filter((need) => !state.shopping.some((entry) => cleanIngredient(entry.name) === cleanIngredient(need.name)))
@@ -161,6 +179,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'deepl-help') $('#deepl-help-dialog').showModal();
   if (action === 'deepl-disconnect') await disconnectDeepl();
   if (action === 'translate-choose') chooseRecipeTranslation(id);
+  if (action === 'thaw-item') thawItem(id);
   if (action === 'translate-recipe') await startRecipeTranslation(id, ($('#translation-target') || {}).value || recipeTranslation?.target);
   if (action === 'translation-save') saveRecipeTranslation();
   if (action === 'translation-discard') { recipeTranslation = null; render(); }

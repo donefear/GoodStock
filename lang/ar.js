@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Check once a day": "تحقّق مرة يوميًا",
   "Check now": "تحقّق الآن",
   "Download": "تنزيل",
+  "{name} moved to the fridge": "نُقل {name} إلى الثلاجة",
+  "{name} for {recipe}": "{name} لـ{recipe}",
+  "tomorrow": "غدًا",
+  "for {recipe} {when}": "لـ{recipe} {when}",
+  "Moved to the fridge": "نُقل إلى الثلاجة",
+  "Take out of the freezer": "أخرِج من الفريزر",
+  "TAKE OUT OF THE FREEZER": "أخرِج من الفريزر",
+  "{count} things to take out of the freezer": { "zero": "لا شيء لإخراجه من الفريزر", "one": "شيء واحد لإخراجه من الفريزر", "two": "شيئان لإخراجهما من الفريزر", "few": "{count} أشياء لإخراجها من الفريزر", "many": "{count} شيئًا لإخراجه من الفريزر", "other": "{count} شيء لإخراجه من الفريزر" },
+  "{count} things to thaw for your meals": { "zero": "لا شيء لإذابة تجمّده", "one": "شيء واحد لإذابة تجمّده لوجباتك", "two": "شيئان لإذابة تجمّدهما لوجباتك", "few": "{count} أشياء لإذابة تجمّدها لوجباتك", "many": "{count} شيئًا لإذابة تجمّده لوجباتك", "other": "{count} شيء لإذابة تجمّده لوجباتك" },
 };

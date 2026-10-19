@@ -950,4 +950,13 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Check once a day": "Günde bir kez denetle",
   "Check now": "Şimdi denetle",
   "Download": "İndir",
+  "{name} moved to the fridge": "{name} buzdolabına alındı",
+  "{name} for {recipe}": "{recipe} için {name}",
+  "tomorrow": "yarın",
+  "for {recipe} {when}": "{when} {recipe} için",
+  "Moved to the fridge": "Buzdolabına aldım",
+  "Take out of the freezer": "Dondurucudan çıkar",
+  "TAKE OUT OF THE FREEZER": "DONDURUCUDAN ÇIKAR",
+  "{count} things to take out of the freezer": { "one": "Dondurucudan çıkarılacak {count} şey", "other": "Dondurucudan çıkarılacak {count} şey" },
+  "{count} things to thaw for your meals": { "one": "Yemekleriniz için çözülecek {count} şey", "other": "Yemekleriniz için çözülecek {count} şey" },
 };
