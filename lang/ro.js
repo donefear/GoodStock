@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "The shopping list is empty": "Lista de cumpărături e goală",
   "+ {count} more": { "one": "+ încă {count}", "few": "+ încă {count}", "other": "+ încă {count}" },
   "{count} things on the shopping list": { "one": "{count} produs pe lista de cumpărături", "few": "{count} produse pe lista de cumpărături", "other": "{count} de produse pe lista de cumpărături" },
+  "Goodstock is still sharing your kitchen": "Goodstock încă partajează bucătăria ta",
+  "Open Goodstock": "Deschide Goodstock",
+  "Stop sharing and quit": "Oprește partajarea și închide",
+  "Still sharing your kitchen": "Bucătăria ta e încă partajată",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock rulează în continuare în bara de sistem, ca celelalte dispozitive să fie la zi. Închide-l din pictograma de acolo.",
+  "Start with the computer, in the background": "Pornește odată cu computerul, în fundal",
+  "Closing the window keeps sharing from the tray.": "Dacă închizi fereastra, partajarea continuă din bara de sistem.",
 };

@@ -403,6 +403,9 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .settings-connection[hidden], .host-details[hidden] { display: none; }
 .host-details p { margin: 0; color: var(--ink); font-size: 12px; line-height: 1.5; }
 .host-codes { margin: 8px 0 0; display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 4px 12px; }
+.host-login { margin-top: 12px; display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 13px; cursor: pointer; }
+.host-login input { width: auto; height: auto; margin: 0; }
+.host-details .field-hint { margin-top: 4px; }
 .host-codes dt { grid-column: 1; color: var(--muted); font-size: 12px; }
 .host-codes dd { grid-column: 2; margin: 0; }
 .host-codes code { color: var(--ink); font-size: 15px; font-weight: 700; word-break: break-all; }

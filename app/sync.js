@@ -670,9 +670,33 @@ async function startHosting(resume = false) {
   localStorage.setItem(HOST_KEY, JSON.stringify({ port: info.port, addresses: info.addresses || [], pin: info.pin }));
   localStorage.setItem(HOME_TOKEN_KEY, info.token);
   localStorage.setItem(HOME_SERVER_KEY, `http://127.0.0.1:${info.port}`);
+  sendTrayLabels();
   if (resume) return;
   localStorage.removeItem(SYNC_BASE_KEY);
   localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+}
+
+// Desktop app (0.35): closing the window while hosting keeps Goodstock in the system tray, so the others keep their
+// home server, and it can start with the computer, in the background. The tray's words come from here, in the app's
+// language. Starting with the computer only matters while hosting, so stopping hosting turns it off.
+const START_AT_LOGIN_KEY = 'goodstock-start-at-login-v1';
+const canStartAtLogin = () => STANDALONE && typeof nativeApp.setStartAtLogin === 'function';
+
+function sendTrayLabels() {
+  if (!STANDALONE || typeof nativeApp.setTrayLabels !== 'function') return;
+  nativeApp.setTrayLabels(JSON.stringify({
+    tooltip: t('Goodstock is still sharing your kitchen'),
+    open: t('Open Goodstock'),
+    quit: t('Stop sharing and quit'),
+    title: t('Still sharing your kitchen'),
+    note: t('Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.'),
+  }));
+}
+
+function setStartAtLogin(on) {
+  if (!canStartAtLogin()) return;
+  try { if (on) localStorage.setItem(START_AT_LOGIN_KEY, 'true'); else localStorage.removeItem(START_AT_LOGIN_KEY); } catch { /* Shown unticked next time. */ }
+  nativeApp.setStartAtLogin(on);
 }
 
 function setHostNote(text, kind = '') {
@@ -702,6 +726,7 @@ async function beginHosting() {
 function endHosting() {
   if (!window.confirm(t('Stop hosting? The other devices keep their copy but no longer stay in step with this one.'))) return;
   try { nativeApp.stopKitchenHost(); } catch { /* Already stopped. */ }
+  setStartAtLogin(false);
   for (const key of [HOST_KEY, HOME_SERVER_KEY, HOME_TOKEN_KEY, PENDING_KEY, SYNC_BASE_KEY]) localStorage.removeItem(key);
   liveSync.devices = 0;
   startPhonePolling();
@@ -727,5 +752,9 @@ function fillHostSettings() {
     ? host.addresses.map((address) => `<dd><code>${escapeHtml(`${address}:${host.port}`)}</code></dd>`).join('')
     : `<dd>${escapeHtml(t('Not on a Wi-Fi network right now'))}</dd>`;
   details.innerHTML = `<p>${escapeHtml(t('On the other phones, open Settings → Connections → Home server and enter:'))}</p>`
-    + `<dl class="host-codes"><dt>${escapeHtml(t('Address'))}</dt>${addresses}<dt>${escapeHtml(t('PIN'))}</dt><dd><code class="host-pin">${escapeHtml(host.pin)}</code></dd></dl>`;
+    + `<dl class="host-codes"><dt>${escapeHtml(t('Address'))}</dt>${addresses}<dt>${escapeHtml(t('PIN'))}</dt><dd><code class="host-pin">${escapeHtml(host.pin)}</code></dd></dl>`
+    + (canStartAtLogin()
+      ? `<label class="host-login"><input type="checkbox" id="host-start-at-login" ${localStorage.getItem(START_AT_LOGIN_KEY) === 'true' ? 'checked' : ''} /> <span>${escapeHtml(t('Start with the computer, in the background'))}</span></label>`
+        + `<p class="field-hint">${escapeHtml(t('Closing the window keeps sharing from the tray.'))}</p>`
+      : '');
 }

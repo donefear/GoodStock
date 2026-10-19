@@ -1,7 +1,7 @@
 // Goodstock for Windows, macOS and Linux: the web app in its own window, standalone like the phone apps. The web files
 // are bundled (desktop/web, copied by prepare.mjs) and served at goodstock://app/, so the page keeps its data in its
 // own storage on this computer. preload.js provides window.GoodstockNative; this file answers its calls.
-const { app, BrowserWindow, Menu, Notification, ShareMenu, clipboard, dialog, ipcMain, net, powerSaveBlocker, protocol, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, ShareMenu, Tray, clipboard, dialog, ipcMain, nativeImage, net, powerSaveBlocker, protocol, shell } = require('electron');
 const { mkdir, readFile, unlink, writeFile } = require('node:fs/promises');
 const { basename, extname, join, normalize, sep } = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -50,6 +50,7 @@ function callback(id, ok, payload) {
 
 function showWindow() {
   if (!win || win.isDestroyed()) return;
+  if (!kitchenHost) hideTray();
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
@@ -171,7 +172,46 @@ async function startKitchenHost(id) {
   }
 }
 
+// While hosting, closing the window keeps Goodstock running in the system tray, so the other devices keep their home
+// server; the tray menu opens it again or quits. Started with the computer (Settings, Windows and macOS) it opens
+// hidden, straight into the tray. The page sends the tray's words in its language (setTrayLabels).
+let tray = null;
+let quitting = false;
+let toldAboutTray = false;
+let trayLabels = {
+  tooltip: 'Goodstock is still sharing your kitchen',
+  open: 'Open Goodstock',
+  quit: 'Stop sharing and quit',
+  title: 'Still sharing your kitchen',
+  note: 'Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.',
+};
+const startedHidden = () => process.argv.includes('--hidden') || Boolean(process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAsHidden);
+
+function showTray() {
+  if (!tray) {
+    tray = new Tray(nativeImage.createFromPath(join(WEB_ROOT, 'app-icon.png')).resize({ width: 16, height: 16 }));
+    tray.on('click', showWindow);
+  }
+  tray.setToolTip(trayLabels.tooltip);
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: trayLabels.open, click: showWindow },
+    { type: 'separator' },
+    { label: trayLabels.quit, click: () => { quitting = true; app.quit(); } },
+  ]));
+}
+
+function hideTray() {
+  if (tray) { tray.destroy(); tray = null; }
+}
+
+function setStartAtLogin(on) {
+  // The portable .exe runs from a temporary folder; start the file the user actually has.
+  const path = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  app.setLoginItemSettings({ openAtLogin: on === true || on === 'true', openAsHidden: true, path, args: ['--hidden'] });
+}
+
 async function stopKitchenHost() {
+  hideTray();
   if (kitchenHost) { kitchenHost.server.close(); kitchenHost = null; }
   const { host, ...rest } = await loadSettings();
   await saveSettings(rest);
@@ -205,10 +245,12 @@ const handlers = {
   writeSyncFile: (id, name, content) => inSyncFolder(id, async (folder) => { await native.writeSyncFile(folder, name, content); return 'saved'; }),
   startKitchenHost,
   stopKitchenHost,
+  setTrayLabels: (json) => { try { trayLabels = { ...trayLabels, ...JSON.parse(json) }; } catch { return; } if (tray) showTray(); },
+  setStartAtLogin,
   unsupported: (id) => callback(id, false, 'unsupported'),
 };
 
-ipcMain.on('native-info', (event) => { event.returnValue = { notificationsAllowed: Notification.isSupported() }; });
+ipcMain.on('native-info', (event) => { event.returnValue = { notificationsAllowed: Notification.isSupported(), canStartAtLogin: process.platform !== 'linux' }; });
 ipcMain.on('native', (event, method, args) => {
   if (!win || event.sender !== win.webContents || !Object.prototype.hasOwnProperty.call(handlers, method)) return;
   Promise.resolve(handlers[method](...(Array.isArray(args) ? args : []))).catch(() => {});
@@ -231,7 +273,15 @@ function createWindow() {
     autoHideMenuBar: true,
     webPreferences: { preload: join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, backgroundThrottling: false, spellcheck: false },
   });
-  win.once('ready-to-show', () => win.show());
+  // Started with the computer: straight into the tray, the page still runs (and resumes hosting).
+  win.once('ready-to-show', () => { if (startedHidden()) showTray(); else win.show(); });
+  win.on('close', (event) => {
+    if (quitting || !kitchenHost) return;
+    event.preventDefault();
+    win.hide();
+    showTray();
+    if (!toldAboutTray) { toldAboutTray = true; showNotification(trayLabels.title, trayLabels.note); }
+  });
   win.on('focus', () => win.flashFrame(false));
   win.webContents.setWindowOpenHandler(({ url }) => { openOutside(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (event, url) => {
@@ -253,7 +303,8 @@ if (!app.requestSingleInstanceLock()) {
       ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'viewMenu' }, { role: 'windowMenu' }])
       : null);
     createWindow();
-    app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createWindow(); });
+    app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createWindow(); else showWindow(); });
   });
+  app.on('before-quit', () => { quitting = true; });
   app.on('window-all-closed', () => app.quit());
 }

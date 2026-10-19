@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "The shopping list is empty": "La lista de la compra está vacía",
   "+ {count} more": { "one": "+ {count} más", "other": "+ {count} más" },
   "{count} things on the shopping list": { "one": "{count} cosa en la lista de la compra", "other": "{count} cosas en la lista de la compra" },
+  "Goodstock is still sharing your kitchen": "Goodstock sigue compartiendo tu cocina",
+  "Open Goodstock": "Abrir Goodstock",
+  "Stop sharing and quit": "Dejar de compartir y salir",
+  "Still sharing your kitchen": "Tu cocina se sigue compartiendo",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock sigue funcionando en la bandeja para que los demás dispositivos estén al día. Ciérralo desde su icono.",
+  "Start with the computer, in the background": "Iniciar con el ordenador, en segundo plano",
+  "Closing the window keeps sharing from the tray.": "Al cerrar la ventana se sigue compartiendo desde la bandeja.",
 };

@@ -459,6 +459,7 @@ document.addEventListener('change', async (event) => {
     if (file) fillRecipeEditor(shared || {}, shared ? t('Recipe file read. Check it, then save.') : t('That is not a Goodstock recipe file.'));
     return;
   }
+  if (event.target.id === 'host-start-at-login') { setStartAtLogin(event.target.checked); return; }
   if (event.target.id === 'updates-daily') {
     saveUpdateSettings({ daily: event.target.checked });
     if (event.target.checked) await checkForUpdates();

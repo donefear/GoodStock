@@ -6,7 +6,9 @@ plans, shopping list) kept on this computer. No server is needed. Use **Settings
 share one kitchen with the household instead, go to **Settings → Connections**. There you can connect to your
 Goodstock server (**Home server**), sync through a **Shared folder** (Google Drive, OneDrive, Dropbox, iCloud Drive or
 Syncthing), or **Host this kitchen**. Hosting makes this computer the home server on your Wi-Fi (port 8486), and the
-phones join with the address and PIN it shows. Windows asks once whether to let Goodstock through the firewall:
+phones join with the address and PIN it shows. While hosting, closing the window keeps Goodstock in the system tray (Open, or
+"Stop sharing and quit"), and on Windows and macOS **Start with the computer, in the background** keeps the kitchen
+shared after a restart. Windows asks once whether to let Goodstock through the firewall:
 allow it on private networks.
 
 Built with [Electron](https://www.electronjs.org/): `main.js` opens the window and answers the page's

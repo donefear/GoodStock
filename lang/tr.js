@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "The shopping list is empty": "Alışveriş listesi boş",
   "+ {count} more": { "one": "+ {count} tane daha", "other": "+ {count} tane daha" },
   "{count} things on the shopping list": { "one": "Alışveriş listesinde {count} şey", "other": "Alışveriş listesinde {count} şey" },
+  "Goodstock is still sharing your kitchen": "Goodstock mutfağınızı paylaşmaya devam ediyor",
+  "Open Goodstock": "Goodstock'u aç",
+  "Stop sharing and quit": "Paylaşmayı durdur ve çık",
+  "Still sharing your kitchen": "Mutfağınız hâlâ paylaşılıyor",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Diğer cihazlar güncel kalsın diye Goodstock sistem tepsisinde çalışmaya devam eder. Oradaki simgeden kapatın.",
+  "Start with the computer, in the background": "Bilgisayarla birlikte arka planda başlat",
+  "Closing the window keeps sharing from the tray.": "Pencereyi kapatınca paylaşım sistem tepsisinden sürer.",
 };

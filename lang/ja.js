@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "The shopping list is empty": "買い物リストは空です",
   "+ {count} more": "+ ほか {count} 件",
   "{count} things on the shopping list": "買い物リストに {count} 件",
+  "Goodstock is still sharing your kitchen": "Goodstock はまだキッチンを共有しています",
+  "Open Goodstock": "Goodstock を開く",
+  "Stop sharing and quit": "共有をやめて終了",
+  "Still sharing your kitchen": "キッチンを共有中です",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "ほかの端末と同期し続けるため、Goodstock はトレイで動き続けます。終了はトレイのアイコンから。",
+  "Start with the computer, in the background": "コンピューターと一緒にバックグラウンドで起動",
+  "Closing the window keeps sharing from the tray.": "ウィンドウを閉じてもトレイから共有を続けます。",
 };

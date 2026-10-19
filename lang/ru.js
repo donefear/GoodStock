@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "The shopping list is empty": "Список покупок пуст",
   "+ {count} more": { "one": "+ ещё {count}", "few": "+ ещё {count}", "many": "+ ещё {count}", "other": "+ ещё {count}" },
   "{count} things on the shopping list": { "one": "{count} позиция в списке покупок", "few": "{count} позиции в списке покупок", "many": "{count} позиций в списке покупок", "other": "{count} позиции в списке покупок" },
+  "Goodstock is still sharing your kitchen": "Goodstock всё ещё раздаёт вашу кухню",
+  "Open Goodstock": "Открыть Goodstock",
+  "Stop sharing and quit": "Остановить и выйти",
+  "Still sharing your kitchen": "Кухня по-прежнему общая",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock продолжает работать в трее, чтобы другие устройства оставались в курсе. Закройте его через значок там.",
+  "Start with the computer, in the background": "Запускать вместе с компьютером, в фоне",
+  "Closing the window keeps sharing from the tray.": "Если закрыть окно, раздача продолжится из трея.",
 };

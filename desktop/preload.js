@@ -36,4 +36,8 @@ contextBridge.exposeInMainWorld('GoodstockNative', {
   canHostKitchen: () => true,
   startKitchenHost: (id) => send('startKitchenHost', id),
   stopKitchenHost: () => send('stopKitchenHost'),
+  // Hosting keeps running in the tray when the window closes (main.js); its words come from the page.
+  setTrayLabels: (json) => send('setTrayLabels', json),
+  // Windows and macOS only: Linux desktops each have their own way of starting apps with the computer.
+  ...(info.canStartAtLogin ? { setStartAtLogin: (on) => send('setStartAtLogin', Boolean(on)) } : {}),
 });

@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "The shopping list is empty": "购物清单是空的",
   "+ {count} more": "+ 还有 {count} 样",
   "{count} things on the shopping list": "购物清单上有 {count} 样",
+  "Goodstock is still sharing your kitchen": "Goodstock 仍在共享你的厨房",
+  "Open Goodstock": "打开 Goodstock",
+  "Stop sharing and quit": "停止共享并退出",
+  "Still sharing your kitchen": "仍在共享你的厨房",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock 会在托盘中继续运行，让其他设备保持同步。可从托盘图标退出。",
+  "Start with the computer, in the background": "随电脑启动，在后台运行",
+  "Closing the window keeps sharing from the tray.": "关闭窗口后会在托盘中继续共享。",
 };

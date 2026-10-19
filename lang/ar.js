@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "The shopping list is empty": "قائمة التسوّق فارغة",
   "+ {count} more": { "zero": "+ {count}", "one": "+ واحد آخر", "two": "+ اثنان آخران", "few": "+ {count} أخرى", "many": "+ {count} أخرى", "other": "+ {count} أخرى" },
   "{count} things on the shopping list": { "zero": "لا شيء في قائمة التسوّق", "one": "شيء واحد في قائمة التسوّق", "two": "شيئان في قائمة التسوّق", "few": "{count} أشياء في قائمة التسوّق", "many": "{count} شيئًا في قائمة التسوّق", "other": "{count} شيء في قائمة التسوّق" },
+  "Goodstock is still sharing your kitchen": "ما زال Goodstock يشارك مطبخك",
+  "Open Goodstock": "افتح Goodstock",
+  "Stop sharing and quit": "أوقف المشاركة واخرج",
+  "Still sharing your kitchen": "ما زال مطبخك مُشاركًا",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "يبقى Goodstock يعمل في علبة النظام لتبقى الأجهزة الأخرى متزامنة. أغلقه من أيقونته هناك.",
+  "Start with the computer, in the background": "ابدأ مع الكمبيوتر في الخلفية",
+  "Closing the window keeps sharing from the tray.": "إغلاق النافذة يُبقي المشاركة من علبة النظام.",
 };

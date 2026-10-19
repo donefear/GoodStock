@@ -16,7 +16,9 @@ export default async function run({ browser, base, phoneShim }) {
     await page.evaluate(() => document.querySelector('[data-action="add-item"]').click());
     if (mode === 'phone') await page.evaluate(() => document.querySelector('#scan-barcode-button').click());
     else await page.evaluate(() => { const input = document.querySelector('#item-form').elements.name; input.value = '3017620422003'; input.dispatchEvent(new Event('change', { bubbles: true })); });
-    await page.waitForFunction(() => /nutella/i.test(document.querySelector('#item-form').elements.name.value), { timeout: 15000 }).catch(() => fail.push(`${mode}: product not filled in`));
+    // Open Food Facts' data changes (this product was called "Testglas" there on 2026-10-19), so any name instead of
+    // the barcode will do.
+    await page.waitForFunction(() => { const name = document.querySelector('#item-form').elements.name.value.trim(); return name && !/^\d+$/.test(name); }, { timeout: 15000 }).catch(() => fail.push(`${mode}: product not filled in`));
     log.push(`${mode}: ${await page.evaluate(() => { const form = document.querySelector('#item-form'); return `${form.elements.name.value}, ${form.elements.quantity.value} ${form.elements.unit.value}`; })}`);
     await context.close();
   }

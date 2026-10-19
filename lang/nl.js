@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "The shopping list is empty": "Het boodschappenlijstje is leeg",
   "+ {count} more": { "one": "+ nog {count}", "other": "+ nog {count}" },
   "{count} things on the shopping list": { "one": "{count} ding op het boodschappenlijstje", "other": "{count} dingen op het boodschappenlijstje" },
+  "Goodstock is still sharing your kitchen": "Goodstock deelt je keuken nog",
+  "Open Goodstock": "Goodstock openen",
+  "Stop sharing and quit": "Stoppen met delen en afsluiten",
+  "Still sharing your kitchen": "Je keuken wordt nog gedeeld",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock blijft in het systeemvak draaien, zodat de andere apparaten bijblijven. Sluit het af via het pictogram daar.",
+  "Start with the computer, in the background": "Met de computer mee opstarten, op de achtergrond",
+  "Closing the window keeps sharing from the tray.": "Als je het venster sluit, blijft het delen vanuit het systeemvak.",
 };

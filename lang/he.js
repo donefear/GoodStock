@@ -1005,4 +1005,11 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "The shopping list is empty": "רשימת הקניות ריקה",
   "+ {count} more": { "one": "+ עוד אחד", "two": "+ עוד שניים", "other": "+ עוד {count}" },
   "{count} things on the shopping list": { "one": "דבר אחד ברשימת הקניות", "two": "שני דברים ברשימת הקניות", "other": "{count} דברים ברשימת הקניות" },
+  "Goodstock is still sharing your kitchen": "Goodstock עדיין משתף את המטבח שלך",
+  "Open Goodstock": "פתיחת Goodstock",
+  "Stop sharing and quit": "הפסקת השיתוף ויציאה",
+  "Still sharing your kitchen": "המטבח עדיין משותף",
+  "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock ממשיך לפעול במגש המערכת כדי שהמכשירים האחרים יישארו מעודכנים. אפשר לסגור אותו מהסמל שם.",
+  "Start with the computer, in the background": "להפעיל עם המחשב, ברקע",
+  "Closing the window keeps sharing from the tray.": "סגירת החלון ממשיכה את השיתוף ממגש המערכת.",
 };
