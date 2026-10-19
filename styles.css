@@ -99,6 +99,21 @@ h3 { margin: 0; font: 500 21px/1.25 'Fraunces', Georgia, serif; }
 .expiry-item-info { min-width: 0; display: flex; align-items: center; gap: 10px; }
 .expiry-mark { width: 29px; height: 29px; flex: 0 0 29px; border-radius: 50%; display: grid; place-items: center; background: #f0dca6; color: #896b24; font-size: 16px; font-weight: 700; }
 .thaw-panel { border-color: #b7d3e6; background: #eef6fb; }
+.stocktake-panel { margin: -15px 0 30px; padding: 16px 18px; border: 1px solid var(--green); border-radius: var(--radius); background: var(--mint); }
+.stocktake-panel .section-heading { align-items: flex-start; }
+.stocktake-panel .section-heading > div:first-child { display: block; }
+.stocktake-panel .section-heading .eyebrow { display: block; margin-bottom: 3px; }
+.stocktake-places { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.stocktake-place { min-height: 64px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); color: var(--ink); text-align: start; cursor: pointer; }
+.stocktake-place strong, .stocktake-place span { display: block; }
+.stocktake-place span { margin-top: 3px; color: var(--muted); font-size: 12px; }
+.stocktake-row { min-height: 64px; padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.stocktake-row.is-seen { opacity: .6; }
+.stocktake-row .item-main span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+.stocktake-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.stocktake-actions .button { min-height: 44px; }
+.stocktake-seen { color: var(--green); font-size: 13px; font-weight: 700; }
+.stocktake-footer { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .thaw-panel > header h2 { color: #2f4f66; }
 .thaw-panel .expiry-list, .thaw-panel .expiry-row { border-color: #cfe1ee; }
 .thaw-panel .expiry-mark { background: #d6e8f4; color: #3d6d8f; }

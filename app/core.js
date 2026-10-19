@@ -192,6 +192,8 @@ function normalizeState(value) {
     timerPresets: Array.isArray(value.timerPresets) ? value.timerPresets : [],
     // What happened to removed items ({ id, name, date, outcome: 'used' | 'wasted' }), for the month overview.
     log: Array.isArray(value.log) ? value.log : [],
+    // When each storage place was last checked item by item ({ id: location, date }), for the stocktake.
+    checks: Array.isArray(value.checks) ? value.checks : [],
   };
 }
 

@@ -39,12 +39,12 @@ EVERYDAY USE
     looked up on TheMealDB by the catalog's English name. "All ideas" goes back to the usual ideas from your cooking
     history. The "Try using it in …" links stay next to it.
 
-0.29 A quick stocktake, one place at a time.
-    An inventory app is only as good as its counts, and they drift: things get used without anyone tapping −. A
-    "Check the fridge" mode would show one location's items as big rows with "Still there", "Less" (edit the
-    amount) and "Gone" (with the used up / thrown away question), and remember when each place was last checked
-    ("Freezer: checked 5 weeks ago"). Five minutes once a week keeps everything else (Use soon, the shopping list,
-    "in stock") right.
+[x] DONE 0.29 A quick stocktake, one place at a time. (v3.3.6)
+    "Check a place" on the Inventory page lists the storage places with their item count and when each was last
+    checked ("Freezer · 1 item · checked 5 weeks ago", "never checked"). Picking one shows its items as big rows with
+    Still there, Less (the edit dialog; saving counts as checked) and Gone (Used up or Thrown away, which goes into the
+    month overview like any removal, with Undo). "Done" saves today's date for that place in the kitchen (state.checks,
+    merged between devices like the other lists).
 
 0.30 Learn shelf life from what gets thrown away.
     From 0.10. state.log already knows when something was thrown away and how long it had been in the kitchen. When

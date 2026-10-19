@@ -199,9 +199,10 @@ function renderInventory() {
   const foodCount = state.inventory.filter((item) => item.kind !== 'Household' && Number(item.quantity) > 0).length;
   const lowCount = state.inventory.filter((item) => Number(item.quantity) > 0 && Number(item.quantity) <= 1).length;
   const scan = canScanBarcodes() ? `<button class="button button-outline" data-action="scan-inventory" title="${t('Scan a product to use it up or add it')}"><span aria-hidden="true">▥</span> ${t('Scan')}</button>` : '';
-  const action = `<div class="inventory-heading-actions">${scan}<button class="button button-primary" data-action="add-item"><span aria-hidden="true">＋</span> ${t('Add item')}</button></div>`;
+  const action = `<div class="inventory-heading-actions">${scan}<button class="button button-outline" data-action="stocktake-pick" title="${t('Go through one place, item by item')}"><span aria-hidden="true">☑</span> ${t('Check a place')}</button><button class="button button-primary" data-action="add-item"><span aria-hidden="true">＋</span> ${t('Add item')}</button></div>`;
   return `${pageHeading(t('THE KITCHEN, AT A GLANCE'), t('Good things on hand.'), t('A clear picture of what is here, and where it lives.'), action)}
     <div class="stats-row"><div class="stat"><span class="stat-icon mint">▤</span><div><strong>${foodCount}</strong><span>${tp(foodCount, 'food item', 'food items')}</span></div></div><div class="stat"><span class="stat-icon coral">◷</span><div><strong>${lowCount}</strong><span>${t('running low')}</span></div></div><div class="stat"><span class="stat-icon yellow">⌂</span><div><strong>${state.locations.length}</strong><span>${tp(state.locations.length, 'storage spot', 'storage spots')}</span></div></div></div>
+    ${renderStocktake()}
     ${renderThawPanel()}
     ${renderExpirationPanel()}
     ${renderMonthOverview()}
@@ -244,6 +245,47 @@ function renderInventoryMap(rows) {
     const items = rows.filter((item) => item.location === location);
     return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${tp(items.length, '{count} item', '{count} items')}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(kindLabel(item.kind))}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(item.quantity)}</strong><small>${escapeHtml(item.unit || t('items'))}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<p class="storage-zone-empty">${t('Nothing stored here yet')}</p>`}</section>`;
   }).join('')}</div>`;
+}
+
+// Stocktake: one storage place at a time, item by item: still there, less (edit the amount) or gone (used up or
+// thrown away). A finished place gets today's date in state.checks ({ id: place, date }), shared like the rest.
+let stocktake = null; // null, { picking: true } or { location, seen: [item ids], asking: item id }
+
+function placeCheckedText(location) {
+  const check = (state.checks || []).find((entry) => entry.id === location);
+  const days = check ? -expiryDaysRemaining(check.date) : null;
+  if (days === null) return t('never checked');
+  if (days <= 0) return t('checked today');
+  if (days < 14) return tp(days, 'checked {count} day ago', 'checked {count} days ago');
+  return tp(Math.round(days / 7), 'checked {count} week ago', 'checked {count} weeks ago');
+}
+
+const stocktakeItems = (location) => state.inventory.filter((item) => item.location === location && Number(item.quantity) > 0)
+  .sort((first, second) => first.name.localeCompare(second.name));
+
+function renderStocktake() {
+  if (!stocktake) return '';
+  const close = `<button class="button button-small button-quiet" type="button" data-action="stocktake-close">${t('Close')}</button>`;
+  if (stocktake.picking) {
+    const places = [...new Set([...state.locations, ...state.inventory.map((item) => item.location).filter(Boolean)])];
+    return `<section class="section-block stocktake-panel"><div class="section-heading"><div><span class="eyebrow">${t('STOCKTAKE')}</span><h2>${t('Which place do you want to check?')}</h2></div>${close}</div>
+      <div class="stocktake-places">${places.map((place) => `<button class="stocktake-place" type="button" data-action="stocktake-start" data-location="${escapeHtml(place)}"><strong>${escapeHtml(place)}</strong><span>${tp(stocktakeItems(place).length, '{count} item', '{count} items')} · ${escapeHtml(placeCheckedText(place))}</span></button>`).join('')}</div></section>`;
+  }
+  const items = stocktakeItems(stocktake.location);
+  const left = items.filter((item) => !stocktake.seen.includes(item.id)).length;
+  const rows = items.map((item) => {
+    const seen = stocktake.seen.includes(item.id);
+    const id = escapeHtml(item.id);
+    const actions = seen
+      ? `<span class="stocktake-seen">✓ ${t('Still there')}</span>`
+      : stocktake.asking === item.id
+        ? `<button class="button button-small button-outline" type="button" data-action="stocktake-used" data-id="${id}">${t('Used up')}</button><button class="button button-small button-outline" type="button" data-action="stocktake-wasted" data-id="${id}">${t('Thrown away')}</button><button class="button button-small button-quiet" type="button" data-action="stocktake-gone-cancel">${t('Cancel')}</button>`
+        : `<button class="button button-small button-primary" type="button" data-action="stocktake-ok" data-id="${id}">${t('Still there')}</button><button class="button button-small button-outline" type="button" data-action="edit-item" data-id="${id}">${t('Less')}</button><button class="button button-small button-outline" type="button" data-action="stocktake-gone" data-id="${id}">${t('Gone')}</button>`;
+    return `<article class="stocktake-row${seen ? ' is-seen' : ''}"><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.quantity)} ${escapeHtml(item.unit || '')}${item.expiresOn ? ` · ${escapeHtml(expirationText(item))}` : ''}</span></div><div class="stocktake-actions">${actions}</div></article>`;
+  }).join('');
+  return `<section class="section-block stocktake-panel"><div class="section-heading"><div><span class="eyebrow">${t('STOCKTAKE')} · ${escapeHtml(stocktake.location.toUpperCase())}</span><h2>${left ? tp(left, '{count} item to check', '{count} items to check') : t('All checked')}</h2></div>${close}</div>
+    ${items.length ? `<div class="stocktake-list">${rows}</div>` : `<p class="muted">${t('Nothing is stored here.')}</p>`}
+    <div class="stocktake-footer"><span class="muted">${escapeHtml(placeCheckedText(stocktake.location))}</span><button class="button ${left ? 'button-outline' : 'button-primary'}" type="button" data-action="stocktake-done">${t('Done')}</button></div></section>`;
 }
 
 // "Take out of the freezer": what today's and tomorrow's meals need that is only in the freezer.

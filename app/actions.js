@@ -97,6 +97,28 @@ function shoppingNeeds() {
   return short;
 }
 
+// The stocktake's buttons (renderStocktake in app/views.js).
+function stocktakeAction(step, id, button) {
+  if (step === 'pick') stocktake = { picking: true };
+  if (step === 'close') stocktake = null;
+  if (step === 'start') stocktake = { location: button.dataset.location, seen: [], asking: '' };
+  if (!stocktake || !stocktake.location) return render();
+  if (step === 'ok' && !stocktake.seen.includes(id)) stocktake.seen.push(id);
+  if (step === 'gone') stocktake.asking = id;
+  if (step === 'gone-cancel') stocktake.asking = '';
+  if (step === 'used' || step === 'wasted') {
+    stocktake.asking = '';
+    removeInventoryItem(id, step);
+  }
+  if (step === 'done') {
+    const location = stocktake.location;
+    state.checks = [...(state.checks || []).filter((entry) => entry.id !== location), { id: location, date: dateKey(new Date()) }];
+    stocktake = null;
+    persist();
+  }
+  render();
+}
+
 // "Moved to the fridge" (Take out of the freezer): the item goes to the fridge and, thawed, keeps about two days there.
 const THAWED_DAYS = 2;
 function thawItem(id) {
@@ -180,6 +202,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'deepl-disconnect') await disconnectDeepl();
   if (action === 'translate-choose') chooseRecipeTranslation(id);
   if (action === 'thaw-item') thawItem(id);
+  if (action.indexOf('stocktake-') === 0) stocktakeAction(action.slice(10), id, button);
   if (action === 'translate-recipe') await startRecipeTranslation(id, ($('#translation-target') || {}).value || recipeTranslation?.target);
   if (action === 'translation-save') saveRecipeTranslation();
   if (action === 'translation-discard') { recipeTranslation = null; render(); }
@@ -543,6 +566,7 @@ $('#item-form').addEventListener('submit', (event) => {
   if (isFrozen(item)) item.frozenOn = form.elements.frozenOn.value || dateKey(new Date());
   const existingIndex = state.inventory.findIndex((entry) => entry.id === item.id);
   if (existingIndex < 0) state.inventory.unshift(item); else state.inventory[existingIndex] = item;
+  if (stocktake && stocktake.location && existingIndex >= 0 && !stocktake.seen.includes(item.id)) stocktake.seen.push(item.id);
   persist();
   $('#item-dialog').close();
 });
