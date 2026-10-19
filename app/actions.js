@@ -146,6 +146,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'steps-read-aloud') toggleReadAloud();
   if (action === 'auto-backup-folder') await chooseAutoBackupFolder();
   if (action === 'auto-backup-off') turnOffAutoBackup();
+  if (action === 'updates-check') await checkForUpdates(true);
   if (action === 'find-ideas') await findIdeas();
   if (action === 'add-idea') addIdea(id);
   if (action === 'pin-save') await savePin();
@@ -366,6 +367,11 @@ document.addEventListener('input', (event) => {
 });
 
 document.addEventListener('change', async (event) => {
+  if (event.target.id === 'updates-daily') {
+    saveUpdateSettings({ daily: event.target.checked });
+    if (event.target.checked) await checkForUpdates();
+    return;
+  }
   if (event.target.id === 'restore-file') {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -676,6 +682,67 @@ async function runAutoBackup(force = false) {
   if ($('#settings-dialog').open) fillAutoBackup();
 }
 
+// Updates (desktop app): once a day the app asks GitHub for the newest release (releases are the X.Y.0 versions), and
+// when it is newer, Settings → Your data says so with a download link and the Settings button gets a dot. Nothing is
+// downloaded or installed by itself. The daily check can be turned off there.
+const UPDATE_CHECK_KEY = 'goodstock-update-check-v1';
+const RELEASES_API = 'https://api.github.com/repos/donefear/GoodStock/releases/latest';
+const canCheckUpdates = () => STANDALONE && nativeApp.platform === 'desktop';
+const appVersion = () => (((document.querySelector('.settings-actions .made-by') || {}).textContent || '').match(/Goodstock v(\d+\.\d+\.\d+)/) || [])[1] || '';
+
+function isNewerVersion(candidate, current) {
+  const a = String(candidate).split('.').map(Number);
+  const b = String(current).split('.').map(Number);
+  for (let index = 0; index < 3; index += 1) if ((a[index] || 0) !== (b[index] || 0)) return (a[index] || 0) > (b[index] || 0);
+  return false;
+}
+
+function updateSettings() {
+  try { return { daily: true, ...JSON.parse(localStorage.getItem(UPDATE_CHECK_KEY) || '{}') }; } catch { return { daily: true }; }
+}
+
+function saveUpdateSettings(changes) {
+  try { localStorage.setItem(UPDATE_CHECK_KEY, JSON.stringify({ ...updateSettings(), ...changes })); } catch { /* Checked again next time. */ }
+}
+
+const updateAvailable = (settings = updateSettings()) => Boolean(settings.latest && isNewerVersion(settings.latest, appVersion()));
+
+function fillUpdates() {
+  const zone = $('#updates-zone');
+  zone.hidden = !canCheckUpdates();
+  $('#settings-button').classList.toggle('has-update', canCheckUpdates() && updateAvailable());
+  if (zone.hidden) return;
+  const settings = updateSettings();
+  const text = $('#updates-text');
+  $('#updates-download').hidden = !updateAvailable(settings);
+  $('#updates-daily').checked = settings.daily;
+  if (updateCheckRunning) text.textContent = t('Checking for updates…');
+  else if (updateAvailable(settings)) text.textContent = t('Goodstock v{version} is available. You have v{current}.', { version: settings.latest, current: appVersion() });
+  else if (settings.error) text.textContent = t('Could not check for updates. Check the internet connection and try again.');
+  else if (settings.last) text.textContent = t('Up to date (v{current}). Last checked: {date}.', { current: appVersion(), date: formatDate(new Date(settings.last), { day: 'numeric', month: 'short', year: 'numeric' }) });
+  else text.textContent = t('Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.');
+}
+
+let updateCheckRunning = false;
+async function checkForUpdates(force = false) {
+  const settings = canCheckUpdates() && updateSettings();
+  if (!settings || updateCheckRunning) return;
+  if (!force && (!settings.daily || (settings.last && Date.now() - new Date(settings.last).getTime() < DAY_MS))) return fillUpdates();
+  updateCheckRunning = true;
+  if ($('#settings-dialog').open) fillUpdates();
+  try {
+    const response = JSON.parse(await nativeCall('httpRequest', RELEASES_API, JSON.stringify({ accept: 'application/vnd.github+json' })));
+    const tag = response.status === 200 ? String(JSON.parse(response.body).tag_name || '') : '';
+    if (!/^v?\d+\.\d+\.\d+$/.test(tag)) throw new Error(`release ${response.status}`);
+    saveUpdateSettings({ latest: tag.replace(/^v/, ''), last: new Date().toISOString(), error: '' });
+  } catch (error) {
+    saveUpdateSettings({ error: String(error?.message || 'failed') });
+  } finally {
+    updateCheckRunning = false;
+  }
+  fillUpdates();
+}
+
 async function backupKitchen() {
   const fileName = `goodstock-backup-${dateKey(new Date())}.json`;
   const content = backupContent();
@@ -859,6 +926,7 @@ async function fillSettings() {
   fillFolderSyncSettings();
   fillHostSettings();
   fillAutoBackup();
+  fillUpdates();
   await Promise.all([loadMealieSettings(), loadDeeplSettings(), fillPinSettings(), fillServerBackups()]);
 }
 
@@ -1046,6 +1114,7 @@ window.goodstockResume = () => {
   checkRemoteRevision();
   syncFolderNow();
   runAutoBackup();
+  checkForUpdates();
   refreshTimers();
   checkExpiryReminders();
 };

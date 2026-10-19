@@ -939,4 +939,13 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "That backup could not be loaded.": "Copia aceasta nu a putut fi încărcată.",
   "Server backups": "Copii de siguranță pe server",
   "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "În fiecare zi, serverul păstrează o copie a bucătăriei de dinaintea primei schimbări și una înaintea oricărei schimbări care șterge cea mai mare parte. Se păstrează cele mai noi 14.",
+  "Checking for updates…": "Se caută actualizări…",
+  "Goodstock v{version} is available. You have v{current}.": "Goodstock v{version} este disponibil. Ai v{current}.",
+  "Could not check for updates. Check the internet connection and try again.": "Nu s-au putut căuta actualizări. Verifică conexiunea la internet și încearcă din nou.",
+  "Up to date (v{current}). Last checked: {date}.": "Actualizat (v{current}). Ultima verificare: {date}.",
+  "Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.": "Goodstock poate căuta o versiune mai nouă pe GitHub o dată pe zi. Nimic nu se instalează singur.",
+  "Updates": "Actualizări",
+  "Check once a day": "Verifică o dată pe zi",
+  "Check now": "Verifică acum",
+  "Download": "Descarcă",
 };

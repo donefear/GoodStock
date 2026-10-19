@@ -939,4 +939,13 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "That backup could not be loaded.": "无法加载该备份。",
   "Server backups": "服务器备份",
   "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "服务器每天会在第一次修改前保存一份厨房副本，在删除大部分内容的修改前也会保存一份。保留最新的 14 份。",
+  "Checking for updates…": "正在检查更新…",
+  "Goodstock v{version} is available. You have v{current}.": "Goodstock v{version} 已发布。你的版本是 v{current}。",
+  "Could not check for updates. Check the internet connection and try again.": "无法检查更新。请检查网络连接后重试。",
+  "Up to date (v{current}). Last checked: {date}.": "已是最新版本（v{current}）。上次检查：{date}。",
+  "Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.": "Goodstock 可以每天在 GitHub 上检查一次是否有新版本。不会自动安装任何内容。",
+  "Updates": "更新",
+  "Check once a day": "每天检查一次",
+  "Check now": "立即检查",
+  "Download": "下载",
 };

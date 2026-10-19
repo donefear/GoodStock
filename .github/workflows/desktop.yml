@@ -39,11 +39,31 @@ jobs:
 
       - name: Build
         env:
-          # No signing certificates: Windows and macOS warn on first start (see desktop/README.md).
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # Signing is optional (desktop/README.md, "Signed builds"). With these repository secrets the Windows files
+          # are signed and the Mac app is signed and notarized; without them the builds are unsigned and Windows and
+          # macOS warn on first start.
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           npm install --no-audit --no-fund
           VERSION=$(node prepare.mjs)
+          if [ "${{ matrix.name }}" = mac ] && [ -n "$MAC_CSC_LINK" ]; then
+            # A Developer ID certificate: drop the ad-hoc identity ("-") so electron-builder signs with it.
+            export CSC_LINK="$MAC_CSC_LINK" CSC_KEY_PASSWORD="$MAC_CSC_KEY_PASSWORD"
+            node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));delete p.build.mac.identity;fs.writeFileSync('package.json',JSON.stringify(p,null,2))"
+            echo "Signing the Mac app${APPLE_ID:+ and notarizing it}."
+          elif [ "${{ matrix.name }}" = windows ] && [ -n "$WIN_CSC_LINK" ]; then
+            echo "Signing the Windows files."
+          else
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+            unset APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID WIN_CSC_LINK WIN_CSC_KEY_PASSWORD
+            echo "No signing certificate: an unsigned build."
+          fi
           npx electron-builder ${{ matrix.target }} --publish never -c.extraMetadata.version="$VERSION"
 
       - uses: actions/upload-artifact@v4

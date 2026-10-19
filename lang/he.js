@@ -939,4 +939,13 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Keep my data": "לשמור את הנתונים שלי",
   "Wipe everything": "מחיקת הכול",
   "Undo": "ביטול פעולה",
+  "Checking for updates…": "מחפש עדכונים…",
+  "Goodstock v{version} is available. You have v{current}.": "Goodstock v{version} זמין. יש לך v{current}.",
+  "Could not check for updates. Check the internet connection and try again.": "לא ניתן לבדוק אם יש עדכונים. בדקו את החיבור לאינטרנט ונסו שוב.",
+  "Up to date (v{current}). Last checked: {date}.": "מעודכן (v{current}). בדיקה אחרונה: {date}.",
+  "Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.": "Goodstock יכול לבדוק פעם ביום ב-GitHub אם יש גרסה חדשה יותר. שום דבר לא מותקן מעצמו.",
+  "Updates": "עדכונים",
+  "Check once a day": "לבדוק פעם ביום",
+  "Check now": "לבדוק עכשיו",
+  "Download": "הורדה",
 };

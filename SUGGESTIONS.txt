@@ -193,10 +193,11 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     went from 109 KB to 67 KB, recipes.js is 42 KB. A new test (client-files) fails when a script in app/
     is missing from index.html, the server's file list or the offline cache.
 
-0.25 Signed desktop builds (only if others will install it).
-    The portable .exe and the .dmg are unsigned, so Windows SmartScreen and macOS Gatekeeper warn people on first
-    launch. That's fine for your own household. Signing, and maybe an update check, only matters if you hand the
-    app to others.
+[x] DONE 0.25 Signed desktop builds and an update check. (v3.2.16)
+    The desktop workflow signs the Windows files and signs and notarizes the Mac app as soon as certificates are
+    added as repository secrets (desktop/README.md, "Signed builds"); without them nothing changes. Not tried with a
+    real certificate, as there is none yet. The desktop app checks GitHub once a day for a newer release: Settings →
+    Your data → Updates shows it with a download link and the Settings button gets a dot. Nothing installs by itself.
 
 
 ALSO DONE SINCE THE FIRST LIST (not in it)

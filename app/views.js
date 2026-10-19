@@ -145,6 +145,7 @@ async function initialize() {
   }
   checkExpiryReminders();
   runAutoBackup();
+  checkForUpdates();
   setInterval(() => {
     if (document.visibilityState === 'visible') {
       if (activeView === 'inventory') render();

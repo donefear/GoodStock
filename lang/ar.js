@@ -939,4 +939,13 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Keep my data": "احتفظ ببياناتي",
   "Wipe everything": "مسح كل شيء",
   "Undo": "تراجع",
+  "Checking for updates…": "جارٍ البحث عن تحديثات…",
+  "Goodstock v{version} is available. You have v{current}.": "يتوفر Goodstock v{version}. لديك v{current}.",
+  "Could not check for updates. Check the internet connection and try again.": "تعذّر البحث عن تحديثات. تحقّق من الاتصال بالإنترنت وحاول مرة أخرى.",
+  "Up to date (v{current}). Last checked: {date}.": "محدَّث (v{current}). آخر فحص: {date}.",
+  "Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.": "يستطيع Goodstock البحث عن إصدار أحدث على GitHub مرة واحدة يوميًا. لا يُثبَّت أي شيء تلقائيًا.",
+  "Updates": "التحديثات",
+  "Check once a day": "تحقّق مرة يوميًا",
+  "Check now": "تحقّق الآن",
+  "Download": "تنزيل",
 };

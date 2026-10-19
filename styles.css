@@ -424,6 +424,12 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .test-zone span { max-width: 250px; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.45; }
 .test-zone .button { flex: 0 0 auto; }
 .backup-actions { display: flex; flex: 0 0 auto; gap: 6px; }
+.test-zone .updates-daily { display: block; margin-top: 8px; color: var(--ink); font-size: 12px; cursor: pointer; }
+.test-zone .updates-daily > input { width: auto; height: auto; margin: 0; margin-inline-end: 6px; vertical-align: middle; }
+.test-zone .updates-daily > span { display: inline; margin: 0; color: inherit; font-size: inherit; }
+.test-zone a.button { text-decoration: none; }
+#settings-button { position: relative; }
+#settings-button.has-update::after { content: ""; position: absolute; top: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%; background: #d9775b; border: 2px solid var(--white); }
 .test-zone .backup-status { color: var(--green); font-weight: 700; }
 .test-zone .backup-status:empty { display: none; }
 .is-standalone .server-only { display: none; }
@@ -923,6 +929,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 [dir="rtl"] .recipe-search { padding: 6px 15px 6px 7px; }
 [dir="rtl"] .settings-connection > summary { padding: 12px 14px 12px 44px; }
 [dir="rtl"] .settings-connection > summary::after { right: auto; left: 18px; }
+[dir="rtl"] #settings-button.has-update::after { right: auto; left: 1px; }
 [dir="rtl"] .steps-tools li { padding: 6px 8px 6px 12px; }
 [dir="rtl"] .recipe-card-top .favourite-button { margin: -7px 0 -7px -6px; }
 [dir="rtl"] .help-steps li::before { left: auto; right: 0; }

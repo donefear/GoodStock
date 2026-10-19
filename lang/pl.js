@@ -939,4 +939,13 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "That backup could not be loaded.": "Nie udało się wczytać tej kopii.",
   "Server backups": "Kopie zapasowe na serwerze",
   "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "Codziennie serwer zachowuje kopię kuchni sprzed pierwszej zmiany oraz przed każdą zmianą, która usuwa większość danych. Przechowywanych jest 14 najnowszych.",
+  "Checking for updates…": "Szukanie aktualizacji…",
+  "Goodstock v{version} is available. You have v{current}.": "Dostępny jest Goodstock v{version}. Masz v{current}.",
+  "Could not check for updates. Check the internet connection and try again.": "Nie udało się sprawdzić aktualizacji. Sprawdź połączenie z internetem i spróbuj ponownie.",
+  "Up to date (v{current}). Last checked: {date}.": "Aktualna wersja (v{current}). Ostatnie sprawdzenie: {date}.",
+  "Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.": "Goodstock może raz dziennie sprawdzać na GitHubie, czy jest nowsza wersja. Nic nie instaluje się samo.",
+  "Updates": "Aktualizacje",
+  "Check once a day": "Sprawdzaj raz dziennie",
+  "Check now": "Sprawdź teraz",
+  "Download": "Pobierz",
 };

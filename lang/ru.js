@@ -939,4 +939,13 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "That backup could not be loaded.": "Не удалось загрузить эту копию.",
   "Server backups": "Резервные копии на сервере",
   "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "Каждый день сервер сохраняет копию кухни перед первым изменением, а также перед любым изменением, которое удаляет большую её часть. Хранятся 14 последних.",
+  "Checking for updates…": "Поиск обновлений…",
+  "Goodstock v{version} is available. You have v{current}.": "Доступна Goodstock v{version}. У вас v{current}.",
+  "Could not check for updates. Check the internet connection and try again.": "Не удалось проверить обновления. Проверьте подключение к интернету и попробуйте снова.",
+  "Up to date (v{current}). Last checked: {date}.": "Установлена последняя версия (v{current}). Последняя проверка: {date}.",
+  "Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.": "Goodstock может раз в день проверять на GitHub, есть ли новая версия. Ничего не устанавливается само.",
+  "Updates": "Обновления",
+  "Check once a day": "Проверять раз в день",
+  "Check now": "Проверить сейчас",
+  "Download": "Скачать",
 };

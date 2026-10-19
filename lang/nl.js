@@ -939,4 +939,13 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "That backup could not be loaded.": "Die back-up kon niet worden geladen.",
   "Server backups": "Back-ups op de server",
   "Every day the server keeps a copy of the kitchen from before its first change, and one before any change that removes most of it. The newest 14 are kept.": "Elke dag bewaart de server een kopie van de keuken van vóór de eerste wijziging, en een vóór elke wijziging die het meeste ervan weghaalt. De nieuwste 14 blijven bewaard.",
+  "Checking for updates…": "Zoeken naar updates…",
+  "Goodstock v{version} is available. You have v{current}.": "Goodstock v{version} is beschikbaar. Je hebt v{current}.",
+  "Could not check for updates. Check the internet connection and try again.": "Kon niet zoeken naar updates. Controleer de internetverbinding en probeer het opnieuw.",
+  "Up to date (v{current}). Last checked: {date}.": "Up-to-date (v{current}). Laatst gecontroleerd: {date}.",
+  "Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.": "Goodstock kan één keer per dag op GitHub kijken of er een nieuwere versie is. Er wordt niets vanzelf geïnstalleerd.",
+  "Updates": "Updates",
+  "Check once a day": "Eén keer per dag controleren",
+  "Check now": "Nu controleren",
+  "Download": "Downloaden",
 };
