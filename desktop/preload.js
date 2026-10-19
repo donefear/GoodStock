@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('GoodstockNative', {
   vibrate: () => {},
   share: (text) => send('share', text),
   fetchPage: (id, url) => send('fetchPage', id, url),
+  fetchImage: (id, url) => send('fetchImage', id, url),
   httpRequest: (id, url, headers) => send('httpRequest', id, url, headers || '{}'),
   httpSend: (id, method, url, headers, body) => send('httpSend', id, method, url, headers || '{}', body),
   saveFile: (id, name, content) => send('saveFile', id, name, content),

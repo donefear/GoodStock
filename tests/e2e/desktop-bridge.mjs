@@ -34,6 +34,17 @@ export default async () => {
     let refused = '';
     try { await native.httpRequest({ url: 'file:///etc/passwd' }); } catch (error) { refused = error.message; }
     check(/http and https/.test(refused), `file links are refused: ${refused}`);
+
+    // Recipe photos (0.33): images come back as a data URL, anything else is refused.
+    const fakeFetch = (type, body) => async () => new Response(body, { headers: { 'content-type': type } });
+    const photo = await native.fetchImage({ url: 'https://example.com/cake.png', fetchImpl: fakeFetch('image/png', Buffer.from([137, 80, 78, 71])) });
+    check(photo === 'data:image/png;base64,iVBORw==', `photo as a data URL: ${photo}`);
+    let notImage = '';
+    try { await native.fetchImage({ url: 'https://example.com/page', fetchImpl: fakeFetch('text/html', '<html>') }); } catch (error) { notImage = error.message; }
+    check(/could not be loaded/.test(notImage), `a web page is not taken for a photo: ${notImage}`);
+    let fileLink = '';
+    try { await native.fetchImage({ url: 'file:///etc/passwd' }); } catch (error) { fileLink = error.message; }
+    check(/http and https/.test(fileLink), `file links are refused for photos: ${fileLink}`);
   } finally {
     server.close();
   }

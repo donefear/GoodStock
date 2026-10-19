@@ -42,6 +42,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         share: function (text) { post('share', [String(text)]); },
         print: function () { post('print', []); },
         fetchPage: function (id, url) { post('fetchPage', [id, String(url)]); },
+        fetchImage: function (id, url) { post('fetchImage', [id, String(url)]); },
         httpRequest: function (id, url, headers) { post('httpRequest', [id, String(url), String(headers || '{}')]); },
         httpSend: function (id, method, url, headers, body) { post('httpSend', [id, String(method), String(url), String(headers || '{}'), String(body)]); },
         saveFile: function (id, name, content) { post('saveFile', [id, String(name), String(content)]); },
@@ -92,6 +93,14 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             printPage()
         case "fetchPage":
             request(id: arg(0), method: "GET", address: arg(1), headers: "{}", body: nil)
+        case "fetchImage":
+            let id = arg(0)
+            http.image(address: arg(1)) { result in
+                switch result {
+                case .success(let address): self.callback(id, ok: true, payload: address)
+                case .failure(let error): self.callback(id, ok: false, payload: error.localizedDescription)
+                }
+            }
         case "httpRequest":
             request(id: arg(0), method: "GET", address: arg(1), headers: arg(2), body: nil)
         case "httpSend":

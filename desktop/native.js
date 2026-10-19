@@ -56,6 +56,21 @@ async function httpRequest({ method = 'GET', url, headers = {}, body = null, fet
   throw new Error('Too many redirects');
 }
 
+/**
+ * A recipe photo from a website as a data URL, for keeping a small copy with an imported recipe (the page shrinks it).
+ * Only images (JPEG, PNG, WebP, GIF), at most 8 MB, like the server's /api/photo.
+ */
+async function fetchImage({ url, fetchImpl = fetch }) {
+  const address = new URL(url);
+  if (address.protocol !== 'http:' && address.protocol !== 'https:') throw new Error('Only http and https links are supported');
+  const response = await fetchImpl(address.toString(), { headers: { 'user-agent': 'Mozilla/5.0 (Desktop) GoodstockRecipeImport/1.0', accept: 'image/*' }, redirect: 'follow', signal: AbortSignal.timeout(20_000) });
+  const type = String(response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  if (!response.ok || !/^image\/(?:jpeg|png|webp|gif)$/.test(type)) throw new Error('That photo could not be loaded.');
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (bytes.length > 8_000_000) throw new Error('That photo is too large.');
+  return `data:${type};base64,${bytes.toString('base64')}`;
+}
+
 const safeFileName = (name, fallback) => {
   const clean = String(name || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').trim();
   return clean && !/^\.+$/.test(clean) ? clean : fallback;
@@ -228,6 +243,6 @@ async function startKitchenHost(host, ports = HOST_PORTS) {
 }
 
 module.exports = {
-  httpRequest, writeBackup, upcomingAlarms, safeFileName, BACKUP_PREFIX, KEEP_BACKUPS,
+  httpRequest, fetchImage, writeBackup, upcomingAlarms, safeFileName, BACKUP_PREFIX, KEEP_BACKUPS,
   listSyncFolder, readSyncFile, writeSyncFile, createKitchenHost, startKitchenHost, makeHostSecrets, lanAddresses,
 };

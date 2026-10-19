@@ -50,6 +50,26 @@ final class PhoneHTTP: NSObject, URLSessionTaskDelegate {
         }.resume()
     }
 
+    /// A recipe photo from a website, as a data URL, for keeping a small copy with an imported recipe (the page
+    /// shrinks it). Only images (JPEG, PNG, WebP, GIF), at most 8 MB, like the server's /api/photo.
+    func image(address: String, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let url = URL(string: address), url.scheme == "http" || url.scheme == "https" else {
+            return completion(.failure(Failure.badAddress))
+        }
+        var request = URLRequest(url: url)
+        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS like Mac OS X) GoodstockRecipeImport/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("image/*", forHTTPHeaderField: "Accept")
+        session.dataTask(with: request) { data, response, error in
+            if let error { return completion(.failure(error)) }
+            let type = ((response as? HTTPURLResponse)?.mimeType ?? "").lowercased()
+            guard (response as? HTTPURLResponse)?.statusCode == 200, ["image/jpeg", "image/png", "image/webp", "image/gif"].contains(type), let data else {
+                return completion(.failure(URLError(.cannotDecodeContentData)))
+            }
+            if data.count > 8_000_000 { return completion(.failure(Failure.tooLarge)) }
+            completion(.success("data:\(type);base64,\(data.base64EncodedString())"))
+        }.resume()
+    }
+
     private static func text(_ data: Data, encodingName: String?) -> String {
         if let name = encodingName {
             let encoding = CFStringConvertIANACharSetNameToEncoding(name as CFString)

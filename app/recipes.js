@@ -123,10 +123,21 @@ async function pickRecipePhoto(file) {
   }
 }
 
-// An imported recipe's photo: downloaded once through the server and shrunk. Without a server it stays a link.
+// An imported recipe's photo: downloaded once (through the server, or the app's bridge) and shrunk, so it shows offline.
 async function importedPhoto(address) {
   if (!/^https?:\/\//i.test(address || '')) return '';
-  if (STANDALONE) return address;
+  // The apps download it through their bridge (0.33); one without fetchImage, or a failed download, keeps the link.
+  if (STANDALONE) {
+    if (typeof nativeApp.fetchImage !== 'function') return address;
+    try {
+      const [, type, data] = /^data:([^;,]+);base64,(.*)$/.exec(await nativeCall('fetchImage', address)) || [];
+      if (!data) return address;
+      const bytes = Uint8Array.from(atob(data), (character) => character.charCodeAt(0));
+      return await shrinkPhoto(new Blob([bytes], { type }));
+    } catch {
+      return address;
+    }
+  }
   try {
     const response = await fetch(`/api/photo?url=${encodeURIComponent(address)}`);
     if (!response.ok) return '';

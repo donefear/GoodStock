@@ -160,6 +160,50 @@ final class NativeBridge {
         });
     }
 
+    /**
+     * A recipe photo from a website, for keeping a small copy with an imported recipe (the page shrinks it). Answers
+     * with a data URL; only images (JPEG, PNG, WebP, GIF), at most 8 MB, like the server's /api/photo.
+     */
+    @JavascriptInterface
+    public void fetchImage(String callbackId, String address) {
+        network.execute(() -> {
+            try {
+                URL url = new URL(address);
+                for (int redirects = 0; redirects < 6; redirects++) {
+                    if (!"http".equals(url.getProtocol()) && !"https".equals(url.getProtocol())) throw new IllegalArgumentException("Only http and https links are supported");
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setInstanceFollowRedirects(false);
+                    connection.setConnectTimeout(12_000);
+                    connection.setReadTimeout(20_000);
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) GoodstockRecipeImport/1.0");
+                    connection.setRequestProperty("Accept", "image/*");
+                    int status = connection.getResponseCode();
+                    String location = connection.getHeaderField("Location");
+                    if (status >= 300 && status < 400 && location != null) {
+                        url = new URL(url, location);
+                        continue;
+                    }
+                    String type = String.valueOf(connection.getContentType()).split(";")[0].trim().toLowerCase();
+                    if (status != 200 || !type.matches("image/(jpeg|png|webp|gif)")) throw new IllegalStateException("That photo could not be loaded.");
+                    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                    try (InputStream in = connection.getInputStream()) {
+                        byte[] buffer = new byte[16_384];
+                        for (int read; (read = in.read(buffer)) != -1; ) {
+                            bytes.write(buffer, 0, read);
+                            if (bytes.size() > 8_000_000) throw new IllegalStateException("That photo is too large.");
+                        }
+                    }
+                    callback(callbackId, true, "data:" + type + ";base64," + android.util.Base64.encodeToString(bytes.toByteArray(), android.util.Base64.NO_WRAP));
+                    return;
+                }
+                throw new IllegalStateException("Too many redirects");
+            } catch (Exception error) {
+                String message = error.getMessage();
+                callback(callbackId, false, message == null ? error.getClass().getSimpleName() : message);
+            }
+        });
+    }
+
     private JSONObject download(String address, JSONObject headers) throws Exception {
         return download(address, headers, "GET", null);
     }

@@ -189,6 +189,9 @@ const handlers = {
   },
   share,
   fetchPage: (id, url) => request(id, { url }),
+  fetchImage: async (id, url) => {
+    try { callback(id, true, await native.fetchImage({ url })); } catch (error) { callback(id, false, (error && error.message) || 'That photo could not be loaded.'); }
+  },
   httpRequest: (id, url, headers) => request(id, { url, headers }),
   httpSend: (id, method, url, headers, body) => request(id, { method, url, headers, body }),
   saveFile,

@@ -19,6 +19,7 @@ window.GoodstockNative = {
   share: function (text) { window.__calls.push(['share', text]); },
   print: function () { window.__calls.push(['print']); },
   fetchPage: function (id, url) { http(id, 'GET', url, '{}', ''); },
+  fetchImage: function (id, url) { window.__images = (window.__images || []).concat([url]); if (/fail/.test(url)) answer(id, false, 'That photo could not be loaded.'); else answer(id, true, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='); },
   httpRequest: function (id, url, headers) { http(id, 'GET', url, headers, ''); },
   httpSend: function (id, method, url, headers, body) { http(id, method, url, headers, body); },
   saveFile: function (id, name, content) { window.__calls.push(['saveFile', name, content.length]); answer(id, true, 'saved'); },
