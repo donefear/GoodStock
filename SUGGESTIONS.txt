@@ -11,6 +11,7 @@ MORE IDEAS (after v3.2.16)
 =====================================================================================================================
 Everything in the second list is done except the two that need people or hardware (0.4, 0.5, both on hold).
 These came from going through the app again. Top pick: 0.26, because it fixes a wrong answer the app gives today.
+All fifteen done on 2026-10-19 (v3.3.3–v3.3.17); what still needs you is marked STILL FOR YOU (0.36) or "not yet tried".
 
 
 EVERYDAY USE
