@@ -63,6 +63,16 @@ async function main() {
     const check = spawnSync(process.execPath, ['tools/bump-version.mjs', '--check'], { cwd: root, encoding: 'utf8' });
     report('version', { fail: check.status === 0 ? [] : [(check.stdout + check.stderr).trim()], log: [check.stdout.trim()] });
   }
+  if (wanted('chrome81')) {
+    // The kitchen tablet's Chrome 81: a static check of every browser file (tools/check-chrome81.mjs), and that the
+    // check itself still notices a planted ??= and .replaceAll().
+    const check = spawnSync(process.execPath, ['tools/check-chrome81.mjs'], { cwd: root, encoding: 'utf8' });
+    const { checkScript } = await import('../tools/check-chrome81.mjs');
+    const planted = checkScript('let a; a ??= "x".replaceAll("x", "y");');
+    const fail = check.status === 0 ? [] : check.stdout.trim().split('\n').slice(0, 10);
+    if (planted.length !== 2) fail.push(`the check missed a planted problem: ${JSON.stringify(planted)}`);
+    report('chrome81-static', { fail, log: [check.stdout.trim()] });
+  }
   if (wanted('client-files')) {
     // Every client script is loaded by index.html, served by the server and kept in the offline cache.
     const scripts = (await readdir(join(root, 'app'))).filter((file) => file.endsWith('.js')).map((file) => `app/${file}`);

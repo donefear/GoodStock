@@ -128,10 +128,13 @@ SERVER VERSION
 KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
 --------------------------------------------------
 
-0.39 A quick check for code the kitchen tablet can't run.
-    The Chromium 80 run (0.22) only catches what it opens. A static check in `npm test` that parses every app file
-    as ES2020 (acorn) and looks for the methods Chrome 81 lacks (replaceAll, .at(), Object.hasOwn, structuredClone,
-    CSS inset) would also catch code in rarely used paths, in a second instead of a minute.
+[x] DONE 0.39 A quick check for code the kitchen tablet can't run. (v3.3.16)
+    tools/check-chrome81.mjs (part of npm test as "chrome81-static", about a second): every script the browser loads
+    (app/*.js, lang/*.js, i18n.js, the kitchen data, sw.js and the shared .mjs modules) must parse as ES2021 without
+    ??=, ||= or &&= (so no class fields, private #names, regex flags d or v); the code itself, not comments or strings,
+    must not call what Chrome 81 lacks (replaceAll, .at(), findLast, toSorted, Object.hasOwn, structuredClone,
+    Promise.any, Intl.Segmenter, WeakRef…); and styles.css must not use inset. The test also plants a ??= and a
+    .replaceAll() to make sure the check still notices them. acorn is a new dev dependency; the app has no new runtime one.
 
 0.40 Accessibility check in the tests.
     The app is meant for a kitchen tablet, wet hands and bigger text. Running axe-core on every page and the main
