@@ -1,4 +1,4 @@
-// Goodstock, part 4 of 5: step-by-step cook mode: steps and their amounts, timers and alarms, read aloud and voice
+// Goodstock, part 5 of 6: step-by-step cook mode: steps and their amounts, timers and alarms, read aloud and voice
 // commands.
 // The parts load in order as plain scripts (see index.html) and share one global scope.
 

@@ -1,4 +1,4 @@
-// Goodstock, part 2 of 5: the shared kitchen: phone apps on a home server, the household PIN, and syncing with
+// Goodstock, part 2 of 6: the shared kitchen: phone apps on a home server, the household PIN, and syncing with
 // the server (revisions, merging, live events and polling).
 // The parts load in order as plain scripts (see index.html) and share one global scope.
 

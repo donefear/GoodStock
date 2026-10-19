@@ -1,4 +1,4 @@
-// Goodstock, part 5 of 5: shopping and putting groceries away, Mealie search, every button and form, Settings,
+// Goodstock, part 6 of 6: shopping and putting groceries away, Mealie search, every button and form, Settings,
 // backups, the test recipe, phone-app hooks, and starting the app (last line).
 // The parts load in order as plain scripts (see index.html) and share one global scope.
 

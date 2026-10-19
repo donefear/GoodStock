@@ -52,6 +52,7 @@ const staticFiles = new Map([
   ['/app/core.js', ['app/core.js', 'text/javascript; charset=utf-8']],
   ['/app/sync.js', ['app/sync.js', 'text/javascript; charset=utf-8']],
   ['/app/views.js', ['app/views.js', 'text/javascript; charset=utf-8']],
+  ['/app/recipes.js', ['app/recipes.js', 'text/javascript; charset=utf-8']],
   ['/app/cook.js', ['app/cook.js', 'text/javascript; charset=utf-8']],
   ['/app/ideas.js', ['app/ideas.js', 'text/javascript; charset=utf-8']],
   ['/app/actions.js', ['app/actions.js', 'text/javascript; charset=utf-8']],

@@ -187,10 +187,11 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     name to goodstock-shell-v<version>; `-- minor`, `-- major` or `-- X.Y.Z` for other steps. `npm test` runs it with
     --check, so a label and cache name that disagree fail the tests (and on GitHub).
 
-0.24 Split app/views.js.
-    At about 87 KB it's twice the size of any other client file. It holds every page plus the recipe editor and
-    translation. Moving the recipe pages, editor and translation into app/recipes.js (loaded right after views.js)
-    keeps it manageable, the same way app.js was split in 6.2.
+[x] DONE 0.24 Split app/views.js. (v3.2.15)
+    The Recipes page, favourites, the full recipe page, the recipe editor and import, recipe photos, DeepL
+    translation and the recipe popup moved to app/recipes.js (part 4 of 6, loaded right after views.js): views.js
+    went from 109 KB to 67 KB, recipes.js is 42 KB. A new test (client-files) fails when a script in app/
+    is missing from index.html, the server's file list or the offline cache.
 
 0.25 Signed desktop builds (only if others will install it).
     The portable .exe and the .dmg are unsigned, so Windows SmartScreen and macOS Gatekeeper warn people on first

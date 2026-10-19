@@ -63,6 +63,18 @@ async function main() {
     const check = spawnSync(process.execPath, ['tools/bump-version.mjs', '--check'], { cwd: root, encoding: 'utf8' });
     report('version', { fail: check.status === 0 ? [] : [(check.stdout + check.stderr).trim()], log: [check.stdout.trim()] });
   }
+  if (wanted('client-files')) {
+    // Every client script is loaded by index.html, served by the server and kept in the offline cache.
+    const scripts = (await readdir(join(root, 'app'))).filter((file) => file.endsWith('.js')).map((file) => `app/${file}`);
+    const [html, server, sw] = await Promise.all(['index.html', 'server.mjs', 'sw.js'].map((file) => readFile(join(root, file), 'utf8')));
+    const fail = [];
+    for (const script of scripts) {
+      if (!html.includes(`<script src="${script}" defer></script>`)) fail.push(`${script} is not loaded in index.html`);
+      if (!server.includes(`['/${script}', ['${script}',`)) fail.push(`${script} is not in the server's static file list`);
+      if (!sw.includes(`'/${script}'`)) fail.push(`${script} is not in APP_SHELL in sw.js`);
+    }
+    report('client-files', { fail, log: scripts });
+  }
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-fake-ui-for-media-stream'] });
   try {
     const pageTests = (await readdir(join(root, 'tests/page'))).filter((file) => file.endsWith('.js') && wanted(file)).sort();

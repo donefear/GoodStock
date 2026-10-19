@@ -1,4 +1,4 @@
-// Goodstock, part 1 of 5: the phone bridge, Mealie access, kitchen state and starter content, the ingredient
+// Goodstock, part 1 of 6: the phone bridge, Mealie access, kitchen state and starter content, the ingredient
 // catalog and matching, quantities (parsing, metric, servings), and expiry dates and reminders.
 // The parts load in order as plain scripts (see index.html) and share one global scope.
 
