@@ -16,13 +16,14 @@ These came from going through the app again. Top pick: 0.26, because it fixes a 
 EVERYDAY USE
 ------------
 
-0.26 The shopping list counts amounts.
-    "Make the shopping list" (generateShopping in app/actions.js) leaves out every ingredient that is in stock at
-    all: a recipe that needs 500 g flour adds nothing when there are 100 g in the cupboard, and two meals that each
-    need 4 eggs don't add up against the 6 in the fridge. Add up the week's not-yet-cooked meals per ingredient
-    (deductionAmount already converts between units), compare with what is in stock, and list only the difference
-    ("Flour 400 g · for Pancakes, Bread"). Where the units can't be compared ("1 bunch" against "200 g") keep
-    today's behaviour, so the list never gets worse.
+[x] DONE 0.26 The shopping list counts amounts. (v3.3.3)
+    "Make the shopping list" adds up the week's meals that aren't cooked yet per ingredient, compares that with the
+    stock in the stored item's unit (grams against kilos, millilitres against litres) and lists only what is short:
+    "Flour 650 g · Pancakes, Bread". Under a kilo or a litre it says grams or millilitres. Where the amounts can't be
+    compared ("1 bunch" against "200 g", a teaspoon against grams) the item counts as enough, as before.
+    Found on the way: stock matching found short names from other languages inside longer ones (Dutch "ei" in
+    Portuguese "leite" and "queijo", Turkish "un" in Romanian "pătrunjel"), so milk, cheese and salt counted as
+    "Eggs" in stock and parsley as "Flour". A name now only counts inside another when it is longer than three letters.
 
 0.27 Thaw reminders the evening before.
     Frozen food has a "Frozen on" date and the week has planned meals, but nothing connects them. When tomorrow's

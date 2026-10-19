@@ -491,7 +491,10 @@ function matchingInventory(ingredient) {
   return state.inventory.find((item) => {
     if (Number(item.quantity) <= 0) return false;
     const availableTerms = ingredientTerms(item.name).filter(Boolean);
-    return wantedTerms.some((wanted) => availableTerms.some((available) => available === wanted || (wanted.length > 3 && (available.includes(wanted) || wanted.includes(available)))));
+    // A name only counts inside a longer one when it is longer than three letters itself, in both directions: short
+    // catalog names in other languages (Dutch "ei", Turkish "un") would otherwise be found in "leite" or "pătrunjel".
+    return wantedTerms.some((wanted) => availableTerms.some((available) => available === wanted
+      || (wanted.length > 3 && available.includes(wanted)) || (available.length > 3 && wanted.includes(available))));
   });
 }
 

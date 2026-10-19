@@ -53,22 +53,54 @@ async function importMealieRecipe(id) {
   render();
 }
 
-function generateShopping() {
-  const additions = [];
+// The week's meals that aren't cooked yet, added up per ingredient and compared with what is in stock: only what is
+// short goes on the list ("Flour 400 g · Pancakes, Bread"). An ingredient in stock whose amounts can't be compared
+// with the stored unit ("1 bunch" against "200 g") counts as enough, as before. Small kilos and litres become grams
+// and millilitres.
+function shoppingNeeds() {
+  const needs = new Map();
   for (const plan of currentWeekPlans()) {
     const recipe = scaledRecipe(recipeById(plan.recipeId), planScale(plan));
     if (!recipe || plan.cooked) continue;
     for (const ingredient of recipe.ingredients || []) {
-      if (matchingInventory(ingredient)) continue;
       const parsed = parseIngredient(ingredient);
       const name = parsed.name.trim();
-      const key = cleanIngredient(name);
-      const alreadyListed = state.shopping.some((entry) => cleanIngredient(entry.name) === key);
-      const inAdditions = additions.find((entry) => cleanIngredient(entry.name) === key);
-      if (inAdditions && parsed.amount && canonicalUnit(inAdditions.unit) === parsed.unit) inAdditions.quantity = Math.round((inAdditions.quantity + parsed.amount) * 100) / 100;
-      if (name && !alreadyListed && !inAdditions) additions.push({ id: makeId(), name, quantity: parsed.amount ? Math.round(parsed.amount * 100) / 100 : 1, unit: parsed.amount ? parsed.unitText : '', checked: false, source: recipe.name });
+      if (!name) continue;
+      const item = matchingInventory(ingredient);
+      const key = item ? `item:${item.id}` : cleanIngredient(name);
+      const need = needs.get(key) || { name: item ? item.name : name, item, amount: 0, unit: item ? item.unit || '' : '', comparable: true, sources: [] };
+      if (!need.sources.includes(recipe.name)) need.sources.push(recipe.name);
+      if (item) {
+        const used = deductionAmount(ingredient, item);
+        if (used > 0) need.amount += used; else need.comparable = false;
+      } else if (!needs.has(key)) {
+        need.amount = parsed.amount || 1;
+        need.unit = parsed.amount ? parsed.unitText : '';
+      } else if (parsed.amount) {
+        const from = UNIT_SCALES[parsed.unit];
+        const to = UNIT_SCALES[canonicalUnit(need.unit)];
+        if (canonicalUnit(need.unit) === parsed.unit) need.amount += parsed.amount;
+        else if (from && to && from[0] === to[0]) need.amount += parsed.amount * from[1] / to[1];
+      }
+      needs.set(key, need);
     }
   }
+  const short = [];
+  for (const need of needs.values()) {
+    let amount = need.item ? need.amount - Number(need.item.quantity) : need.amount;
+    if (need.item && (!need.comparable || amount <= 0)) continue;
+    let unit = need.unit;
+    const canonical = canonicalUnit(unit);
+    if ((canonical === 'kg' || canonical === 'l') && amount < 1) { amount *= 1000; unit = canonical === 'kg' ? 'g' : 'ml'; }
+    short.push({ name: need.name, quantity: Math.round(amount * 100) / 100, unit, source: need.sources.join(', ') });
+  }
+  return short;
+}
+
+function generateShopping() {
+  const additions = shoppingNeeds()
+    .filter((need) => !state.shopping.some((entry) => cleanIngredient(entry.name) === cleanIngredient(need.name)))
+    .map((need) => ({ id: makeId(), ...need, checked: false }));
   state.shopping.push(...additions);
   persist();
   activeView = 'shopping';
