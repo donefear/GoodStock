@@ -46,11 +46,14 @@ EVERYDAY USE
     month overview like any removal, with Undo). "Done" saves today's date for that place in the kitchen (state.checks,
     merged between devices like the other lists).
 
-0.30 Learn shelf life from what gets thrown away.
-    From 0.10. state.log already knows when something was thrown away and how long it had been in the kitchen. When
-    the same thing keeps being thrown away before its estimate (bread binned after 4 days, estimate 7), suggest the
-    shorter time for that item, shown as "your kitchen: 4 days" and used for new items once accepted. Only suggest
-    after a few times, and never lengthen an estimate on its own: that's the food-safety side.
+[x] DONE 0.30 Learn shelf life from what gets thrown away. (v3.3.7)
+    Items now remember when they came into the kitchen (addedOn, set only for new ones: older items don't count), and
+    "Thrown away" records how many days it was kept and in which kind of storage. Once the same thing in the same
+    storage has been thrown away three times, by the median a day or more before its estimate, the Inventory page shows
+    "Learned from your kitchen: Carrots · in the fridge. Thrown away 3 times, usually after 18 days. The estimate is
+    21 days." with "Use 18 days" or "Keep 21 days". An accepted time is used for new items of that kind (package dates
+    still win); either answer stops the question. Times are only ever made shorter. Answers are shared with the
+    household (state.shelfLife).
 
 
 PHONE AND DESKTOP APPS

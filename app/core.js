@@ -194,6 +194,8 @@ function normalizeState(value) {
     log: Array.isArray(value.log) ? value.log : [],
     // When each storage place was last checked item by item ({ id: location, date }), for the stocktake.
     checks: Array.isArray(value.checks) ? value.checks : [],
+    // Shelf lives this kitchen learned from what it threw away ({ id: 'catalog id|storage', days }; 0 = keep the estimate).
+    shelfLife: Array.isArray(value.shelfLife) ? value.shelfLife : [],
   };
 }
 
@@ -642,9 +644,15 @@ const DEFAULT_SHELF_LIFE_DAYS = { pantry: 90, fridge: 7, freezer: 90 };
 // Ingredient categories from ingredients.json, translated where they are shown.
 N_('Fruit'); N_('Vegetables'); N_('Herbs'); N_('Dairy'); N_('Meat and fish'); N_('Bakery'); N_('Baking'); N_('Seasoning'); N_('Pantry');
 
-function shelfLifeDaysFor(name, location) {
+const storageOf = (location) => (FREEZER_WORDS.test(location || '') ? 'freezer' : FRIDGE_WORDS.test(location || '') ? 'fridge' : 'pantry');
+
+// The estimate in days: a time this kitchen learned (0.30, learnedShelfLife) first, then the catalog, its category and
+// the storage default. learned = false gives the plain estimate.
+function shelfLifeDaysFor(name, location, learned = true) {
   const record = ingredientRecord(name);
-  const storage = FREEZER_WORDS.test(location) ? 'freezer' : FRIDGE_WORDS.test(location) ? 'fridge' : 'pantry';
+  const storage = storageOf(location);
+  const own = learned ? (state.shelfLife || []).find((entry) => entry.id === shelfLifeKey(name, storage) && entry.days > 0) : null;
+  if (own) return own.days;
   const candidates = [record?.shelfLifeDays, CATEGORY_SHELF_LIFE_DAYS[record?.category], DEFAULT_SHELF_LIFE_DAYS];
   return candidates.map((shelfLife) => shelfLife?.[storage]).find(Number.isFinite) ?? null;
 }
@@ -753,7 +761,45 @@ function logRemoval(item, outcome) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - LOG_KEEP_DAYS);
   state.log = state.log.filter((entry) => entry.date >= dateKey(cutoff));
-  state.log.push({ id: makeId(), name: item.name, date: dateKey(new Date()), outcome });
+  const entry = { id: makeId(), name: item.name, date: dateKey(new Date()), outcome };
+  // How long it was kept and where, for learning shelf life (items know when they came in since v3.3.7).
+  const storage = storageOf(item.location);
+  const since = storage === 'freezer' && item.frozenOn > (item.addedOn || '') ? item.frozenOn : item.addedOn;
+  const start = dateFromKey(since);
+  if (start) Object.assign(entry, { kept: Math.max(0, -expiryDaysRemaining(since)), storage });
+  state.log.push(entry);
+}
+
+// Learning shelf life from what gets thrown away (0.30). When the same thing, in the same kind of storage, was thrown
+// away at least three times after (by the median) a day or more less than its estimate, the Inventory page suggests
+// that shorter time. Accepted times go into state.shelfLife ({ id: 'catalog id|storage', days }) and win over the
+// catalog for new items; "Keep" saves days: 0, which stops asking. An estimate is never made longer.
+const LEARN_MIN_TIMES = 3;
+const shelfLifeKey = (name, storage) => `${(ingredientRecord(name) || {}).id || cleanIngredient(name)}|${storage}`;
+
+function shelfLifeSuggestions() {
+  const groups = new Map();
+  for (const entry of state.log || []) {
+    if (entry.outcome !== 'wasted' || !Number.isFinite(entry.kept) || !entry.storage) continue;
+    const key = shelfLifeKey(entry.name, entry.storage);
+    if (!groups.has(key)) groups.set(key, { key, name: entry.name, storage: entry.storage, kept: [] });
+    groups.get(key).kept.push(entry.kept);
+  }
+  const answered = new Set((state.shelfLife || []).map((entry) => entry.id));
+  const suggestions = [];
+  for (const group of groups.values()) {
+    if (group.kept.length < LEARN_MIN_TIMES || answered.has(group.key)) continue;
+    const sorted = [...group.kept].sort((a, b) => a - b);
+    const days = Math.max(1, sorted[Math.floor((sorted.length - 1) / 2)]);
+    const estimate = shelfLifeDaysFor(group.name, group.storage, false);
+    if (Number.isFinite(estimate) && estimate - days >= 1) suggestions.push({ ...group, days, estimate, times: group.kept.length });
+  }
+  return suggestions;
+}
+
+function answerShelfLife(key, days) {
+  state.shelfLife = [...(state.shelfLife || []).filter((entry) => entry.id !== key), { id: key, days }];
+  persist();
 }
 
 function updateExpirationSuggestion(name, location, input, note, from = new Date()) {

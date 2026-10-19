@@ -202,6 +202,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'deepl-disconnect') await disconnectDeepl();
   if (action === 'translate-choose') chooseRecipeTranslation(id);
   if (action === 'thaw-item') thawItem(id);
+  if (action === 'shelf-life-use') { answerShelfLife(id, Number(button.dataset.days)); render(); }
+  if (action === 'shelf-life-keep') { answerShelfLife(id, 0); render(); }
   if (action.indexOf('stocktake-') === 0) stocktakeAction(action.slice(10), id, button);
   if (action === 'translate-recipe') await startRecipeTranslation(id, ($('#translation-target') || {}).value || recipeTranslation?.target);
   if (action === 'translation-save') saveRecipeTranslation();
@@ -564,6 +566,9 @@ $('#item-form').addEventListener('submit', (event) => {
   if (previous && previous.restockListed && minimum > 0) item.restockListed = true;
   if (form.elements.openedOn.value) item.openedOn = form.elements.openedOn.value;
   if (isFrozen(item)) item.frozenOn = form.elements.frozenOn.value || dateKey(new Date());
+  // When it came into the kitchen, for learning shelf life (0.30); an edit keeps the first date.
+  item.addedOn = previous ? previous.addedOn : dateKey(new Date());
+  if (!item.addedOn) delete item.addedOn;
   const existingIndex = state.inventory.findIndex((entry) => entry.id === item.id);
   if (existingIndex < 0) state.inventory.unshift(item); else state.inventory[existingIndex] = item;
   if (stocktake && stocktake.location && existingIndex >= 0 && !stocktake.seen.includes(item.id)) stocktake.seen.push(item.id);
@@ -624,7 +629,7 @@ function addLeftovers(recipe) {
   const location = state.locations.find((place) => FRIDGE_WORDS.test(place)) || state.locations[0];
   const date = new Date();
   date.setDate(date.getDate() + LEFTOVER_DAYS);
-  state.inventory.unshift({ id: makeId(), name: t('Leftovers: {name}', { name: recipe.name }), quantity: 1, unit: '', expiresOn: dateKey(date), expirationSource: 'estimated', location, kind: 'Food', leftovers: true });
+  state.inventory.unshift({ id: makeId(), name: t('Leftovers: {name}', { name: recipe.name }), addedOn: dateKey(new Date()), quantity: 1, unit: '', expiresOn: dateKey(date), expirationSource: 'estimated', location, kind: 'Food', leftovers: true });
 }
 
 function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration, packageDate, barcode = '' }) {
@@ -642,6 +647,7 @@ function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration,
     const item = { id: makeId(), name: shoppingItem.name, quantity: bought.quantity, unit: bought.unit, ...expiration, location, kind: 'Food' };
     if (Number(shoppingItem.keep) > 0) item.minimum = Number(shoppingItem.keep);
     if (barcode) item.barcode = barcode;
+    item.addedOn = dateKey(new Date());
     if (isFrozen(item)) item.frozenOn = dateKey(new Date());
     state.inventory.unshift(item);
   }

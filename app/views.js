@@ -206,6 +206,7 @@ function renderInventory() {
     ${renderThawPanel()}
     ${renderExpirationPanel()}
     ${renderMonthOverview()}
+    ${renderShelfLifeSuggestions()}
     <section class="section-block"><div class="section-heading"><div><h2>${t('Everything in its place')}</h2><span class="muted">${tp(rows.length, '{count} item', '{count} items')}</span></div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="${t('Find something')}" aria-label="${t('Find an item')}" /></label><select id="location-filter" aria-label="${t('Filter by location')}">${locations.map((location) => `<option value="${escapeHtml(location)}" ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location === ALL_LOCATIONS ? t(ALL_LOCATIONS) : location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="${t('Inventory display mode')}"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">${t('List')}</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">${t('Map')}</button></div></div></div>
     ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><span>${escapeHtml(item.quantity)} <small>${escapeHtml(item.unit || '')}</small></span><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
 }
@@ -232,6 +233,19 @@ function renderMonthOverview() {
   const names = [...counts].sort((first, second) => second[1] - first[1]).slice(0, 4).map(([name, count]) => (count > 1 ? `${name} ×${count}` : name));
   const summary = `${tp(used, '{count} used up', '{count} used up')} · ${tp(wasted.length, '{count} thrown away', '{count} thrown away')}`;
   return `<section class="month-overview" aria-label="${t('This month')}"><span class="eyebrow">${t('THIS MONTH')}</span><strong>${escapeHtml(summary)}</strong>${names.length ? `<span class="muted">${escapeHtml(t('Thrown away: {items}', { items: names.join(', ') }))}</span>` : ''}</section>`;
+}
+
+// Shelf lives learned from what was thrown away (shelfLifeSuggestions in app/core.js): "Use 4 days" or "Keep 7 days".
+const STORAGE_PLACES = { fridge: N_('in the fridge'), freezer: N_('in the freezer'), pantry: N_('in the cupboard') };
+const dayCount = (days) => tp(days, '{count} day', '{count} days');
+
+function renderShelfLifeSuggestions() {
+  const suggestions = shelfLifeSuggestions();
+  if (!suggestions.length) return '';
+  return `<section class="month-overview shelf-life-suggestions" aria-label="${t('Learned from your kitchen')}"><span class="eyebrow">${t('LEARNED FROM YOUR KITCHEN')}</span>${suggestions.map((suggestion) => {
+    const key = escapeHtml(suggestion.key);
+    return `<div class="shelf-life-suggestion"><div><strong>${escapeHtml(suggestion.name)} · ${t(STORAGE_PLACES[suggestion.storage])}</strong><span class="muted">${escapeHtml(t('Thrown away {times} times, usually after {days}. The estimate is {estimate}.', { times: suggestion.times, days: dayCount(suggestion.days), estimate: dayCount(suggestion.estimate) }))}</span></div><div class="shelf-life-actions"><button class="button button-small button-primary" type="button" data-action="shelf-life-use" data-id="${key}" data-days="${suggestion.days}">${escapeHtml(t('Use {days}', { days: dayCount(suggestion.days) }))}</button><button class="button button-small button-quiet" type="button" data-action="shelf-life-keep" data-id="${key}">${escapeHtml(t('Keep {days}', { days: dayCount(suggestion.estimate) }))}</button></div></div>`;
+  }).join('')}<span class="muted shelf-life-note">${t('A shorter time only changes the estimate for new items. Package dates always win.')}</span></section>`;
 }
 
 function renderInventoryMap(rows) {

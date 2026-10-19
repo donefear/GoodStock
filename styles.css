@@ -802,6 +802,12 @@ html:not(.is-standalone) .phone-only { display: none; }
 .restock-tag { margin-inline-start: 6px; padding: 1px 6px; border-radius: 10px; background: var(--mint); color: var(--green-dark); font-size: 10px; font-weight: 700; letter-spacing: .3px; vertical-align: middle; }
 .month-overview { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: -15px 0 30px; padding: 14px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
 .month-overview strong { font-size: 14px; }
+.shelf-life-suggestions { display: block; }
+.shelf-life-suggestion { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.shelf-life-suggestion strong, .shelf-life-suggestion .muted { display: block; }
+.shelf-life-suggestion .muted { margin-top: 3px; font-size: 13px; }
+.shelf-life-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.shelf-life-note { display: block; margin-top: 10px; font-size: 12px; }
 .no-flex-gap .month-overview > * { margin-inline-end: 14px; }
 .barcode-dialog video { width: 100%; max-height: 50vh; border-radius: 8px; background: #000; object-fit: cover; }
 
