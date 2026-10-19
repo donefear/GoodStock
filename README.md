@@ -134,7 +134,7 @@ Docker restarts Goodstock when it stops, but not when it hangs while still runni
 
 - **Android:** see [android/README.md](android/README.md). It runs on Android 5.0+ and builds in Docker, so no Android Studio is needed.
 - **iPhone / iPad:** see [ios/README.md](ios/README.md). It runs on iOS 16.4+ and builds on a Mac with Xcode. The project is generated with XcodeGen.
-- **Windows, macOS, Linux:** see [desktop/README.md](desktop/README.md). An Electron app (portable `.exe` or installer, `.dmg`, AppImage), built on GitHub or with `bash desktop/build.sh` in Docker.
+- **Windows, macOS, Linux:** see [desktop/README.md](desktop/README.md). An Electron app (portable `.exe` or installer, `.dmg`, AppImage), built on GitHub or with `bash desktop/build.sh` in Docker. It checks GitHub once a day for a newer version (Settings → Your data → Updates) and never installs anything by itself.
 
 The apps hold the whole kitchen on the device and need no server. A household can still share one kitchen, under **Settings → Connections**:
 
@@ -155,13 +155,13 @@ Goodstock is plain HTML, CSS and JavaScript, with no framework and no build step
 | Path | What's in it |
 |---|---|
 | `index.html`, `styles.css` | The page and its responsive light/dark styles |
-| `app/*.js` | The client: `core` (state, ingredients, quantities), `sync`, `views`, `cook`, `ideas` and `actions` |
+| `app/*.js` | The client: `core` (state, ingredients, quantities), `sync`, `views` (the other pages and dialogs), `recipes`, `cook`, `ideas` and `actions` |
 | `server.mjs` | Static files, the shared-state API with live updates, and proxies for Mealie, DeepL, recipe import and TheMealDB |
 | `i18n.js`, `lang/*.js` | Interface translations, keyed by the English text |
 | `ingredients.json` | The multilingual ingredient catalog with shelf-life estimates |
 | `kitchen-reference.js`, `kitchen-tools.js` | Converter data, the cooking-terms glossary and kitchen-tool detection |
 | `recipe-import.mjs`, `mealie.mjs`, `deepl.mjs` | Code shared by the server and the phone apps |
-| `android/`, `ios/` | The phone apps |
+| `android/`, `ios/`, `desktop/` | The phone apps and the desktop app |
 | `tests/` | The test suite |
 
 ### Tests

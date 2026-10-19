@@ -1,11 +1,120 @@
 GOODSTOCK – SUGGESTIONS FOR WHAT TO CHANGE OR ADD
-First list written 2026-10-03, after v2.1.2. New list written 2026-10-18, after v3.0.2.
+First list written 2026-10-03, after v2.1.2. Second list written 2026-10-18, after v3.0.2.
+More ideas added 2026-10-19, after v3.2.16.
 Ordered roughly by how much I'd recommend doing them first. Each item says why.
-Finished items are marked [x] DONE, paused ones [ ] ON HOLD. The new list is numbered from 0.1 so it doesn't clash with the old numbers.
+Finished items are marked [x] DONE, paused ones [ ] ON HOLD. The second list is numbered from 0.1 so it doesn't
+clash with the first list's numbers; the newest ideas carry on from 0.26.
 
 
 =====================================================================================================================
-NEW SUGGESTIONS (after v3.0.2)
+MORE IDEAS (after v3.2.16)
+=====================================================================================================================
+Everything in the second list is done except the two that need people or hardware (0.4, 0.5, both on hold).
+These came from going through the app again. Top pick: 0.26, because it fixes a wrong answer the app gives today.
+
+
+EVERYDAY USE
+------------
+
+0.26 The shopping list counts amounts.
+    "Make the shopping list" (generateShopping in app/actions.js) leaves out every ingredient that is in stock at
+    all: a recipe that needs 500 g flour adds nothing when there are 100 g in the cupboard, and two meals that each
+    need 4 eggs don't add up against the 6 in the fridge. Add up the week's not-yet-cooked meals per ingredient
+    (deductionAmount already converts between units), compare with what is in stock, and list only the difference
+    ("Flour 400 g · for Pancakes, Bread"). Where the units can't be compared ("1 bunch" against "200 g") keep
+    today's behaviour, so the list never gets worse.
+
+0.27 Thaw reminders the evening before.
+    Frozen food has a "Frozen on" date and the week has planned meals, but nothing connects them. When tomorrow's
+    meal needs something that is only in the freezer, show "Move the chicken to the fridge" in Use soon the evening
+    before, and as a reminder notification where those already work (phone apps, HTTPS browsers). It's the one step
+    that most often ruins a planned meal.
+
+0.28 "What can I make with it?" from Use soon.
+    Use soon lists what is about to go off, and the week planner already puts recipes that use it first, but only
+    when you're planning. A button on each Use soon item could open the Recipes page searched for that ingredient,
+    own recipes first, then Recipe ideas (TheMealDB) for the same ingredient, so the answer is one tap from the
+    warning.
+
+0.29 A quick stocktake, one place at a time.
+    An inventory app is only as good as its counts, and they drift: things get used without anyone tapping −. A
+    "Check the fridge" mode would show one location's items as big rows with "Still there", "Less" (edit the
+    amount) and "Gone" (with the used up / thrown away question), and remember when each place was last checked
+    ("Freezer: checked 5 weeks ago"). Five minutes once a week keeps everything else (Use soon, the shopping list,
+    "in stock") right.
+
+0.30 Learn shelf life from what gets thrown away.
+    From 0.10. state.log already knows when something was thrown away and how long it had been in the kitchen. When
+    the same thing keeps being thrown away before its estimate (bread binned after 4 days, estimate 7), suggest the
+    shorter time for that item, shown as "your kitchen: 4 days" and used for new items once accepted. Only suggest
+    after a few times, and never lengthen an estimate on its own: that's the food-safety side.
+
+
+PHONE AND DESKTOP APPS
+----------------------
+
+0.31 Android home-screen widget.
+    The quickest look at the kitchen without opening the app: "Use soon: milk (tomorrow), spinach" and "Shopping:
+    7 items", tapping through to the right page. The app already hands Android the use-soon list for the daily
+    reminders (setReminders), so the widget can read the same list, and it works with the app closed.
+
+0.32 Print from the Android app.
+    From 0.14. The browser and the desktop app print recipes and the shopping list; the phone apps' web views can't.
+    Android's PrintManager can print a WebView, so one bridge call (print) would bring the same print styles to the
+    phone, including printing to PDF to send to someone. iOS has the same through UIPrintInteractionController.
+
+0.33 Photos for recipes imported in the phone apps.
+    From 0.13. The server version downloads an imported recipe's photo and keeps a small copy inside the recipe; the
+    phone apps keep only the web address, because their bridges fetch text. A bridge call that returns an image as
+    a data URL would let the page shrink it the same way, so the photo also shows offline and in backups.
+
+0.34 Share one recipe.
+    Today a recipe only leaves the kitchen inside a whole backup, or by its original web link. "Share recipe" on the
+    recipe page could send it as text (readable anywhere, and parseRecipeText already reads that text back in) plus
+    a small .goodstock-recipe file that Import takes as it is, photo and steps included. Handy for sending a family
+    recipe to someone with their own Goodstock.
+
+0.35 Desktop: keep hosting with the window closed.
+    On Android, hosting keeps running in the background (0.1). On the desktop, closing the window quits the app and
+    the phones lose their home server. While hosting, closing the window could keep Goodstock in the system tray
+    ("Goodstock is still sharing your kitchen", with Open and Quit), and optionally start with the computer.
+
+0.36 GitHub-built APKs that update your own install, and update checks on Android.
+    From 0.25. The APKs GitHub builds are signed with a different key than yours, so they can't update the app
+    you installed. With the release key as a GitHub secret (only with your OK; it's never committed) every GitHub
+    APK would install as an update, and the same daily update check as the desktop app could point to it.
+
+
+SERVER VERSION
+--------------
+
+0.37 A small summary for Home Assistant and dashboards.
+    A read-only /api/summary (use soon with dates, shopping list count, today's meals) that the household PIN's
+    tokens can read. Home Assistant's REST sensor could then show "3 things to use soon" on a wall tablet or
+    announce tonight's dinner, without anyone writing code for the app's full state.
+
+0.38 Copy the server backups somewhere else.
+    The daily backups (0.18) sit in /data/backups, on the same disk and volume as the kitchen itself, so a dead disk
+    or a deleted volume takes both. An optional second mount (BACKUP_COPY_DIR, for example a NAS share) that gets a
+    copy of each backup costs one line in Compose and covers that.
+
+
+KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
+--------------------------------------------------
+
+0.39 A quick check for code the kitchen tablet can't run.
+    The Chromium 80 run (0.22) only catches what it opens. A static check in `npm test` that parses every app file
+    as ES2020 (acorn) and looks for the methods Chrome 81 lacks (replaceAll, .at(), Object.hasOwn, structuredClone,
+    CSS inset) would also catch code in rarely used paths, in a second instead of a minute.
+
+0.40 Accessibility check in the tests.
+    The app is meant for a kitchen tablet, wet hands and bigger text. Running axe-core on every page and the main
+    dialogs (light, dark and large text) would catch missing labels, low contrast and buttons that are too small,
+    and keep them from coming back.
+
+
+=====================================================================================================================
+SECOND LIST (after v3.0.2)
 =====================================================================================================================
 
 
@@ -52,9 +161,9 @@ EVERYDAY USE
 [x] DONE 0.6 Search in the inventory and in recipes. (v3.2.0)
     Correction: both pages already had a search field ("Find something", "Search recipes or ingredients"). I missed
     them because those pages are built in app/views.js, not index.html. What was missing was the catalog: search
-    was plain text only. Now a search also goes through the ingredient catalog in all 13 languages, so "harina" or
-    "farine" finds Flour, "Eier" or "яйц" finds Eggs, and "salsa de soja" finds a recipe with soy sauce. Catalog
-    matches start at three letters (one for Chinese and Japanese).
+    was plain text only. Now a search also goes through the ingredient catalog in all 13 languages (15 since
+    v3.2.13), so "harina" or "farine" finds Flour, "Eier" or "яйц" finds Eggs, and "salsa de soja" finds a recipe
+    with soy sauce. Catalog matches start at three letters (one for Chinese and Japanese).
 
 [x] DONE 0.7 Staples: "always keep at least …". (v3.2.0)
     The item dialog has "Keep at least". Below that amount (after −, "Cooked ✓" or an edit) the item goes onto the
@@ -76,7 +185,7 @@ EVERYDAY USE
 [x] DONE 0.10 Used up or thrown away? A small waste overview. (v3.2.0)
     "Remove item" asks "Why is it gone?": Used up, Thrown away, or Just remove. A "This month" card on the
     Inventory page then shows e.g. "1 used up · 2 thrown away · Thrown away: Bread ×2". The answers are kept for a
-    year in the kitchen (state.log), synced like the rest. Not done yet: using them to tune the expiry estimates.
+    year in the kitchen (state.log), synced like the rest. Using them to tune the expiry estimates → 0.30.
 
 [x] DONE 0.11 Barcodes in "Put away", and scan to use up. (v3.2.1)
     "Put it away" has Scan barcode: it fills in the pack size and keeps the barcode with the item. When the catalog
@@ -98,14 +207,14 @@ EVERYDAY USE
     photo store would have needed its own sync for each way of sharing (server, phone joined to a server, hosting,
     shared folder) and for backups; inside the recipe it works offline and everywhere. The cost is a larger
     kitchen file, which stays fine for a few dozen photos. Imports in the phone apps keep the photo's web address,
-    since the phone bridges only fetch text.
+    since the phone bridges only fetch text → 0.33.
 
 [x] DONE 0.14 Print a recipe or the shopping list. (v3.2.4)
     Print on the recipe page and the shopping list. The @media print section at the end of styles.css leaves out
     menus and buttons, prints light even in dark mode, and adds a small "Goodstock · date" footer (with the source
     link for recipes). The recipe keeps its photo, ingredients, tools and numbered steps with amounts; the list
     keeps only what is still unchecked, in its groups, with tick boxes. Not in the phone apps: their web views
-    can't print (Android would need its PrintManager through the bridge).
+    can't print (Android would need its PrintManager through the bridge) → 0.32.
 
 [x] DONE 0.15 Faster week planning. (v3.2.5)
     "Repeat last week" (shown when last week has meals that aren't planned again yet) plans them on the same
@@ -198,6 +307,7 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     added as repository secrets (desktop/README.md, "Signed builds"); without them nothing changes. Not tried with a
     real certificate, as there is none yet. The desktop app checks GitHub once a day for a newer release: Settings →
     Your data → Updates shows it with a download link and the Settings button gets a dot. Nothing installs by itself.
+    Android too → 0.36.
 
 
 ALSO DONE SINCE THE FIRST LIST (not in it)
