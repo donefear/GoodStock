@@ -269,6 +269,7 @@ function renderRecipePage() {
     mealieRecipeLink(recipe, 'text-button', t('Open in Mealie')),
     renderRecipeTranslation(recipe),
     canPrint() ? `<button class="text-button" type="button" data-action="print">${t('Print')}</button>` : '',
+    `<button class="text-button" type="button" data-action="share-recipe" data-id="${escapeHtml(recipe.id)}">${t('Share')}</button>`,
     `<button class="text-button" type="button" data-action="edit-recipe" data-id="${escapeHtml(recipe.id)}">${t('Edit')}</button>`,
     `<button class="text-button recipe-delete-button" type="button" data-action="delete-recipe" data-id="${escapeHtml(recipe.id)}">${t('Delete')}</button>`,
   ].filter(Boolean).join('');
@@ -291,6 +292,7 @@ function renderRecipePage() {
     <p class="recipe-cooked-note">${escapeHtml(cookedText(saved.id))}</p>
     ${recipePhoto(recipe, 'recipe-page-photo')}
     ${renderTranslationPanel(recipe)}
+    ${renderSharePanel(recipe)}
     <div class="recipe-page">
       <section class="section-block recipe-page-side"><div class="section-heading"><div><h2>${t('Ingredients')}</h2><span class="muted">${ingredients.length ? (missing.length ? tp(missing.length, '{count} missing', '{count} missing') : t('All in stock')) : ''}</span></div>${ingredients.length ? servingsControl : ''}</div>${ingredientList}</section>
       <section class="section-block recipe-page-main"><div class="section-heading"><div><h2>${t('Method')}</h2><span class="muted">${number ? tp(number, '{count} step', '{count} steps') : ''}</span></div></div>${toolRow}${method}</section>
@@ -481,6 +483,81 @@ function renderTranslationPanel(recipe) {
       </div>
       <p class="field-hint">${t('Translated by DeepL. Amounts and steps keep their order; check it, then save it as a new recipe. The original stays as it is.')}</p>
     </section>`;
+}
+
+// Sharing one recipe (0.34): as text anyone can read (Import → "Fill in from text" reads it back), or as a small
+// .goodstock-recipe file that Import opens as it is, photo and steps included.
+const RECIPE_FILE_EXTENSION = '.goodstock-recipe';
+let recipeSharing = null; // { recipeId, status }
+
+function recipeShareText(recipe) {
+  let number = 0;
+  const steps = recipeInstructions(recipe).map((line) => (isStepHeading(line) ? `\n${line}` : `${++number}. ${line}`));
+  const parts = [recipe.name, recipe.description || '', '', t('Ingredients'), ...(recipe.ingredients || []).map((line) => `- ${line}`), '', t('Method'), ...steps];
+  if (/^https?:\/\//i.test(recipe.sourceUrl || '')) parts.push('', recipe.sourceUrl);
+  return parts.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function recipeFileContent(recipe) {
+  const shared = { name: recipe.name, description: recipe.description || '', ingredients: recipe.ingredients || [], instructions: recipeInstructions(recipe) };
+  if (recipe.servings) shared.servings = recipe.servings;
+  if (safePhoto(recipe.photo)) shared.photo = recipe.photo;
+  if (/^https?:\/\//i.test(recipe.sourceUrl || '')) shared.sourceUrl = recipe.sourceUrl;
+  return JSON.stringify({ app: 'goodstock', kind: 'recipe', version: 1, recipe: shared }, null, 1);
+}
+
+// A shared recipe from a file or pasted text, or null when it isn't one.
+function readRecipeFile(text) {
+  try {
+    const data = JSON.parse(text);
+    const recipe = data && data.app === 'goodstock' && data.kind === 'recipe' && data.recipe;
+    if (!recipe || !recipe.name) return null;
+    const lines = (value) => (Array.isArray(value) ? value.map(String).filter(Boolean) : []);
+    return { name: String(recipe.name), description: String(recipe.description || ''), ingredients: lines(recipe.ingredients), instructions: lines(recipe.instructions), servings: Number(recipe.servings) || undefined, photo: safePhoto(recipe.photo) ? recipe.photo : '', sourceUrl: /^https?:\/\//i.test(recipe.sourceUrl || '') ? recipe.sourceUrl : '' };
+  } catch { return null; }
+}
+
+const recipeFileName = (recipe) => `${String(recipe.name).replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 60) || 'recipe'}${RECIPE_FILE_EXTENSION}`;
+
+async function shareRecipe(id, how) {
+  const recipe = recipeById(id);
+  if (!recipe) return;
+  let status = '';
+  try {
+    if (how === 'text') {
+      const text = recipeShareText(recipe);
+      if (STANDALONE) nativeApp.share(text);
+      else if (navigator.share) await navigator.share({ title: recipe.name, text });
+      else { await navigator.clipboard.writeText(text); status = t('Copied. Paste it into a message.'); }
+    } else {
+      const name = recipeFileName(recipe);
+      const content = recipeFileContent(recipe);
+      if (STANDALONE) { await nativeCall('saveFile', name, content); status = t('Saved.'); }
+      else {
+        const file = new File([content], name, { type: 'application/json' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ title: recipe.name, files: [file] });
+        else {
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(file);
+          link.download = name;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+          status = t('Downloaded {name}.', { name });
+        }
+      }
+    }
+  } catch (error) {
+    if (error && error.name === 'AbortError') return;
+    status = error && error.message === 'cancelled' ? '' : t('Could not share the recipe.');
+  }
+  recipeSharing = { recipeId: id, status };
+  render();
+}
+
+function renderSharePanel(recipe) {
+  if (!recipeSharing || recipeSharing.recipeId !== recipe.id) return '';
+  const id = escapeHtml(recipe.id);
+  return `<section class="translation-panel share-panel"><p class="translation-status">${t('Share this recipe')}</p><p class="field-hint">${t('As text it can be read anywhere; the recipe file opens in Goodstock with its photo and steps (New recipe → Import).')}</p><div class="translation-actions"><button class="button button-small button-primary" type="button" data-action="share-recipe-text" data-id="${id}">${t('Send as text')}</button><button class="button button-small button-outline" type="button" data-action="share-recipe-file" data-id="${id}">${t('Save the recipe file')}</button><button class="button button-small button-quiet" type="button" data-action="share-recipe-close">${t('Close')}</button></div>${recipeSharing.status ? `<p class="field-hint" role="status">${escapeHtml(recipeSharing.status)}</p>` : ''}</section>`;
 }
 
 // Settings: the DeepL key, tested before it is saved.

@@ -202,6 +202,10 @@ document.addEventListener('click', async (event) => {
   if (action === 'deepl-disconnect') await disconnectDeepl();
   if (action === 'translate-choose') chooseRecipeTranslation(id);
   if (action === 'thaw-item') thawItem(id);
+  if (action === 'share-recipe') { recipeSharing = { recipeId: id, status: '' }; render(); }
+  if (action === 'share-recipe-text') await shareRecipe(id, 'text');
+  if (action === 'share-recipe-file') await shareRecipe(id, 'file');
+  if (action === 'share-recipe-close') { recipeSharing = null; render(); }
   if (action === 'shelf-life-use') { answerShelfLife(id, Number(button.dataset.days)); render(); }
   if (action === 'shelf-life-keep') { answerShelfLife(id, 0); render(); }
   if (action.indexOf('stocktake-') === 0) stocktakeAction(action.slice(10), id, button);
@@ -402,6 +406,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'recipe-photo-pick') $('#recipe-photo-file').click();
   if (action === 'recipe-photo-remove') setEditorPhoto('');
   if (action === 'recipe-import-text') {
+    const shared = readRecipeFile($('#recipe-edit-form').elements.importText.value);
+    if (shared) { fillRecipeEditor(shared, t('Recipe file read. Check it, then save.')); return; }
     const parsed = parseRecipeText($('#recipe-edit-form').elements.importText.value);
     parsed.instructions = tidyImportedSteps(parsed.instructions);
     fillRecipeEditor(parsed, parsed.ingredients.length || parsed.instructions.length
@@ -446,6 +452,13 @@ document.addEventListener('input', (event) => {
 });
 
 document.addEventListener('change', async (event) => {
+  if (event.target.id === 'recipe-file') {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    const shared = file ? readRecipeFile(await file.text()) : null;
+    if (file) fillRecipeEditor(shared || {}, shared ? t('Recipe file read. Check it, then save.') : t('That is not a Goodstock recipe file.'));
+    return;
+  }
   if (event.target.id === 'updates-daily') {
     saveUpdateSettings({ daily: event.target.checked });
     if (event.target.checked) await checkForUpdates();

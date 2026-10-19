@@ -119,7 +119,17 @@ public class MainActivity extends Activity {
                 if (fileChooserCallback != null) fileChooserCallback.onReceiveValue(null);
                 fileChooserCallback = callback;
                 try {
-                    startActivityForResult(params.createIntent(), REQUEST_FILE_CHOOSER);
+                    // Android filters by MIME type only: a page that asks for a file extension (".goodstock-recipe")
+                    // gets every file, or the shared recipe files would be greyed out.
+                    Intent intent = params.createIntent();
+                    for (String type : params.getAcceptTypes()) {
+                        if (type != null && type.trim().startsWith(".")) {
+                            intent.setType("*/*");
+                            intent.removeExtra(Intent.EXTRA_MIME_TYPES);
+                            break;
+                        }
+                    }
+                    startActivityForResult(intent, REQUEST_FILE_CHOOSER);
                 } catch (Exception e) {
                     fileChooserCallback = null;
                     return false;

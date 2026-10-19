@@ -74,11 +74,13 @@ PHONE AND DESKTOP APPS
     phone apps keep only the web address, because their bridges fetch text. A bridge call that returns an image as
     a data URL would let the page shrink it the same way, so the photo also shows offline and in backups.
 
-0.34 Share one recipe.
-    Today a recipe only leaves the kitchen inside a whole backup, or by its original web link. "Share recipe" on the
-    recipe page could send it as text (readable anywhere, and parseRecipeText already reads that text back in) plus
-    a small .goodstock-recipe file that Import takes as it is, photo and steps included. Handy for sending a family
-    recipe to someone with their own Goodstock.
+[x] DONE 0.34 Share one recipe. (v3.3.8)
+    The recipe page has "Share": "Send as text" (the phone's share sheet, the browser's share menu, or copied for
+    pasting) gives the name, ingredients and numbered steps under translated headings that "Fill in from text" reads
+    back in every language; "Save the recipe file" saves a small "Name.goodstock-recipe" file (shared through the
+    share sheet where the browser can share files, otherwise downloaded) with the photo, servings, steps and link.
+    New recipe → Import → "Open a recipe file" opens it (pasting its text works too). The Android app's file picker
+    now shows every file when a page asks for a file type it doesn't know, so these files aren't greyed out.
 
 0.35 Desktop: keep hosting with the window closed.
     On Android, hosting keeps running in the background (0.1). On the desktop, closing the window quits the app and

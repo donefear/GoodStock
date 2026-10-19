@@ -111,6 +111,7 @@
           <label>Recipe link<span class="recipe-import-row"><input name="importUrl" type="url" inputmode="url" placeholder="https://…" autocomplete="off" /><button class="button button-outline" type="button" data-action="recipe-import-url">Fetch</button></span><span class="field-hint">Works with most recipe websites. The app host needs internet access.</span></label>
           <label>Or paste the recipe<textarea name="importText" rows="5" placeholder="Paste the title, the ingredients and the steps. Headings like “Ingredients” and “Instructions” help."></textarea></label>
           <button class="button button-outline" type="button" data-action="recipe-import-text">Fill in from text</button>
+          <label class="button button-outline recipe-file-button">Open a recipe file<input type="file" id="recipe-file" accept=".goodstock-recipe,.json,application/json" hidden /></label>
           <p class="recipe-import-status" id="recipe-import-status" role="status" aria-live="polite"></p>
         </details>
         <input type="hidden" name="recipeId" />
@@ -214,7 +215,7 @@
         <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.3.7 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v3.3.8 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 
