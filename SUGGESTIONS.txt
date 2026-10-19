@@ -136,10 +136,14 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     Promise.any, Intl.Segmenter, WeakRef…); and styles.css must not use inset. The test also plants a ??= and a
     .replaceAll() to make sure the check still notices them. acorn is a new dev dependency; the app has no new runtime one.
 
-0.40 Accessibility check in the tests.
-    The app is meant for a kitchen tablet, wet hands and bigger text. Running axe-core on every page and the main
-    dialogs (light, dark and large text) would catch missing labels, low contrast and buttons that are too small,
-    and keep them from coming back.
+[x] DONE 0.40 Accessibility check in the tests. (v3.3.17)
+    tests/e2e/accessibility.mjs runs axe-core (a new dev dependency) on every page, the Tools tabs, the recipe page, the
+    item dialog, the recipe editor and the three Settings tabs, in light, dark and the largest text size, and fails on
+    any WCAG 2.1 A/AA problem. Labels, roles and names were already fine; colour contrast was not (around 60 places, all
+    small grey text and a few warm accents). The light theme's greys were darkened just enough for 4.5:1 on the darkest
+    background each sits on, and then made var(--muted), so dark mode now uses its own lighter muted colour. Dark mode
+    also got dark text on its light-green primary buttons and lighter warm accents. All 39 views now pass.
+    Not covered yet: cook mode, the scan and put-away dialogs, and touch-target sizes (axe doesn't check those at AA).
 
 
 =====================================================================================================================
