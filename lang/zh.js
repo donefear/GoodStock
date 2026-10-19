@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Start with the computer, in the background": "随电脑启动，在后台运行",
   "Closing the window keeps sharing from the tray.": "关闭窗口后会在托盘中继续共享。",
   "On the release page, download the .apk file and open it to install the update.": "在发布页面下载 .apk 文件并打开即可安装更新。",
+  "Every backup is also copied to a second folder.": "每份备份也会复制到第二个文件夹。",
+  "Copying to the second folder failed: {reason}": "复制到第二个文件夹失败：{reason}",
 };

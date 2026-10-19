@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.de = {
   "Start with the computer, in the background": "Mit dem Computer starten, im Hintergrund",
   "Closing the window keeps sharing from the tray.": "Wenn du das Fenster schließt, wird im Infobereich weiter geteilt.",
   "On the release page, download the .apk file and open it to install the update.": "Lade auf der Release-Seite die .apk-Datei herunter und öffne sie, um das Update zu installieren.",
+  "Every backup is also copied to a second folder.": "Jedes Backup wird auch in einen zweiten Ordner kopiert.",
+  "Copying to the second folder failed: {reason}": "Kopieren in den zweiten Ordner fehlgeschlagen: {reason}",
 };

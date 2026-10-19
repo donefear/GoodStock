@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Start with the computer, in the background": "コンピューターと一緒にバックグラウンドで起動",
   "Closing the window keeps sharing from the tray.": "ウィンドウを閉じてもトレイから共有を続けます。",
   "On the release page, download the .apk file and open it to install the update.": "リリースページで .apk ファイルをダウンロードして開くと、アップデートをインストールできます。",
+  "Every backup is also copied to a second folder.": "バックアップは 2 つ目のフォルダーにもコピーされます。",
+  "Copying to the second folder failed: {reason}": "2 つ目のフォルダーへのコピーに失敗しました：{reason}",
 };

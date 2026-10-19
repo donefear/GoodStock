@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Start with the computer, in the background": "ابدأ مع الكمبيوتر في الخلفية",
   "Closing the window keeps sharing from the tray.": "إغلاق النافذة يُبقي المشاركة من علبة النظام.",
   "On the release page, download the .apk file and open it to install the update.": "من صفحة الإصدار، نزّل ملف ‎.apk وافتحه لتثبيت التحديث.",
+  "Every backup is also copied to a second folder.": "تُنسخ كل نسخة احتياطية أيضًا إلى مجلد ثانٍ.",
+  "Copying to the second folder failed: {reason}": "تعذّر النسخ إلى المجلد الثاني: {reason}",
 };

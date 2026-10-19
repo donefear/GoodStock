@@ -13,11 +13,15 @@ services:
       MEALIE_API_KEY: "${MEALIE_API_KEY:-}"
       # Optional: browser-facing Mealie address for "open in Mealie" links (defaults to MEALIE_URL).
       MEALIE_PUBLIC_URL: "${MEALIE_PUBLIC_URL:-}"
+      # Optional: a second copy of the server backups (README → Features → Backups), for example on a NAS share. Set
+      # BACKUP_COPY_PATH to a folder on the Docker host; it is mounted at /backup-copy below.
+      BACKUP_COPY_DIR: "${BACKUP_COPY_PATH:+/backup-copy}"
     # Watched by the optional autoheal service below.
     labels:
       autoheal-goodstock: "true"
     volumes:
       - goodstock-data:/data
+      - ${BACKUP_COPY_PATH:-goodstock-backup-copy}:/backup-copy
 
   # Optional HTTPS (README → HTTPS): turns on voice commands, browser notifications, barcode scanning in phone
   # browsers and the offline app. Starts only with the "https" profile: COMPOSE_PROFILES=https (in Portainer, a
@@ -56,4 +60,6 @@ services:
 
 volumes:
   goodstock-data:
+  # Only used when BACKUP_COPY_PATH is not set (then nothing is copied there).
+  goodstock-backup-copy:
   goodstock-https:

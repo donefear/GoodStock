@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "Start with the computer, in the background": "Uruchamiaj z komputerem, w tle",
   "Closing the window keeps sharing from the tray.": "Zamknięcie okna nie przerywa udostępniania z zasobnika.",
   "On the release page, download the .apk file and open it to install the update.": "Na stronie wydania pobierz plik .apk i otwórz go, aby zainstalować aktualizację.",
+  "Every backup is also copied to a second folder.": "Każda kopia zapasowa trafia też do drugiego folderu.",
+  "Copying to the second folder failed: {reason}": "Nie udało się skopiować do drugiego folderu: {reason}",
 };

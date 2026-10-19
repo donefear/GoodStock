@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import QRCode from 'qrcode';
 import { extractRecipeFromHtml, NO_RECIPE_MESSAGE } from './recipe-import.mjs';
@@ -216,8 +216,37 @@ async function writeBackup(name, state) {
   const path = join(backupsDirectory, name);
   await writeFile(`${path}.tmp`, JSON.stringify({ app: 'goodstock', backupVersion: 1, exportedAt: new Date().toISOString(), state }), 'utf8');
   await rename(`${path}.tmp`, path);
-  const names = (await readdir(backupsDirectory)).filter((file) => BACKUP_NAME.test(file)).sort(byAge);
-  for (const old of names.slice(0, Math.max(0, names.length - BACKUP_KEEP))) await unlink(join(backupsDirectory, old)).catch(() => {});
+  await pruneBackups(backupsDirectory);
+  await copyBackups();
+}
+
+async function pruneBackups(directory) {
+  const names = (await readdir(directory)).filter((file) => BACKUP_NAME.test(file)).sort(byAge);
+  for (const old of names.slice(0, Math.max(0, names.length - BACKUP_KEEP))) await unlink(join(directory, old)).catch(() => {});
+}
+
+// A second copy of the backups (0.38), for example on a NAS share mounted into the container: BACKUP_COPY_DIR. Every
+// backup the copy folder doesn't have yet goes there (so it catches up after being unreachable), and it keeps the
+// newest BACKUP_KEEP too. A failing copy never stops a save; Settings shows it.
+const backupCopyDirectory = String(process.env.BACKUP_COPY_DIR || '').trim();
+let backupCopyStatus = { ok: true, error: '', at: '' };
+
+async function copyBackups() {
+  if (!backupCopyDirectory) return;
+  try {
+    await mkdir(backupCopyDirectory, { recursive: true });
+    const there = new Set(await readdir(backupCopyDirectory));
+    for (const name of (await readdir(backupsDirectory)).filter((file) => BACKUP_NAME.test(file))) {
+      if (there.has(name)) continue;
+      await copyFile(join(backupsDirectory, name), join(backupCopyDirectory, `${name}.tmp`));
+      await rename(join(backupCopyDirectory, `${name}.tmp`), join(backupCopyDirectory, name));
+    }
+    await pruneBackups(backupCopyDirectory);
+    backupCopyStatus = { ok: true, error: '', at: new Date().toISOString() };
+  } catch (error) {
+    backupCopyStatus = { ok: false, error: error.code || error.message, at: new Date().toISOString() };
+    console.error('Could not copy the backups to BACKUP_COPY_DIR:', error.message);
+  }
 }
 
 async function backupBeforeSave(next) {
@@ -544,7 +573,7 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/backups') {
-      sendJson(response, 200, { backups: await listBackups() });
+      sendJson(response, 200, { backups: await listBackups(), copy: backupCopyDirectory ? backupCopyStatus : null });
       return;
     }
     const backupMatch = /^\/api\/backups\/([^/]+)$/.exec(url.pathname);
@@ -782,6 +811,7 @@ const server = createServer(async (request, response) => {
 });
 
 await loadKitchen();
+await copyBackups();
 await loadMealieConfig();
 await loadDeeplConfig();
 await loadAuth();

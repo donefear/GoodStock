@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Start with the computer, in the background": "Запускать вместе с компьютером, в фоне",
   "Closing the window keeps sharing from the tray.": "Если закрыть окно, раздача продолжится из трея.",
   "On the release page, download the .apk file and open it to install the update.": "На странице выпуска скачайте файл .apk и откройте его, чтобы установить обновление.",
+  "Every backup is also copied to a second folder.": "Каждая резервная копия также копируется во вторую папку.",
+  "Copying to the second folder failed: {reason}": "Не удалось скопировать во вторую папку: {reason}",
 };

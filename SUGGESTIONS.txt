@@ -117,10 +117,12 @@ SERVER VERSION
     "Authorization: Bearer …". README → "Home Assistant and dashboards" has a ready REST sensor (use soon, shopping list,
     dinner tonight). Read-only; it never changes the kitchen.
 
-0.38 Copy the server backups somewhere else.
-    The daily backups (0.18) sit in /data/backups, on the same disk and volume as the kitchen itself, so a dead disk
-    or a deleted volume takes both. An optional second mount (BACKUP_COPY_DIR, for example a NAS share) that gets a
-    copy of each backup costs one line in Compose and covers that.
+[x] DONE 0.38 Copy the server backups somewhere else. (v3.3.15)
+    One Compose setting, BACKUP_COPY_PATH (a folder on the Docker host, for example a mounted NAS share), is mounted at
+    /backup-copy and turns on BACKUP_COPY_DIR. Every server backup is then copied there as well, the newest 14 are kept
+    there too, and on each backup and at start the server copies whatever the folder missed (a NAS that was off). A
+    folder that can't be used never stops a save; Settings → Your data → Server backups says "Every backup is also
+    copied to a second folder" or why copying failed. Without the setting nothing changes (an unused volume stands in).
 
 
 KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)

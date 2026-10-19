@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Start with the computer, in the background": "Pornește odată cu computerul, în fundal",
   "Closing the window keeps sharing from the tray.": "Dacă închizi fereastra, partajarea continuă din bara de sistem.",
   "On the release page, download the .apk file and open it to install the update.": "Pe pagina versiunii, descarcă fișierul .apk și deschide-l ca să instalezi actualizarea.",
+  "Every backup is also copied to a second folder.": "Fiecare copie de rezervă e copiată și într-un al doilea dosar.",
+  "Copying to the second folder failed: {reason}": "Copierea în al doilea dosar nu a reușit: {reason}",
 };

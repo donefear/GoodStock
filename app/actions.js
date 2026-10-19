@@ -877,14 +877,18 @@ async function fillServerBackups() {
   if (STANDALONE) return;
   const list = $('#server-backups');
   try {
-    const { backups } = await (await fetch('/api/backups')).json();
-    list.innerHTML = backups.length
+    const { backups, copy } = await (await fetch('/api/backups')).json();
+    // BACKUP_COPY_DIR on the server (0.38): a second copy, for example on a NAS.
+    const copyLine = copy
+      ? `<li class="muted backup-copy-line">${copy.ok ? t('Every backup is also copied to a second folder.') : escapeHtml(t('Copying to the second folder failed: {reason}', { reason: copy.error }))}</li>`
+      : '';
+    list.innerHTML = copyLine + (backups.length
       ? backups.map((backup) => {
         const when = backup.savedAt ? formatDate(new Date(backup.savedAt), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : backup.name;
         const what = t('{items} inventory items and {recipes} recipes', { items: backup.inventory, recipes: backup.recipes });
         return `<li><span><b>${escapeHtml(when)}</b>${backup.safety ? ` <i>${t('before a big change')}</i>` : ''}<br/>${escapeHtml(what)}</span><button class="button button-small button-quiet" type="button" data-action="restore-server-backup" data-name="${escapeHtml(backup.name)}">${t('Restore')}</button></li>`;
       }).join('')
-      : `<li class="muted">${t('No backups yet. The first one is made with the first change of the day.')}</li>`;
+      : `<li class="muted">${t('No backups yet. The first one is made with the first change of the day.')}</li>`);
   } catch {
     list.innerHTML = `<li class="muted">${t('Server backups are unavailable while offline.')}</li>`;
   }

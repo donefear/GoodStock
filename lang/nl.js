@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Start with the computer, in the background": "Met de computer mee opstarten, op de achtergrond",
   "Closing the window keeps sharing from the tray.": "Als je het venster sluit, blijft het delen vanuit het systeemvak.",
   "On the release page, download the .apk file and open it to install the update.": "Download op de releasepagina het .apk-bestand en open het om de update te installeren.",
+  "Every backup is also copied to a second folder.": "Elke back-up wordt ook naar een tweede map gekopieerd.",
+  "Copying to the second folder failed: {reason}": "Kopiëren naar de tweede map is mislukt: {reason}",
 };

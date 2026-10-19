@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Start with the computer, in the background": "Bilgisayarla birlikte arka planda başlat",
   "Closing the window keeps sharing from the tray.": "Pencereyi kapatınca paylaşım sistem tepsisinden sürer.",
   "On the release page, download the .apk file and open it to install the update.": "Sürüm sayfasından .apk dosyasını indirip açarak güncellemeyi yükleyin.",
+  "Every backup is also copied to a second folder.": "Her yedek ikinci bir klasöre de kopyalanır.",
+  "Copying to the second folder failed: {reason}": "İkinci klasöre kopyalanamadı: {reason}",
 };

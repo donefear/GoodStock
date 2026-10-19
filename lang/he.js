@@ -1013,4 +1013,6 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Start with the computer, in the background": "להפעיל עם המחשב, ברקע",
   "Closing the window keeps sharing from the tray.": "סגירת החלון ממשיכה את השיתוף ממגש המערכת.",
   "On the release page, download the .apk file and open it to install the update.": "בעמוד הגרסה, הורידו את קובץ ה־‎.apk ופתחו אותו כדי להתקין את העדכון.",
+  "Every backup is also copied to a second folder.": "כל גיבוי מועתק גם לתיקייה שנייה.",
+  "Copying to the second folder failed: {reason}": "ההעתקה לתיקייה השנייה נכשלה: {reason}",
 };
