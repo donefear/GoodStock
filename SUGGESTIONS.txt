@@ -64,10 +64,12 @@ PHONE AND DESKTOP APPS
     7 items", tapping through to the right page. The app already hands Android the use-soon list for the daily
     reminders (setReminders), so the widget can read the same list, and it works with the app closed.
 
-0.32 Print from the Android app.
-    From 0.14. The browser and the desktop app print recipes and the shopping list; the phone apps' web views can't.
-    Android's PrintManager can print a WebView, so one bridge call (print) would bring the same print styles to the
-    phone, including printing to PDF to send to someone. iOS has the same through UIPrintInteractionController.
+[x] DONE 0.32 Print from the Android app. (v3.3.9)
+    The phone apps show Print on the recipe page and the shopping list too. The bridge's print() hands the page to
+    Android's print service (WebView.createPrintDocumentAdapter → PrintManager) or iOS's print sheet
+    (UIPrintInteractionController with the web view's print formatter), so it prints with the same print styles as the
+    browser, and "Save as PDF" makes a file to send. The Android share sheet no longer says "Share shopping list" for
+    everything. Not yet tried on a real printer: the Android part compiles locally, the iOS part on GitHub.
 
 0.33 Photos for recipes imported in the phone apps.
     From 0.13. The server version downloads an imported recipe's photo and keeps a small copy inside the recipe; the

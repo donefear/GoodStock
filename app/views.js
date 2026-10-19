@@ -439,8 +439,10 @@ function renderShopping() {
 }
 
 // Printing: the browser's print dialog with the print styles at the end of styles.css (a clean recipe page, or the
-// shopping list with tick boxes). The desktop app prints too; the phone apps' web views can't, so no button there.
-const canPrint = () => typeof window.print === 'function' && (!STANDALONE || nativeApp.platform === 'desktop');
+// shopping list with tick boxes). The desktop app prints the same way; the phone apps' web views can't open it, so
+// they print through their bridge (Android's print service, iOS's print sheet), with the same styles.
+const canPrint = () => (STANDALONE ? nativeApp.platform === 'desktop' || typeof nativeApp.print === 'function' : typeof window.print === 'function');
+const printPage = () => (STANDALONE && typeof nativeApp.print === 'function' ? nativeApp.print() : window.print());
 const printFooter = (address = '') => `<p class="print-only print-footer">Goodstock · ${escapeHtml(formatDate(new Date(), { day: 'numeric', month: 'long', year: 'numeric' }))}${address ? ` · ${escapeHtml(address)}` : ''}</p>`;
 
 // Timers tab: one-tap presets, a custom timer, and every running timer (recipe timers included).

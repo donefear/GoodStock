@@ -1,6 +1,6 @@
 // Printing (0.14), with print media emulated: menus and buttons are gone, checked shopping items are left out,
 // and the recipe page keeps its ingredients and numbered steps. Also in dark mode, which prints light.
-export default async function run({ browser, base }) {
+export default async function run({ browser, base, phoneShim }) {
   const fail = [];
   const log = [];
   const page = await browser.newPage();
@@ -43,5 +43,23 @@ export default async function run({ browser, base }) {
   if (!recipe.ingredients || !recipe.steps) fail.push('ingredients or steps missing from the printed recipe');
   await page.evaluate(() => { localStorage.removeItem(THEME_KEY); state.shopping = []; persist(); });
   await page.close();
+
+  // The phone apps (0.32) print through their bridge: Android's print service, iOS's print sheet.
+  const phone = await browser.newPage();
+  phone.on('pageerror', (error) => fail.push(error.message));
+  await phone.evaluateOnNewDocument(phoneShim);
+  await phone.goto(`${base}/index.html`, { waitUntil: 'networkidle2' });
+  const printed = await phone.evaluate(async () => {
+    state.shopping = [{ id: 'a', name: 'Carrots', quantity: 1, unit: 'kg', checked: false }];
+    activeView = 'shopping';
+    render();
+    const button = document.querySelector('[data-action="print"]');
+    if (button) button.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    return { button: Boolean(button), calls: window.__calls.filter((call) => call[0] === 'print').length };
+  });
+  if (!printed.button) fail.push('no Print button in the phone app');
+  if (printed.calls !== 1) fail.push('Print did not go through the phone bridge');
+  await phone.close();
   return { fail, log };
 }

@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.print.PrintAttributes;
+import android.print.PrintManager;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.WindowManager;
@@ -112,7 +114,17 @@ final class NativeBridge {
     @JavascriptInterface
     public void share(String text) {
         Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
-        activity.runOnUiThread(() -> activity.startActivity(Intent.createChooser(send, "Share shopping list")));
+        activity.runOnUiThread(() -> activity.startActivity(Intent.createChooser(send, null)));
+    }
+
+    /** The page as it prints (its @media print styles) through Android's print service: a printer or Save as PDF. */
+    @JavascriptInterface
+    public void print() {
+        activity.runOnUiThread(() -> {
+            PrintManager printer = (PrintManager) activity.getSystemService(Context.PRINT_SERVICE);
+            if (printer == null) return;
+            printer.print("Goodstock", webView.createPrintDocumentAdapter("Goodstock"), new PrintAttributes.Builder().build());
+        });
     }
 
     /** Fetches a web page for recipe import. Answers with JSON {status, url, body}. */

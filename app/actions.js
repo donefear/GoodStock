@@ -193,7 +193,7 @@ document.addEventListener('click', async (event) => {
     return;
   }
   if (action === 'show-shopping-qr') openShoppingShare();
-  if (action === 'print') window.print();
+  if (action === 'print') printPage();
   if (action === 'share-shopping-text') shareShoppingText();
   if (action === 'backup-data') await backupKitchen();
   if (action === 'mealie-save') await saveMealieSettings();

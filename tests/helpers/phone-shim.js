@@ -17,6 +17,7 @@ window.GoodstockNative = {
   keepScreenOn: function (on) { window.__calls.push(['keepScreenOn', on]); },
   vibrate: function () {},
   share: function (text) { window.__calls.push(['share', text]); },
+  print: function () { window.__calls.push(['print']); },
   fetchPage: function (id, url) { http(id, 'GET', url, '{}', ''); },
   httpRequest: function (id, url, headers) { http(id, 'GET', url, headers, ''); },
   httpSend: function (id, method, url, headers, body) { http(id, method, url, headers, body); },

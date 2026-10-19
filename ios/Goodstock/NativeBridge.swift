@@ -40,6 +40,7 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         keepScreenOn: function (on) { post('keepScreenOn', [on ? 'true' : 'false']); },
         vibrate: function (ms) { post('vibrate', [String(ms)]); },
         share: function (text) { post('share', [String(text)]); },
+        print: function () { post('print', []); },
         fetchPage: function (id, url) { post('fetchPage', [id, String(url)]); },
         httpRequest: function (id, url, headers) { post('httpRequest', [id, String(url), String(headers || '{}')]); },
         httpSend: function (id, method, url, headers, body) { post('httpSend', [id, String(method), String(url), String(headers || '{}'), String(body)]); },
@@ -87,6 +88,8 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
         case "share":
             share(arg(0))
+        case "print":
+            printPage()
         case "fetchPage":
             request(id: arg(0), method: "GET", address: arg(1), headers: "{}", body: nil)
         case "httpRequest":
@@ -161,6 +164,18 @@ final class NativeBridge: NSObject, WKScriptMessageHandler {
         sheet.popoverPresentationController?.sourceRect = CGRect(x: controller.view.bounds.midX, y: controller.view.bounds.midY, width: 1, height: 1)
         sheet.popoverPresentationController?.permittedArrowDirections = []
         controller.present(sheet, animated: true)
+    }
+
+    /// The page as it prints (its @media print styles), through iOS's print sheet: AirPrint or Save to PDF.
+    private func printPage() {
+        guard let controller else { return }
+        let printer = UIPrintInteractionController.shared
+        let info = UIPrintInfo(dictionary: nil)
+        info.outputType = .general
+        info.jobName = "Goodstock"
+        printer.printInfo = info
+        printer.printFormatter = controller.webView.viewPrintFormatter()
+        printer.present(animated: true, completionHandler: nil)
     }
 
     /// A product barcode from the camera, for adding groceries. Answers with the number, or "cancelled".
