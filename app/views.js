@@ -55,18 +55,18 @@ async function loadIngredientCatalog() {
   fillIngredientOptions();
 }
 
-// Suggestions when adding an item: the name in the app's language first, plus English and Dutch (the household's
-// other usual languages), each labelled with the other name and the category.
+// Suggestions when adding an item: the name in the app's language and the English one, each labelled with the other
+// name and the category.
 function fillIngredientOptions() {
   const options = $('#ingredient-options');
   if (!options) return;
   options.innerHTML = ingredientCatalog.flatMap((ingredient) => {
     const category = escapeHtml(t(ingredient.category || ''));
     const local = catalogNames(ingredient, currentLanguage)[0];
-    const names = [...new Set([local, ingredient.en, ingredient.nl].filter(Boolean))];
+    const names = [...new Set([local, ingredient.en].filter(Boolean))];
     return names.map((name) => {
-      const other = name === ingredient.en ? (local && local !== name ? local : ingredient.nl) : ingredient.en;
-      return `<option value="${escapeHtml(name)}" label="${escapeHtml(other)} · ${category}"></option>`;
+      const other = name === ingredient.en ? (local !== name ? local : '') : ingredient.en;
+      return `<option value="${escapeHtml(name)}" label="${other ? `${escapeHtml(other)} · ` : ''}${category}"></option>`;
     });
   }).join('');
 }
@@ -521,7 +521,7 @@ function updateCookingTerms() {
     const name = t(`term: ${term.en}`);
     return name.indexOf('term: ') === 0 ? term.en : name;
   };
-  const terms = COOKING_TERMS.filter((term) => !query || cleanIngredient(`${term.en} ${term.nl} ${local(term)} ${term.what} ${t(term.what)}`).includes(query));
+  const terms = COOKING_TERMS.filter((term) => !query || cleanIngredient(`${term.en} ${local(term)} ${term.what} ${t(term.what)}`).includes(query));
   list.innerHTML = terms.length
     ? terms.map((term) => {
       const name = local(term) || term.en;

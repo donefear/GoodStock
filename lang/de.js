@@ -236,6 +236,7 @@ window.GOODSTOCK_TRANSLATIONS.de = {
   "DeepL returned an incomplete translation.": "DeepL hat eine unvollständige Übersetzung geliefert.",
   "Translate": "Übersetzen",
   "Translate into": "Übersetzen in",
+  "Choose a language": "Sprache wählen",
   "Translating to {language}…": "Wird auf {language} übersetzt…",
   "How to get a key": "So bekommst du einen Schlüssel",
   "Open Settings": "Einstellungen öffnen",

@@ -236,6 +236,7 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "DeepL returned an incomplete translation.": "DeepL の翻訳が不完全でした。",
   "Translate": "翻訳",
   "Translate into": "翻訳先",
+  "Choose a language": "言語を選択",
   "Translating to {language}…": "{language}に翻訳中…",
   "How to get a key": "キーの取得方法",
   "Open Settings": "設定を開く",

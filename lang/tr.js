@@ -414,6 +414,7 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "DeepL returned an incomplete translation.": "DeepL eksik bir çeviri döndürdü.",
   "Translate": "Çevir",
   "Translate into": "Şu dile çevir",
+  "Choose a language": "Bir dil seçin",
   "Translating to {language}…": "{language} diline çevriliyor…",
   "How to get a key": "Anahtar nasıl alınır",
   "Open Settings": "Ayarları aç",

@@ -379,12 +379,15 @@ function textLanguage(value) {
   return best;
 }
 
-// "Translate" offers every app language except the recipe's own. The app's language comes first; a recipe already in
-// that language starts at English (or Dutch, for an English recipe).
+// "Translate" offers every app language except the recipe's own. English and the app's language go hand in hand: a
+// recipe in another language starts at the app's language, one already in it starts at English. An English recipe
+// in an English app starts at the browser's own language when that is one of the app's, or else asks.
 function recipeTranslationTarget(recipe) {
   const source = recipeLanguage(recipe);
   if (source !== currentLanguage) return currentLanguage;
-  return source === 'en' ? 'nl' : 'en';
+  if (source !== 'en') return 'en';
+  const preferred = (navigator.languages || [navigator.language || '']).map((code) => String(code).slice(0, 2).toLowerCase());
+  return preferred.find((code) => code !== 'en' && LANGUAGES.some((language) => language.code === code)) || '';
 }
 
 function chooseRecipeTranslation(id) {
@@ -397,6 +400,7 @@ async function startRecipeTranslation(id, chosen) {
   if (!recipe) return;
   const source = recipeLanguage(recipe);
   const target = LANGUAGES.some((language) => language.code === chosen) && chosen !== source ? chosen : recipeTranslationTarget(recipe);
+  if (!target) return;
   const ingredients = recipe.ingredients || [];
   const steps = recipeInstructions(recipe).map((text) => String(text).trim()).filter(Boolean);
   const texts = [recipe.name, recipe.description || '', ...ingredients, ...steps];
@@ -456,7 +460,7 @@ function renderTranslationPanel(recipe) {
   if (current.choosing) {
     const source = recipeLanguage(recipe);
     const target = recipeTranslationTarget(recipe);
-    const options = LANGUAGES.filter((language) => language.code !== source)
+    const options = (target ? '' : `<option value="" selected disabled>${t('Choose a language')}</option>`) + LANGUAGES.filter((language) => language.code !== source)
       .map((language) => `<option value="${language.code}"${language.code === target ? ' selected' : ''}>${escapeHtml(language.name)}</option>`).join('');
     return `<section class="translation-panel translation-choose"><label class="translation-status" for="translation-target">${t('Translate into')}</label><div class="translation-actions"><select id="translation-target">${options}</select><button class="button button-small button-primary" type="button" data-action="translate-recipe" data-id="${escapeHtml(recipe.id)}">${t('Translate')}</button><button class="button button-small button-quiet" type="button" data-action="translation-discard">${t('Close')}</button></div></section>`;
   }

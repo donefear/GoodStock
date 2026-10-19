@@ -473,6 +473,7 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "DeepL returned an incomplete translation.": "أعاد DeepL ترجمة ناقصة.",
   "Translate": "ترجمة",
   "Translate into": "الترجمة إلى",
+  "Choose a language": "اختر لغة",
   "Translating to {language}…": "جارٍ الترجمة إلى {language}…",
   "How to get a key": "كيف تحصل على مفتاح",
   "Open Settings": "فتح الإعدادات",

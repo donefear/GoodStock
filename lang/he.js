@@ -473,6 +473,7 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "DeepL returned an incomplete translation.": "DeepL החזיר תרגום חלקי.",
   "Translate": "תרגום",
   "Translate into": "לתרגם ל־",
+  "Choose a language": "בחרו שפה",
   "Translating to {language}…": "מתרגם ל{language}…",
   "How to get a key": "איך משיגים מפתח",
   "Open Settings": "פתיחת ההגדרות",

@@ -236,6 +236,7 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "DeepL returned an incomplete translation.": "DeepL 返回的翻译不完整。",
   "Translate": "翻译",
   "Translate into": "翻译成",
+  "Choose a language": "选择语言",
   "Translating to {language}…": "正在翻译成{language}…",
   "How to get a key": "如何获取密钥",
   "Open Settings": "打开设置",

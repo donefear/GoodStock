@@ -236,6 +236,7 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "DeepL returned an incomplete translation.": "DeepL вернул неполный перевод.",
   "Translate": "Перевести",
   "Translate into": "Перевести на",
+  "Choose a language": "Выберите язык",
   "Translating to {language}…": "Перевожу: {language}…",
   "How to get a key": "Как получить ключ",
   "Open Settings": "Открыть Настройки",

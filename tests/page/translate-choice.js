@@ -23,14 +23,30 @@ await new Promise((resolve) => setTimeout(resolve, 50));
 const select = document.querySelector('#translation-target');
 const codes = select ? Array.from(select.options).map((option) => option.value) : [];
 log.push(`choices: ${codes.join(' ')} (selected ${select && select.value})`);
-if (codes.length !== LANGUAGES.length - 1 || codes.includes('en')) fail.push('the choice should be every language except the recipe\'s own');
-if (select && select.value !== 'nl') fail.push(`an English recipe in English should start at Dutch, not ${select.value}`);
+if (codes.filter(Boolean).length !== LANGUAGES.length - 1 || codes.includes('en')) fail.push('the choice should be every language except the recipe\'s own');
+if (select && select.value !== '') fail.push(`an English recipe in an English app (browser en-US) should ask, not start at ${select.value}`);
+if (codes.length && !document.querySelector('#translation-target option[disabled]')) fail.push('no "Choose a language" option');
 await setLanguage('de');
 openRecipePage(recipe.id);
 const german = document.querySelector('#translation-target');
 if (!german || german.value !== 'de') fail.push('in German the choice should start at German');
 document.querySelector('[data-action="translation-discard"]').click();
 if (document.querySelector('#translation-target')) fail.push('Close did not close the choice');
+await setLanguage('nl');
+const dutch = { name: 'Pannenkoeken', ingredients: ['250 g bloem', '2 eieren', '500 ml melk'], instructions: ['Meng de bloem met de eieren en de melk.', 'Bak de pannenkoeken in een hete pan.'] };
+if (recipeTranslationTarget(dutch) !== 'en') fail.push(`a Dutch recipe in a Dutch app should start at English, not ${recipeTranslationTarget(dutch)}`);
 await setLanguage('en');
 recipeTranslation = null;
+
+// Ingredient suggestions: English and the app's language only, no Dutch names in an English or German app.
+for (const code of ['en', 'de']) {
+  await setLanguage(code);
+  fillIngredientOptions();
+  const values = Array.from(document.querySelectorAll('#ingredient-options option')).map((option) => option.value);
+  const has = (name) => values.some((value) => value.toLowerCase() === name);
+  if (has('bloem') || has('eieren')) fail.push(`${code}: Dutch names among the suggestions`);
+  if (!has('flour')) fail.push(`${code}: English name missing from the suggestions`);
+  if (code === 'de' && !has('mehl')) fail.push('de: German name missing from the suggestions');
+}
+await setLanguage('en');
 return { fail, log };

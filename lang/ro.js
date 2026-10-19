@@ -414,6 +414,7 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "DeepL returned an incomplete translation.": "DeepL a trimis o traducere incompletă.",
   "Translate": "Traduce",
   "Translate into": "Tradu în",
+  "Choose a language": "Alege o limbă",
   "Translating to {language}…": "Traduc în {language}…",
   "How to get a key": "Cum obții o cheie",
   "Open Settings": "Deschide Setări",
