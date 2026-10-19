@@ -39,7 +39,9 @@ const CONVERTER_INGREDIENTS = [
 // Oven temperatures: gas mark ↔ °C (conventional oven).
 const GAS_MARKS = [[0.25, 110], [0.5, 120], [1, 140], [2, 150], [3, 170], [4, 180], [5, 190], [6, 200], [7, 220], [8, 230], [9, 240]];
 
-// Cooking terms explained simply, in English and Dutch. The video button opens a YouTube search for the technique.
+// Cooking terms explained simply. Written here in English and Dutch; the names (`term: …` keys) and explanations of
+// the other languages are in lang/<code>.js, and the page shows them in the app's language. The video button opens a
+// YouTube search for the technique.
 const COOKING_TERMS = [
   { en: 'Al dente', nl: 'Al dente', what: 'Pasta (or vegetables) cooked until just done: soft outside, with a little bite in the middle. Taste one a minute before the packet time.' },
   { en: 'Bain-marie', nl: 'Au bain-marie', what: 'A bowl set over (not in) a pan of gently simmering water. The steam heats it softly, for melting chocolate or making sauces without burning them.' },

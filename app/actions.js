@@ -128,7 +128,8 @@ document.addEventListener('click', async (event) => {
   if (action === 'deepl-save') await saveDeeplSettings();
   if (action === 'deepl-help') $('#deepl-help-dialog').showModal();
   if (action === 'deepl-disconnect') await disconnectDeepl();
-  if (action === 'translate-recipe') await startRecipeTranslation(id);
+  if (action === 'translate-choose') chooseRecipeTranslation(id);
+  if (action === 'translate-recipe') await startRecipeTranslation(id, ($('#translation-target') || {}).value || recipeTranslation?.target);
   if (action === 'translation-save') saveRecipeTranslation();
   if (action === 'translation-discard') { recipeTranslation = null; render(); }
   if (action === 'mealie-disconnect') await disconnectMealie();

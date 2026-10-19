@@ -241,6 +241,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .translation-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .translation-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .translation-panel.is-error .translation-actions { margin-top: 12px; }
+.translation-choose .translation-actions { margin-top: 10px; }
 .translation-panel h2 { margin: 10px 0 4px; font-size: 24px; }
 .translation-columns { margin-top: 14px; display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr); gap: 24px; }
 .translation-columns h3 { margin: 0 0 8px; font-size: 14px; }
@@ -747,6 +748,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 .no-flex-gap .button + .button, .no-flex-gap .button + a.button, .no-flex-gap a.button + .button,
 .no-flex-gap .text-button + .text-button, .no-flex-gap .text-button + a.text-button, .no-flex-gap a.text-button + .text-button,
 .no-flex-gap .button + .text-button, .no-flex-gap .text-button + .button { margin-inline-start: 8px; }
+.no-flex-gap .translation-choose select { margin-inline-end: 8px; }
 .no-flex-gap .nav-item + .nav-item { margin-top: 4px; }
 .no-flex-gap .steps-tools li, .no-flex-gap .timer-pill, .no-flex-gap .recipe-page-actions .button { margin: 0 0 8px; margin-inline-end: 8px; }
 .no-flex-gap .nav-icon, .no-flex-gap .custom-check, .no-flex-gap .tool-icon, .no-flex-gap .timer-pill-icon,

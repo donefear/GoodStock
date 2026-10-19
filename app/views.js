@@ -504,13 +504,13 @@ function updateTemperature() {
 
 function renderCookingTerms() {
   return `<section class="section-block cooking-terms">
-      <form class="recipe-search terms-search" onsubmit="return false"><span aria-hidden="true">⌕</span><input id="terms-search" value="${escapeHtml(termsQuery)}" placeholder="${t('Search a term, like blanch or sudderen')}" aria-label="${t('Search cooking terms')}" autocomplete="off" /></form>
+      <form class="recipe-search terms-search" onsubmit="return false"><span aria-hidden="true">⌕</span><input id="terms-search" value="${escapeHtml(termsQuery)}" placeholder="${t('Search a term, like blanch or simmer')}" aria-label="${t('Search cooking terms')}" autocomplete="off" /></form>
       <div class="terms-list" id="terms-list"></div>
     </section>`;
 }
 
-// Terms are written in English and Dutch. In another language the term's translated name leads, with the
-// English one next to it, and the explanation is translated.
+// Each term shows its name and explanation in the app's language. Outside English the English name stands next
+// to it, since recipes often use that one. Search finds a term by any of its names.
 function updateCookingTerms() {
   const list = $('#terms-list');
   if (!list) return;
@@ -525,7 +525,7 @@ function updateCookingTerms() {
   list.innerHTML = terms.length
     ? terms.map((term) => {
       const name = local(term) || term.en;
-      const second = currentLanguage === 'en' ? term.nl : term.en;
+      const second = currentLanguage === 'en' ? '' : term.en;
       return `<article class="term-card"><h3>${escapeHtml(name)}${second && second !== name ? ` <span>${escapeHtml(second)}</span>` : ''}</h3><p>${escapeHtml(t(term.what))}</p><a class="button button-small button-outline" href="${escapeHtml(cookingTermVideoUrl(term, currentLanguage === 'en' ? '' : t('{term} cooking technique', { term: name.replace(/\s*[(（].*$/, '') })))}" target="_blank" rel="noopener noreferrer">▶ ${t('Watch a video')}</a></article>`;
     }).join('')
     : `<p class="muted">${t('No term matches that. Try another word.')}</p>`;

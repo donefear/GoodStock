@@ -379,22 +379,24 @@ function textLanguage(value) {
   return best;
 }
 
-// One tap translates into the app's language. A recipe already in that language can go between English and Dutch,
-// as before, when the app is set to one of those.
+// "Translate" offers every app language except the recipe's own. The app's language comes first; a recipe already in
+// that language starts at English (or Dutch, for an English recipe).
 function recipeTranslationTarget(recipe) {
   const source = recipeLanguage(recipe);
   if (source !== currentLanguage) return currentLanguage;
-  if (source === 'en') return 'nl';
-  if (source === 'nl') return 'en';
-  return '';
+  return source === 'en' ? 'nl' : 'en';
 }
 
-async function startRecipeTranslation(id) {
+function chooseRecipeTranslation(id) {
+  recipeTranslation = { recipeId: id, choosing: true };
+  render();
+}
+
+async function startRecipeTranslation(id, chosen) {
   const recipe = recipeById(id);
   if (!recipe) return;
   const source = recipeLanguage(recipe);
-  const target = recipeTranslationTarget(recipe);
-  if (!target) return;
+  const target = LANGUAGES.some((language) => language.code === chosen) && chosen !== source ? chosen : recipeTranslationTarget(recipe);
   const ingredients = recipe.ingredients || [];
   const steps = recipeInstructions(recipe).map((text) => String(text).trim()).filter(Boolean);
   const texts = [recipe.name, recipe.description || '', ...ingredients, ...steps];
@@ -443,17 +445,21 @@ function saveRecipeTranslation() {
 }
 
 function renderRecipeTranslation(recipe) {
-  const target = recipeTranslationTarget(recipe);
   const current = recipeTranslation?.recipeId === recipe.id ? recipeTranslation : null;
-  if (!current && target) {
-    return `<button class="text-button" type="button" data-action="translate-recipe" data-id="${escapeHtml(recipe.id)}">${t('Translate to {language}', { language: escapeHtml(languageName(target)) })} ⇄</button>`;
-  }
+  if (!current) return `<button class="text-button" type="button" data-action="translate-choose" data-id="${escapeHtml(recipe.id)}">${t('Translate')} ⇄</button>`;
   return '';
 }
 
 function renderTranslationPanel(recipe) {
   const current = recipeTranslation?.recipeId === recipe.id ? recipeTranslation : null;
   if (!current) return '';
+  if (current.choosing) {
+    const source = recipeLanguage(recipe);
+    const target = recipeTranslationTarget(recipe);
+    const options = LANGUAGES.filter((language) => language.code !== source)
+      .map((language) => `<option value="${language.code}"${language.code === target ? ' selected' : ''}>${escapeHtml(language.name)}</option>`).join('');
+    return `<section class="translation-panel translation-choose"><label class="translation-status" for="translation-target">${t('Translate into')}</label><div class="translation-actions"><select id="translation-target">${options}</select><button class="button button-small button-primary" type="button" data-action="translate-recipe" data-id="${escapeHtml(recipe.id)}">${t('Translate')}</button><button class="button button-small button-quiet" type="button" data-action="translation-discard">${t('Close')}</button></div></section>`;
+  }
   const label = escapeHtml(languageName(current.target));
   if (current.loading) return `<section class="translation-panel"><p class="translation-status">${t('Translating to {language}…', { language: label })}</p></section>`;
   if (current.error) {
