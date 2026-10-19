@@ -199,7 +199,9 @@ document.addEventListener('click', async (event) => {
   if (action === 'auto-backup-folder') await chooseAutoBackupFolder();
   if (action === 'auto-backup-off') turnOffAutoBackup();
   if (action === 'updates-check') await checkForUpdates(true);
-  if (action === 'find-ideas') await findIdeas();
+  if (action === 'find-ideas') await findIdeas(ideas.focus || '');
+  if (action === 'find-ideas-all') await findIdeas('');
+  if (action === 'use-it-up') await useItUp(id);
   if (action === 'add-idea') addIdea(id);
   if (action === 'pin-save') await savePin();
   if (action === 'pin-remove') await removePin();

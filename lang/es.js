@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "TAKE OUT OF THE FREEZER": "SACAR DEL CONGELADOR",
   "{count} things to take out of the freezer": { "one": "{count} cosa que sacar del congelador", "other": "{count} cosas que sacar del congelador" },
   "{count} things to thaw for your meals": { "one": "{count} cosa que descongelar para tus comidas", "other": "{count} cosas que descongelar para tus comidas" },
+  "All ideas": "Todas las ideas",
+  "No recipes with {ingredient} found on the web.": "No se encontraron recetas con {ingredient} en la web.",
+  "Recipes from the web with {ingredient}": "Recetas de la web con {ingredient}",
+  "Recipe ideas": "Ideas de recetas",
 };

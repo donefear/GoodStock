@@ -33,11 +33,11 @@ EVERYDAY USE
     notification at 19:00 the evening before ("1 thing to take out of the freezer: Chicken for Chicken curry"); the
     browser version sends it after 19:00 while it is open, once a day.
 
-0.28 "What can I make with it?" from Use soon.
-    Use soon lists what is about to go off, and the week planner already puts recipes that use it first, but only
-    when you're planning. A button on each Use soon item could open the Recipes page searched for that ingredient,
-    own recipes first, then Recipe ideas (TheMealDB) for the same ingredient, so the answer is one tap from the
-    warning.
+[x] DONE 0.28 "What can I make with it?" from Use soon. (v3.3.5)
+    Every Use soon row has "Recipe ideas ✨". It opens the Recipes page searched for that item (so your own recipes
+    with it come first, found in any language through the catalog) and "Recipes from the web with spinach" below,
+    looked up on TheMealDB by the catalog's English name. "All ideas" goes back to the usual ideas from your cooking
+    history. The "Try using it in …" links stay next to it.
 
 0.29 A quick stocktake, one place at a time.
     An inventory app is only as good as its counts, and they drift: things get used without anyone tapping −. A

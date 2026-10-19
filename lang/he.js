@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "TAKE OUT OF THE FREEZER": "להוציא מהמקפיא",
   "{count} things to take out of the freezer": { "one": "דבר אחד להוציא מהמקפיא", "two": "שני דברים להוציא מהמקפיא", "other": "{count} דברים להוציא מהמקפיא" },
   "{count} things to thaw for your meals": { "one": "דבר אחד להפשיר לארוחות", "two": "שני דברים להפשיר לארוחות", "other": "{count} דברים להפשיר לארוחות" },
+  "All ideas": "כל הרעיונות",
+  "No recipes with {ingredient} found on the web.": "לא נמצאו ברשת מתכונים עם {ingredient}.",
+  "Recipes from the web with {ingredient}": "מתכונים מהרשת עם {ingredient}",
+  "Recipe ideas": "רעיונות למתכונים",
 };

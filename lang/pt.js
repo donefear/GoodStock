@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "TAKE OUT OF THE FREEZER": "TIRAR DO FREEZER",
   "{count} things to take out of the freezer": { "one": "{count} item para tirar do freezer", "other": "{count} itens para tirar do freezer" },
   "{count} things to thaw for your meals": { "one": "{count} item para descongelar para suas refeições", "other": "{count} itens para descongelar para suas refeições" },
+  "All ideas": "Todas as ideias",
+  "No recipes with {ingredient} found on the web.": "Nenhuma receita com {ingredient} encontrada na web.",
+  "Recipes from the web with {ingredient}": "Receitas da web com {ingredient}",
+  "Recipe ideas": "Ideias de receitas",
 };

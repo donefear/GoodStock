@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "TAKE OUT OF THE FREEZER": "冷凍庫から出す",
   "{count} things to take out of the freezer": "冷凍庫から出すもの {count} 件",
   "{count} things to thaw for your meals": "食事のために解凍するもの {count} 件",
+  "All ideas": "すべてのアイデア",
+  "No recipes with {ingredient} found on the web.": "{ingredient}を使うレシピはウェブで見つかりませんでした。",
+  "Recipes from the web with {ingredient}": "{ingredient}を使うウェブのレシピ",
+  "Recipe ideas": "レシピのアイデア",
 };

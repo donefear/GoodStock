@@ -94,6 +94,8 @@ h3 { margin: 0; font: 500 21px/1.25 'Fraunces', Georgia, serif; }
 .expiry-list { border-top: 1px solid #e8dcb9; }
 .expiry-row { min-height: 65px; padding: 10px 0; border-bottom: 1px solid #e8dcb9; display: grid; grid-template-columns: minmax(180px, .85fr) minmax(250px, 1.15fr); align-items: center; gap: 16px; }
 .expiry-row:last-child { border-bottom: 0; }
+.expiry-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; }
+.expiry-ideas { white-space: nowrap; }
 .expiry-item-info { min-width: 0; display: flex; align-items: center; gap: 10px; }
 .expiry-mark { width: 29px; height: 29px; flex: 0 0 29px; border-radius: 50%; display: grid; place-items: center; background: #f0dca6; color: #896b24; font-size: 16px; font-weight: 700; }
 .thaw-panel { border-color: #b7d3e6; background: #eef6fb; }

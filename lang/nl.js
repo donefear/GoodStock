@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "TAKE OUT OF THE FREEZER": "UIT DE VRIEZER HALEN",
   "{count} things to take out of the freezer": { "one": "{count} ding uit de vriezer halen", "other": "{count} dingen uit de vriezer halen" },
   "{count} things to thaw for your meals": { "one": "{count} ding ontdooien voor je maaltijden", "other": "{count} dingen ontdooien voor je maaltijden" },
+  "All ideas": "Alle ideeën",
+  "No recipes with {ingredient} found on the web.": "Geen recepten met {ingredient} gevonden op het web.",
+  "Recipes from the web with {ingredient}": "Recepten van het web met {ingredient}",
+  "Recipe ideas": "Receptideeën",
 };

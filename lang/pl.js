@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "TAKE OUT OF THE FREEZER": "WYJMIJ Z ZAMRAŻARKI",
   "{count} things to take out of the freezer": { "one": "{count} rzecz do wyjęcia z zamrażarki", "few": "{count} rzeczy do wyjęcia z zamrażarki", "many": "{count} rzeczy do wyjęcia z zamrażarki", "other": "{count} rzeczy do wyjęcia z zamrażarki" },
   "{count} things to thaw for your meals": { "one": "{count} rzecz do rozmrożenia na posiłki", "few": "{count} rzeczy do rozmrożenia na posiłki", "many": "{count} rzeczy do rozmrożenia na posiłki", "other": "{count} rzeczy do rozmrożenia na posiłki" },
+  "All ideas": "Wszystkie pomysły",
+  "No recipes with {ingredient} found on the web.": "Nie znaleziono w sieci przepisów ze składnikiem: {ingredient}.",
+  "Recipes from the web with {ingredient}": "Przepisy z sieci ze składnikiem: {ingredient}",
+  "Recipe ideas": "Pomysły na przepisy",
 };

@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "TAKE OUT OF THE FREEZER": "SCOATE DIN CONGELATOR",
   "{count} things to take out of the freezer": { "one": "{count} lucru de scos din congelator", "few": "{count} lucruri de scos din congelator", "other": "{count} de lucruri de scos din congelator" },
   "{count} things to thaw for your meals": { "one": "{count} lucru de decongelat pentru mese", "few": "{count} lucruri de decongelat pentru mese", "other": "{count} de lucruri de decongelat pentru mese" },
+  "All ideas": "Toate ideile",
+  "No recipes with {ingredient} found on the web.": "Nu s-au găsit rețete cu {ingredient} pe web.",
+  "Recipes from the web with {ingredient}": "Rețete de pe web cu {ingredient}",
+  "Recipe ideas": "Idei de rețete",
 };

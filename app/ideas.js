@@ -108,9 +108,11 @@ function scoreIdea(recipe, history, stocked) {
   return { score, reasons, missing };
 }
 
-async function findIdeas() {
+// With a focus (an item from Use soon, by its English catalog name) only recipes with that ingredient are looked up.
+async function findIdeas(focus = '') {
   if (ideas.loading) return;
-  ideas = { ...ideas, loading: true, error: '' };
+  if (focus !== ideas.focus) ideas.results = [];
+  ideas = { ...ideas, focus, loading: true, error: '' };
   render();
   try {
     const history = cookingHistory();
@@ -118,7 +120,7 @@ async function findIdeas() {
     const known = new Set(state.recipes.map((recipe) => cleanIngredient(recipe.name)));
     const shownBefore = new Set(ideas.results.map((idea) => idea.meal.idMeal));
     // Look for recipes with your three favourite ingredients and the three that expire first.
-    const wanted = [...new Set([...history.top.slice(0, 3), ...[...stocked.keys()].slice(0, 3)])];
+    const wanted = focus ? [focus] : [...new Set([...history.top.slice(0, 3), ...[...stocked.keys()].slice(0, 3)])];
     const candidates = new Map();
     for (const name of wanted) {
       const found = (await mealDb('filter.php', { i: name.toLowerCase().replace(/\s+/g, '_') }).catch(() => ({}))).meals || [];
@@ -129,7 +131,7 @@ async function findIdeas() {
       }
     }
     // A new kitchen with no history or stock gets a few random ideas.
-    if (!candidates.size) {
+    if (!candidates.size && !focus) {
       for (let attempt = 0; attempt < IDEAS_SHOWN; attempt++) {
         const meal = ((await mealDb('random.php')).meals || [])[0];
         if (meal) candidates.set(meal.idMeal, { meal, hits: 0, full: meal });
@@ -149,11 +151,25 @@ async function findIdeas() {
       results.push({ meal, recipe, score: score - (shownBefore.has(meal.idMeal) ? 3 : 0), reasons: reasons.length ? reasons : [t('A new idea to try')], missing });
     }
     results.sort((a, b) => b.score - a.score);
-    ideas = { loading: false, searched: true, error: '', results: results.slice(0, IDEAS_SHOWN), history: history.meals };
+    ideas = { focus, loading: false, searched: true, error: '', results: results.slice(0, IDEAS_SHOWN), history: history.meals };
   } catch {
     ideas = { ...ideas, loading: false, searched: true, error: t('Could not reach the recipe collection. Check the internet connection and try again.') };
   }
   if (activeView === 'recipes') render();
+}
+
+// "Recipe ideas" on a Use soon item: the Recipes page searched for it (own recipes first), and recipes with it
+// from the web below. Items the catalog doesn't know are looked up by their own name.
+async function useItUp(id) {
+  const item = state.inventory.find((entry) => entry.id === id);
+  if (!item) return;
+  const record = ingredientRecord(item.name);
+  activeView = 'recipes';
+  recipeQuery = item.name;
+  render();
+  await findIdeas((record && catalogNames(record, 'en')[0]) || item.name);
+  const panel = document.querySelector('.ideas-panel');
+  if (panel && panel.scrollIntoView && !document.querySelector('.recipe-card')) panel.scrollIntoView({ block: 'start' });
 }
 
 function addIdea(id) {
@@ -167,12 +183,13 @@ function addIdea(id) {
 }
 
 function renderIdeas() {
-  const button = `<button class="button button-outline" type="button" data-action="find-ideas" ${ideas.loading ? 'disabled' : ''}>${ideas.searched ? t('Find other ideas') : t('Find recipes for me')} <span aria-hidden="true">✨</span></button>`;
+  const focus = ideas.focus ? localIngredientName(ideas.focus).toLowerCase() : '';
+  const button = `${focus ? `<button class="text-button" type="button" data-action="find-ideas-all" ${ideas.loading ? 'disabled' : ''}>${t('All ideas')}</button>` : ''}<button class="button button-outline" type="button" data-action="find-ideas" ${ideas.loading ? 'disabled' : ''}>${ideas.searched ? t('Find other ideas') : t('Find recipes for me')} <span aria-hidden="true">✨</span></button>`;
   let body = '';
   if (ideas.loading) body = `<p class="muted ideas-status">${t('Looking for recipes you might like…')}</p>`;
   else if (ideas.error) body = `<p class="muted ideas-status">${escapeHtml(ideas.error)}</p>`;
   else if (!ideas.searched) body = `<p class="muted ideas-status">${t('Ideas based on what you cook and what you have, from TheMealDB, a free recipe collection on the web.')}</p>`;
-  else if (!ideas.results.length) body = `<p class="muted ideas-status">${t('No new ideas this time. Try again later.')}</p>`;
+  else if (!ideas.results.length) body = `<p class="muted ideas-status">${focus ? t('No recipes with {ingredient} found on the web.', { ingredient: escapeHtml(focus) }) : t('No new ideas this time. Try again later.')}</p>`;
   else {
     body = `<div class="ideas-grid">${ideas.results.map((idea) => `<article class="idea-card">
         ${idea.meal.strMealThumb ? `<img class="idea-photo" src="${escapeHtml(idea.meal.strMealThumb)}/preview" alt="" loading="lazy" />` : ''}
@@ -188,5 +205,5 @@ function renderIdeas() {
         </div>
       </article>`).join('')}</div>`;
   }
-  return `<section class="ideas-panel"><div class="recipe-results-heading"><div><span class="eyebrow">${t('IDEAS FOR YOU')}</span><h2>${t('Recipes from the web')}</h2></div>${button}</div>${body}</section>`;
+  return `<section class="ideas-panel"><div class="recipe-results-heading"><div><span class="eyebrow">${t('IDEAS FOR YOU')}</span><h2>${focus ? t('Recipes from the web with {ingredient}', { ingredient: escapeHtml(focus) }) : t('Recipes from the web')}</h2></div>${button}</div>${body}</section>`;
 }

@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "TAKE OUT OF THE FREEZER": "DONDURUCUDAN ÇIKAR",
   "{count} things to take out of the freezer": { "one": "Dondurucudan çıkarılacak {count} şey", "other": "Dondurucudan çıkarılacak {count} şey" },
   "{count} things to thaw for your meals": { "one": "Yemekleriniz için çözülecek {count} şey", "other": "Yemekleriniz için çözülecek {count} şey" },
+  "All ideas": "Tüm fikirler",
+  "No recipes with {ingredient} found on the web.": "Web'de {ingredient} içeren tarif bulunamadı.",
+  "Recipes from the web with {ingredient}": "Web'den {ingredient} içeren tarifler",
+  "Recipe ideas": "Tarif fikirleri",
 };

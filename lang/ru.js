@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "TAKE OUT OF THE FREEZER": "ДОСТАТЬ ИЗ МОРОЗИЛКИ",
   "{count} things to take out of the freezer": { "one": "{count} продукт достать из морозилки", "few": "{count} продукта достать из морозилки", "many": "{count} продуктов достать из морозилки", "other": "{count} продукта достать из морозилки" },
   "{count} things to thaw for your meals": { "one": "{count} продукт разморозить к еде", "few": "{count} продукта разморозить к еде", "many": "{count} продуктов разморозить к еде", "other": "{count} продукта разморозить к еде" },
+  "All ideas": "Все идеи",
+  "No recipes with {ingredient} found on the web.": "В интернете не нашлось рецептов с ингредиентом «{ingredient}».",
+  "Recipes from the web with {ingredient}": "Рецепты из интернета: {ingredient}",
+  "Recipe ideas": "Идеи рецептов",
 };

@@ -959,4 +959,8 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "TAKE OUT OF THE FREEZER": "从冷冻室取出",
   "{count} things to take out of the freezer": "{count} 样东西要从冷冻室取出",
   "{count} things to thaw for your meals": "{count} 样食材要为餐食解冻",
+  "All ideas": "全部灵感",
+  "No recipes with {ingredient} found on the web.": "网上没有找到含{ingredient}的食谱。",
+  "Recipes from the web with {ingredient}": "网上含{ingredient}的食谱",
+  "Recipe ideas": "食谱灵感",
 };
