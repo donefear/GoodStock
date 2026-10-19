@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Send as text": "以文字发送",
   "Save the recipe file": "保存食谱文件",
   "Open a recipe file": "打开食谱文件",
+  "Use soon": "尽快用完",
+  "Nothing to use up soon": "暂时没有要尽快用完的",
+  "The shopping list is empty": "购物清单是空的",
+  "+ {count} more": "+ 还有 {count} 样",
+  "{count} things on the shopping list": "购物清单上有 {count} 样",
 };

@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "Send as text": "Wyślij jako tekst",
   "Save the recipe file": "Zapisz plik przepisu",
   "Open a recipe file": "Otwórz plik przepisu",
+  "Use soon": "Zużyj wkrótce",
+  "Nothing to use up soon": "Nic nie trzeba szybko zużyć",
+  "The shopping list is empty": "Lista zakupów jest pusta",
+  "+ {count} more": { "one": "+ jeszcze {count}", "few": "+ jeszcze {count}", "many": "+ jeszcze {count}", "other": "+ jeszcze {count}" },
+  "{count} things on the shopping list": { "one": "{count} pozycja na liście zakupów", "few": "{count} pozycje na liście zakupów", "many": "{count} pozycji na liście zakupów", "other": "{count} pozycji na liście zakupów" },
 };

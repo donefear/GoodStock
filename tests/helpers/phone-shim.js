@@ -18,6 +18,8 @@ window.GoodstockNative = {
   vibrate: function () {},
   share: function (text) { window.__calls.push(['share', text]); },
   print: function () { window.__calls.push(['print']); },
+  setWidget: function (json) { window.__widget = JSON.parse(json); window.__widgetUpdates = (window.__widgetUpdates || 0) + 1; },
+  takeOpenView: function () { var view = window.__openView || ''; window.__openView = ''; return view; },
   fetchPage: function (id, url) { http(id, 'GET', url, '{}', ''); },
   fetchImage: function (id, url) { window.__images = (window.__images || []).concat([url]); if (/fail/.test(url)) answer(id, false, 'That photo could not be loaded.'); else answer(id, true, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='); },
   httpRequest: function (id, url, headers) { http(id, 'GET', url, headers, ''); },

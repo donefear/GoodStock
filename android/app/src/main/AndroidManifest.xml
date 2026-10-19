@@ -64,6 +64,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- Home-screen widget: use soon and the shopping list (KitchenWidget). -->
+        <receiver
+            android:name=".KitchenWidget"
+            android:exported="false"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/kitchen_widget_info" />
+        </receiver>
+
         <service
             android:name=".HostService"
             android:exported="false"

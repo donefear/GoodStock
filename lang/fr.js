@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.fr = {
   "Send as text": "Envoyer en texte",
   "Save the recipe file": "Enregistrer le fichier de recette",
   "Open a recipe file": "Ouvrir un fichier de recette",
+  "Use soon": "À utiliser vite",
+  "Nothing to use up soon": "Rien à finir bientôt",
+  "The shopping list is empty": "La liste de courses est vide",
+  "+ {count} more": { "one": "+ {count} autre", "other": "+ {count} autres" },
+  "{count} things on the shopping list": { "one": "{count} article sur la liste de courses", "other": "{count} articles sur la liste de courses" },
 };

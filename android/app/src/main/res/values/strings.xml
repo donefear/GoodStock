@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Goodstock</string>
+    <!-- The home-screen widget, before the app has sent its text (in the app's language) for the first time. -->
+    <string name="widget_open">Open Goodstock once to fill this in.</string>
+    <string name="widget_description">What to use soon and the shopping list</string>
 </resources>

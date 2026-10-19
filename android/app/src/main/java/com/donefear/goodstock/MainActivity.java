@@ -39,6 +39,9 @@ public class MainActivity extends Activity {
     /** True while the app is on screen; timer alarms then ring in the app instead of as a notification. */
     static volatile boolean visible;
 
+    /** The page a widget tap asked for, until the page takes it (NativeBridge.takeOpenView). */
+    static volatile String pendingView;
+
     private WebView webView;
     private NativeBridge bridge;
     private ValueCallback<Uri[]> fileChooserCallback;
@@ -48,6 +51,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Notifications.ensureChannels(this);
+        pendingView = getIntent().getStringExtra(KitchenWidget.EXTRA_VIEW);
         if ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) WebView.setWebContentsDebuggingEnabled(true);
 
         webView = new WebView(this);
@@ -256,6 +260,15 @@ public class MainActivity extends Activity {
             layout.addView(retry);
             setContentView(layout);
         });
+    }
+
+    // singleTask: a widget tap while the app is open comes here; onResume then lets the page open that page.
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String view = intent.getStringExtra(KitchenWidget.EXTRA_VIEW);
+        if (view != null) pendingView = view;
     }
 
     @Override

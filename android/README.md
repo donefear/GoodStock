@@ -13,6 +13,8 @@ Runs on Android 5.0 (2014) and newer. On Android 5–7, keep **Android System We
 - **Use-soon reminders** are Android notifications. They and running timers are scheduled again after the phone restarts (`BootReceiver`), without opening the app.
 - **Recipe links** are fetched by the phone itself. Some sites block this; pasting the recipe text always works.
 - **The shopping list** is shared through the Android share sheet instead of a QR code.
+- **Home-screen widget:** long-press the home screen → Widgets → Goodstock. It shows what to use soon (with dates) and how much is on the shopping list, in the app's language; tapping opens that page. The app updates it whenever the kitchen changes (`KitchenWidget`).
+- **Print** a recipe or the shopping list through Android's print service, which can also save a PDF.
 - **Translation** uses DeepL: add your DeepL API key in **Settings** (saved on the phone).
 - **Mealie is optional.** Connect it in **Settings**; the connection is saved on the phone, and the phone must be able to reach your Mealie server. Without it, add recipes with **New recipe** or **Import** on the Recipes page.
 

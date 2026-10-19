@@ -566,6 +566,7 @@ const REMINDER_HOUR = 9;
 let scheduledRemindersSignature = '';
 
 function scheduleExpiryReminders() {
+  updateWidget();
   if (!STANDALONE || !nativeApp.setReminders) return;
   const reminders = [];
   if (localStorage.getItem(EXPIRY_REMINDERS_KEY) === 'true') {
@@ -591,6 +592,27 @@ function scheduleExpiryReminders() {
   if (signature === scheduledRemindersSignature) return;
   scheduledRemindersSignature = signature;
   try { nativeApp.setReminders(signature); } catch { /* The in-app panel still shows them. */ }
+}
+
+// The Android home-screen widget (0.31): what to use soon, with dates (so it stays right on later days), and how much
+// is on the shopping list, in the app's language. Sent whenever the kitchen changes, only when the text changed.
+const WIDGET_LINES = 4;
+let widgetSignature = '';
+
+function updateWidget() {
+  if (!STANDALONE || typeof nativeApp.setWidget !== 'function') return;
+  const soon = itemsNeedingExpiryAttention();
+  const left = state.shopping.filter((item) => !item.checked).length;
+  const lines = soon.slice(0, WIDGET_LINES).map((item) => `${item.name} · ${expirationDateText(item.expiresOn)}`);
+  if (soon.length > WIDGET_LINES) lines.push(tp(soon.length - WIDGET_LINES, '+ {count} more', '+ {count} more'));
+  const signature = JSON.stringify({
+    soonTitle: soon.length ? t('Use soon') : t('Nothing to use up soon'),
+    soon: lines.join('\n'),
+    shopping: left ? tp(left, '{count} thing on the shopping list', '{count} things on the shopping list') : t('The shopping list is empty'),
+  });
+  if (signature === widgetSignature) return;
+  widgetSignature = signature;
+  try { nativeApp.setWidget(signature); } catch { /* No widget, then. */ }
 }
 
 // Thawing: what the meals planned for a day need that is only in the freezer (nothing of it in the fridge or

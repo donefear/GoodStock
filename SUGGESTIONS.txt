@@ -59,10 +59,13 @@ EVERYDAY USE
 PHONE AND DESKTOP APPS
 ----------------------
 
-0.31 Android home-screen widget.
-    The quickest look at the kitchen without opening the app: "Use soon: milk (tomorrow), spinach" and "Shopping:
-    7 items", tapping through to the right page. The app already hands Android the use-soon list for the daily
-    reminders (setReminders), so the widget can read the same list, and it works with the app closed.
+[x] DONE 0.31 Android home-screen widget. (v3.3.11)
+    A Goodstock widget for the Android home screen (about 3×2, resizable): "Use soon" with up to four items and their
+    dates ("Milk · 21 Oct", then "+ 2 more"), and "2 things on the shopping list" below. The page writes the text in the
+    app's language whenever the kitchen changes (bridge setWidget, only when it changed), so it works with the app
+    closed and stays right on later days. Tapping the top opens the Inventory, the shopping line the shopping list,
+    also when the app is already open (takeOpenView). Compiles and is tested through the bridge; not yet looked at on a
+    real home screen.
 
 [x] DONE 0.32 Print from the Android app. (v3.3.9)
     The phone apps show Print on the recipe page and the shopping list too. The bridge's print() hands the page to

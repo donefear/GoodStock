@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Send as text": "Trimite ca text",
   "Save the recipe file": "Salvează fișierul rețetei",
   "Open a recipe file": "Deschide un fișier de rețetă",
+  "Use soon": "De folosit curând",
+  "Nothing to use up soon": "Nimic de terminat curând",
+  "The shopping list is empty": "Lista de cumpărături e goală",
+  "+ {count} more": { "one": "+ încă {count}", "few": "+ încă {count}", "other": "+ încă {count}" },
+  "{count} things on the shopping list": { "one": "{count} produs pe lista de cumpărături", "few": "{count} produse pe lista de cumpărături", "other": "{count} de produse pe lista de cumpărături" },
 };

@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Send as text": "שליחה כטקסט",
   "Save the recipe file": "שמירת קובץ המתכון",
   "Open a recipe file": "פתיחת קובץ מתכון",
+  "Use soon": "לשימוש בקרוב",
+  "Nothing to use up soon": "אין מה לגמור בקרוב",
+  "The shopping list is empty": "רשימת הקניות ריקה",
+  "+ {count} more": { "one": "+ עוד אחד", "two": "+ עוד שניים", "other": "+ עוד {count}" },
+  "{count} things on the shopping list": { "one": "דבר אחד ברשימת הקניות", "two": "שני דברים ברשימת הקניות", "other": "{count} דברים ברשימת הקניות" },
 };

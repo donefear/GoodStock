@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Same as the paper and green colour tokens in styles.css. -->
+    <!-- Same as the colour tokens in styles.css. -->
     <color name="paper">#F4F5EF</color>
     <color name="green">#33785E</color>
+    <color name="ink">#28342F</color>
+    <color name="line">#E4E8DF</color>
+    <color name="mint">#E1EEE5</color>
 </resources>

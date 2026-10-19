@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Send as text": "Als tekst versturen",
   "Save the recipe file": "Receptbestand opslaan",
   "Open a recipe file": "Receptbestand openen",
+  "Use soon": "Snel opmaken",
+  "Nothing to use up soon": "Niets dat snel op moet",
+  "The shopping list is empty": "Het boodschappenlijstje is leeg",
+  "+ {count} more": { "one": "+ nog {count}", "other": "+ nog {count}" },
+  "{count} things on the shopping list": { "one": "{count} ding op het boodschappenlijstje", "other": "{count} dingen op het boodschappenlijstje" },
 };

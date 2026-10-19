@@ -117,6 +117,20 @@ final class NativeBridge {
         activity.runOnUiThread(() -> activity.startActivity(Intent.createChooser(send, null)));
     }
 
+    /** The home-screen widget's text (KitchenWidget), written by the page whenever the kitchen changes. */
+    @JavascriptInterface
+    public void setWidget(String json) {
+        KitchenWidget.update(activity, json);
+    }
+
+    /** The page the widget asked to open ("inventory", "shopping"), once; empty otherwise. */
+    @JavascriptInterface
+    public String takeOpenView() {
+        String view = MainActivity.pendingView;
+        MainActivity.pendingView = null;
+        return view == null ? "" : view;
+    }
+
     /** The page as it prints (its @media print styles) through Android's print service: a printer or Save as PDF. */
     @JavascriptInterface
     public void print() {

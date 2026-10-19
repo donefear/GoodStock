@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Send as text": "Отправить текстом",
   "Save the recipe file": "Сохранить файл рецепта",
   "Open a recipe file": "Открыть файл рецепта",
+  "Use soon": "Использовать скоро",
+  "Nothing to use up soon": "Ничего не нужно доедать",
+  "The shopping list is empty": "Список покупок пуст",
+  "+ {count} more": { "one": "+ ещё {count}", "few": "+ ещё {count}", "many": "+ ещё {count}", "other": "+ ещё {count}" },
+  "{count} things on the shopping list": { "one": "{count} позиция в списке покупок", "few": "{count} позиции в списке покупок", "many": "{count} позиций в списке покупок", "other": "{count} позиции в списке покупок" },
 };

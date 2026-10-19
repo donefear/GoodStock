@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Send as text": "Metin olarak gönder",
   "Save the recipe file": "Tarif dosyasını kaydet",
   "Open a recipe file": "Tarif dosyası aç",
+  "Use soon": "Yakında kullan",
+  "Nothing to use up soon": "Yakında bitirilecek bir şey yok",
+  "The shopping list is empty": "Alışveriş listesi boş",
+  "+ {count} more": { "one": "+ {count} tane daha", "other": "+ {count} tane daha" },
+  "{count} things on the shopping list": { "one": "Alışveriş listesinde {count} şey", "other": "Alışveriş listesinde {count} şey" },
 };

@@ -1207,7 +1207,15 @@ window.goodstockBack = () => {
   return false;
 };
 // Coming back to the app: catch up on timers that ended while it was paused, and on expiry reminders.
+// The Android widget opens the app on a page (Inventory or Shopping); MainActivity keeps it until the page asks.
+function openViewFromApp() {
+  if (!STANDALONE || typeof nativeApp.takeOpenView !== 'function') return;
+  const view = String(nativeApp.takeOpenView() || '');
+  if (['inventory', 'shopping', 'week', 'recipes', 'tools'].includes(view)) { activeView = view; render(); }
+}
+
 window.goodstockResume = () => {
+  openViewFromApp();
   checkRemoteRevision();
   syncFolderNow();
   runAutoBackup();
@@ -1219,4 +1227,4 @@ window.goodstockResume = () => {
 document.addEventListener('pointerdown', unlockAlarmAudio, { once: true, capture: true });
 window.addEventListener('offline', () => { updateSyncStatus('offline'); render(); });
 
-initialize();
+initialize().then(openViewFromApp);

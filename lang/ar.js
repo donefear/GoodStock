@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Send as text": "أرسِل كنص",
   "Save the recipe file": "احفظ ملف الوصفة",
   "Open a recipe file": "افتح ملف وصفة",
+  "Use soon": "استخدمه قريبًا",
+  "Nothing to use up soon": "لا شيء يجب استخدامه قريبًا",
+  "The shopping list is empty": "قائمة التسوّق فارغة",
+  "+ {count} more": { "zero": "+ {count}", "one": "+ واحد آخر", "two": "+ اثنان آخران", "few": "+ {count} أخرى", "many": "+ {count} أخرى", "other": "+ {count} أخرى" },
+  "{count} things on the shopping list": { "zero": "لا شيء في قائمة التسوّق", "one": "شيء واحد في قائمة التسوّق", "two": "شيئان في قائمة التسوّق", "few": "{count} أشياء في قائمة التسوّق", "many": "{count} شيئًا في قائمة التسوّق", "other": "{count} شيء في قائمة التسوّق" },
 };

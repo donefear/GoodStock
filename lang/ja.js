@@ -1000,4 +1000,9 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Send as text": "テキストで送る",
   "Save the recipe file": "レシピファイルを保存",
   "Open a recipe file": "レシピファイルを開く",
+  "Use soon": "早めに使う",
+  "Nothing to use up soon": "早めに使うものはありません",
+  "The shopping list is empty": "買い物リストは空です",
+  "+ {count} more": "+ ほか {count} 件",
+  "{count} things on the shopping list": "買い物リストに {count} 件",
 };
