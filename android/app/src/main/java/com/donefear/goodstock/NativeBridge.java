@@ -117,6 +117,15 @@ final class NativeBridge {
         activity.runOnUiThread(() -> activity.startActivity(Intent.createChooser(send, null)));
     }
 
+    /**
+     * The daily update check against GitHub releases (the page's Settings → Your data → Updates). An APK from there
+     * installs over this one when both are signed with the same key: see android/README.md, "Signing".
+     */
+    @JavascriptInterface
+    public boolean checksForUpdates() {
+        return true;
+    }
+
     /** The home-screen widget's text (KitchenWidget), written by the page whenever the kitchen changes. */
     @JavascriptInterface
     public void setWidget(String json) {

@@ -51,7 +51,18 @@ export default async function run({ browser, base, phoneShim }) {
   if (await page.evaluate(() => updateSettings().daily)) fail.push('turning the daily check off was not saved');
   await page.close();
 
-  // The browser and the phone apps don't show it.
+  // The Android app (0.36) checks too, and says how to install the APK.
+  const android = await browser.newPage();
+  android.on('pageerror', (error) => fail.push(error.message));
+  await android.evaluateOnNewDocument(`${desktop.replace("window.GoodstockNative.platform = 'desktop';", 'delete window.GoodstockNative.platform; window.GoodstockNative.checksForUpdates = function () { return true; };')} localStorage.removeItem('goodstock-update-check-v1');`);
+  await android.goto(`${base}/index.html`, { waitUntil: 'networkidle2' });
+  await wait(300);
+  const androidText = await android.evaluate(() => { document.querySelector('#settings-button').click(); showSettingsTab('data'); return { hidden: document.querySelector('#updates-zone').hidden, text: document.querySelector('#updates-text').textContent }; });
+  log.push(`android: ${androidText.text}`);
+  if (androidText.hidden || !/v99\.0\.0/.test(androidText.text) || !/\.apk/.test(androidText.text)) fail.push('the Android app should offer the update with the .apk note');
+  await android.close();
+
+  // The browser and the other phone apps don't show it.
   for (const shim of ['', phoneShim]) {
     const other = await browser.newPage();
     if (shim) await other.evaluateOnNewDocument(shim);

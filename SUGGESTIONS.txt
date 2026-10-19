@@ -98,10 +98,13 @@ PHONE AND DESKTOP APPS
     back. The page side is tested (tests/e2e/desktop-tray.mjs); the tray itself is Electron and not yet tried on a real
     Windows or Mac desktop.
 
-0.36 GitHub-built APKs that update your own install, and update checks on Android.
-    From 0.25. The APKs GitHub builds are signed with a different key than yours, so they can't update the app
-    you installed. With the release key as a GitHub secret (only with your OK; it's never committed) every GitHub
-    APK would install as an update, and the same daily update check as the desktop app could point to it.
+[x] DONE 0.36 GitHub-built APKs that update your own install, and update checks on Android. (v3.3.13)
+    The Android app now has the desktop app's daily update check (Settings → Your data → Updates, a dot on the
+    Settings button when GitHub has a newer release), with "download the .apk file and open it" added; the bridge says
+    so with checksForUpdates(). The Android workflow already signs with your key when the GOODSTOCK_KEYSTORE_* secrets
+    exist (android/README.md, "Signing").
+    STILL FOR YOU: add those four secrets on GitHub (only you can, and only if you want GitHub's APKs to update the app
+    you installed); until then GitHub's APK can't install over a locally built one.
 
 
 SERVER VERSION

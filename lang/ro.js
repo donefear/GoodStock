@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock rulează în continuare în bara de sistem, ca celelalte dispozitive să fie la zi. Închide-l din pictograma de acolo.",
   "Start with the computer, in the background": "Pornește odată cu computerul, în fundal",
   "Closing the window keeps sharing from the tray.": "Dacă închizi fereastra, partajarea continuă din bara de sistem.",
+  "On the release page, download the .apk file and open it to install the update.": "Pe pagina versiunii, descarcă fișierul .apk și deschide-l ca să instalezi actualizarea.",
 };

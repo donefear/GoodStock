@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.de = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock läuft im Infobereich weiter, damit die anderen Geräte auf dem Stand bleiben. Beende es über das Symbol dort.",
   "Start with the computer, in the background": "Mit dem Computer starten, im Hintergrund",
   "Closing the window keeps sharing from the tray.": "Wenn du das Fenster schließt, wird im Infobereich weiter geteilt.",
+  "On the release page, download the .apk file and open it to install the update.": "Lade auf der Release-Seite die .apk-Datei herunter und öffne sie, um das Update zu installieren.",
 };

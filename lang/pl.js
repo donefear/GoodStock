@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock działa dalej w zasobniku, żeby inne urządzenia były na bieżąco. Zamknij go z ikony w zasobniku.",
   "Start with the computer, in the background": "Uruchamiaj z komputerem, w tle",
   "Closing the window keeps sharing from the tray.": "Zamknięcie okna nie przerywa udostępniania z zasobnika.",
+  "On the release page, download the .apk file and open it to install the update.": "Na stronie wydania pobierz plik .apk i otwórz go, aby zainstalować aktualizację.",
 };

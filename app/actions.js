@@ -780,12 +780,12 @@ async function runAutoBackup(force = false) {
   if ($('#settings-dialog').open) fillAutoBackup();
 }
 
-// Updates (desktop app): once a day the app asks GitHub for the newest release (releases are the X.Y.0 versions), and
+// Updates (desktop and Android apps): once a day the app asks GitHub for the newest release (the tagged versions), and
 // when it is newer, Settings → Your data says so with a download link and the Settings button gets a dot. Nothing is
 // downloaded or installed by itself. The daily check can be turned off there.
 const UPDATE_CHECK_KEY = 'goodstock-update-check-v1';
 const RELEASES_API = 'https://api.github.com/repos/donefear/GoodStock/releases/latest';
-const canCheckUpdates = () => STANDALONE && nativeApp.platform === 'desktop';
+const canCheckUpdates = () => STANDALONE && (nativeApp.platform === 'desktop' || (typeof nativeApp.checksForUpdates === 'function' && nativeApp.checksForUpdates() === true));
 const appVersion = () => (((document.querySelector('.settings-actions .made-by') || {}).textContent || '').match(/Goodstock v(\d+\.\d+\.\d+)/) || [])[1] || '';
 
 function isNewerVersion(candidate, current) {
@@ -815,7 +815,10 @@ function fillUpdates() {
   $('#updates-download').hidden = !updateAvailable(settings);
   $('#updates-daily').checked = settings.daily;
   if (updateCheckRunning) text.textContent = t('Checking for updates…');
-  else if (updateAvailable(settings)) text.textContent = t('Goodstock v{version} is available. You have v{current}.', { version: settings.latest, current: appVersion() });
+  else if (updateAvailable(settings)) {
+    text.textContent = t('Goodstock v{version} is available. You have v{current}.', { version: settings.latest, current: appVersion() })
+      + (nativeApp.platform === 'desktop' ? '' : ` ${t('On the release page, download the .apk file and open it to install the update.')}`);
+  }
   else if (settings.error) text.textContent = t('Could not check for updates. Check the internet connection and try again.');
   else if (settings.last) text.textContent = t('Up to date (v{current}). Last checked: {date}.', { current: appVersion(), date: formatDate(new Date(settings.last), { day: 'numeric', month: 'short', year: 'numeric' }) });
   else text.textContent = t('Goodstock can look for a newer version on GitHub once a day. Nothing is installed by itself.');

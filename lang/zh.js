@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock 会在托盘中继续运行，让其他设备保持同步。可从托盘图标退出。",
   "Start with the computer, in the background": "随电脑启动，在后台运行",
   "Closing the window keeps sharing from the tray.": "关闭窗口后会在托盘中继续共享。",
+  "On the release page, download the .apk file and open it to install the update.": "在发布页面下载 .apk 文件并打开即可安装更新。",
 };

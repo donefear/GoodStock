@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock blijft in het systeemvak draaien, zodat de andere apparaten bijblijven. Sluit het af via het pictogram daar.",
   "Start with the computer, in the background": "Met de computer mee opstarten, op de achtergrond",
   "Closing the window keeps sharing from the tray.": "Als je het venster sluit, blijft het delen vanuit het systeemvak.",
+  "On the release page, download the .apk file and open it to install the update.": "Download op de releasepagina het .apk-bestand en open het om de update te installeren.",
 };

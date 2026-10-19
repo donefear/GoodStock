@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Diğer cihazlar güncel kalsın diye Goodstock sistem tepsisinde çalışmaya devam eder. Oradaki simgeden kapatın.",
   "Start with the computer, in the background": "Bilgisayarla birlikte arka planda başlat",
   "Closing the window keeps sharing from the tray.": "Pencereyi kapatınca paylaşım sistem tepsisinden sürer.",
+  "On the release page, download the .apk file and open it to install the update.": "Sürüm sayfasından .apk dosyasını indirip açarak güncellemeyi yükleyin.",
 };

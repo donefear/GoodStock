@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "Goodstock продолжает работать в трее, чтобы другие устройства оставались в курсе. Закройте его через значок там.",
   "Start with the computer, in the background": "Запускать вместе с компьютером, в фоне",
   "Closing the window keeps sharing from the tray.": "Если закрыть окно, раздача продолжится из трея.",
+  "On the release page, download the .apk file and open it to install the update.": "На странице выпуска скачайте файл .apk и откройте его, чтобы установить обновление.",
 };

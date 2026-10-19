@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "يبقى Goodstock يعمل في علبة النظام لتبقى الأجهزة الأخرى متزامنة. أغلقه من أيقونته هناك.",
   "Start with the computer, in the background": "ابدأ مع الكمبيوتر في الخلفية",
   "Closing the window keeps sharing from the tray.": "إغلاق النافذة يُبقي المشاركة من علبة النظام.",
+  "On the release page, download the .apk file and open it to install the update.": "من صفحة الإصدار، نزّل ملف ‎.apk وافتحه لتثبيت التحديث.",
 };

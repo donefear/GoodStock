@@ -1012,4 +1012,5 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Goodstock keeps running in the tray, so the other devices stay in step. Quit it from the tray icon.": "ほかの端末と同期し続けるため、Goodstock はトレイで動き続けます。終了はトレイのアイコンから。",
   "Start with the computer, in the background": "コンピューターと一緒にバックグラウンドで起動",
   "Closing the window keeps sharing from the tray.": "ウィンドウを閉じてもトレイから共有を続けます。",
+  "On the release page, download the .apk file and open it to install the update.": "リリースページで .apk ファイルをダウンロードして開くと、アップデートをインストールできます。",
 };
