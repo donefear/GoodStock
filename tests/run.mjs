@@ -127,6 +127,21 @@ async function main() {
           return ['DM Sans', 'Fraunces', 'Noto Sans Symbols 2', 'Noto Emoji'].filter((family) => ![...document.fonts].some((face) => face.family.replace(/"/g, '') === family && face.status === 'loaded'));
         });
         if (fonts.length) fail.push(`fonts not loaded: ${fonts.join(', ')}`);
+        // Dark theme: the page swaps in legacy/styles-dark.css (colours written out for engines without custom
+        // properties), and back.
+        const themes = await page.evaluate(async () => {
+          const look = async (theme) => {
+            applyTheme(theme);
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            const sheets = [...document.querySelectorAll('link[rel="stylesheet"]')].map((link) => link.getAttribute('href')).filter((href) => href.startsWith('legacy/'));
+            return { sheets, body: getComputedStyle(document.body).backgroundColor, card: getComputedStyle(document.querySelector('.stats-row, .section-block')).color };
+          };
+          return { dark: await look('dark'), light: await look('light') };
+        });
+        log.push(`themes: ${JSON.stringify(themes)}`);
+        if (themes.dark.sheets.join() !== 'legacy/styles-dark.css') fail.push(`dark theme stylesheets: ${themes.dark.sheets.join(', ')}`);
+        if (themes.dark.body !== 'rgb(21, 29, 25)') fail.push(`dark theme background is ${themes.dark.body}, not #151d19`);
+        if (themes.light.sheets.join() !== 'legacy/styles.css' || themes.light.body !== 'rgb(244, 245, 239)') fail.push(`back to light: ${JSON.stringify(themes.light)}`);
       } finally {
         await browser.close();
       }

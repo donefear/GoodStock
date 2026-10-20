@@ -76,6 +76,28 @@ export const legacyValues = () => ({
   },
 });
 
+// Theme colours written out. Old engines have no custom properties, so tools/build-legacy.mjs makes two stylesheets,
+// one with the light values (:root) and one with the dark ones (:root[data-theme="dark"]), and tools/legacy/dom.js
+// switches between them with data-theme. Every var() of a theme colour is replaced; print styles keep theirs.
+export const legacyThemeValues = (theme) => ({
+  postcssPlugin: 'goodstock-legacy-theme-values',
+  Once(root) {
+    const values = { light: {}, dark: {} };
+    root.walkRules((rule) => {
+      if (rule.parent.type !== 'root') return;
+      const target = rule.selector === ':root' ? values.light : rule.selector === ':root[data-theme="dark"]' ? values.dark : null;
+      if (target) rule.walkDecls(/^--/, (decl) => { target[decl.prop] = decl.value; });
+    });
+    if (!Object.keys(values.dark).length) throw new Error('legacy styles: no :root[data-theme="dark"] colours found');
+    const chosen = theme === 'dark' ? { ...values.light, ...values.dark } : values.light;
+    root.walkDecls((decl) => {
+      if (decl.prop.startsWith('--') || !/var\(--/.test(decl.value)) return;
+      for (let parent = decl.parent; parent; parent = parent.parent) if (parent.type === 'atrule' && /print/.test(parent.params)) return;
+      decl.value = decl.value.replace(/var\((--[\w-]+)\s*(?:,\s*([^)]*))?\)/g, (all, name) => (name in values.dark ? chosen[name] : all));
+    });
+  },
+});
+
 // A selector list with one selector an old engine doesn't know is dropped whole; give those selectors rules of their own.
 const NEWER_SELECTORS = /:focus-visible|:focus-within|:is\(|:where\(|:has\(|::backdrop|:placeholder-shown|:any-link/;
 

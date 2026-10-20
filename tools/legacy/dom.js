@@ -128,6 +128,37 @@
     if (reason && console && console.error) console.error('Goodstock: ' + (reason.stack || reason.message || reason));
   });
 
+  // Dark theme: old engines have no CSS custom properties, so the dark colours are a stylesheet of their own
+  // (legacy/styles-dark.css, tools/build-legacy.mjs), swapped in when the app sets data-theme. The new sheet is added
+  // before the old one goes, so the page is never unstyled.
+  var root = document.documentElement;
+  var pending = null;
+  var showTheme = function () {
+    var current = document.getElementById('legacy-styles');
+    if (!current) return;
+    var wanted = root.getAttribute('data-theme') === 'dark' ? 'legacy/styles-dark.css' : 'legacy/styles.css';
+    if (pending) {
+      // Switched again before the last sheet loaded.
+      if (pending.parentNode) pending.parentNode.removeChild(pending);
+      pending = null;
+    }
+    if (current.getAttribute('href') === wanted) return;
+    var next = current.cloneNode();
+    next.removeAttribute('id');
+    next.setAttribute('href', wanted);
+    pending = next;
+    next.onload = function () {
+      if (pending !== next) return;
+      pending = null;
+      if (current.parentNode) current.parentNode.removeChild(current);
+      next.id = 'legacy-styles';
+    };
+    current.parentNode.insertBefore(next, current.nextSibling);
+  };
+  var ThemeObserver = window.MutationObserver || window.WebKitMutationObserver;
+  new ThemeObserver(showTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  showTheme();
+
   // Layout fallbacks in legacy/styles.css apply under these classes.
   var supports = function (property, value) { return !!(window.CSS && CSS.supports && CSS.supports(property, value)); };
   var classes = [];

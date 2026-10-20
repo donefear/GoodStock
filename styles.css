@@ -635,6 +635,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 :root[data-theme="dark"] .picker-item p, :root[data-theme="dark"] .recipe-card > p { color: #a4b0a6; }
 :root[data-theme="dark"] .recipe-missing { background: #293c30; color: #a6d5b0; }
 :root[data-theme="dark"] .recipe-missing.has-missing { background: #403824; color: #edce83; }
+:root[data-theme="dark"] .stat-icon.yellow, :root[data-theme="dark"] .item-symbol.household { background: #403824; color: #edce83; }
 :root[data-theme="dark"] .integration-note { border-color: #34473a; background: #202e25; }
 :root[data-theme="dark"] .integration-note p { color: #adbaaf; }
 :root[data-theme="dark"] .integration-note p strong { color: #dce9de; }

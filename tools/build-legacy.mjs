@@ -4,7 +4,7 @@
 //
 //   - JavaScript: each script through Babel (preset-env, Chrome 30), with polyfills first (legacy/polyfills.js:
 //     core-js, fetch, <dialog>, DOM methods, legacyRegExp for patterns built at run time).
-//   - CSS: custom properties resolved to their light-theme values, logical properties → left/right, vendor prefixes,
+//   - CSS: theme colours written out, in styles.css (light) and styles-dark.css (swapped in by tools/legacy/dom.js), logical properties → left/right, vendor prefixes,
 //     and fallbacks for grid, min()/max()/clamp() and newer selectors (tools/legacy/css.mjs), then
 //     tools/legacy/legacy.css.
 //
@@ -21,7 +21,7 @@ import postcss from 'postcss';
 import customProperties from 'postcss-custom-properties';
 import logical from 'postcss-logical';
 import { symbolsInApp } from '../fonts/build-legacy-fonts.mjs';
-import { legacyGrid, legacySelectors, legacyValues } from './legacy/css.mjs';
+import { legacyGrid, legacySelectors, legacyThemeValues, legacyValues } from './legacy/css.mjs';
 
 const require = createRequire(import.meta.url);
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -147,23 +147,28 @@ const newSymbols = (await symbolsInApp(root)).filter((symbol) => !knownSymbols.h
 if (newSymbols.length) throw new Error(`New symbols ${newSymbols.join(' ')} are not in the old tablets' fonts yet: run node fonts/build-legacy-fonts.mjs`);
 const css = read('styles.css').replace("@import url('fonts/fonts.css');", "@import url('../fonts/legacy/fonts.css');");
 if (!css.includes('fonts/legacy/fonts.css')) throw new Error("styles.css no longer imports fonts/fonts.css; update tools/build-legacy.mjs");
-const styled = await postcss([
-  customProperties({ preserve: true }),
-  logical(),
-  legacyValues(),
-  legacySelectors(),
-  legacyGrid(),
-  autoprefixer({ overrideBrowserslist: [TARGET, 'android 4.4'] }),
-]).process(css, { from: join(root, 'styles.css'), to: join(out, 'styles.css') });
-// @import only counts at the very top, so the fonts' import goes before dialog-polyfill's styles.
-const imports = styled.css.match(/^@import [^;]+;\n?/gm) || [];
-if (!imports.length) throw new Error('legacy styles: the fonts @import is missing');
-write('styles.css', [...imports, read('node_modules/dialog-polyfill/dist/dialog-polyfill.css'), styled.css.replace(/^@import [^;]+;\n?/gm, ''), read('tools/legacy/legacy.css')].join('\n'));
+// Two stylesheets with the theme colours written out (old engines have no custom properties): styles.css (light)
+// and styles-dark.css. tools/legacy/dom.js switches between them when the app sets data-theme.
+for (const theme of ['light', 'dark']) {
+  const styled = await postcss([
+    legacyThemeValues(theme),
+    customProperties({ preserve: true }),
+    logical(),
+    legacyValues(),
+    legacySelectors(),
+    legacyGrid(),
+    autoprefixer({ overrideBrowserslist: [TARGET, 'android 4.4'] }),
+  ]).process(css, { from: join(root, 'styles.css'), to: join(out, 'styles.css') });
+  // @import only counts at the very top, so the fonts' import goes before dialog-polyfill's styles.
+  const imports = styled.css.match(/^@import [^;]+;\n?/gm) || [];
+  if (!imports.length) throw new Error('legacy styles: the fonts @import is missing');
+  write(theme === 'dark' ? 'styles-dark.css' : 'styles.css', [...imports, read('node_modules/dialog-polyfill/dist/dialog-polyfill.css'), styled.css.replace(/^@import [^;]+;\n?/gm, ''), read('tools/legacy/legacy.css')].join('\n'));
+}
 
 // The page: same markup, files from legacy/ (the <base> keeps every other address, like ingredients.json, at the root).
 let page = html
   .replace('<head>', '<head>\n    <base href="../" />')
-  .replace('<link rel="stylesheet" href="styles.css" />', '<link rel="stylesheet" href="legacy/styles.css" />')
+  .replace('<link rel="stylesheet" href="styles.css" />', '<link rel="stylesheet" href="legacy/styles.css" id="legacy-styles" />')
   .replace('</title>', '</title>\n    <script src="legacy/polyfills.js"></script>');
 for (const file of scripts) {
   page = page.replace(new RegExp(`<script(?: type="module")? src="${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*></script>`), `<script src="legacy/${legacyName(file)}" defer></script>`);
