@@ -142,7 +142,7 @@ write('polyfills.js', [
 
 // Fonts: .woff copies and the icon symbols' fonts (fonts/build-legacy-fonts.mjs), which must cover every symbol the
 // app uses. legacy/styles.css sits one folder down, so its @import goes up one.
-const knownSymbols = new Set(read('fonts/legacy/symbols.txt').split('\n'));
+const knownSymbols = new Set(read('fonts/legacy/symbols.txt').split(/\r?\n/));
 const newSymbols = (await symbolsInApp(root)).filter((symbol) => !knownSymbols.has(symbol));
 if (newSymbols.length) throw new Error(`New symbols ${newSymbols.join(' ')} are not in the old tablets' fonts yet: run node fonts/build-legacy-fonts.mjs`);
 const css = read('styles.css').replace("@import url('fonts/fonts.css');", "@import url('../fonts/legacy/fonts.css');");
