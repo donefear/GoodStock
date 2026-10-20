@@ -35,6 +35,7 @@ public class MainActivity extends Activity {
     static final int REQUEST_NOTIFICATIONS = 3;
     static final int REQUEST_BACKUP_FOLDER = 4;
     static final int REQUEST_SYNC_FOLDER = 5;
+    static final int REQUEST_PICK_FILE = 6;
 
     /** True while the app is on screen; timer alarms then ring in the app instead of as a notification. */
     static volatile boolean visible;
@@ -351,6 +352,8 @@ public class MainActivity extends Activity {
             bridge.onBackupFolderResult(resultCode, data);
         } else if (requestCode == REQUEST_SYNC_FOLDER) {
             bridge.onSyncFolderResult(resultCode, data);
+        } else if (requestCode == REQUEST_PICK_FILE) {
+            bridge.onPickFileResult(resultCode, data);
         }
     }
 

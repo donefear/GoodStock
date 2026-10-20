@@ -47,6 +47,30 @@ function nativeCall(method, ...args) {
   });
 }
 
+// Android 4.4's WebView never opens a file picker for <input type="file">, so there the app's bridge picks the file
+// (canPickFile, pickFile) and the page gets it as a Blob with a name and text() like a File.
+const nativeFilePicker = () => STANDALONE && typeof nativeApp.canPickFile === 'function' && Boolean(nativeApp.canPickFile());
+
+async function pickNativeFile(accept) {
+  const { name, type, data } = JSON.parse(await nativeCall('pickFile', accept || '*/*'));
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+  const file = new Blob([bytes], { type: type || 'application/octet-stream' });
+  file.name = name || '';
+  // UTF-8 bytes to text without TextDecoder, which old engines lack.
+  file.text = () => Promise.resolve(decodeURIComponent(escape(binary)));
+  return file;
+}
+
+// Opens the picker of a hidden file input; its "change" handler gets the file either way (useChosenFile).
+function openFilePicker(input) {
+  if (!nativeFilePicker()) { input.click(); return; }
+  pickNativeFile(input.getAttribute('accept'))
+    .then((file) => useChosenFile(input.id, file))
+    .catch((error) => { if (error.message !== 'cancelled') console.error(error); });
+}
+
 // Messages from the server and the shared helpers (mealie.mjs, deepl.mjs, recipe-import.mjs) arrive in English and
 // are passed through t() where they are shown; these lines put them in the translation tables.
 N_('Mealie did not accept the API key.'); N_('DeepL did not accept the API key.'); N_('The DeepL character limit for this month is used up.');

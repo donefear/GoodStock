@@ -241,7 +241,7 @@ document.addEventListener('click', async (event) => {
     if (connection) { showSettingsTab('connections'); connection.open = true; }
   }
   if (action === 'settings-tab') showSettingsTab(button.dataset.tab);
-  if (action === 'restore-data') $('#restore-file').click();
+  if (action === 'restore-data') openFilePicker($('#restore-file'));
   if (action === 'restore-server-backup') await restoreServerBackup(button.dataset.name);
   if (action === 'view-recipe') {
     if (button.dataset.remote === 'true') openRecipeDialog(id, true);
@@ -403,7 +403,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'edit-recipe') openRecipeEditor(recipeById(id));
   if (action === 'delete-recipe') deleteRecipe(id);
   if (action === 'recipe-import-url') await importRecipeFromUrl();
-  if (action === 'recipe-photo-pick') $('#recipe-photo-file').click();
+  if (action === 'recipe-photo-pick') openFilePicker($('#recipe-photo-file'));
   if (action === 'recipe-photo-remove') setEditorPhoto('');
   if (action === 'recipe-import-text') {
     const shared = readRecipeFile($('#recipe-edit-form').elements.importText.value);
@@ -451,30 +451,36 @@ document.addEventListener('input', (event) => {
   }
 });
 
+// A file picked in one of the hidden file inputs, or through the bridge on Android 4.4 (openFilePicker).
+async function useChosenFile(id, file) {
+  if (!file) return;
+  if (id === 'recipe-file') {
+    const shared = readRecipeFile(await file.text());
+    fillRecipeEditor(shared || {}, shared ? t('Recipe file read. Check it, then save.') : t('That is not a Goodstock recipe file.'));
+  }
+  if (id === 'restore-file') await restoreKitchen(file);
+  if (id === 'recipe-photo-file') await pickRecipePhoto(file);
+}
+
+// "Open a recipe file" is a label around its input, so the bridge's picker has to take over the click there.
+document.addEventListener('click', (event) => {
+  const label = event.target.closest?.('label.recipe-file-button');
+  if (!label || !nativeFilePicker()) return;
+  event.preventDefault();
+  openFilePicker(label.querySelector('input[type="file"]'));
+}, true);
+
 document.addEventListener('change', async (event) => {
-  if (event.target.id === 'recipe-file') {
+  if (['recipe-file', 'restore-file', 'recipe-photo-file'].includes(event.target.id)) {
     const file = event.target.files?.[0];
     event.target.value = '';
-    const shared = file ? readRecipeFile(await file.text()) : null;
-    if (file) fillRecipeEditor(shared || {}, shared ? t('Recipe file read. Check it, then save.') : t('That is not a Goodstock recipe file.'));
+    await useChosenFile(event.target.id, file);
     return;
   }
   if (event.target.id === 'host-start-at-login') { setStartAtLogin(event.target.checked); return; }
   if (event.target.id === 'updates-daily') {
     saveUpdateSettings({ daily: event.target.checked });
     if (event.target.checked) await checkForUpdates();
-    return;
-  }
-  if (event.target.id === 'restore-file') {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (file) await restoreKitchen(file);
-    return;
-  }
-  if (event.target.id === 'recipe-photo-file') {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    await pickRecipePhoto(file);
     return;
   }
   if (event.target.id === 'location-filter') { inventoryLocation = event.target.value; render(); }

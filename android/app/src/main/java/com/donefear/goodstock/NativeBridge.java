@@ -42,6 +42,7 @@ final class NativeBridge {
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private String pendingSaveId;
     private String pendingSaveContent;
+    private String pendingPickId;
     private String pendingPermissionId;
     private String pendingFolderId;
     private String pendingSyncFolderId;
@@ -326,6 +327,67 @@ final class NativeBridge {
                 callback(id, true, "saved");
             } catch (Exception error) {
                 callback(id, false, "The backup could not be written");
+            }
+        });
+    }
+
+    /**
+     * Android 4.4's WebView never opens a file picker for the page's file inputs (onShowFileChooser came with 5.0),
+     * so there the page asks the bridge instead (0.41).
+     */
+    @JavascriptInterface
+    public boolean canPickFile() {
+        return Build.VERSION.SDK_INT < 21;
+    }
+
+    /** Opens Android's file picker; answers with {name, type, data (base64)} or "cancelled". */
+    @JavascriptInterface
+    public void pickFile(String callbackId, String accept) {
+        pendingPickId = callbackId;
+        String type = accept != null && accept.startsWith("image/") ? "image/*" : "*/*";
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType(type);
+        activity.runOnUiThread(() -> {
+            try {
+                activity.startActivityForResult(Intent.createChooser(intent, null), MainActivity.REQUEST_PICK_FILE);
+            } catch (Exception noPicker) {
+                pendingPickId = null;
+                callback(callbackId, false, "No app on this device can pick a file");
+            }
+        });
+    }
+
+    void onPickFileResult(int resultCode, Intent data) {
+        String id = pendingPickId;
+        pendingPickId = null;
+        if (id == null) return;
+        Uri uri = data == null ? null : data.getData();
+        if (resultCode != Activity.RESULT_OK || uri == null) {
+            callback(id, false, "cancelled");
+            return;
+        }
+        network.execute(() -> {
+            try (InputStream in = activity.getContentResolver().openInputStream(uri)) {
+                if (in == null) throw new IllegalStateException("Could not open the file");
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                byte[] buffer = new byte[16_384];
+                for (int read; (read = in.read(buffer)) != -1; ) {
+                    bytes.write(buffer, 0, read);
+                    if (bytes.size() > 20_000_000) throw new IllegalStateException("That file is too large.");
+                }
+                String name = uri.getLastPathSegment();
+                try (android.database.Cursor cursor = activity.getContentResolver().query(uri, new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+                    if (cursor != null && cursor.moveToFirst()) name = cursor.getString(0);
+                } catch (Exception ignored) {
+                    // Keep the name from the address.
+                }
+                JSONObject file = new JSONObject()
+                        .put("name", name == null ? "" : name)
+                        .put("type", String.valueOf(activity.getContentResolver().getType(uri)))
+                        .put("data", android.util.Base64.encodeToString(bytes.toByteArray(), android.util.Base64.NO_WRAP));
+                callback(id, true, file.toString());
+            } catch (Exception error) {
+                String message = error.getMessage();
+                callback(id, false, message == null ? "The file could not be read" : message);
             }
         });
     }

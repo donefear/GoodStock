@@ -17,12 +17,13 @@ of these start. Top pick: 0.41, because without it an old tablet can't bring in 
 OLD TABLETS
 -----------
 
-0.41 Pick files on Android 4.4.
-    Android 4.4's WebView never asks the app to open a file picker (onShowFileChooser only exists from Android 5.0),
-    so on such a tablet "Restore" a backup, "Open a recipe file" and adding a recipe photo do nothing. A bridge call
-    pickFile(accept) that opens Android's own picker (ACTION_GET_CONTENT, which 4.4 has) and hands the file to the
-    page as text or a data URL, used wherever the page has a file input when the bridge offers it. Without this, the
-    only way to get an existing kitchen onto an old tablet is to connect it to a home server.
+[x] DONE 0.41 Pick files on Android 4.4. (v4.0.0)
+    Android 4.4's WebView never asks the app for a file picker, so "Restore", "Open a recipe file" and a recipe photo
+    did nothing there. On Android 4.4 the bridge now says canPickFile(), and pickFile(accept) opens Android's own picker
+    (photos only for a photo) and hands the file back as {name, type, base64}. The page turns it into a Blob with a name
+    and text() (UTF-8 without TextDecoder) and uses it like a picked file (openFilePicker, useChosenFile). Android 5.0
+    and newer, iOS and the desktop keep the WebView's own picker. Tested in tests/e2e/phone-pick-file.mjs (restore with
+    accented text, a recipe file, a photo, cancelling); the picker opens in the Android 4.4 emulator.
 
 0.42 Test the old-tablet page on Android 4.4 on GitHub, on every push.
     The legacy-build test runs the legacy page in a new Chromium, so it can't see what only an old engine gets wrong:
