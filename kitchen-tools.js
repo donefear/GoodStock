@@ -209,11 +209,20 @@ for (const [id, [arabic, hebrew]] of Object.entries(RTL_TOOL_WORDS)) {
 const CJK_TOOL_WORD = /^[぀-ヿ㐀-鿿(]/;
 const kitchenToolWords = {};
 
+const LETTER_AT_END = /\p{L}$/u;
+
+// One pattern with a group per word, and per word what may not come right before it: a letter (words in letter
+// scripts must start a word), or the text of a leading "(?<!…)" (CJK). Checked by hand rather than with a
+// lookbehind, which old browsers (Chrome before 62, iOS before 16.4) cannot compile.
 function kitchenToolWordPattern(id) {
   if (!(id in kitchenToolWords)) {
-    const words = KITCHEN_TOOL_WORDS[id] || [];
+    const words = (KITCHEN_TOOL_WORDS[id] || []).map((word) => {
+      const lookbehind = /^\(\?<!([^()]+)\)/.exec(word);
+      if (lookbehind) return { source: word.slice(lookbehind[0].length), notAfter: (before) => before.endsWith(lookbehind[1]) };
+      return { source: word, notAfter: CJK_TOOL_WORD.test(word) ? () => false : (before) => LETTER_AT_END.test(before) };
+    });
     kitchenToolWords[id] = words.length
-      ? new RegExp(words.map((word) => (CJK_TOOL_WORD.test(word) ? word : `(?<!\\p{L})${word}`)).join('|'), 'giu')
+      ? { pattern: new RegExp(words.map((word) => `(${word.source})`).join('|'), 'giu'), notAfter: words.map((word) => word.notAfter) }
       : null;
   }
   return kitchenToolWords[id];
@@ -232,7 +241,13 @@ function kitchenToolsIn(text) {
     };
     remaining = remaining.replace(new RegExp(tool.pattern.source, 'gi'), blank);
     const words = kitchenToolWordPattern(tool.id);
-    if (words) remaining = remaining.replace(words, blank);
+    if (words) {
+      remaining = remaining.replace(words.pattern, (match, ...rest) => {
+        const offset = rest[rest.length - 2];
+        const word = rest.findIndex((group) => group !== undefined);
+        return words.notAfter[word](rest[rest.length - 1].slice(0, offset)) ? match : blank(match, ...rest);
+      });
+    }
     if (first >= 0) found.push({ tool, first });
   }
   const replaced = new Set(found.flatMap((entry) => entry.tool.replaces || []));

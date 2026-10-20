@@ -73,15 +73,15 @@ final class Notifications {
     static void showTimer(Context context, String id, String title, String text) {
         if (id == null || !allowed(context)) return;
         ensureChannels(context);
-        Notification notification = builder(context, TIMERS)
+        Notification.Builder alert = builder(context, TIMERS)
                 .setSmallIcon(R.drawable.ic_notification)
                 // The web app writes both lines in the chosen language ("⏰ Time is up: Pasta", "10 min · tap to open…").
                 .setContentTitle(title == null || title.isEmpty() ? "⏰ Time is up" : title)
                 .setContentText(text == null ? "" : text)
-                .setCategory(Notification.CATEGORY_ALARM)
                 .setContentIntent(openApp(context))
-                .setAutoCancel(true)
-                .build();
+                .setAutoCancel(true);
+        if (Build.VERSION.SDK_INT >= 21) alert.setCategory(Notification.CATEGORY_ALARM);
+        Notification notification = alert.build();
         notification.flags |= Notification.FLAG_INSISTENT;
         manager(context).notify(notificationId(id), notification);
     }

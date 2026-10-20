@@ -2,7 +2,9 @@
 
 A standalone APK: the web app's files are bundled inside, so it runs with no server and keeps its data on the phone.
 
-Runs on Android 5.0 (2014) and newer. On Android 5–7, keep **Android System WebView** (or Chrome) up to date in the Play Store; the app runs inside it.
+Runs on Android 4.4 (2013) and newer. The app runs inside **Android System WebView**; keep it (or Chrome) up to date in the Play Store where you can.
+
+**Old tablets.** A WebView older than Chrome 80 (Android 4.4 is stuck at Chrome 30–33, and many Android 5–7 devices can no longer update from the Play Store) gets a second copy of the app, made for old browser engines: `legacy/`, built by `tools/build-legacy.mjs` before the APK (Babel to ES5, polyfills, CSS grid turned into flexbox; see the comments there). `MainActivity` picks it by itself. Data is the same as in the normal app. What differs there: the light theme only (no dark mode), left-to-right layout only (Arabic and Hebrew text still shows, mirrored layout does not), some icons show as blank on Android 4.4 because its fonts lack those symbols, and on Android 4.4 itself there is no barcode scanning, read aloud, shared folder, backup folder or hosting (those need Android 5.0), and picking a file to restore or import may not open.
 
 ## What differs from the server version
 
@@ -32,7 +34,7 @@ The first run downloads the Android SDK and Gradle into a Docker image (about 2 
 
 ## Test in an emulator
 
-`bash android/test-apk.sh [apk] [api]` boots a headless Android emulator in Docker (needs /dev/kvm, which WSL2 has), installs the APK, opens it and saves a screenshot and log in `dist/test/`. For example `22` is Android 5.1 with its original WebView 39 (shows the update notice), `30` is Android 11 (runs the app).
+`bash android/test-apk.sh [apk] [api]` boots a headless Android emulator in Docker (needs /dev/kvm, which WSL2 has), installs the APK, opens it and saves a screenshot and log in `dist/test/`. For example `19` is Android 4.4 with its WebView 30 and `22` is Android 5.1 with its original WebView 39 (both run the legacy page), `30` is Android 11 (runs the normal app). Without `/dev/kvm` the emulator runs in software, slower.
 
 ## Build on GitHub
 

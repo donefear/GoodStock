@@ -35,7 +35,7 @@ function findJsonLdRecipe(node) {
 // short heading lines, which cook mode shows as labels.
 function jsonLdInstructions(value) {
   if (!value) return [];
-  if (typeof value === 'string') return value.split(/\n+|(?<=\.)\s+(?=[A-Z])/).map(cleanWebText).filter(Boolean);
+  if (typeof value === 'string') return value.replace(/\.\s+(?=[A-Z])/g, '.\n').split(/\n+/).map(cleanWebText).filter(Boolean);
   if (Array.isArray(value)) return value.flatMap(jsonLdInstructions);
   if (typeof value === 'object') {
     const types = [].concat(value['@type'] || []).map((type) => String(type).toLowerCase());

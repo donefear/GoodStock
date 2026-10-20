@@ -73,6 +73,60 @@ async function main() {
     if (planted.length !== 2) fail.push(`the check missed a planted problem: ${JSON.stringify(planted)}`);
     report('chrome81-static', { fail, log: [check.stdout.trim()] });
   }
+  if (wanted('legacy')) {
+    // The copy for old tablets (tools/build-legacy.mjs): it builds, every script is plain ES5, and the page runs
+    // (all pages, a dialog and cook mode) without a script error. Chromium here is new, so this catches mistakes in
+    // the build itself (like scripts overwriting each other's helpers); old engines need the emulator
+    // (android/test-apk.sh … 19).
+    const fail = [];
+    const log = [];
+    const build = spawnSync(process.execPath, ['tools/build-legacy.mjs'], { cwd: root, encoding: 'utf8' });
+    if (build.status !== 0) fail.push(`build failed: ${(build.stderr || build.stdout).trim().split('\n').slice(0, 5).join(' / ')}`);
+    else {
+      const { parse } = await import('acorn');
+      const files = (await readdir(join(root, 'legacy'), { recursive: true })).filter((file) => file.endsWith('.js') && file !== 'polyfills.js');
+      for (const file of files) {
+        try { parse(await readFile(join(root, 'legacy', file), 'utf8'), { ecmaVersion: 5 }); } catch (error) { fail.push(`legacy/${file} is not ES5: ${error.message}`); }
+      }
+      log.push(`${files.length} scripts are ES5`);
+      const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+      try {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 800 });
+        page.on('pageerror', (error) => fail.push(`page error: ${error.message}`));
+        page.on('console', (message) => { if (message.type() === 'error' && /Goodstock:|Unhandled/.test(message.text())) fail.push(`console: ${message.text()}`); });
+        await page.setRequestInterception(true);
+        page.on('request', async (request) => {
+          const path = decodeURIComponent(new URL(request.url()).pathname).replace(/^\/+/, '');
+          if (!request.url().startsWith('http://legacy.test/') || path.startsWith('api/')) return request.respond({ status: 404, body: '{}' });
+          try {
+            const body = await readFile(join(root, path));
+            const type = { html: 'text/html', js: 'text/javascript', css: 'text/css', json: 'application/json', svg: 'image/svg+xml', woff2: 'font/woff2' }[path.split('.').pop()] || 'application/octet-stream';
+            request.respond({ status: 200, contentType: type, body });
+          } catch { request.respond({ status: 404, body: '' }); }
+        });
+        await page.goto('http://legacy.test/legacy/index.html');
+        await page.waitForSelector('#view-container .page-heading', { timeout: 15000 });
+        for (const view of ['inventory', 'week', 'shopping', 'recipes', 'tools']) {
+          await page.click(`.nav-item[data-view="${view}"]`);
+          const heading = await page.evaluate(() => (document.querySelector('#view-container .page-heading h1') || {}).textContent || '');
+          if (!heading) fail.push(`${view}: page did not render`);
+        }
+        const cook = await page.evaluate(async () => {
+          openRecipePage(state.recipes[0].id);
+          startCookSteps(state.recipes[0], '');
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          moveCookStep(1);
+          return document.querySelector('#steps-dialog').open;
+        });
+        if (!cook) fail.push('cook mode did not open');
+        log.push(`classes: ${await page.evaluate(() => document.documentElement.className)}`);
+      } finally {
+        await browser.close();
+      }
+    }
+    report('legacy-build', { fail, log });
+  }
   if (wanted('client-files')) {
     // Every client script is loaded by index.html, served by the server and kept in the offline cache.
     const scripts = (await readdir(join(root, 'app'))).filter((file) => file.endsWith('.js')).map((file) => `app/${file}`);

@@ -70,24 +70,14 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                Uri url = request.getUrl();
-                if (!APP_HOST.equals(url.getHost())) return null;
-                String path = url.getPath() == null ? "/" : url.getPath();
-                if (path.startsWith("/api/")) {
-                    // No server in the app: answer at once instead of letting the request time out.
-                    return new WebResourceResponse("application/json", "utf-8", 404, "Not Found",
-                            Collections.emptyMap(), new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)));
-                }
-                if (path.equals("/")) url = Uri.parse(APP_URL);
-                WebResourceResponse response = assetLoader.shouldInterceptRequest(url);
-                if (response == null) {
-                    // Not a bundled file (e.g. favicon.ico): answer "not found" instead of trying the internet.
-                    return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found",
-                            Collections.emptyMap(), new ByteArrayInputStream(new byte[0]));
-                }
-                // Module scripts need a JavaScript MIME type, which the asset loader does not know for .mjs.
-                if (path.endsWith(".mjs")) response.setMimeType("text/javascript");
-                return response;
+                return intercept(assetLoader, request.getUrl());
+            }
+
+            // Android 4.4 calls this older version instead.
+            @Override
+            @SuppressWarnings("deprecation")
+            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                return Build.VERSION.SDK_INT < 21 ? intercept(assetLoader, Uri.parse(url)) : null;
             }
 
             @Override
@@ -146,14 +136,20 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(bridge, "GoodstockNative");
         setContentView(webView);
 
-        // The page needs a reasonably recent WebView (Chrome 80+ engine). Old tablets often still have the one
-        // they shipped with; say so plainly instead of showing an empty page.
+        // The page needs a reasonably recent WebView (Chrome 80+ engine). Old tablets often still have the one they
+        // shipped with and can no longer update it: they get the legacy copy of the page (tools/build-legacy.mjs),
+        // made for engines from Chrome 30 (Android 4.4) on. Without it, say so plainly instead of an empty page.
         int engine = webViewMajorVersion();
         if (engine > 0 && engine < MIN_WEBVIEW_VERSION) {
-            showNotice("Please update Android System WebView",
-                    "Goodstock runs inside Android System WebView, and the version on this device (" + engine
-                            + ") is too old for it. Update \"Android System WebView\" (and Chrome) in the Play Store, then open Goodstock again.",
-                    true);
+            if (engine >= MIN_LEGACY_WEBVIEW_VERSION && hasAsset(LEGACY_ASSET)) {
+                startAsset = LEGACY_ASSET;
+                webView.loadUrl(LEGACY_URL);
+            } else {
+                showNotice("Please update Android System WebView",
+                        "Goodstock runs inside Android System WebView, and the version on this device (" + engine
+                                + ") is too old for it. Update \"Android System WebView\" (and Chrome) in the Play Store, then open Goodstock again.",
+                        true);
+            }
         } else {
             webView.loadUrl(APP_URL);
         }
@@ -166,7 +162,44 @@ public class MainActivity extends Activity {
 
     /** Oldest WebView (Chrome engine) major version the web app is tested with. */
     private static final int MIN_WEBVIEW_VERSION = 80;
+    /** Older engines down to this one (Android 4.4's Chrome 30) get the legacy page instead. */
+    private static final int MIN_LEGACY_WEBVIEW_VERSION = 30;
+    static final String LEGACY_ASSET = "legacy/index.html";
+    static final String LEGACY_URL = "https://" + APP_HOST + "/" + LEGACY_ASSET;
+    /** The bundled page this activity shows: index.html, or the legacy one on old WebViews. */
+    private String startAsset = "index.html";
     private boolean triedDirectLoad;
+
+    private boolean hasAsset(String name) {
+        try (java.io.InputStream ignored = getAssets().open(name)) {
+            return true;
+        } catch (java.io.IOException missing) {
+            return false;
+        }
+    }
+
+    // Before Android 5.0 a response can't carry a status code; an empty body does the job there.
+    private static WebResourceResponse notFound(String mimeType, byte[] body) {
+        ByteArrayInputStream data = new ByteArrayInputStream(body);
+        if (Build.VERSION.SDK_INT < 21) return new WebResourceResponse(mimeType, "utf-8", data);
+        return new WebResourceResponse(mimeType, "utf-8", 404, "Not Found", Collections.emptyMap(), data);
+    }
+
+    private WebResourceResponse intercept(WebViewAssetLoader assetLoader, Uri url) {
+        if (!APP_HOST.equals(url.getHost())) return null;
+        String path = url.getPath() == null ? "/" : url.getPath();
+        if (path.startsWith("/api/")) {
+            // No server in the app: answer at once instead of letting the request time out.
+            return notFound("application/json", "{}".getBytes(StandardCharsets.UTF_8));
+        }
+        if (path.equals("/")) url = Uri.parse("https://" + APP_HOST + "/" + startAsset);
+        WebResourceResponse response = assetLoader.shouldInterceptRequest(url);
+        // Not a bundled file (e.g. favicon.ico): answer "not found" instead of trying the internet.
+        if (response == null) return notFound("text/plain", new byte[0]);
+        // Module scripts need a JavaScript MIME type, which the asset loader does not know for .mjs.
+        if (path.endsWith(".mjs")) response.setMimeType("text/javascript");
+        return response;
+    }
 
     // Version names look like "83.0.4103.120" or, on old Android, "39 (4174727-x86_64)"; take the leading number.
     private static final java.util.regex.Pattern LEADING_NUMBER = java.util.regex.Pattern.compile("^\\s*(\\d+)");
@@ -207,12 +240,12 @@ public class MainActivity extends Activity {
     private void onPageFailed(String reason) {
         if (!triedDirectLoad) {
             triedDirectLoad = true;
-            try (java.io.InputStream in = getAssets().open("index.html")) {
+            try (java.io.InputStream in = getAssets().open(startAsset)) {
                 java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
                 byte[] chunk = new byte[8192];
                 int read;
                 while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
-                webView.loadDataWithBaseURL(APP_URL, buffer.toString("UTF-8"), "text/html", "utf-8", null);
+                webView.loadDataWithBaseURL("https://" + APP_HOST + "/" + startAsset, buffer.toString("UTF-8"), "text/html", "utf-8", null);
                 return;
             } catch (Exception ignored) {
                 // Fall through to the notice.

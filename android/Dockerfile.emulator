@@ -9,8 +9,10 @@ RUN apt-get update \
 
 ARG API=22
 ARG TAG=default
+# Android 4.4 (API 19) has only 32-bit x86 images.
+ARG ABI=x86_64
 RUN yes | sdkmanager --licenses > /dev/null \
-    && sdkmanager "emulator" "platform-tools" "system-images;android-${API};${TAG};x86_64" > /dev/null \
-    && echo no | avdmanager create avd -n test -k "system-images;android-${API};${TAG};x86_64" -d "pixel_c" > /dev/null
+    && sdkmanager "emulator" "platform-tools" "system-images;android-${API};${TAG};${ABI}" > /dev/null \
+    && echo no | avdmanager create avd -n test -k "system-images;android-${API};${TAG};${ABI}" -d "pixel_c" > /dev/null
 
 ENV PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools

@@ -52,7 +52,8 @@ function splitIntoBites(text) {
   const cleaned = text.replace(/^\s*(?:step\s*)?\d+[.):]\s*/i, '').trim();
   // Sentences end with . ! ? before a capital (Latin or Cyrillic) or any Arabic or Hebrew letter (no capitals there),
   // or with Chinese/Japanese 。！？.
-  const sentences = cleaned.split(/(?<=[.!?؟])\s+(?=[A-ZÀ-ÝА-ЯЁ0-9¿¡؀-ۿ֐-׿])|(?<=[。！？])/).flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
+  // (Marked with \u0003 and split there: old browsers have no lookbehind.)
+  const sentences = cleaned.replace(/([.!?؟])\s+(?=[A-ZÀ-ÝА-ЯЁ0-9¿¡؀-ۿ֐-׿])/g, '$1\u0003').replace(/[。！？]/g, '$&\u0003').split('\u0003').flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
   // Chinese and Japanese say as much in far fewer characters, so "very short" is shorter there.
   const dense = /[぀-ヿ一-鿿]/.test(cleaned);
   return sentences.map((sentence) => sentence.trim()).filter(Boolean).reduce((bites, sentence) => {

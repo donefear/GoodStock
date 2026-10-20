@@ -323,7 +323,9 @@ function cleanIngredient(value) {
 const FRACTION_GLYPHS = { '¼': 0.25, '½': 0.5, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875 };
 const AMOUNT_SOURCE = String.raw`(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?\s*[¼½¾⅓⅔⅛⅜⅝⅞]?|[¼½¾⅓⅔⅛⅜⅝⅞])`;
 const INGREDIENT_PATTERN = new RegExp(String.raw`^(${AMOUNT_SOURCE})(?:\s*(?:-|–|to|tot)\s*${AMOUNT_SOURCE})?\s*(.*)$`, 'i');
-const IMPERIAL_PATTERN = new RegExp(String.raw`(?<![\d.,/])(${AMOUNT_SOURCE})(?:\s*(-|–|to)\s*(${AMOUNT_SOURCE}))?\s*(fl\.?\s*oz|fluid\s+ounces?|ounces?|oz|pounds?|lbs?|pints?|quarts?|gallons?|inch(?:es)?)(?![a-z])\.?`, 'gi');
+// The first group is the character before the amount (not part of a number), kept as it is; no lookbehind, which
+// old browsers cannot compile.
+const IMPERIAL_PATTERN = new RegExp(String.raw`(^|[^\d.,/])(${AMOUNT_SOURCE})(?:\s*(-|–|to)\s*(${AMOUNT_SOURCE}))?\s*(fl\.?\s*oz|fluid\s+ounces?|ounces?|oz|pounds?|lbs?|pints?|quarts?|gallons?|inch(?:es)?)(?![a-z])\.?`, 'gi');
 const FAHRENHEIT_PATTERN = /(\d{3})\s*(?:°\s*F|degrees?\s+F(?:ahrenheit)?|F)\b/g;
 const UNIT_ALIASES = {
   g: /^(?:g|gr|grams?|grammes?|г|гр|克|غ|غرام|جم|جرام|גרם|ג׳|ג')$/, kg: /^(?:kg|kilos?|kilograms?|кг|公斤|千克|كغ|كجم|كيلو|كيلوغرام|ק״ג|ק"ג|קילו|קילוגרם)$/, mg: /^(?:mg|milligrams?|мг)$/,
@@ -399,12 +401,12 @@ function formatAmount(amount, unit = '') {
 // Rewrites imperial amounts (8 oz, 1 lb, 2 pints, 350°F) anywhere in a line of text. Safe to run twice.
 function metricText(text) {
   return String(text || '')
-    .replace(IMPERIAL_PATTERN, (match, first, dash, second, unitWord) => {
+    .replace(IMPERIAL_PATTERN, (match, before, first, dash, second, unitWord) => {
       const unit = canonicalUnit(unitWord);
       const low = metricAmount(parseAmount(first), unit);
       if (!Number.isFinite(low.amount) || low.amount === null) return match;
       const high = second ? metricAmount(parseAmount(second), unit) : null;
-      return high && high.unit === low.unit ? `${formatAmount(low.amount, low.unit)}–${formatAmount(high.amount, high.unit)} ${low.unit}` : `${formatAmount(low.amount, low.unit)} ${low.unit}`;
+      return before + (high && high.unit === low.unit ? `${formatAmount(low.amount, low.unit)}–${formatAmount(high.amount, high.unit)} ${low.unit}` : `${formatAmount(low.amount, low.unit)} ${low.unit}`);
     })
     .replace(FAHRENHEIT_PATTERN, (match, degrees) => `${Math.round(((Number(degrees) - 32) * 5) / 9 / 5) * 5}°C`);
 }
@@ -647,7 +649,9 @@ function recipesUsingInventoryItem(item) {
 
 // Storage locations are the kitchen's own names, in any language; these words decide which kind of storage it is.
 const FREEZER_WORDS = /freezer|vriezer|diepvries|gefrier|tiefkühl|congélateur|congelador|congelatore|congelator|zamrażar|dondurucu|морозил|冷冻|冷凍|فريزر|مجمد|ثلاجة التجميد|מקפיא/i;
-const FRIDGE_WORDS = /fridge|koelkast|kühlschrank|réfrigérateur|frigo|nevera|frigorífico|geladeira|frigorifero|frigider|lodówk|buzdolab|холодильник|冰箱|冷蔵|(?<!فريزر )ثلاجة(?! التجميد)|براد|מקרר/i;
+const FRIDGE_PATTERN = /fridge|koelkast|kühlschrank|réfrigérateur|frigo|nevera|frigorífico|geladeira|frigorifero|frigider|lodówk|buzdolab|холодильник|冰箱|冷蔵|ثلاجة(?! التجميد)|براد|מקרר/i;
+// "فريزر ثلاجة" (freezer) is not a fridge; dropped before testing instead of a lookbehind, which old browsers lack.
+const FRIDGE_WORDS = { test: (text) => FRIDGE_PATTERN.test(String(text).replace(/فريزر ثلاجة/g, '')) };
 const PANTRY_WORDS = /pantry|voorraad|vorrat|speisekammer|garde-manger|placard|despensa|dispensa|cămar|spiżar|kiler|кладов|食品|パントリー|食料|مؤن|مخزن|خزانة|מזווה/i;
 
 // General estimates used when the catalog has no entry (or no value for this storage type).

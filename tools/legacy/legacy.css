@@ -1,0 +1,8 @@
+/* Hand-made fixes for the legacy build (tools/build-legacy.mjs), added after the generated styles. */
+
+/* Host addresses and codes: label above value instead of a two-column grid. */
+html.no-grid .host-codes { display: block; }
+html.no-grid .host-codes dt { margin-top: 6px; }
+
+/* Small counts beside headings ("4 items", "None yet") stay on one line; old flexbox squeezes them. */
+html.legacy .section-heading > div > .muted { white-space: nowrap; }

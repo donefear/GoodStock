@@ -31,3 +31,6 @@ desktop/package-lock.json
 
 # Local version backups (tools/backup-version.sh)
 backups/
+
+# Web app for old Android WebViews (tools/build-legacy.mjs), built before the APK
+/legacy/

@@ -23,6 +23,10 @@ if [ -f android/signing.env ]; then
   export GOODSTOCK_KEYSTORE_PASSWORD GOODSTOCK_KEY_ALIAS GOODSTOCK_KEY_PASSWORD
 fi
 
+# The copy of the web app for old tablets whose WebView can't be updated (tools/build-legacy.mjs) goes into the APK too.
+docker run --rm -v "$PWD":/app -w /app -e PUPPETEER_SKIP_DOWNLOAD=true node:22-alpine \
+  sh -c "npm install --no-audit --no-fund --loglevel=error > /dev/null && node tools/build-legacy.mjs"
+
 TASK="assemble$(tr '[:lower:]' '[:upper:]' <<< "${TYPE:0:1}")${TYPE:1}"
 # goodstock-android-home keeps Android's fallback debug key between builds (used only without signing.env).
 docker run --rm \

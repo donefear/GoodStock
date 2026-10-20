@@ -146,7 +146,10 @@ final class NativeBridge {
         activity.runOnUiThread(() -> {
             PrintManager printer = (PrintManager) activity.getSystemService(Context.PRINT_SERVICE);
             if (printer == null) return;
-            printer.print("Goodstock", webView.createPrintDocumentAdapter("Goodstock"), new PrintAttributes.Builder().build());
+            @SuppressWarnings("deprecation")
+            android.print.PrintDocumentAdapter adapter = Build.VERSION.SDK_INT >= 21
+                    ? webView.createPrintDocumentAdapter("Goodstock") : webView.createPrintDocumentAdapter();
+            printer.print("Goodstock", adapter, new PrintAttributes.Builder().build());
         });
     }
 
