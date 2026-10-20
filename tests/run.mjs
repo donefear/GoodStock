@@ -121,6 +121,12 @@ async function main() {
         });
         if (!cook) fail.push('cook mode did not open');
         log.push(`classes: ${await page.evaluate(() => document.documentElement.className)}`);
+        // The .woff fonts and the icon symbols' fonts (fonts/legacy) load: @import only works at the top.
+        const fonts = await page.evaluate(async () => {
+          await document.fonts.ready;
+          return ['DM Sans', 'Fraunces', 'Noto Sans Symbols 2', 'Noto Emoji'].filter((family) => ![...document.fonts].some((face) => face.family.replace(/"/g, '') === family && face.status === 'loaded'));
+        });
+        if (fonts.length) fail.push(`fonts not loaded: ${fonts.join(', ')}`);
       } finally {
         await browser.close();
       }

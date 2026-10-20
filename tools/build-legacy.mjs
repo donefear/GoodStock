@@ -20,6 +20,7 @@ import autoprefixer from 'autoprefixer';
 import postcss from 'postcss';
 import customProperties from 'postcss-custom-properties';
 import logical from 'postcss-logical';
+import { symbolsInApp } from '../fonts/build-legacy-fonts.mjs';
 import { legacyGrid, legacySelectors, legacyValues } from './legacy/css.mjs';
 
 const require = createRequire(import.meta.url);
@@ -139,8 +140,13 @@ write('polyfills.js', [
   read('tools/legacy/regexp.js').replace('/* PROPERTIES */ {}', JSON.stringify(properties)),
 ].join('\n;\n'));
 
-// Styles. legacy/styles.css sits one folder down, so its @import of the fonts goes up one.
-const css = read('styles.css').replace("@import url('fonts/fonts.css');", "@import url('../fonts/fonts.css');");
+// Fonts: .woff copies and the icon symbols' fonts (fonts/build-legacy-fonts.mjs), which must cover every symbol the
+// app uses. legacy/styles.css sits one folder down, so its @import goes up one.
+const knownSymbols = new Set(read('fonts/legacy/symbols.txt').split('\n'));
+const newSymbols = (await symbolsInApp(root)).filter((symbol) => !knownSymbols.has(symbol));
+if (newSymbols.length) throw new Error(`New symbols ${newSymbols.join(' ')} are not in the old tablets' fonts yet: run node fonts/build-legacy-fonts.mjs`);
+const css = read('styles.css').replace("@import url('fonts/fonts.css');", "@import url('../fonts/legacy/fonts.css');");
+if (!css.includes('fonts/legacy/fonts.css')) throw new Error("styles.css no longer imports fonts/fonts.css; update tools/build-legacy.mjs");
 const styled = await postcss([
   customProperties({ preserve: true }),
   logical(),
@@ -149,7 +155,10 @@ const styled = await postcss([
   legacyGrid(),
   autoprefixer({ overrideBrowserslist: [TARGET, 'android 4.4'] }),
 ]).process(css, { from: join(root, 'styles.css'), to: join(out, 'styles.css') });
-write('styles.css', [read('node_modules/dialog-polyfill/dist/dialog-polyfill.css'), styled.css, read('tools/legacy/legacy.css')].join('\n'));
+// @import only counts at the very top, so the fonts' import goes before dialog-polyfill's styles.
+const imports = styled.css.match(/^@import [^;]+;\n?/gm) || [];
+if (!imports.length) throw new Error('legacy styles: the fonts @import is missing');
+write('styles.css', [...imports, read('node_modules/dialog-polyfill/dist/dialog-polyfill.css'), styled.css.replace(/^@import [^;]+;\n?/gm, ''), read('tools/legacy/legacy.css')].join('\n'));
 
 // The page: same markup, files from legacy/ (the <base> keeps every other address, like ingredients.json, at the root).
 let page = html

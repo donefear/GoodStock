@@ -20,6 +20,7 @@ function splitTop(value, separator) {
 }
 
 const RELATIVE = /%|vw|vh|calc\(/;
+const SYMBOL_FONTS = "'Noto Sans Symbols 2', 'Noto Sans Symbols', 'Noto Sans Math', 'Noto Emoji'";
 
 // min(a, b) → the fixed length (px/rem/em), max(a, b) → its first plain length, clamp(a, b, c) → b (the preferred
 // size). env() falls away. Returns the value without any of these functions, or null when nothing changed.
@@ -51,6 +52,10 @@ export const legacyValues = () => ({
     const hex = decl.value.replace(/#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\b/gi, (all, r, g, b, a) =>
       `rgba(${parseInt(r, 16)}, ${parseInt(g, 16)}, ${parseInt(b, 16)}, ${Math.round((parseInt(a, 16) / 255) * 100) / 100})`);
     if (hex !== decl.value) decl.value = hex;
+    // Symbol fonts (fonts/legacy) before the generic family: old Android fonts lack the app's icon symbols.
+    if ((decl.prop === 'font-family' || decl.prop === 'font') && /(^|,|\s)(sans-serif|serif)$/.test(decl.value) && !decl.value.includes('Noto Emoji')) {
+      decl.value = decl.value.replace(/(sans-serif|serif)$/, `${SYMBOL_FONTS}, $1`);
+    }
     if (/\b(min|max|clamp)\(/.test(decl.value) && !decl.prop.startsWith('grid')) {
       const plain = plainValue(decl.value);
       if (plain === null) return;
@@ -150,6 +155,19 @@ export const legacyGrid = () => {
 
       const added = [];
       const add = (selector, props) => {
+        // The container's own fallback goes into the rule itself, so it keeps the rule's weight and order (a later
+        // ".x:empty { display: none }" still wins). An engine with grid ignores flex-direction and flex-wrap, and
+        // display: grid comes after display: flex.
+        if (!selector) {
+          for (const [prop, value] of Object.entries(props)) {
+            if (prop === 'display' && !isGrid) continue;
+            const decl = { prop, value };
+            if (isGrid) display.cloneBefore(decl).legacyDone = true; else rule.append(decl);
+          }
+          const place = decls.find((decl) => decl.prop === 'place-items' && /^center/.test(decl.value));
+          if (place) rule.append({ prop: 'justify-content', value: 'center' }, { prop: 'align-items', value: 'center' });
+          return;
+        }
         const extra = new NewRule({ selectors: rule.selectors.map((one) => `html.no-grid ${one}${selector}`) });
         for (const [prop, value] of Object.entries(props)) extra.append({ prop, value });
         extra.legacyDone = true;
