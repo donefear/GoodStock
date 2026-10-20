@@ -1,9 +1,113 @@
 GOODSTOCK – SUGGESTIONS FOR WHAT TO CHANGE OR ADD
 First list written 2026-10-03, after v2.1.2. Second list written 2026-10-18, after v3.0.2.
-More ideas added 2026-10-19, after v3.2.16.
+More ideas added 2026-10-19, after v3.2.16. Newest ideas added 2026-10-20, after v3.3.23.
 Ordered roughly by how much I'd recommend doing them first. Each item says why.
 Finished items are marked [x] DONE, paused ones [ ] ON HOLD. The second list is numbered from 0.1 so it doesn't
-clash with the first list's numbers; the newest ideas carry on from 0.26.
+clash with the first list's numbers; the more ideas carry on from 0.26, the newest from 0.41.
+
+
+=====================================================================================================================
+NEWEST IDEAS (after v3.3.23)
+=====================================================================================================================
+Everything above 0.41 is done except 0.4 and 0.5 (on hold, they need people or hardware). Since the last list the
+Android app also runs on old tablets (v3.3.20–v3.3.23, see "Also done" under the more ideas), which is where most
+of these start. Top pick: 0.41, because without it an old tablet can't bring in a kitchen from a backup.
+
+
+OLD TABLETS
+-----------
+
+0.41 Pick files on Android 4.4.
+    Android 4.4's WebView never asks the app to open a file picker (onShowFileChooser only exists from Android 5.0),
+    so on such a tablet "Restore" a backup, "Open a recipe file" and adding a recipe photo do nothing. A bridge call
+    pickFile(accept) that opens Android's own picker (ACTION_GET_CONTENT, which 4.4 has) and hands the file to the
+    page as text or a data URL, used wherever the page has a file input when the bridge offers it. Without this, the
+    only way to get an existing kitchen onto an old tablet is to connect it to a home server.
+
+0.42 Test the old-tablet page on Android 4.4 on GitHub, on every push.
+    The legacy-build test runs the legacy page in a new Chromium, so it can't see what only an old engine gets wrong:
+    the missing fonts and the dark-mode colours of v3.3.21 and v3.3.23 were only found by looking. GitHub's runners
+    have KVM, so the workflow can boot the Android 4.4 emulator (android/test-apk.sh … 19), open every page, a dialog
+    and cook mode through the WebView's DevTools, fail on any script error, and keep the screenshots.
+
+0.43 Old browsers on the server version get the old-tablet page too.
+    A tablet that can't install apps at all, or an old iPad, only has its own old browser, and the server version
+    shows it a blank page. The Docker image could build legacy/ as well (one more build stage with the dev
+    dependencies), and index.html could check in a few lines of old-style JavaScript whether the browser can run the
+    app and otherwise go to legacy/index.html. The legacy page then talks to the server like any other page.
+
+0.44 Read aloud and right-to-left on old tablets.
+    Two of the things the old-tablet page leaves out are cheap to bring back. Android's text-to-speech has an older
+    speak() that Android 4.4 has, so canSpeak doesn't need Android 5.0. Arabic and Hebrew could get the mirrored
+    layout with two more stylesheets (postcss-logical with right-to-left), swapped in the same way as the dark one.
+
+0.45 A lighter old-tablet page.
+    The old-tablet copy is about 1.2 MB of scripts before the app shows anything (app/cook.js alone grows to 245 kB,
+    mostly the \p{L} letter classes written out), and an old tablet is slow to read it. Minify the legacy files,
+    write each letter class once instead of in every pattern, and time the start on the emulator before and after.
+
+
+EVERYDAY USE
+------------
+
+0.46 A kitchen screen.
+    A tablet on the wall or the counter is used from a distance, but every page is made for reading up close. A
+    "Kitchen screen" view with only the big things (today's meal, running timers, what to use soon, the shopping
+    count), large type, the screen kept on and dimmed at night, and one tap back to the full app.
+
+0.47 "Plan my week" fills the empty days.
+    The planner already puts recipes that use something from Use soon first, but you still pick each day. One button
+    could suggest a recipe for every empty day: first what uses up Use soon, then what needs the least shopping,
+    without repeating a recent meal. Each suggestion can be kept or swapped, and nothing is planned until you say so.
+
+0.48 "Use by" and "best before".
+    Every date is treated the same now, but a "use by" date on meat or fish means "don't eat it after", and a "best
+    before" date on pasta only means it may be less good. Let a package date say which it is, keep the strict
+    warning for "use by", and show past "best before" items as "check it" instead of "expired", so less good food is
+    thrown away.
+
+0.49 Allergens and diets.
+    The ingredient catalog knows what each ingredient is, so it could also know gluten, milk, eggs, nuts, fish, meat.
+    Recipes would get small labels ("contains nuts", "vegetarian") and the Recipes page a filter, which helps a
+    household with an allergy or a guest who doesn't eat meat. Only a hint: a recipe's text can always hide something.
+
+0.50 The shopping list learns your shop.
+    The list is in a general supermarket order, but every shop is laid out differently. The order in which items
+    are ticked off says how your shop is laid out; after a few trips the groups could follow that order, per shop if
+    there's more than one.
+
+0.51 What waste costs.
+    "This month" counts what was thrown away. An optional price on items (remembered from the last time) would turn
+    that into money ("thrown away this month: about €14"), which is what makes people change habits, and would give
+    the shopping list a rough total.
+
+
+PHONE, DESKTOP AND SERVER
+-------------------------
+
+0.52 Share into Goodstock.
+    On a phone, a recipe is usually found in the browser. Goodstock could appear in Android's and iOS's share menu:
+    a shared web address opens Import with that address, shared text goes into "Fill in from text", and a shared
+    list of words can go onto the shopping list.
+
+0.53 The meal plan in your calendar.
+    The plan lives only in Goodstock. The server could offer it as a calendar feed (/api/plan.ics, with a token in
+    the address like the PIN's), so the phone's own calendar shows "Dinner: Chicken curry" and the household sees
+    the week without opening the app.
+
+
+KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
+--------------------------------------------------
+
+0.54 Check the rest of the app for accessibility.
+    From 0.40: cook mode, the scan and put-away dialogs and touch-target sizes aren't checked yet. Cook mode matters
+    most, because it's the page used with wet hands and from a distance: it should pass axe in light, dark and large
+    text, and every button there should be at least 44 by 44 pixels.
+
+0.55 Keep the kitchen file small.
+    state.json grows with every removal (state.log) and every recipe photo, and every device loads and syncs all of
+    it. Fold log entries older than about a year into monthly totals (the month overview only needs those), warn
+    when a photo is unusually large, and show the kitchen's size in Settings → Your data.
 
 
 =====================================================================================================================
@@ -145,6 +249,22 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     background each sits on, and then made var(--muted), so dark mode now uses its own lighter muted colour. Dark mode
     also got dark text on its light-green primary buttons and lighter warm accents. All 39 views now pass.
     Not covered yet: cook mode, the scan and put-away dialogs, and touch-target sizes (axe doesn't check those at AA).
+    → 0.54.
+
+
+ALSO DONE SINCE THESE IDEAS (not in them)
+-----------------------------------------
+[x] DONE v3.3.20  The Android app runs on old tablets whose WebView can't be updated (Android 4.4 and newer,
+                  WebView older than Chrome 80): it opens legacy/index.html, a copy built by tools/build-legacy.mjs
+                  (Babel to ES5, polyfills, CSS grid as flexbox). The app's regex lookbehinds were rewritten so old
+                  engines can run them. Tried in the Android 4.4 and 5.1 emulators.
+                  STILL FOR YOU: try it on the real old tablet.
+[x] DONE v3.3.21  Fonts and icons on old tablets: .woff copies of the fonts plus symbol fonts for the icons
+                  (fonts/legacy), which Android 4.4 lacks. Empty badges are hidden again.
+[x] DONE v3.3.23  Dark mode on old tablets: two stylesheets with the light and the dark colours filled in, swapped
+                  with the theme. The pale yellow icon circles got dark-mode colours in both versions.
+    Still missing on old tablets: picking files (→ 0.41), read aloud and the mirrored layout for Arabic and Hebrew
+    (→ 0.44); on Android 4.4 also barcode scanning, shared folder, backup folder and hosting (they need Android 5.0).
 
 
 =====================================================================================================================

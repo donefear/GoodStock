@@ -152,7 +152,7 @@ rest:
 
 ## Phone apps
 
-- **Android:** see [android/README.md](android/README.md). It runs on Android 5.0+ and builds in Docker, so no Android Studio is needed.
+- **Android:** see [android/README.md](android/README.md). It runs on Android 4.4+ and builds in Docker, so no Android Studio is needed. Old tablets whose browser engine can no longer be updated get a copy of the app made for old engines, by themselves.
 - **iPhone / iPad:** see [ios/README.md](ios/README.md). It runs on iOS 16.4+ and builds on a Mac with Xcode. The project is generated with XcodeGen.
 - **Windows, macOS, Linux:** see [desktop/README.md](desktop/README.md). An Electron app (portable `.exe` or installer, `.dmg`, AppImage), built on GitHub or with `bash desktop/build.sh` in Docker. It checks GitHub once a day for a newer version (Settings → Your data → Updates) and never installs anything by itself.
 
@@ -164,7 +164,7 @@ The apps hold the whole kitchen on the device and need no server. A household ca
 
 ## Browser support
 
-The web app is kept compatible with **Chrome 81**, so an old Android 4.4 tablet can still serve as the kitchen screen. Newer browsers, including Safari, Firefox and Edge, work as well.
+The web app is kept compatible with **Chrome 81**, so an old Android 4.4 tablet can still serve as the kitchen screen. Newer browsers, including Safari, Firefox and Edge, work as well. A tablet that can't get Chrome 81 can use the Android app instead, which runs on Android 4.4 with the tablet's own old browser engine.
 
 ---
 
