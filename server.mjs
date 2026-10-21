@@ -784,12 +784,26 @@ const server = createServer(async (request, response) => {
       sendJson(response, 200, mapMealieRecipe(recipe, mealiePublicUrl()));
       return;
     }
-    // Bundled fonts: only plain names from the fonts folder, never other paths.
-    const fontFile = /^\/fonts\/([a-z0-9-]+\.(woff2|css))$/.exec(url.pathname);
+    // Bundled fonts: only plain names from the fonts folder (and its legacy/ folder of .woff files), never other paths.
+    const fontFile = /^\/fonts\/((?:legacy\/)?[a-z0-9-]+\.(woff2|woff|css))$/.exec(url.pathname);
     if (request.method === 'GET' && fontFile) {
       try {
         const contents = await readFile(join(process.cwd(), 'fonts', fontFile[1]));
-        response.writeHead(200, { 'content-type': fontFile[2] === 'css' ? 'text/css; charset=utf-8' : 'font/woff2', 'cache-control': 'public, max-age=604800' });
+        response.writeHead(200, { 'content-type': fontFile[2] === 'css' ? 'text/css; charset=utf-8' : `font/${fontFile[2]}`, 'cache-control': 'public, max-age=604800' });
+        response.end(contents);
+      } catch {
+        sendJson(response, 404, { error: 'Not found' });
+      }
+      return;
+    }
+    // The copy of the app for old browsers (tools/build-legacy.mjs; built into the Docker image), which index.html
+    // sends them to: plain names from legacy/, legacy/app/ and legacy/lang/ only.
+    const legacyFile = /^\/legacy\/((?:app\/|lang\/)?[a-z0-9-]+\.(js|css|html))$/.exec(url.pathname);
+    if (request.method === 'GET' && (legacyFile || url.pathname === '/legacy/')) {
+      const [file, type] = legacyFile ? [legacyFile[1], legacyFile[2]] : ['index.html', 'html'];
+      try {
+        const contents = await readFile(join(process.cwd(), 'legacy', file));
+        response.writeHead(200, { 'content-type': `${{ js: 'text/javascript', css: 'text/css', html: 'text/html' }[type]}; charset=utf-8`, 'cache-control': 'no-cache' });
         response.end(contents);
       } catch {
         sendJson(response, 404, { error: 'Not found' });

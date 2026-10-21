@@ -164,7 +164,7 @@ The apps hold the whole kitchen on the device and need no server. A household ca
 
 ## Browser support
 
-The web app is kept compatible with **Chrome 81**, so an old Android 4.4 tablet can still serve as the kitchen screen. Newer browsers, including Safari, Firefox and Edge, work as well. A tablet that can't get Chrome 81 can use the Android app instead, which runs on Android 4.4 with the tablet's own old browser engine.
+The web app is kept compatible with **Chrome 81**, so an old Android 4.4 tablet can still serve as the kitchen screen. Newer browsers, including Safari, Firefox and Edge, work as well. A tablet that can't get Chrome 81 can use the Android app instead, which runs on Android 4.4 with the tablet's own old browser engine. Older browsers that open the server version are sent to that same old-browser copy (`/legacy/`), built into the Docker image.
 
 ---
 

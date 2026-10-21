@@ -166,13 +166,15 @@ for (const theme of ['light', 'dark']) {
 }
 
 // The page: same markup, files from legacy/ (the <base> keeps every other address, like ingredients.json, at the root).
+// index.html's check that sends old browsers here stays out, or this page would send itself to itself.
 let page = html
+  .replace(/\s*<script id="old-browser-check">[\s\S]*?<\/script>/, '')
   .replace('<head>', '<head>\n    <base href="../" />')
   .replace('<link rel="stylesheet" href="styles.css" />', '<link rel="stylesheet" href="legacy/styles.css" id="legacy-styles" />')
   .replace('</title>', '</title>\n    <script src="legacy/polyfills.js"></script>');
 for (const file of scripts) {
   page = page.replace(new RegExp(`<script(?: type="module")? src="${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*></script>`), `<script src="legacy/${legacyName(file)}" defer></script>`);
 }
-if (/<script type="module"/.test(page) || !page.includes('legacy/polyfills.js') || !page.includes('<base href')) throw new Error('index.html changed; update tools/build-legacy.mjs');
+if (/<script type="module"|old-browser-check/.test(page) || !page.includes('legacy/polyfills.js') || !page.includes('<base href')) throw new Error('index.html changed; update tools/build-legacy.mjs');
 write('index.html', page);
 console.log(`Built legacy/ (${scripts.length} scripts, polyfills, styles) for ${TARGET}`);

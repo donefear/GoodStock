@@ -34,11 +34,15 @@ OLD TABLETS
     are kept as the artifact "Old-tablet-screenshots". Locally, `bash android/test-apk.sh <debug apk> 19` runs the same
     check (Android 4.4–6, debug builds), and the emulator image now has Node for it.
 
-0.43 Old browsers on the server version get the old-tablet page too.
-    A tablet that can't install apps at all, or an old iPad, only has its own old browser, and the server version
-    shows it a blank page. The Docker image could build legacy/ as well (one more build stage with the dev
-    dependencies), and index.html could check in a few lines of old-style JavaScript whether the browser can run the
-    app and otherwise go to legacy/index.html. The legacy page then talks to the server like any other page.
+[x] DONE 0.43 Old browsers on the server version get the old-tablet page too. (v4.0.2)
+    The Docker image builds legacy/ in a stage of its own (the dev dependencies stay out of the image) and the server
+    serves it (/legacy/…, plain names only) with the .woff fonts. A few lines of old-style JavaScript at the top of
+    index.html try ?. and ??; a browser that can't (older than Chrome 80 or Safari 13.1) goes to legacy/index.html,
+    which uses the shared kitchen, live updates and the household PIN like any page. The phone apps never redirect
+    (they pick the page themselves), and the legacy build leaves the check out of its own page.
+    tests/e2e/old-browser-redirect.mjs: a new browser stays, an "old" one (a Function that refuses ?.) is sent to the
+    legacy page, and an item added there reaches the server. Not tried with a real old browser yet: the old tablet's
+    Chrome 81 still gets the normal app.
 
 0.44 Read aloud and right-to-left on old tablets.
     Two of the things the old-tablet page leaves out are cheap to bring back. Android's text-to-speech has an older
