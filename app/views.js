@@ -89,6 +89,7 @@ function detectFlexGap() {
 }
 
 async function initialize() {
+  try { console.info('%cGoodstock%c cooked up by donefear · ' + KITCHEN_SEAL.slice(0, 12), 'font-weight:bold;color:#2f6b4f', ''); } catch { /* No console. */ }
   detectFlexGap();
   await setLanguage(preferredLanguage());
   applyTheme(localStorage.getItem(THEME_KEY) || 'light');

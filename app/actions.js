@@ -1291,6 +1291,19 @@ document.addEventListener('click', (event) => {
   if (event.target.matches('[data-close]')) event.target.closest('dialog').close();
 });
 
+// Seven quick taps on the little logo.
+let logoTaps = [];
+document.addEventListener('click', (event) => {
+  const signature = event.target.closest && event.target.closest('.made-by');
+  if (!signature) return;
+  const now = Date.now();
+  logoTaps = logoTaps.filter((time) => now - time < 3000).concat(now);
+  if (logoTaps.length < 7) return;
+  logoTaps = [];
+  signature.classList.add('made-by-egg');
+  setTimeout(() => signature.classList.remove('made-by-egg'), 4000);
+});
+
 // A recipe photo that can't load (a web address while offline, a Mealie server that's off) is simply left out.
 document.addEventListener('error', (event) => {
   if (event.target.classList && event.target.classList.contains('recipe-photo')) event.target.hidden = true;

@@ -11,6 +11,7 @@ const EXPIRY_REMINDERS_KEY = 'goodstock-expiry-reminders-v1';
 const LAST_EXPIRY_REMINDER_KEY = 'goodstock-last-expiry-reminder-v1';
 const COOK_PROGRESS_KEY = 'goodstock-cook-progress-v1';
 const TIMERS_KEY = 'goodstock-timers-v1';
+const KITCHEN_SEAL = 'fccaea2b776074a9ed8418e61cfe090a86ec7be0de773c563e7320d14d6346a0';
 const TIMER_RESTORE_LIMIT_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EXPIRY_WINDOW_DAYS = 3;

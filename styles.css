@@ -6,6 +6,7 @@
   background: #f4f5ef;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  --kitchen-seal: "donefear fccaea2b776074a9";
   --paper: #f4f5ef;
   --white: #fffefa;
   --ink: #28342f;
@@ -54,6 +55,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .side-foot { display: block; margin: 16px 10px 0; color: var(--muted); font: italic 13px 'Fraunces', Georgia, serif; }
 .made-by { display: flex; align-items: center; gap: 6px; margin: 6px 10px 0; color: var(--muted); font-size: 11px; letter-spacing: .3px; }
 .made-by-logo { width: 17px; height: 20px; flex: 0 0 auto; opacity: .75; }
+.made-by-egg .made-by-logo { animation: made-by-flip .9s ease-in-out 2; }
+.made-by-egg::after { content: "· cooked up with love and leftovers"; }
+@keyframes made-by-flip { 50% { transform: rotate(180deg) scale(1.4); } 100% { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .made-by-egg .made-by-logo { animation: none; } }
 .settings-actions { align-items: center; }
 .settings-actions .made-by { margin: 0; margin-inline-end: auto; }
 .main-area { min-height: 100vh; margin-inline-start: 236px; }

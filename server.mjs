@@ -626,7 +626,10 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
     if (url.pathname.startsWith('/api/auth/')) return await handleAuth(request, response, url);
-    if (url.pathname === '/api/health') return sendJson(response, 200, { ok: true });
+    if (url.pathname === '/api/health') {
+      response.setHeader('x-cooked-by', 'donefear; fccaea2b776074a9ed8418e61cfe090a86ec7be0de773c563e7320d14d6346a0');
+      return sendJson(response, 200, { ok: true });
+    }
     if (url.pathname.startsWith('/api/') && !OPEN_API.some((pattern) => pattern.test(url.pathname)) && !isAuthorized(request)) {
       return sendJson(response, 401, { error: 'PIN required', code: 'pin' });
     }
