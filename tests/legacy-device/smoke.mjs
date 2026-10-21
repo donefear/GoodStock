@@ -118,8 +118,9 @@ if (started) {
   await step('amounts', 'return 1;', "return metricText('8 oz butter') === '225 g butter' && kitchenToolsIn('Whisk in a bowl').length === 2;");
   await step('Dutch', "setLanguage('nl'); return 1;", "activeView = 'week'; render(); return document.querySelector('#view-container .page-heading h1').textContent !== 'Make room for dinner.';");
   await step('English again', "setLanguage('en').then(function () { activeView = 'inventory'; render(); }); return 1;", "return document.querySelector('#view-container .page-heading h1').textContent === 'Good things on hand.';");
-  // Right to left: Arabic swaps in legacy/styles-rtl.css, the sidebar moves to the right.
-  await step('Arabic', "setLanguage('ar').then(function () { activeView = 'inventory'; render(); }); return 1;", "return document.getElementById('legacy-styles').getAttribute('href') === 'legacy/styles-rtl.css' && getComputedStyle(document.querySelector('.main-area')).marginRight === '236px';");
+  // Right to left: Arabic swaps in legacy/styles-rtl.css; on a tablet the sidebar's space moves to the right (a phone
+  // has a bottom bar instead, so GitHub's phone-sized emulator only checks the sheet).
+  await step('Arabic', "setLanguage('ar').then(function () { activeView = 'inventory'; render(); }); return 1;", "return document.getElementById('legacy-styles').getAttribute('href') === 'legacy/styles-rtl.css' && document.documentElement.dir === 'rtl' && (innerWidth <= 960 || getComputedStyle(document.querySelector('.main-area')).marginRight === '236px');");
   await wait(5000); // fonts for the new stylesheet
   await screenshot('rtl-inventory');
   await step('English after Arabic', "setLanguage('en').then(function () { render(); }); return 1;", "return document.getElementById('legacy-styles').getAttribute('href') === 'legacy/styles.css';");
