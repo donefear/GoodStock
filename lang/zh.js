@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "只显示一次：现在就把它加入日历（“订阅日历”或“通过 URL 添加”）。新链接会替换它。",
   "Copy": "复制",
   "Stop the link": "停用链接",
+  "Size of this kitchen": "这个厨房的数据大小",
+  "Shrink large photos": "压缩大照片",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "共 {size}，其中照片 {photos}。每台设备都会保存并同步全部内容。",
+  "{count} photos are larger than they need to be.": "{count} 张照片比需要的大。",
 };

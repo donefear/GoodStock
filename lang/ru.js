@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "Показывается один раз: скопируйте её в календарь сейчас («подписаться на календарь» или «добавить по URL»). Новая ссылка заменит её.",
   "Copy": "Копировать",
   "Stop the link": "Отключить ссылку",
+  "Size of this kitchen": "Размер этой кухни",
+  "Shrink large photos": "Уменьшить большие фото",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "Всего {size}, из них фото {photos}. Каждое устройство хранит и синхронизирует всё.",
+  "{count} photos are larger than they need to be.": { "one": "{count} фото больше, чем нужно.", "few": "{count} фото больше, чем нужно.", "many": "{count} фото больше, чем нужно.", "other": "{count} фото больше, чем нужно." },
 };

@@ -12,6 +12,9 @@ NEWEST IDEAS (after v3.3.23)
 Everything above 0.41 is done except 0.4 and 0.5 (on hold, they need people or hardware). Since the last list the
 Android app also runs on old tablets (v3.3.20–v3.3.23, see "Also done" under the more ideas), which is where most
 of these start. Top pick: 0.41, because without it an old tablet can't bring in a kitchen from a backup.
+All fifteen done on 2026-10-21 (v4.0.0–v4.0.15). What still needs you or a real device is marked "not tried" or
+"not done for iPhone" (0.43 with a real old browser, 0.44 read aloud on the tablet, 0.52 on iPhone, 0.53 with a real
+calendar app).
 
 
 OLD TABLETS
@@ -147,10 +150,13 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     "+1 min" were below 4.5:1 contrast; "+1 min" was named "Add one minute" for screen readers, which voice control
     can't match to what it shows (now its visible text, with the longer text as a tooltip).
 
-0.55 Keep the kitchen file small.
-    state.json grows with every removal (state.log) and every recipe photo, and every device loads and syncs all of
-    it. Fold log entries older than about a year into monthly totals (the month overview only needs those), warn
-    when a photo is unusually large, and show the kitchen's size in Settings → Your data.
+[x] DONE 0.55 Keep the kitchen file small. (v4.0.15)
+    Removals older than LOG_KEEP_DAYS (400 days; shelf-life learning needs the single entries for a year) used to be
+    dropped; now they fold into state.logTotals, one { id: 'YYYY-MM', used, wasted, value } per month, merged like the
+    other lists, so the history stays and the log doesn't grow. Settings → Your data → "Size of this kitchen" says how
+    big it is and how much of that is photos ("288 kB in all, of which 287 kB photos. Every device keeps and syncs all
+    of it."), points out photos larger than about 110 kB (older or imported ones; the app has made small JPEGs since
+    v3.2.3) and "Shrink large photos" makes them small JPEGs too. tests/page/kitchen-size.js.
 
 
 =====================================================================================================================

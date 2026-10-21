@@ -256,7 +256,7 @@ function stamp(text) {
   return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
 }
 
-const MERGED_LISTS = ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets', 'log', 'checks', 'shelfLife', 'prices'];
+const MERGED_LISTS = ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets', 'log', 'checks', 'shelfLife', 'prices', 'logTotals'];
 const itemStamp = (item) => stamp(String(JSON.stringify(item)));
 
 // A kitchen as fingerprints ({ inventory: { id: stamp }, …, locations: stamp }): all that mergeStates needs of a base.

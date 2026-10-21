@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "Wordt één keer getoond: zet hem nu in je agenda (\"abonneren op agenda\" of \"toevoegen via URL\"). Een nieuwe link vervangt hem.",
   "Copy": "Kopiëren",
   "Stop the link": "Link stoppen",
+  "Size of this kitchen": "Grootte van deze keuken",
+  "Shrink large photos": "Grote foto's verkleinen",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} in totaal, waarvan {photos} foto's. Elk apparaat bewaart en synchroniseert alles.",
+  "{count} photos are larger than they need to be.": { "one": "{count} foto is groter dan nodig.", "other": "{count} foto's zijn groter dan nodig." },
 };

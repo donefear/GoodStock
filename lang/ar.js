@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "يظهر مرة واحدة فقط: انسخه الآن إلى تقويمك (\"الاشتراك في تقويم\" أو \"إضافة من عنوان URL\"). الرابط الجديد يحل محله.",
   "Copy": "نسخ",
   "Stop the link": "أوقف الرابط",
+  "Size of this kitchen": "حجم هذا المطبخ",
+  "Shrink large photos": "صغّر الصور الكبيرة",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} في المجموع، منها {photos} صور. كل جهاز يحفظ كل شيء ويزامنه.",
+  "{count} photos are larger than they need to be.": { "zero": "لا توجد صور أكبر من اللازم.", "one": "صورة واحدة أكبر من اللازم.", "two": "صورتان أكبر من اللازم.", "few": "{count} صور أكبر من اللازم.", "many": "{count} صورة أكبر من اللازم.", "other": "{count} صورة أكبر من اللازم." },
 };

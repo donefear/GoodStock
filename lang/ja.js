@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "表示は一度だけです。今カレンダーに追加してください（「カレンダーを購読」や「URLで追加」）。新しいリンクを作ると置き換わります。",
   "Copy": "コピー",
   "Stop the link": "リンクを止める",
+  "Size of this kitchen": "このキッチンのデータ量",
+  "Shrink large photos": "大きい写真を小さくする",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "合計 {size}、うち写真 {photos}。どの端末もすべてを保存・同期します。",
+  "{count} photos are larger than they need to be.": "{count} 枚の写真が必要以上に大きいです。",
 };

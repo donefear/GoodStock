@@ -190,6 +190,7 @@ function freshState() {
     checks: [],
     shelfLife: [],
     prices: [],
+    logTotals: [],
   };
 }
 
@@ -225,6 +226,8 @@ function normalizeState(value) {
     shelfLife: Array.isArray(value.shelfLife) ? value.shelfLife : [],
     // Last known unit prices per product ({ id: cleaned name, unitPrice, unit, date }), 0.51.
     prices: Array.isArray(value.prices) ? value.prices : [],
+    // Monthly totals of removals older than a year ({ id: 'YYYY-MM', used, wasted, value }), 0.55.
+    logTotals: Array.isArray(value.logTotals) ? value.logTotals : [],
     // The order of the shop, learned from shopping trips ({ trips, groups: { group: { rank, seen } } }), 0.50.
     ...(value.shopOrder && typeof value.shopOrder === 'object' ? { shopOrder: value.shopOrder } : {}),
   };
@@ -842,13 +845,31 @@ function addRestockEntry(item) {
   state.shopping.push({ id: makeId(), name: item.name, quantity: Number(item.minimum), unit: item.unit || '', checked: false, restock: true, keep: Number(item.minimum) });
 }
 
-// Removed items for the month overview, kept for a year.
+// Removed items for the month overview, kept one by one for a year (shelf-life learning needs them); older ones are
+// folded into monthly totals (state.logTotals: { id: 'YYYY-MM', used, wasted, value }, 0.55) so the file stays small.
 const LOG_KEEP_DAYS = 400;
 
-function logRemoval(item, outcome) {
+function foldOldLog() {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - LOG_KEEP_DAYS);
-  state.log = state.log.filter((entry) => entry.date >= dateKey(cutoff));
+  const keepFrom = dateKey(cutoff);
+  const old = state.log.filter((entry) => !(entry.date >= keepFrom));
+  if (!old.length) return;
+  const totals = new Map(state.logTotals.map((total) => [total.id, { ...total }]));
+  for (const entry of old) {
+    const month = String(entry.date || '').slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(month)) continue;
+    const total = totals.get(month) || { id: month, used: 0, wasted: 0, value: 0 };
+    if (entry.outcome === 'used') total.used += 1;
+    if (entry.outcome === 'wasted') { total.wasted += 1; total.value = Math.round((total.value + (Number(entry.value) || 0)) * 100) / 100; }
+    totals.set(month, total);
+  }
+  state.logTotals = [...totals.values()].sort((first, second) => first.id.localeCompare(second.id));
+  state.log = state.log.filter((entry) => entry.date >= keepFrom);
+}
+
+function logRemoval(item, outcome) {
+  foldOldLog();
   const entry = { id: makeId(), name: item.name, date: dateKey(new Date()), outcome };
   // How long it was kept and where, for learning shelf life (items know when they came in since v3.3.7).
   const storage = storageOf(item.location);

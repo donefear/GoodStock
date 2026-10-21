@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "Yalnızca bir kez gösterilir: şimdi takviminize ekleyin (\"takvime abone ol\" ya da \"URL'den ekle\"). Yeni bir bağlantı bunun yerini alır.",
   "Copy": "Kopyala",
   "Stop the link": "Bağlantıyı durdur",
+  "Size of this kitchen": "Bu mutfağın boyutu",
+  "Shrink large photos": "Büyük fotoğrafları küçült",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "Toplam {size}, bunun {photos} kadarı fotoğraf. Her cihaz hepsini saklar ve eşitler.",
+  "{count} photos are larger than they need to be.": { "one": "{count} fotoğraf gereğinden büyük.", "other": "{count} fotoğraf gereğinden büyük." },
 };

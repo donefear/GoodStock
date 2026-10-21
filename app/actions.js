@@ -421,6 +421,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'delete-recipe') deleteRecipe(id);
   if (action === 'recipe-import-url') await importRecipeFromUrl();
   if (action === 'calendar-make') await makeCalendarLink();
+  if (action === 'shrink-photos') await shrinkLargePhotos();
   if (action === 'calendar-stop') await stopCalendarLink();
   if (action === 'calendar-copy') {
     const link = $('#calendar-link');
@@ -1115,8 +1116,48 @@ async function stopCalendarLink() {
   showCalendarStatus(false, '');
 }
 
+// Size of the kitchen (0.55): every device loads and syncs all of it, and photos are most of it. Recipe photos are
+// small JPEGs since v3.2.3, but older or imported ones can be bigger; "Shrink large photos" makes them small too.
+const LARGE_PHOTO = 150_000; // characters of data URL, about 110 kB
+
+function formatBytes(bytes) {
+  const number = (value) => new Intl.NumberFormat(languageLocale(), { maximumFractionDigits: value < 10 ? 1 : 0 }).format(value);
+  return bytes >= 1_000_000 ? `${number(bytes / 1_000_000)} MB` : `${number(Math.max(1, bytes / 1000))} kB`;
+}
+
+const largePhotoRecipes = () => state.recipes.filter((recipe) => String(recipe.photo || '').startsWith('data:') && recipe.photo.length > LARGE_PHOTO);
+
+function showKitchenSize() {
+  const total = new Blob([JSON.stringify(state)]).size;
+  const photos = state.recipes.reduce((sum, recipe) => sum + (String(recipe.photo || '').startsWith('data:') ? recipe.photo.length : 0), 0);
+  const large = largePhotoRecipes().length;
+  $('#kitchen-size-text').textContent = [
+    t('{size} in all, of which {photos} photos. Every device keeps and syncs all of it.', { size: formatBytes(total), photos: formatBytes(photos) }),
+    large ? tp(large, '{count} photo is larger than it needs to be.', '{count} photos are larger than they need to be.') : '',
+  ].filter(Boolean).join(' ');
+  $('#shrink-photos').hidden = !large;
+}
+
+async function shrinkLargePhotos() {
+  for (const recipe of largePhotoRecipes()) {
+    try {
+      const [, type, data] = /^data:([^;,]+);base64,(.*)$/.exec(recipe.photo) || [];
+      if (!data) continue;
+      const binary = atob(data);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+      recipe.photo = await shrinkPhoto(new Blob([bytes], { type }));
+    } catch {
+      // A photo that can't be read stays as it is.
+    }
+  }
+  persist();
+  showKitchenSize();
+}
+
 async function fillSettings() {
   loadCalendarStatus();
+  showKitchenSize();
   const expiryToggle = $('#expiry-notifications-toggle');
   const expiryNote = $('#expiry-notifications-note');
   const canNotify = STANDALONE || (window.isSecureContext && 'Notification' in window);

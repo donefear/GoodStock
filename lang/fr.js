@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.fr = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "Affiché une seule fois : copiez-le maintenant dans votre agenda (« s'abonner à un agenda » ou « ajouter depuis une URL »). Un nouveau lien le remplace.",
   "Copy": "Copier",
   "Stop the link": "Désactiver le lien",
+  "Size of this kitchen": "Taille de cette cuisine",
+  "Shrink large photos": "Réduire les grandes photos",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} au total, dont {photos} de photos. Chaque appareil garde et synchronise tout.",
+  "{count} photos are larger than they need to be.": { "one": "{count} photo est plus grande que nécessaire.", "other": "{count} photos sont plus grandes que nécessaire." },
 };

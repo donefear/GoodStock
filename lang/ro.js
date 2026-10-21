@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "Se afișează o singură dată: copiază-l acum în calendar („abonare la calendar” sau „adăugare din URL”). Un link nou îl înlocuiește.",
   "Copy": "Copiază",
   "Stop the link": "Oprește linkul",
+  "Size of this kitchen": "Dimensiunea acestei bucătării",
+  "Shrink large photos": "Micșorează fotografiile mari",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} în total, din care {photos} fotografii. Fiecare dispozitiv păstrează și sincronizează totul.",
+  "{count} photos are larger than they need to be.": { "one": "{count} fotografie este mai mare decât trebuie.", "few": "{count} fotografii sunt mai mari decât trebuie.", "other": "{count} de fotografii sunt mai mari decât trebuie." },
 };

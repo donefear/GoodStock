@@ -1081,4 +1081,8 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Shown once: copy it into your calendar now (\"subscribe to a calendar\" or \"add from URL\"). A new link replaces it.": "מוצג פעם אחת בלבד: העתיקו אותו עכשיו ליומן (\"הרשמה ליומן\" או \"הוספה מכתובת URL\"). קישור חדש מחליף אותו.",
   "Copy": "העתק",
   "Stop the link": "בטל את הקישור",
+  "Size of this kitchen": "גודל המטבח הזה",
+  "Shrink large photos": "הקטן תמונות גדולות",
+  "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} בסך הכול, מהם {photos} תמונות. כל מכשיר שומר ומסנכרן את הכול.",
+  "{count} photos are larger than they need to be.": { "one": "תמונה אחת גדולה מהנדרש.", "two": "שתי תמונות גדולות מהנדרש.", "other": "{count} תמונות גדולות מהנדרש." },
 };
