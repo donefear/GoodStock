@@ -1,0 +1,123 @@
+# Once a day: who forked, starred or watches the repository, how often the release files were downloaded and,
+# with the TRAFFIC_TOKEN secret, visits, clones and where visitors came from. Anything new becomes a comment on the
+# "Repo watch" issue, which mentions the owner so GitHub sends a notification. The issue body keeps the last counts.
+#
+# TRAFFIC_TOKEN (optional): a fine-grained personal access token for this repository with "Administration: read",
+# saved under Settings → Secrets and variables → Actions. Clone counts include GitHub's own build runs.
+name: Repo watch
+
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          TRAFFIC_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const TITLE = 'Repo watch';
+            const MARK = /<!-- state:(.*?) -->/s;
+
+            const people = (list) => list.map((user) => (user.user || user).login).filter((login) => login && login !== owner);
+            const forks = (await github.paginate(github.rest.repos.listForks, { owner, repo, per_page: 100 }))
+              .map((fork) => fork.full_name);
+            const stars = people(await github.paginate(github.rest.activity.listStargazersForRepo, { owner, repo, per_page: 100 }));
+            const watchers = people(await github.paginate(github.rest.activity.listWatchersForRepo, { owner, repo, per_page: 100 }));
+            const downloads = {};
+            for (const release of await github.paginate(github.rest.repos.listReleases, { owner, repo, per_page: 100 })) {
+              for (const asset of release.assets) downloads[`${release.tag_name} · ${asset.name}`] = asset.download_count;
+            }
+
+            // Traffic needs more than the workflow token; GitHub keeps 14 days of it, so days are kept here for 30.
+            const traffic = async (path) => {
+              const answer = await fetch(`https://api.github.com/repos/${owner}/${repo}/traffic/${path}`, {
+                headers: { authorization: `Bearer ${process.env.TRAFFIC_TOKEN}`, accept: 'application/vnd.github+json' },
+              });
+              if (!answer.ok) throw new Error(`traffic/${path}: ${answer.status}`);
+              return answer.json();
+            };
+            const days = (list) => Object.fromEntries(list.map((day) => [day.timestamp.slice(0, 10), { count: day.count, uniques: day.uniques }]));
+            let views = null, clones = null, referrers = null;
+            if (process.env.TRAFFIC_TOKEN) {
+              try {
+                views = days((await traffic('views?per=day')).views);
+                clones = days((await traffic('clones?per=day')).clones);
+                referrers = Object.fromEntries((await traffic('popular/referrers')).map((item) => [item.referrer, item.count]));
+              } catch (error) {
+                core.warning(`No traffic data: ${error.message}`);
+              }
+            }
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'all', creator: 'github-actions[bot]', per_page: 100 });
+            const issue = issues.find((item) => item.title === TITLE && !item.pull_request);
+            const before = issue && MARK.test(issue.body || '') ? JSON.parse(MARK.exec(issue.body)[1]) : null;
+
+            const notes = [];
+            const added = (list, old) => list.filter((name) => !(old || []).includes(name));
+            const dayGrowth = (now, old = {}) => {
+              let count = 0, uniques = 0;
+              for (const [day, value] of Object.entries(now || {})) {
+                count += Math.max(0, value.count - ((old[day] || {}).count || 0));
+                uniques += Math.max(0, value.uniques - ((old[day] || {}).uniques || 0));
+              }
+              return { count, uniques };
+            };
+            const keepDays = (now, old = {}) => {
+              const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+              return Object.fromEntries(Object.entries({ ...old, ...now }).filter(([day]) => day >= since));
+            };
+            if (before) {
+              for (const name of added(forks, before.forks)) notes.push(`🍴 New fork: [${name}](https://github.com/${name})`);
+              for (const name of added(stars, before.stars)) notes.push(`⭐ Starred by [@${name}](https://github.com/${name})`);
+              for (const name of added(watchers, before.watchers)) notes.push(`👁️ Now watched by [@${name}](https://github.com/${name})`);
+              for (const [name, count] of Object.entries(downloads)) {
+                const more = count - ((before.downloads || {})[name] || 0);
+                if (more > 0) notes.push(`⬇️ ${name}: +${more} download${more === 1 ? '' : 's'} (${count} in total)`);
+              }
+              if (views) {
+                const growth = dayGrowth(views, before.views);
+                if (growth.count) notes.push(`👀 ${growth.count} page view${growth.count === 1 ? '' : 's'} by ${growth.uniques} visitor${growth.uniques === 1 ? '' : 's'}`);
+              }
+              if (clones) {
+                const growth = dayGrowth(clones, before.clones);
+                if (growth.count) notes.push(`📥 ${growth.count} clone${growth.count === 1 ? '' : 's'} by ${growth.uniques} cloner${growth.uniques === 1 ? '' : 's'} (GitHub's own builds count too)`);
+              }
+              for (const name of added(Object.keys(referrers || {}), Object.keys(before.referrers || {}))) notes.push(`🔗 Visitors came from ${name}`);
+            }
+
+            const state = {
+              forks, stars, watchers, downloads,
+              views: views ? keepDays(views, before && before.views) : (before && before.views) || {},
+              clones: clones ? keepDays(clones, before && before.clones) : (before && before.clones) || {},
+              referrers: { ...((before && before.referrers) || {}), ...(referrers || {}) },
+            };
+            const total = Object.values(downloads).reduce((sum, count) => sum + count, 0);
+            const body = [
+              `Checked daily by \`.github/workflows/repo-watch.yml\`; anything new is posted below.`,
+              '',
+              `**Forks:** ${forks.length} · **Stars:** ${stars.length} · **Watchers:** ${watchers.length} · **Release downloads:** ${total}`,
+              process.env.TRAFFIC_TOKEN ? '' : '_Add the TRAFFIC_TOKEN secret to also see visits, clones and referrers._',
+              '',
+              `<!-- state:${JSON.stringify(state)} -->`,
+            ].join('\n');
+
+            if (!issue) {
+              const created = await github.rest.issues.create({ owner, repo, title: TITLE, body });
+              await github.rest.issues.createComment({ owner, repo, issue_number: created.data.number, body: `@${owner} Watching started. From tomorrow, new forks, stars, watchers and downloads show up here.` });
+              return;
+            }
+            await github.rest.issues.update({ owner, repo, issue_number: issue.number, body, state: 'open' });
+            if (notes.length) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body: `@${owner}\n\n${notes.map((note) => `- ${note}`).join('\n')}` });
+            }
+            core.info(notes.length ? notes.join('\n') : 'Nothing new.');
