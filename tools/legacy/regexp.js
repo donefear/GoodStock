@@ -60,11 +60,31 @@
     return out;
   }
 
+  // Rewritten sources, by flag s and source: regex literals inside functions are made again on every call.
+  var rewritten = {};
+  var made = {};
+  var madeCount = 0;
+
   window.legacyRegExp = function (pattern, flags) {
     var isRegExp = pattern instanceof NativeRegExp;
     var source = isRegExp ? pattern.source : pattern === undefined ? '' : String(pattern);
     var wanted = flags === undefined ? (isRegExp ? flagsOf(pattern) : '') : String(flags);
-    if (/[us]/.test(wanted) || /\\[pP]\{|\(\?</.test(source)) source = rewrite(source, wanted.indexOf('s') >= 0);
-    return new NativeRegExp(source, wanted.replace(/[usy]/g, ''));
+    if (/[us]/.test(wanted) || /\\[pP]\{|\(\?</.test(source)) {
+      var key = (wanted.indexOf('s') >= 0 ? 's' : '-') + source;
+      if (!Object.prototype.hasOwnProperty.call(rewritten, key)) rewritten[key] = rewrite(source, wanted.indexOf('s') >= 0);
+      source = rewritten[key];
+    }
+    var nativeFlags = wanted.replace(/[usy]/g, '');
+    // One object per pattern, so the big letter classes compile once instead of on every call of the function they
+    // sit in (old engines don't cache that). A global one starts at lastIndex 0, like a new one. This is safe because
+    // the app only uses global patterns through replace(), split() and matchAll(), which reset or copy them, never
+    // in an exec() loop that another call could interrupt.
+    var objectKey = nativeFlags + '/' + source;
+    if (!Object.prototype.hasOwnProperty.call(made, objectKey)) {
+      if (++madeCount > 3000) { made = {}; madeCount = 1; } // patterns built from typed text: keep it bounded
+      made[objectKey] = new NativeRegExp(source, nativeFlags);
+    }
+    made[objectKey].lastIndex = 0;
+    return made[objectKey];
   };
 })();

@@ -317,18 +317,40 @@ function findIngredientRecord(value) {
   return best || undefined;
 }
 
+// The words a name can match on: its cleaned text and its catalog entry's names. inventoryMatches asks for every
+// item's terms for every recipe line, so they are remembered per text (with the catalog, like ingredientRecord);
+// callers only read the arrays.
+let ingredientTermsCache = { source: null, results: new Map() };
+
 function ingredientTerms(value) {
-  const normalized = cleanIngredient(value);
-  const record = ingredientRecord(value);
-  if (!record) return [normalized];
-  return [normalized, ...catalogAliases().find((entry) => entry.ingredient === record).aliases];
+  if (ingredientTermsCache.source !== ingredientCatalog) ingredientTermsCache = { source: ingredientCatalog, results: new Map() };
+  const key = String(value || '');
+  if (!ingredientTermsCache.results.has(key)) {
+    const normalized = cleanIngredient(key);
+    const record = ingredientRecord(key);
+    const terms = record ? [normalized, ...catalogAliases().find((entry) => entry.ingredient === record).aliases] : [normalized];
+    ingredientTermsCache.results.set(key, terms.filter(Boolean));
+  }
+  return ingredientTermsCache.results.get(key);
 }
 
 function recipeById(id) {
   return state.recipes.find((recipe) => recipe.id === id || recipe.slug === id);
 }
 
+// cleanIngredient runs for the same few hundred names on every redraw; the results are remembered (up to 5000).
+const cleanedIngredients = new Map();
+
 function cleanIngredient(value) {
+  const key = String(value || '');
+  if (!cleanedIngredients.has(key)) {
+    if (cleanedIngredients.size > 5000) cleanedIngredients.clear();
+    cleanedIngredients.set(key, cleanIngredientText(key));
+  }
+  return cleanedIngredients.get(key);
+}
+
+function cleanIngredientText(value) {
   // Accents and other marks go, letters of every script stay (Cyrillic, Chinese, Japanese), and units and small
   // linking words ("of", "de", "di") are dropped, the same way for item names and for recipe lines.
   // Turkish dotless ı counts as i, so "ıspanak" and "Ispanak" are the same word.
@@ -521,11 +543,11 @@ function matchingInventory(ingredient) {
 
 // Every item in stock that a recipe line could mean, in inventory order.
 function inventoryMatches(ingredient) {
-  const wantedTerms = ingredientTerms(ingredient).filter(Boolean);
+  const wantedTerms = ingredientTerms(ingredient);
   if (!wantedTerms.length) return [];
   return state.inventory.filter((item) => {
     if (Number(item.quantity) <= 0) return false;
-    const availableTerms = ingredientTerms(item.name).filter(Boolean);
+    const availableTerms = ingredientTerms(item.name);
     // A name only counts inside a longer one when it is longer than three letters itself, in both directions: short
     // catalog names in other languages (Dutch "ei", Turkish "un") would otherwise be found in "leite" or "pătrunjel".
     return wantedTerms.some((wanted) => availableTerms.some((available) => available === wanted

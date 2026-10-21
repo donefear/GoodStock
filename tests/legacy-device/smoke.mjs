@@ -50,15 +50,22 @@ const evaluate = async (expression) => {
   if (result.wasThrown) throw new Error(`${expression.slice(0, 60)}…: ${JSON.stringify(result.result).slice(0, 300)}`);
   return result.result.value;
 };
-// DevTools takes the screenshot where it can (Chrome 33+); Chrome 30 can't, so then adb does, when it is here.
+// Screenshots through adb (the whole screen, as the tablet shows it); without adb, DevTools tries (Chrome 33+).
+// A screenshot that fails is noted, never a failure of the check.
+const adb = (...args) => spawnSync('adb', args, { stdio: 'ignore', timeout: 20_000 }).status === 0;
+const hasAdb = spawnSync('adb', ['version'], { stdio: 'ignore' }).status === 0;
 const screenshot = async (name) => {
-  const { result } = await send('Page.captureScreenshot');
-  if (result && result.data) { writeFileSync(`${out}/${name}.png`, Buffer.from(result.data, 'base64')); return; }
-  const adb = (...args) => spawnSync('adb', args, { stdio: 'ignore', timeout: 20_000 }).status === 0;
-  if (!adb('shell', 'screencap', '-p', '/data/local/tmp/goodstock-smoke.png') || !adb('pull', '/data/local/tmp/goodstock-smoke.png', `${out}/${name}.png`)) {
-    if (!screenshot.warned) log.push('no screenshots: neither DevTools nor adb could take one');
-    screenshot.warned = true;
+  try {
+    if (hasAdb ? adb('shell', 'screencap', '-p', '/data/local/tmp/goodstock-smoke.png') && adb('pull', '/data/local/tmp/goodstock-smoke.png', `${out}/${name}.png`) : false) return;
+    if (!hasAdb) {
+      const { result } = await send('Page.captureScreenshot');
+      if (result && result.data) { writeFileSync(`${out}/${name}.png`, Buffer.from(result.data, 'base64')); return; }
+    }
+  } catch {
+    // Noted below.
   }
+  if (!screenshot.warned) log.push('some screenshots could not be taken');
+  screenshot.warned = true;
 };
 const step = async (name, expression, check) => {
   try {
@@ -88,6 +95,9 @@ for (let attempt = 0; attempt < 60 && !started; attempt++) {
   started = await evaluate("!!document.querySelector('#view-container .page-heading h1')").catch(() => false);
 }
 if (!started) fail.push('the app did not show its first page within two minutes');
+// How long the page took until its scripts had run (DOMContentLoaded comes after the deferred scripts).
+const timing = await evaluate('JSON.stringify({ scripts: performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart, load: performance.timing.loadEventEnd - performance.timing.navigationStart })').catch(() => '{}');
+log.push(`start: ${timing} ms`);
 await evaluate("window.__errors = []; window.onerror = function (message, url, line) { window.__errors.push(message + ' ' + url + ':' + line); }; 1");
 
 const heading = "var h = document.querySelector('#view-container .page-heading h1'); return h ? h.textContent : '';";

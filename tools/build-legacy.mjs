@@ -15,6 +15,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transformSync } from '@babel/core';
+import { minify } from 'terser';
 import { tokenizer } from 'acorn';
 import autoprefixer from 'autoprefixer';
 import postcss from 'postcss';
@@ -44,6 +45,19 @@ const runtimeRegExps = ({ types: t }) => ({
   },
 });
 
+// Regex literals with flag u (\p{L} and friends) become legacyRegExp('…', 'u') too, instead of Babel writing every
+// letter of the class into each pattern (that made app/cook.js four times its size): legacyRegExp fills the classes
+// in from one table when the pattern is first made, and remembers the result.
+const unicodeLiterals = ({ types: t }) => ({
+  visitor: {
+    RegExpLiteral(path) {
+      const { pattern, flags } = path.node;
+      if (!flags.includes('u') && !/\\[pP]\{/.test(pattern)) return;
+      path.replaceWith(t.callExpression(t.identifier('legacyRegExp'), [t.stringLiteral(pattern), t.stringLiteral(flags)]));
+    },
+  },
+});
+
 // Old engines cannot compile a lookbehind, and nothing can rewrite one; fail the build instead of the tablet.
 function checkNoLookbehind(file, code, sourceType) {
   for (const token of tokenizer(code, { ecmaVersion: 'latest', sourceType })) {
@@ -53,7 +67,13 @@ function checkNoLookbehind(file, code, sourceType) {
   }
 }
 
-function compile(file, code) {
+// Smaller files for slow tablets: minified as ES5. Top-level names stay as they are, because the scripts share them.
+async function shrink(code) {
+  const { code: small } = await minify(code, { ecma: 5, compress: { passes: 2 }, mangle: true, format: { comments: false, ascii_only: false } });
+  return small;
+}
+
+async function compile(file, code) {
   const { code: result } = transformSync(code, {
     filename: file,
     babelrc: false,
@@ -61,7 +81,7 @@ function compile(file, code) {
     sourceType: 'script',
     compact: false,
     comments: false,
-    plugins: [runtimeRegExps],
+    plugins: [unicodeLiterals, runtimeRegExps],
     presets: [[require.resolve('@babel/preset-env'), { targets: TARGET, modules: false }]],
   });
   // The scripts share one global scope, so Babel's top-level helpers and caches (_templateObject, _excluded…) from
@@ -77,7 +97,8 @@ function compile(file, code) {
       },
     },
   });
-  return transformSync(result, { filename: file, babelrc: false, configFile: false, sourceType: 'script', compact: false, plugins: [ownHelpers] }).code;
+  const compiled = transformSync(result, { filename: file, babelrc: false, configFile: false, sourceType: 'script', compact: false, plugins: [ownHelpers] }).code;
+  return shrink(compiled);
 }
 
 rmSync(out, { recursive: true, force: true });
@@ -101,10 +122,10 @@ for (const file of scripts) {
     code = code.replace('script.src = `lang/${code}.js`;', 'script.src = `legacy/lang/${code}.js`;');
     if (code === before) throw new Error('i18n.js: the language file path changed; update tools/build-legacy.mjs');
   }
-  write(legacyName(file), compile(file, code));
+  write(legacyName(file), await compile(file, code));
 }
 for (const file of readdirSync(join(root, 'lang')).filter((name) => /^[a-z-]+\.js$/i.test(name))) {
-  write(`lang/${file}`, compile(`lang/${file}`, read(`lang/${file}`)));
+  write(`lang/${file}`, await compile(`lang/${file}`, read(`lang/${file}`)));
 }
 
 // Polyfills: core-js (all of it; old engines lack most), fetch, <dialog>, DOM methods and run-time regex rewriting.
@@ -131,13 +152,16 @@ const normalizePolyfill = `(function () {
   } });
 })();`;
 
+// core-js comes minified; the rest is minified here.
 write('polyfills.js', [
   read('node_modules/core-js-bundle/minified.js').replace(/\/\/# sourceMappingURL=.*$/m, ''),
-  read('node_modules/whatwg-fetch/dist/fetch.umd.js'),
-  read('node_modules/dialog-polyfill/dist/dialog-polyfill.js'),
-  normalizePolyfill,
-  read('tools/legacy/dom.js'),
-  read('tools/legacy/regexp.js').replace('/* PROPERTIES */ {}', JSON.stringify(properties)),
+  await shrink([
+    read('node_modules/whatwg-fetch/dist/fetch.umd.js'),
+    read('node_modules/dialog-polyfill/dist/dialog-polyfill.js'),
+    normalizePolyfill,
+    read('tools/legacy/dom.js'),
+    read('tools/legacy/regexp.js').replace('/* PROPERTIES */ {}', JSON.stringify(properties)),
+  ].join('\n;\n')),
 ].join('\n;\n'));
 
 // Fonts: .woff copies and the icon symbols' fonts (fonts/build-legacy-fonts.mjs), which must cover every symbol the

@@ -52,10 +52,15 @@ OLD TABLETS
     the app sets data-theme or dir. The legacy-build test and the Android 4.4 check switch to Arabic and look for the
     right-to-left sheet with the sidebar's space on the right. Read aloud itself is not tried on a real tablet.
 
-0.45 A lighter old-tablet page.
-    The old-tablet copy is about 1.2 MB of scripts before the app shows anything (app/cook.js alone grows to 245 kB,
-    mostly the \p{L} letter classes written out), and an old tablet is slow to read it. Minify the legacy files,
-    write each letter class once instead of in every pattern, and time the start on the emulator before and after.
+[x] DONE 0.45 A lighter old-tablet page. (v4.0.4)
+    The scripts the old-tablet page loads at start went from 1.19 MB to 0.75 MB (app/cook.js 248 kB → 41 kB): regex
+    literals with letter classes (\p{L}…) become legacyRegExp calls that fill the classes in from one table, each
+    pattern made once and reused (the app only uses global patterns through replace, split and matchAll), and every
+    legacy file is minified (terser, ES5). The matching behind the week and recipe pages now remembers each name's
+    cleaned text and catalog terms, which helps every browser. On the Android 4.4 emulator (software, so far slower
+    than a real tablet): scripts ready after 9.5 s instead of 12.8 s, the week page drawn in 38 s instead of 63 s the
+    first time and 19 s instead of 23 s after. The Android 4.4 check (0.42) logs the start time, and a new test suite,
+    legacy-pages, runs all page tests inside the old-tablet page.
 
 
 EVERYDAY USE

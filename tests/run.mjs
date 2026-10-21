@@ -9,6 +9,7 @@
 //
 // Needs Node 22 and the dev dependency puppeteer (`npm install`). Without Node on the machine, see tests/README.md.
 import { spawn, spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -196,6 +197,32 @@ async function main() {
           }
         }
       });
+    }
+    // The same page tests inside the old-tablet page (legacy/, which the server serves): the build rewrites regexes,
+    // helpers and polyfills, so the app's own checks have to pass there too.
+    if (wanted('legacy-pages')) {
+      if (!existsSync(join(root, 'legacy/index.html'))) spawnSync(process.execPath, ['tools/build-legacy.mjs'], { cwd: root });
+      const fail = [];
+      const log = [];
+      await withServer(async (base) => {
+        for (const file of (await readdir(join(root, 'tests/page'))).filter((name) => name.endsWith('.js')).sort()) {
+          const page = await browser.newPage();
+          page.on('pageerror', (error) => fail.push(`${file}: page error: ${error.message}`));
+          page.on('dialog', (dialog) => dialog.accept());
+          try {
+            await page.goto(`${base}/legacy/index.html`, { waitUntil: 'networkidle2' });
+            await page.waitForSelector('#view-container .page-heading');
+            const outcome = await page.evaluate(`(async () => { ${await readFile(join(root, 'tests/page', file), 'utf8')} })()`);
+            for (const line of outcome.fail || []) fail.push(`${file}: ${line}`);
+            log.push(`${file}: ${(outcome.fail || []).length ? 'fail' : 'pass'}`);
+          } catch (error) {
+            fail.push(`${file}: ${error.message}`);
+          } finally {
+            await page.close();
+          }
+        }
+      });
+      report('legacy-pages', { fail, log });
     }
     const e2eTests = (await readdir(join(root, 'tests/e2e'))).filter((file) => file.endsWith('.mjs') && wanted(file)).sort();
     for (const file of e2eTests) {
