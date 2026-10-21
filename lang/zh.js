@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Diets and allergens": "饮食与过敏原",
   "Contains: {items}": "含有：{items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "根据食材名称的提示。重要时请查看包装。",
+  "In the order of your shop, learned from {count} trips.": "按你常去商店的顺序，根据 {count} 次购物学会。",
+  "Forget the order": "忘记这个顺序",
 };

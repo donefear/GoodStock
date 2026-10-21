@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "Diets and allergens": "Diety i alergeny",
   "Contains: {items}": "Zawiera: {items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "Wskazówka na podstawie nazw składników. Gdy to ważne, sprawdź opakowanie.",
+  "In the order of your shop, learned from {count} trips.": { "one": "W kolejności twojego sklepu, z {count} zakupów.", "few": "W kolejności twojego sklepu, z {count} zakupów.", "many": "W kolejności twojego sklepu, z {count} zakupów.", "other": "W kolejności twojego sklepu, z {count} zakupów." },
+  "Forget the order": "Zapomnij kolejność",
 };

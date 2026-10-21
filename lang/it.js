@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.it = {
   "Diets and allergens": "Diete e allergeni",
   "Contains: {items}": "Contiene: {items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "Un'indicazione dai nomi degli ingredienti. Controlla la confezione quando conta.",
+  "In the order of your shop, learned from {count} trips.": { "one": "Nell'ordine del tuo negozio, imparato da {count} spesa.", "other": "Nell'ordine del tuo negozio, imparato da {count} spese." },
+  "Forget the order": "Dimentica l'ordine",
 };

@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Diets and allergens": "الأنظمة الغذائية ومسببات الحساسية",
   "Contains: {items}": "يحتوي على: {items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "تلميح من أسماء المكونات. تحقق من الغلاف عندما يكون الأمر مهمًا.",
+  "In the order of your shop, learned from {count} trips.": { "zero": "بترتيب متجرك، تعلّمه من {count} جولات تسوق.", "one": "بترتيب متجرك، تعلّمه من جولة تسوق واحدة.", "two": "بترتيب متجرك، تعلّمه من جولتي تسوق.", "few": "بترتيب متجرك، تعلّمه من {count} جولات تسوق.", "many": "بترتيب متجرك، تعلّمه من {count} جولة تسوق.", "other": "بترتيب متجرك، تعلّمه من {count} جولة تسوق." },
+  "Forget the order": "انسَ الترتيب",
 };

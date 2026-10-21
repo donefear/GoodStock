@@ -261,7 +261,7 @@ const itemStamp = (item) => stamp(String(JSON.stringify(item)));
 
 // A kitchen as fingerprints ({ inventory: { id: stamp }, …, locations: stamp }): all that mergeStates needs of a base.
 function fingerprintState(value) {
-  const prints = { locations: itemStamp(value?.locations) };
+  const prints = { locations: itemStamp(value?.locations), shopOrder: itemStamp(value?.shopOrder) };
   for (const key of MERGED_LISTS) {
     prints[key] = {};
     for (const item of value?.[key] || []) if (item && item.id != null) prints[key][String(item.id)] = itemStamp(item);
@@ -308,6 +308,12 @@ function mergeStates(base, local, remote) {
     ? itemStamp(local?.locations) !== base.locations
     : JSON.stringify(local?.locations) !== JSON.stringify(base?.locations);
   merged.locations = localChangedLocations ? local.locations : remote.locations;
+  // The learned shop order (0.50): one whole value, like the locations; a change made here since the last sync wins.
+  const localChangedShopOrder = typeof base?.shopOrder === 'string'
+    ? itemStamp(local?.shopOrder) !== base.shopOrder
+    : JSON.stringify(local?.shopOrder) !== JSON.stringify(base?.shopOrder);
+  const shopOrder = localChangedShopOrder ? local?.shopOrder : remote?.shopOrder;
+  if (shopOrder) merged.shopOrder = shopOrder; else delete merged.shopOrder;
   return merged;
 }
 

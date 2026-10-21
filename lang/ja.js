@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Diets and allergens": "食事制限とアレルゲン",
   "Contains: {items}": "含む：{items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "材料名からの目安です。大事なときはパッケージを確認してください。",
+  "In the order of your shop, learned from {count} trips.": "お店の順番で表示（{count} 回の買い物から学習）。",
+  "Forget the order": "順番をリセット",
 };

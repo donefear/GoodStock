@@ -97,10 +97,14 @@ EVERYDAY USE
     the Recipes page has filters Vegetarian, Vegan, Without gluten, Without milk and Without nuts (remembered per
     browser). tests/page/allergens-diets.js covers ten recipes in five languages.
 
-0.50 The shopping list learns your shop.
-    The list is in a general supermarket order, but every shop is laid out differently. The order in which items
-    are ticked off says how your shop is laid out; after a few trips the groups could follow that order, per shop if
-    there's more than one.
+[x] DONE 0.50 The shopping list learns your shop. (v4.0.10)
+    Ticking items off one at a time records the order in which the groups get done (this device, in localStorage). A
+    trip ends when the list is done or after six quiet hours and counts when it covered three groups or more; "Check
+    all" teaches nothing. Each group's place on a trip (first 0 … last 1) is averaged into state.shopOrder, shared by
+    the household and merged as one value (a change here since the last sync wins). After three trips the groups follow
+    the learned order, groups never seen keep their general place, and the list says "In the order of your shop,
+    learned from 3 trips. Forget the order". Shared and printed lists use the same order. One shop only: a household
+    that shops in several places gets their average. tests/page/shop-order.js.
 
 0.51 What waste costs.
     "This month" counts what was thrown away. An optional price on items (remembered from the last time) would turn

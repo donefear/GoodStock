@@ -244,6 +244,8 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .match-tag { color: var(--green); font-size: 9px; font-weight: 700; }
 .match-tag.has-missing { color: #a06823; }
 .shopping-block { margin-top: 4px; }
+.shop-order-note { margin: -6px 0 10px; color: var(--muted); font-size: 13px; }
+.shop-order-note .text-button { margin-inline-start: 6px; font-size: 13px; }
 .shopping-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .recipe-heading-actions, .inventory-heading-actions, .week-heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Recipe page */
@@ -932,7 +934,7 @@ body.kitchen-screen-open { overflow: hidden; }
   :root, :root[data-theme="dark"] { color-scheme: light; color: #111; background: #fff; --paper: #fff; --white: #fff; --ink: #111; --muted: #555; --line: #ccc; --green: #1f5c45; --green-dark: #1f5c45; --mint: #e8efe9; }
   body { min-height: 0; background: #fff; font-size: 12pt; }
   .sidebar, .topbar, .floating-timers, .undo-bar, dialog, .no-print, .recipe-back, .recipe-page-actions, .recipe-page-links,
-  .servings-control, .translation-panel, .shopping-heading-actions, .list-actions, .putaway-button, .shopping-source,
+  .servings-control, .translation-panel, .shopping-heading-actions, .list-actions, .shop-order-note, .putaway-button, .shopping-source,
   .page-heading .eyebrow, .shopping-row.checked, .shopping-group.is-done { display: none !important; }
   .print-only { display: block; }
   .main-area { margin: 0; min-height: 0; }

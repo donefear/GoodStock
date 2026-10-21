@@ -56,7 +56,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **One tap builds the shopping list** from the week's plan. It only adds what you don't already have.
 
 ### 🛒 Shopping list
-- **Grouped in supermarket order**: vegetables, fruit, bakery, dairy and so on.
+- **Grouped in supermarket order**: vegetables, fruit, bakery, dairy and so on. After three trips it **learns your shop**: the groups follow the order in which you tick them off.
 - **Put it away.** Checked items go into the inventory in one step.
 - **Share to phone.** Scan a QR code to download the list onto your phone (server version). The phone apps use the normal share menu. The shared list keeps the supermarket groups as headings.
 - **Print it** for the fridge door or for someone shopping without a phone: just the unchecked items, with tick boxes. Recipe pages print cleanly too, from the browser, the desktop app and the phone apps (Android's print service and iOS's print sheet, which can also save a PDF).

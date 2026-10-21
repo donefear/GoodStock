@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Diets and allergens": "תזונה ואלרגנים",
   "Contains: {items}": "מכיל: {items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "רמז לפי שמות המרכיבים. כשזה חשוב, בדקו את האריזה.",
+  "In the order of your shop, learned from {count} trips.": { "one": "לפי סדר החנות שלך, נלמד מקנייה אחת.", "two": "לפי סדר החנות שלך, נלמד משתי קניות.", "other": "לפי סדר החנות שלך, נלמד מ־{count} קניות." },
+  "Forget the order": "שכח את הסדר",
 };

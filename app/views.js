@@ -545,15 +545,84 @@ function copyDayTo(target) {
 const SHOPPING_GROUPS = ['Vegetables', 'Fruit', 'Herbs', 'Bakery', 'Pantry', 'Baking', 'Seasoning', 'Dairy', 'Meat and fish'];
 N_('Other');
 
+const shoppingGroupOf = (name) => {
+  const category = ingredientRecord(name)?.category;
+  return SHOPPING_GROUPS.includes(category) ? category : 'Other';
+};
+
 function shoppingGroups(items) {
   const groups = new Map();
   for (const item of items) {
-    const category = ingredientRecord(item.name)?.category;
-    const key = SHOPPING_GROUPS.includes(category) ? category : 'Other';
+    const key = shoppingGroupOf(item.name);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(item);
   }
-  return [...SHOPPING_GROUPS, 'Other'].filter((key) => groups.has(key)).map((key) => ({ key, items: groups.get(key) }));
+  return shopGroupOrder().filter((key) => groups.has(key)).map((key) => ({ key, items: groups.get(key) }));
+}
+
+// The shopping list learns your shop (0.50): the order in which the groups are ticked off on a trip says how the shop
+// is laid out. A trip is ticks one at a time (not "Check all"); it ends when the list is done or after six quiet
+// hours, and counts when it covered at least three groups. After LEARN_AFTER_TRIPS trips the groups follow the learned
+// order (state.shopOrder, shared by the household); groups never seen keep their place from the general order.
+const SHOP_TRIP_KEY = 'goodstock-shop-trip';
+const SHOP_TRIP_GAP_MS = 6 * 60 * 60 * 1000;
+const LEARN_AFTER_TRIPS = 3;
+
+function shopGroupOrder() {
+  const general = [...SHOPPING_GROUPS, 'Other'];
+  const learned = state.shopOrder;
+  if (!learned || (learned.trips || 0) < LEARN_AFTER_TRIPS) return general;
+  const position = (key, index) => (learned.groups?.[key] ? learned.groups[key].rank : index / (general.length - 1));
+  return general.map((key, index) => ({ key, at: position(key, index), index })).sort((first, second) => first.at - second.at || first.index - second.index).map(({ key }) => key);
+}
+
+function readShopTrip() {
+  try { return JSON.parse(localStorage.getItem(SHOP_TRIP_KEY) || 'null'); } catch { return null; }
+}
+
+function writeShopTrip(trip) {
+  try { if (trip) localStorage.setItem(SHOP_TRIP_KEY, JSON.stringify(trip)); else localStorage.removeItem(SHOP_TRIP_KEY); } catch { /* Learning just skips this trip. */ }
+}
+
+// Folds a finished trip into the learned order: each group's place on this trip (0 = first, 1 = last) is averaged in.
+function learnShopTrip(trip) {
+  if (!trip || trip.groups.length < 3) return;
+  const learned = state.shopOrder || { trips: 0, groups: {} };
+  learned.groups = learned.groups || {};
+  trip.groups.forEach((key, index) => {
+    const place = index / (trip.groups.length - 1);
+    const known = learned.groups[key] || { rank: place, seen: 0 };
+    const weight = Math.min(known.seen, 9);
+    learned.groups[key] = { rank: Math.round(((known.rank * weight + place) / (weight + 1)) * 1000) / 1000, seen: known.seen + 1 };
+  });
+  learned.trips = (learned.trips || 0) + 1;
+  state.shopOrder = learned;
+}
+
+// An item ticked off on its own.
+function noteShoppingTick(item) {
+  const now = Date.now();
+  let trip = readShopTrip();
+  if (trip && now - trip.last > SHOP_TRIP_GAP_MS) { learnShopTrip(trip); trip = null; }
+  trip = trip || { groups: [], last: now };
+  const key = shoppingGroupOf(item.name);
+  if (!trip.groups.includes(key)) trip.groups.push(key);
+  trip.last = now;
+  if (!state.shopping.some((entry) => !entry.checked)) { learnShopTrip(trip); trip = null; }
+  writeShopTrip(trip);
+}
+
+// Above the list once the order is learned, with a way to start over (a new shop, a rebuilt one).
+function shopOrderNote() {
+  const trips = state.shopOrder?.trips || 0;
+  if (trips < LEARN_AFTER_TRIPS || !state.shopping.length) return '';
+  return `<p class="shop-order-note">${tp(trips, 'In the order of your shop, learned from {count} trip.', 'In the order of your shop, learned from {count} trips.')} <button class="text-button" type="button" data-action="reset-shop-order">${t('Forget the order')}</button></p>`;
+}
+
+function resetShopOrder() {
+  delete state.shopOrder;
+  writeShopTrip(null);
+  persist();
 }
 
 function renderShopping() {
@@ -569,7 +638,7 @@ function renderShopping() {
   const printButton = canPrint() && remaining ? `<button class="button button-outline" data-action="print">${t('Print')} <span aria-hidden="true">⎙</span></button>` : '';
   const actions = `<div class="shopping-heading-actions">${state.shopping.length ? shareButton : ''}${printButton}<button class="button button-outline" data-action="generate-shopping">${t('Refresh from plan')} <span aria-hidden="true">↻</span></button></div>`;
   return `${pageHeading(t('OUT AND ABOUT'), t('The list, in hand.'), tp(remaining, '{count} thing left to pick up. Check off as you go.', '{count} things left to pick up. Check off as you go.'), actions)}
-    <section class="section-block shopping-block"><div class="section-heading"><div><h2>${t('This week’s list')}</h2><span class="muted">${tp(state.shopping.length, '{count} item', '{count} items')}</span></div><div class="list-actions">${remaining ? `<button class="text-button" data-action="check-all">✓ ${t('Check all')}</button>` : ''}${state.shopping.some((item) => item.checked) ? `<button class="button button-small button-outline" data-action="put-all-away">${t('Put all away')}</button><button class="text-button" data-action="clear-checked">${t('Clear checked')}</button>` : ''}${state.shopping.length ? `<button class="text-button clear-list-button" data-action="clear-list">× ${t('Clear list')}</button>` : ''}</div></div>${rows ? `<div class="shopping-list">${rows}</div>` : `<div class="empty-state compact"><span class="empty-mark">☷</span><strong>${t('Your list is nice and clear.')}</strong><p>${t('Build it from the meals in your weekly plan.')}</p><button class="button button-primary" data-action="generate-shopping">${t('Build from this week')}</button></div>`}</section>${printFooter()}`;
+    <section class="section-block shopping-block"><div class="section-heading"><div><h2>${t('This week’s list')}</h2><span class="muted">${tp(state.shopping.length, '{count} item', '{count} items')}</span></div><div class="list-actions">${remaining ? `<button class="text-button" data-action="check-all">✓ ${t('Check all')}</button>` : ''}${state.shopping.some((item) => item.checked) ? `<button class="button button-small button-outline" data-action="put-all-away">${t('Put all away')}</button><button class="text-button" data-action="clear-checked">${t('Clear checked')}</button>` : ''}${state.shopping.length ? `<button class="text-button clear-list-button" data-action="clear-list">× ${t('Clear list')}</button>` : ''}</div></div>${shopOrderNote()}${rows ? `<div class="shopping-list">${rows}</div>` : `<div class="empty-state compact"><span class="empty-mark">☷</span><strong>${t('Your list is nice and clear.')}</strong><p>${t('Build it from the meals in your weekly plan.')}</p><button class="button button-primary" data-action="generate-shopping">${t('Build from this week')}</button></div>`}</section>${printFooter()}`;
 }
 
 // Printing: the browser's print dialog with the print styles at the end of styles.css (a clean recipe page, or the

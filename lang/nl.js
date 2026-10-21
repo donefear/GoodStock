@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Diets and allergens": "Dieet en allergenen",
   "Contains: {items}": "Bevat: {items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "Een hint op basis van de ingrediëntnamen. Kijk op de verpakking als het ertoe doet.",
+  "In the order of your shop, learned from {count} trips.": { "one": "In de volgorde van je winkel, geleerd van {count} boodschappenronde.", "other": "In de volgorde van je winkel, geleerd van {count} boodschappenrondes." },
+  "Forget the order": "Vergeet de volgorde",
 };

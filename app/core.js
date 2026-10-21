@@ -220,6 +220,8 @@ function normalizeState(value) {
     checks: Array.isArray(value.checks) ? value.checks : [],
     // Shelf lives this kitchen learned from what it threw away ({ id: 'catalog id|storage', days }; 0 = keep the estimate).
     shelfLife: Array.isArray(value.shelfLife) ? value.shelfLife : [],
+    // The order of the shop, learned from shopping trips ({ trips, groups: { group: { rank, seen } } }), 0.50.
+    ...(value.shopOrder && typeof value.shopOrder === 'object' ? { shopOrder: value.shopOrder } : {}),
   };
 }
 

@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Diets and allergens": "Диеты и аллергены",
   "Contains: {items}": "Содержит: {items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "Подсказка по названиям ингредиентов. Когда это важно, проверьте упаковку.",
+  "In the order of your shop, learned from {count} trips.": { "one": "В порядке вашего магазина, по {count} походу за покупками.", "few": "В порядке вашего магазина, по {count} походам за покупками.", "many": "В порядке вашего магазина, по {count} походам за покупками.", "other": "В порядке вашего магазина, по {count} похода за покупками." },
+  "Forget the order": "Забыть порядок",
 };

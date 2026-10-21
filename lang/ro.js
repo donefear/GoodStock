@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Diets and allergens": "Diete și alergeni",
   "Contains: {items}": "Conține: {items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "Un indiciu după numele ingredientelor. Verifică ambalajul când contează.",
+  "In the order of your shop, learned from {count} trips.": { "one": "În ordinea magazinului tău, învățată din {count} drum la cumpărături.", "few": "În ordinea magazinului tău, învățată din {count} drumuri la cumpărături.", "other": "În ordinea magazinului tău, învățată din {count} de drumuri la cumpărături." },
+  "Forget the order": "Uită ordinea",
 };

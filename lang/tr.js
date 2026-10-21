@@ -1055,4 +1055,6 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Diets and allergens": "Diyetler ve alerjenler",
   "Contains: {items}": "İçerir: {items}",
   "A hint from the ingredient names. Check the packaging when it matters.": "Malzeme adlarından bir ipucu. Önemliyse ambalajı kontrol edin.",
+  "In the order of your shop, learned from {count} trips.": { "one": "Mağazanızın sırasıyla, {count} alışverişten öğrenildi.", "other": "Mağazanızın sırasıyla, {count} alışverişten öğrenildi." },
+  "Forget the order": "Sırayı unut",
 };

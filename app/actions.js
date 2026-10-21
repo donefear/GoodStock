@@ -396,6 +396,7 @@ document.addEventListener('click', async (event) => {
     withUndo(tp(count, '{count} checked item cleared', '{count} checked items cleared'), ['shopping'], () => { state.shopping = state.shopping.filter((entry) => !entry.checked); });
   }
   if (action === 'check-all') { for (const entry of state.shopping) entry.checked = true; persist(); }
+  if (action === 'reset-shop-order') resetShopOrder();
   if (action === 'put-all-away') {
     const checked = state.shopping.filter((entry) => entry.checked);
     // Each goes to its usual spot with an estimated expiry date; they can be edited in Inventory afterwards.
@@ -572,7 +573,11 @@ document.addEventListener('change', async (event) => {
   }
   if (event.target.matches('input[data-action="check-shopping"]')) {
     const item = state.shopping.find((entry) => entry.id === event.target.dataset.id);
-    if (item) { item.checked = event.target.checked; persist(); }
+    if (item) {
+      item.checked = event.target.checked;
+      if (item.checked) noteShoppingTick(item);
+      persist();
+    }
   }
 });
 
