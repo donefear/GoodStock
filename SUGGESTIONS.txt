@@ -88,10 +88,14 @@ EVERYDAY USE
     instead of "Expired … ago" in red, everywhere the date shows (inventory, Use soon, stocktake, kitchen screen). It
     still shows in Use soon, so it gets looked at. tests/page/best-before.js.
 
-0.49 Allergens and diets.
-    The ingredient catalog knows what each ingredient is, so it could also know gluten, milk, eggs, nuts, fish, meat.
-    Recipes would get small labels ("contains nuts", "vegetarian") and the Recipes page a filter, which helps a
-    household with an allergy or a guest who doesn't eat meat. Only a hint: a recipe's text can always hide something.
+[x] DONE 0.49 Allergens and diets. (v4.0.8)
+    Each recipe line is checked against its catalog entry (milk, butter, cheese → milk; bread, flour, pasta, oats, soy
+    sauce → gluten; …) and against words for allergens the catalog lacks, in the app's languages: nuts, peanuts, fish,
+    shellfish, soy, sesame, celery, mustard, more meats, honey. Words that only look alike are left out or excluded
+    (minced garlic, lemon rind, room temperature, coconut milk, nutmeg). Cards and the recipe page show "Vegetarian" or
+    "Vegan" and "Contains: gluten, milk…", the recipe page with "a hint from the ingredient names, check the packaging";
+    the Recipes page has filters Vegetarian, Vegan, Without gluten, Without milk and Without nuts (remembered per
+    browser). tests/page/allergens-diets.js covers ten recipes in five languages.
 
 0.50 The shopping list learns your shop.
     The list is in a general supermarket order, but every shop is laid out differently. The order in which items

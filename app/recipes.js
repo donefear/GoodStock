@@ -301,6 +301,7 @@ function renderRecipePage() {
     ${pageHeading(escapeHtml(sourceLabel(recipe.source).toUpperCase()), escapeHtml(recipe.name), escapeHtml(recipe.description || ''), actions)}
     <div class="recipe-page-links">${favouriteButton(saved, true)}${links}</div>
     <p class="recipe-cooked-note">${escapeHtml(cookedText(saved.id))}</p>
+    ${dietLine(saved, true)}
     ${recipePhoto(recipe, 'recipe-page-photo')}
     ${renderTranslationPanel(recipe)}
     ${renderSharePanel(recipe)}
@@ -675,6 +676,105 @@ function cookedText(recipeId) {
   return tp(count, 'Cooked once, last {when}', 'Cooked {count} times, last {when}', { when });
 }
 
+// Allergens and diets (0.49), from the ingredient lines: the catalog entry a line is about, and words for common
+// allergens the catalog doesn't have, in the app's languages (accents dropped, matched at the start of a word; Chinese
+// and Japanese anywhere). Only a hint: a recipe's text can always hide something, and the page says so.
+const ALLERGENS = {
+  gluten: { catalog: ['bread', 'flour', 'pasta', 'oats', 'soy-sauce'], words: ['wheat', 'tarwe', 'weizen', 'trigo', 'grano', 'frumento', 'пшениц', 'grau', 'pszen', 'bugday', 'قمح', 'חיטה', '小麦', 'barley', 'gerst', 'orge', 'cebada', 'orzo', 'cevada', 'ячмен', 'rye', 'rogge', 'roggen', 'seigle', 'centeno', 'segale', 'centeio', 'рож', 'couscous', 'bulgur', 'semolina', 'griesmeel', 'griess', 'semoule', 'semola', 'spelt', 'dinkel', 'epeautre', 'noodle', 'noedel', 'nudel', 'nouille', 'fideo', 'breadcrumb', 'paneermeel', 'paniermehl', 'chapelure', 'pan rallado', 'pangrattato', 'panko', 'tortilla', 'pita', 'cracker', 'beschuit', 'udon', 'ramen', 'うどん', '面条', '面粉', '麺', '小麦粉'] },
+  milk: { catalog: ['milk', 'butter', 'cheese', 'yogurt', 'cream', 'parmesan'], words: ['mozzarella', 'ricotta', 'feta', 'mascarpone', 'ghee', 'buttermilk', 'karnemelk', 'quark', 'kwark', 'creme fraiche', 'crème fraîche', 'sour cream', 'zure room', 'kefir', 'paneer', 'gouda', 'cheddar', 'brie', 'halloumi', 'cottage', 'сливк', 'сыр', 'творог', 'kaas', 'fromage', 'queso', 'formaggio', 'queijo', 'käse', 'kase', 'panna', 'sahne', 'smetana', '奶酪', '奶油', 'チーズ', '生クリーム', 'iaurt', 'brânză', 'smântân', 'peynir', 'yoğurt', 'jogurt', 'śmietan', 'جبن', 'زبدة', 'גבינה', 'חמאה'] },
+  eggs: { catalog: ['egg'], words: ['mayonnaise', 'mayo', 'meringue', 'eidooier', 'eiwit', 'yolk', '蛋', '卵'] },
+  nuts: { catalog: [], words: ['almond', 'amandel', 'mandel', 'amande', 'almendra', 'mandorl', 'amendoa', 'migdal', 'migdał', 'badem', 'миндал', 'لوز', 'שקד', '杏仁', 'アーモンド', 'walnut', 'walnoot', 'walnuss', 'noix', 'nuez', 'nueces', 'noce', 'noci', 'noz', 'nozes', 'nuca', 'orzech', 'ceviz', 'грецк', 'орех', 'جوز', 'אגוז', '核桃', 'くるみ', 'hazelnut', 'hazelnoot', 'haselnuss', 'noisette', 'avellana', 'nocciol', 'avela', 'alun', 'fındık', 'fundu', 'фундук', 'بندق', '榛', 'ヘーゼルナッツ', 'cashew', 'cajou', 'anacard', 'caju', 'кешью', 'كاجو', 'קשיו', '腰果', 'カシュー', 'pecan', 'pistachio', 'pistache', 'pistazie', 'pistacho', 'pistacchi', 'fistic', 'fisztaszk', 'antep', 'фисташ', 'فستق', 'פיסטוק', '开心果', 'ピスタチオ', 'macadamia', 'pine nut', 'pijnboompit', 'pinienkern', 'pignon', 'pinon', 'pinoli', 'nuts', 'noten', 'nusse'] },
+  peanuts: { catalog: ['peanut-butter'], words: ['peanut', 'pinda', 'erdnuss', 'cacahuete', 'cacahuète', 'arachide', 'arachid', 'amendoim', 'alune', 'orzeszki ziemne', 'yer fıstığı', 'арахис', 'فول سوداني', 'בוטנ', '花生', 'ピーナッツ'] },
+  fish: { catalog: ['salmon', 'tuna'], words: ['fish', 'vis', 'fisch', 'poisson', 'pescado', 'pesce', 'peixe', 'peste', 'ryba', 'balık', 'рыб', 'سمك', 'דג', '鱼', '魚', 'cod', 'kabeljauw', 'kabeljau', 'cabillaud', 'bacalao', 'merluzz', 'bacalhau', 'треск', 'anchov', 'ansjovis', 'sardel', 'anchois', 'anchoa', 'acciug', 'alici', 'anchova', 'sardin', 'haddock', 'schelvis', 'trout', 'forel', 'forelle', 'truite', 'trucha', 'trota', 'mackerel', 'makreel', 'makrele', 'maquereau', 'caballa', 'sgombr', 'herring', 'haring', 'hering', 'hareng', 'arenque', 'aringa', 'tilapia', 'pollock', 'koolvis', 'zalm', 'lachs', 'saumon', 'salmón', 'salmone', 'salmão', 'tonijn', 'thon', 'atún', 'tonno', 'atum', 'thunfisch', 'лосос', 'тунец', '三文鱼', '金枪鱼', 'サーモン', 'ツナ', 'fish sauce', 'vissaus'] },
+  shellfish: { catalog: ['shrimp'], words: ['prawn', 'garnaal', 'garnalen', 'garnele', 'crevette', 'gamba', 'camaron', 'gamber', 'camarao', 'creveti', 'krewetk', 'karides', 'креветк', 'روبيان', 'جمبري', 'שרימפס', '虾', 'えび', 'エビ', 'crab', 'krab', 'krabbe', 'crabe', 'cangrejo', 'granchio', 'caranguejo', 'краб', 'lobster', 'kreeft', 'hummer', 'homard', 'langosta', 'aragost', 'lagosta', 'mussel', 'mossel', 'muschel', 'moule', 'mejillon', 'cozz', 'mexilhao', 'мидии', 'clam', 'vongol', 'almeja', 'oyster', 'oester', 'auster', 'huître', 'ostra', 'scallop', 'sint-jakobsschelp', 'jakobsmuschel', 'saint-jacques', 'vieira', 'capesant', 'squid', 'inktvis', 'calamar', 'octopus', 'pulpo', 'polpo', 'kalmar'] },
+  soy: { catalog: ['soy-sauce'], words: ['soy', 'soja', 'soia', 'sojowy', 'tofu', 'tempeh', 'edamame', 'miso', 'соев', 'тофу', 'صويا', 'סויה', '豆腐', '大豆', '酱油', '醤油', '味噌'] },
+  sesame: { catalog: [], words: ['sesam', 'sesame', 'sésamo', 'sesamo', 'susan', 'sezam', 'susam', 'кунжут', 'سمسم', 'שומשום', '芝麻', 'ごま', '胡麻', 'tahini', 'tahin', 'طحينة', 'טחינה'] },
+  celery: { catalog: ['celery'], words: ['celeriac', 'knolselderij', 'knollensellerie', 'celeri-rave', 'apionabo'] },
+  mustard: { catalog: [], words: ['mustard', 'mosterd', 'senf', 'moutarde', 'mostaza', 'senape', 'mostarda', 'mustar', 'musztard', 'hardal', 'горчиц', 'خردل', 'חרדל', '芥末', 'マスタード', 'からし'] },
+  meat: { catalog: ['chicken', 'beef', 'minced-beef', 'bacon'], words: ['ham', 'pork', 'varken', 'schwein', 'porc', 'cerdo', 'maiale', 'porco', 'porc', 'wieprz', 'domuz', 'свинин', '猪肉', '豚肉', 'lamb', 'lams', 'lamm', 'agneau', 'cordero', 'agnello', 'cordeiro', 'jagni', 'kuzu', 'баранин', 'ягнят', 'sausage', 'worst', 'wurst', 'saucisse', 'salchich', 'salsicc', 'linguica', 'carnat', 'kiełbas', 'sucuk', 'колбас', 'сосиск', 'chorizo', 'turkey', 'kalkoen', 'pute', 'truthahn', 'dinde', 'pavo', 'tacchino', 'peru', 'curcan', 'indyk', 'hindi', 'индейк', 'duck', 'eend', 'ente', 'canard', 'pato', 'anatra', 'kaczk', 'ördek', 'утк', 'veal', 'kalfs', 'kalb', 'veau', 'ternera', 'vitello', 'vitela', 'cielęc', 'телятин', 'gelatin', 'gelatine', 'prosciutto', 'salami', 'pancetta', 'gehakt', 'hackfleisch', 'meat', 'vlees', 'fleisch', 'viande', 'carne', 'mięs', 'мяс', 'لحم', 'בשר', 'kip', 'huhn', 'hähnchen', 'poulet', 'pollo', 'frango', 'pui', 'kurczak', 'tavuk', 'куриц', 'دجاج', 'עוף', '鸡肉', '鶏肉', 'rund', 'boeuf', 'manzo', 'carne bovina', 'wołow', 'говядин', '牛肉', 'spek', 'speck', 'lard', 'tocino', 'bacon', 'бекон'] },
+  honey: { catalog: ['honey'], words: ['honing', 'miel', 'miele', 'miere', 'miod', 'мед', 'мёд', 'عسل', 'דבש', '蜂蜜', 'はちみつ'] },
+};
+const ALLERGEN_NAMES = { gluten: N_('gluten'), milk: N_('milk'), eggs: N_('eggs'), nuts: N_('nuts'), peanuts: N_('peanuts'), fish: N_('fish'), shellfish: N_('shellfish'), soy: N_('soy'), sesame: N_('sesame'), celery: N_('celery'), mustard: N_('mustard') };
+// "coconut milk", "almond drink": not dairy (the almond still counts as a nut).
+const PLANT_MILK = /(coconut|kokos|coco|almond|amandel|mandel|amande|almendra|oat|haver|hafer|avoine|avena|soy|soja|rice|rijst|reis|riz|arroz)[ -]?(milk|melk|milch|lait|leche|latte|leite|drink|drank)/;
+// Nutmeg and coconut are not tree nuts.
+const NOT_NUTS = /nutmeg|nootmuskaat|muskatnuss|muscade|moscada|moscata|noix de coco|coconut|kokos|coco/g;
+const foldText = (text) => String(text || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+const CJK_WORD = /[぀-ヿ㐀-鿿]/;
+let allergenPatterns = null;
+const recipeContentsCache = new Map();
+
+function allergenPattern(words) {
+  const escape = (word) => foldText(word).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const plain = words.filter((word) => !CJK_WORD.test(word)).map(escape);
+  const cjk = words.filter((word) => CJK_WORD.test(word)).map(escape);
+  return new RegExp([plain.length ? `(?:^|[^\\p{L}])(?:${plain.join('|')})` : '', ...cjk].filter(Boolean).join('|'), 'u');
+}
+
+// What a recipe contains, as ALLERGENS keys (including meat and honey, for the diets).
+function recipeContents(recipe) {
+  const lines = recipe.ingredients || [];
+  const key = lines.join('\n');
+  if (recipeContentsCache.has(key)) return recipeContentsCache.get(key);
+  if (!allergenPatterns) allergenPatterns = Object.fromEntries(Object.entries(ALLERGENS).map(([name, { words }]) => [name, allergenPattern(words)]));
+  const found = new Set();
+  for (const line of lines) {
+    const folded = foldText(line);
+    const plantMilk = PLANT_MILK.test(folded);
+    const text = plantMilk ? folded.replace(PLANT_MILK, '$1 drink') : folded;
+    const record = ingredientRecord(line);
+    for (const [name, { catalog }] of Object.entries(ALLERGENS)) {
+      if (name === 'milk' && plantMilk) continue;
+      if ((record && catalog.includes(record.id)) || allergenPatterns[name].test(name === 'nuts' ? text.replace(NOT_NUTS, ' ') : text)) found.add(name);
+    }
+  }
+  if (recipeContentsCache.size > 2000) recipeContentsCache.clear();
+  recipeContentsCache.set(key, found);
+  return found;
+}
+
+function recipeDiet(recipe) {
+  const contents = recipeContents(recipe);
+  if (!(recipe.ingredients || []).length || ['meat', 'fish', 'shellfish'].some((name) => contents.has(name))) return '';
+  return ['milk', 'eggs', 'honey'].some((name) => contents.has(name)) ? 'vegetarian' : 'vegan';
+}
+
+function recipeAllergens(recipe) {
+  const contents = recipeContents(recipe);
+  return Object.keys(ALLERGEN_NAMES).filter((name) => contents.has(name));
+}
+
+// "Vegetarian · Contains: gluten, milk" on cards and the recipe page.
+function dietLine(recipe, withHint = false) {
+  const diet = recipeDiet(recipe);
+  const allergens = recipeAllergens(recipe);
+  if (!diet && !allergens.length) return '';
+  const parts = [diet === 'vegan' ? t('Vegan') : diet === 'vegetarian' ? t('Vegetarian') : '', allergens.length ? t('Contains: {items}', { items: allergens.map((name) => t(ALLERGEN_NAMES[name])).join(', ') }) : ''].filter(Boolean);
+  const hint = t('A hint from the ingredient names. Check the packaging when it matters.');
+  return `<p class="recipe-diet"${withHint ? '' : ` title="${hint}"`}>${diet ? `<span class="diet-tag">${escapeHtml(parts.shift())}</span>` : ''}${escapeHtml(parts.join(''))}${withHint ? `<small>${hint}</small>` : ''}</p>`;
+}
+
+// Recipe filters for diets and allergens, per browser like the favourites filter.
+const DIET_FILTERS = { vegetarian: N_('Vegetarian'), vegan: N_('Vegan'), 'no-gluten': N_('Without gluten'), 'no-milk': N_('Without milk'), 'no-nuts': N_('Without nuts') };
+const DIET_FILTER_KEY = 'goodstock-diet-filter-v1';
+let dietFilters = (() => { try { return JSON.parse(localStorage.getItem(DIET_FILTER_KEY) || '[]').filter((name) => name in DIET_FILTERS); } catch { return []; } })();
+
+function toggleDietFilter(name) {
+  dietFilters = dietFilters.includes(name) ? dietFilters.filter((other) => other !== name) : [...dietFilters, name];
+  try { localStorage.setItem(DIET_FILTER_KEY, JSON.stringify(dietFilters)); } catch { /* Per browser only. */ }
+  render();
+}
+
+function passesDietFilters(recipe) {
+  const contents = recipeContents(recipe);
+  const diet = recipeDiet(recipe);
+  return dietFilters.every((name) => (name === 'vegetarian' ? Boolean(diet)
+    : name === 'vegan' ? diet === 'vegan'
+      : name === 'no-gluten' ? !contents.has('gluten')
+        : name === 'no-milk' ? !contents.has('milk')
+          : !contents.has('nuts') && !contents.has('peanuts')));
+}
+
 function recipeCard(recipe, isRemote = false) {
   const missing = missingIngredients(recipe);
   const status = missing.length === 0 ? t('You have everything') : tp(missing.length, '{count} missing: {items}', '{count} missing: {items}', { items: `${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''}` });
@@ -682,13 +782,13 @@ function recipeCard(recipe, isRemote = false) {
   const button = isRemote
     ? `<button class="button button-small button-dark" data-action="import-recipe" data-id="${escapeHtml(recipe.slug || recipe.id)}">${t('Add to library')} <span aria-hidden="true">＋</span></button>`
     : `<button class="button button-small ${planned ? 'button-outline' : 'button-dark'}" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${planned ? t('Plan another day') : t('Plan this week')} <span aria-hidden="true">→</span></button>`;
-  return `<article class="recipe-card${safePhoto(recipe.photo) ? ' has-photo' : ''}">${recipePhoto(recipe, 'recipe-card-photo')}<div class="recipe-card-top"><span class="recipe-source">${escapeHtml(sourceLabel(recipe.source))}</span><span class="recipe-ingredient-count">${tp(recipe.ingredients?.length || 0, '{count} INGREDIENT', '{count} INGREDIENTS')}</span>${isRemote ? '' : favouriteButton(recipe)}</div><h3><button class="recipe-title-link recipe-card-title" type="button" data-action="view-recipe" data-id="${escapeHtml(isRemote ? recipe.slug || recipe.id : recipe.id)}" data-remote="${isRemote}" title="${t('Show recipe')}">${escapeHtml(recipe.name)}</button></h3><p>${escapeHtml(recipe.description || t('A recipe from your collection.'))}</p><div class="recipe-missing ${missing.length ? 'has-missing' : ''}"><span aria-hidden="true">${missing.length ? '◷' : '✓'}</span>${escapeHtml(status)}</div><div class="recipe-card-bottom">${button}</div></article>`;
+  return `<article class="recipe-card${safePhoto(recipe.photo) ? ' has-photo' : ''}">${recipePhoto(recipe, 'recipe-card-photo')}<div class="recipe-card-top"><span class="recipe-source">${escapeHtml(sourceLabel(recipe.source))}</span><span class="recipe-ingredient-count">${tp(recipe.ingredients?.length || 0, '{count} INGREDIENT', '{count} INGREDIENTS')}</span>${isRemote ? '' : favouriteButton(recipe)}</div><h3><button class="recipe-title-link recipe-card-title" type="button" data-action="view-recipe" data-id="${escapeHtml(isRemote ? recipe.slug || recipe.id : recipe.id)}" data-remote="${isRemote}" title="${t('Show recipe')}">${escapeHtml(recipe.name)}</button></h3><p>${escapeHtml(recipe.description || t('A recipe from your collection.'))}</p>${isRemote ? '' : dietLine(recipe)}<div class="recipe-missing ${missing.length ? 'has-missing' : ''}"><span aria-hidden="true">${missing.length ? '◷' : '✓'}</span>${escapeHtml(status)}</div><div class="recipe-card-bottom">${button}</div></article>`;
 }
 
 function renderRecipes() {
   const hasFavourites = state.recipes.some((recipe) => recipe.favourite);
   const onlyFavourites = favouritesOnly && hasFavourites;
-  const localRecipes = state.recipes.filter((recipe) => (!onlyFavourites || recipe.favourite) && matchesSearch(recipeQuery, `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`, recipe.ingredients || []));
+  const localRecipes = state.recipes.filter((recipe) => (!onlyFavourites || recipe.favourite) && passesDietFilters(recipe) && matchesSearch(recipeQuery, `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`, recipe.ingredients || []));
   const sorted = [...localRecipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   const actions = `<div class="recipe-heading-actions"><button class="button button-primary" data-action="new-recipe">＋ ${t('New recipe')}</button><button class="button button-outline" data-action="open-recipe-import">${t('Import')} <span aria-hidden="true">↓</span></button></div>`;
   return `${pageHeading(t('FROM YOUR SHELF'), t('What sounds good?'), t('Find something to make with what you have, or a few things you could grab.'), actions)}
@@ -696,6 +796,7 @@ function renderRecipes() {
     ${renderIdeas()}
     ${mealieConfigured ? `<button class="button button-outline stock-search-button" data-action="search-stocked">${t('Find with my inventory')} <span aria-hidden="true">↗</span></button>` : ''}
     <div class="recipe-results-heading"><div><span class="eyebrow">${t('YOUR RECIPE BOX')}</span><h2>${onlyFavourites ? t('Favourites') : t('Closest to ready')}</h2></div><div class="recipe-results-tools">${hasFavourites ? `<button class="favourites-filter ${onlyFavourites ? 'active' : ''}" type="button" data-action="favourites-filter" aria-pressed="${onlyFavourites}">★ ${t('Favourites')}</button>` : ''}<span class="muted">${tp(sorted.length, '{count} recipe', '{count} recipes')}</span></div></div>
+    ${state.recipes.length ? `<div class="diet-filters" role="group" aria-label="${t('Diets and allergens')}">${Object.entries(DIET_FILTERS).map(([name, label]) => `<button class="diet-filter ${dietFilters.includes(name) ? 'active' : ''}" type="button" data-action="diet-filter" data-filter="${name}" aria-pressed="${dietFilters.includes(name)}">${t(label)}</button>`).join('')}</div>` : ''}
     <div class="recipe-grid">${sorted.length ? sorted.map((recipe) => recipeCard(recipe)).join('') : `<p class="muted">${t('No recipes match that search.')}</p>`}</div>
     ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">${t('MEALIE LIBRARY')}</span><h2>${mealieResults.length ? t('From Mealie') : t('Search your recipes')}</h2></div><span class="muted">${t('Connected')}</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>${t('Already using Mealie?')}</strong><br/>${t('Connect it in Settings to search and import your recipe library here.')}</p><button class="button button-small button-outline" type="button" data-action="open-settings" data-open="mealie-settings">${t('Connect')}</button></div>`}`;
 }

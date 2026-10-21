@@ -355,6 +355,7 @@ document.addEventListener('click', async (event) => {
     render();
   }
   if (action === 'toggle-favourite') toggleFavourite(id);
+  if (action === 'diet-filter') toggleDietFilter(button.dataset.filter);
   if (action === 'favourites-filter') {
     favouritesOnly = !favouritesOnly;
     try { localStorage.setItem(FAVOURITES_FILTER_KEY, String(favouritesOnly)); } catch { /* A per-browser convenience only. */ }

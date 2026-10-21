@@ -990,6 +990,15 @@ body.kitchen-screen-open { overflow: hidden; }
 .favourites-filter { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
 .favourites-filter.active { border-color: #d79b1d; background: #fbf1d8; color: #7a5a10; }
 :root[data-theme="dark"] .favourites-filter.active { background: #44391c; color: #f0d48a; }
+
+/* Allergens and diets (0.49): a line on recipe cards and pages, and filters on the Recipes page. */
+.recipe-diet { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.recipe-diet small { display: block; margin-top: 2px; font-size: 11px; }
+.diet-tag { display: inline-block; margin-inline-end: 6px; padding: 1px 8px; border-radius: 10px; background: var(--mint); color: var(--green-dark); font-weight: 700; }
+.diet-filters { margin: -4px 0 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+.diet-filter { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+.diet-filter.active { border-color: var(--green); background: var(--mint); color: var(--green-dark); }
+.no-flex-gap .diet-filters > * { margin: 0 0 8px; margin-inline-end: 8px; }
 .recipe-cooked-note { margin: -2px 0 18px; color: var(--muted); font-size: 12px; }
 .no-flex-gap .recipe-results-tools > * + * { margin-inline-start: 14px; }
 @media print { .recipe-cooked-note, .favourite-button { display: none !important; } }

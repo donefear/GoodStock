@@ -35,7 +35,8 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **Servings and scaling.** Make a recipe for 2 or for 8 and every amount changes with it.
 - **Metric throughout.** Pounds, ounces and °F are converted automatically. Cups and spoons stay as written.
 - **What you have.** Every recipe page marks which ingredients are in stock and how many are missing.
-- **Favourites.** Star the recipes your household loves and filter on them. Each recipe page says how often you cooked it and when you last did.
+- **Favourites.** Star the recipes your household loves and filter on them.
+- **Diets and allergens.** Recipes show "Vegetarian" or "Vegan" and what they contain (gluten, milk, eggs, nuts, fish…), worked out from the ingredient names in every language, with filters such as "Without gluten". A hint only: check the packaging when it matters. Each recipe page says how often you cooked it and when you last did.
 - **Recipe translation** with DeepL into any of the app's languages (your own is picked first) saves a translated copy of a recipe.
 - **Mealie integration (optional).** Search your [Mealie](https://mealie.io) recipe server and import recipes from it.
 - **Recipe ideas from the web (experimental).** Goodstock suggests new recipes from [TheMealDB](https://www.themealdb.com) based on what you've cooked lately and what's about to expire. Each suggestion says why it was picked.
