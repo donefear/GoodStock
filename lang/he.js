@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "לכל הכמות. מראה כמה עלה האוכל שנזרק, ובפעם הבאה יתמלא לבד.",
   "Thrown away worth about {amount}": "נזרק בשווי של כ־{amount}",
   "About {amount} for {count} items with a known price": { "one": "בערך {amount} לפריט אחד עם מחיר ידוע", "two": "בערך {amount} לשני פריטים עם מחיר ידוע", "other": "בערך {amount} ל־{count} פריטים עם מחיר ידוע" },
+  "SHARED WITH GOODSTOCK": "שותף עם GOODSTOCK",
+  "What is it?": "מה זה?",
+  "Add to the shopping list": "הוסף לרשימת הקניות",
+  "Fill in a recipe": "מלא מתכון",
+  "Shared": "שותף",
+  "{count} items added to the shopping list": { "one": "פריט אחד נוסף לרשימה", "two": "שני פריטים נוספו לרשימה", "other": "{count} פריטים נוספו לרשימה" },
 };

@@ -930,6 +930,9 @@ body.kitchen-screen-open { overflow: hidden; }
 .no-flex-gap .kitchen-list li > * + * { margin-inline-start: 12px; }
 @media print { .kitchen-screen { display: none !important; } }
 
+
+/* Text shared into the app (0.52). */
+.shared-preview { max-height: 180px; overflow: auto; padding: 10px 12px; border-radius: var(--radius); background: var(--paper); white-space: pre-line; font-size: 14px; }
 /* Printing (0.14): a clean recipe page, or the shopping list with tick boxes, always light and without menus. */
 .print-only { display: none; }
 @media print {

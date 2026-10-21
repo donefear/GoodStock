@@ -420,6 +420,13 @@ document.addEventListener('click', async (event) => {
   if (action === 'edit-recipe') openRecipeEditor(recipeById(id));
   if (action === 'delete-recipe') deleteRecipe(id);
   if (action === 'recipe-import-url') await importRecipeFromUrl();
+  if (action === 'share-to-recipe') {
+    $('#shared-in-dialog').close();
+    openRecipeEditor(null, { importFirst: true });
+    $('#recipe-edit-form').elements.importText.value = sharedText;
+    document.querySelector('[data-action="recipe-import-text"]').click();
+  }
+  if (action === 'share-to-shopping') { $('#shared-in-dialog').close(); sharedLinesToShopping(sharedText); }
   if (action === 'recipe-photo-pick') openFilePicker($('#recipe-photo-file'));
   if (action === 'recipe-photo-remove') setEditorPhoto('');
   if (action === 'recipe-import-text') {
@@ -1274,7 +1281,46 @@ function openViewFromApp() {
   if (['inventory', 'shopping', 'week', 'recipes', 'tools'].includes(view)) { activeView = view; render(); }
 }
 
+// Shared into Goodstock (0.52): the Android app is in the phone's share menu. A web address (with at most a title)
+// opens Import with it; other text asks whether it is a recipe or things for the shopping list.
+let sharedText = '';
+
+function takeSharedText() {
+  if (!STANDALONE || typeof nativeApp.takeSharedText !== 'function') return;
+  const text = String(nativeApp.takeSharedText() || '').trim();
+  if (text) handleSharedText(text);
+}
+
+function handleSharedText(text) {
+  const link = /https?:\/\/[^\s]+/.exec(text);
+  const rest = link ? text.replace(link[0], '').trim() : text;
+  if (link && rest.split('\n').filter(Boolean).length <= 1) {
+    openRecipeEditor(null, { importFirst: true });
+    $('#recipe-edit-form').elements.importUrl.value = link[0];
+    importRecipeFromUrl();
+    return;
+  }
+  sharedText = text;
+  $('#shared-preview').textContent = text.length > 300 ? `${text.slice(0, 300)}…` : text;
+  $('#shared-in-dialog').showModal();
+}
+
+// Each line becomes a shopping item ("2 kg potatoes", "- milk", "☐ bread").
+function sharedLinesToShopping(text) {
+  const lines = text.split('\n').map((line) => line.replace(/^\s*(?:[-*•·]|\[\s?[xX]?\]|☐|☑|\d+[.)])\s*/, '').trim()).filter((line) => line && !/^https?:\/\//.test(line));
+  if (!lines.length) return;
+  withUndo(tp(lines.length, '{count} item added to the shopping list', '{count} items added to the shopping list'), ['shopping'], () => {
+    for (const line of lines) {
+      const { amount, unitText, name } = parseIngredient(line);
+      state.shopping.push(metricInventoryItem({ id: makeId(), name: name.charAt(0).toUpperCase() + name.slice(1), quantity: amount ?? '', unit: unitText || '', checked: false, source: t('Shared') }));
+    }
+  });
+  activeView = 'shopping';
+  render();
+}
+
 window.goodstockResume = () => {
+  takeSharedText();
   openViewFromApp();
   checkRemoteRevision();
   syncFolderNow();
@@ -1298,4 +1344,4 @@ $('#kitchen-screen').addEventListener('click', (event) => {
   wakeKitchenScreen();
 }, true);
 
-initialize().then(openViewFromApp).then(() => { if (kitchenScreenRemembered()) openKitchenScreen(); });
+initialize().then(openViewFromApp).then(() => { if (kitchenScreenRemembered()) openKitchenScreen(); takeSharedText(); });

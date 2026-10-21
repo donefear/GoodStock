@@ -106,7 +106,7 @@ const originalAttributes = new WeakMap();
 const originalHtml = new WeakMap();
 const TRANSLATED_ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'label', 'alt'];
 // Also skipped: parts of dialogs that app/*.js fills with recipe and item names, which must not be "translated".
-const SKIP_TRANSLATION = '#view-container, #floating-timers, script, style, svg, code, datalist, #recipe-dialog-title, #recipe-dialog-description, #recipe-dialog-ingredients, #recipe-dialog-actions, #cook-ingredients, #steps-body, #steps-recipe-name, #steps-timer-panel, #putaway-item-name, #wipe-summary, #kitchen-screen';
+const SKIP_TRANSLATION = '#view-container, #floating-timers, script, style, svg, code, datalist, #recipe-dialog-title, #recipe-dialog-description, #recipe-dialog-ingredients, #recipe-dialog-actions, #cook-ingredients, #steps-body, #steps-recipe-name, #steps-timer-panel, #putaway-item-name, #wipe-summary, #kitchen-screen, #shared-preview';
 
 function translatePage(root) {
   if (!root) return;

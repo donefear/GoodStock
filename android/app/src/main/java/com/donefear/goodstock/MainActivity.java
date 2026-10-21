@@ -43,6 +43,18 @@ public class MainActivity extends Activity {
     /** The page a widget tap asked for, until the page takes it (NativeBridge.takeOpenView). */
     static volatile String pendingView;
 
+    /** Text or a link shared into the app from another app (0.52), until the page takes it (NativeBridge.takeSharedText). */
+    static volatile String pendingShare;
+
+    private static String sharedText(Intent intent) {
+        if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return null;
+        CharSequence text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+        String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        if (text == null) return null;
+        // Browsers put the page title in the subject and the address in the text.
+        return subject != null && !subject.isEmpty() && !text.toString().contains(subject) ? subject + "\n" + text : text.toString();
+    }
+
     private WebView webView;
     private NativeBridge bridge;
     private ValueCallback<Uri[]> fileChooserCallback;
@@ -53,6 +65,8 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         Notifications.ensureChannels(this);
         pendingView = getIntent().getStringExtra(KitchenWidget.EXTRA_VIEW);
+        String shared = sharedText(getIntent());
+        if (shared != null) pendingShare = shared;
         if ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) WebView.setWebContentsDebuggingEnabled(true);
 
         webView = new WebView(this);
@@ -303,6 +317,9 @@ public class MainActivity extends Activity {
         setIntent(intent);
         String view = intent.getStringExtra(KitchenWidget.EXTRA_VIEW);
         if (view != null) pendingView = view;
+        // Shared while the app was open: onResume runs next, and the page takes it there (goodstockResume).
+        String shared = sharedText(intent);
+        if (shared != null) pendingShare = shared;
     }
 
     @Override

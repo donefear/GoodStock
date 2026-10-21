@@ -17,6 +17,7 @@ Runs on Android 4.4 (2013) and newer. The app runs inside **Android System WebVi
 - **The shopping list** is shared through the Android share sheet instead of a QR code.
 - **Home-screen widget:** long-press the home screen → Widgets → Goodstock. It shows what to use soon (with dates) and how much is on the shopping list, in the app's language; tapping opens that page. The app updates it whenever the kitchen changes (`KitchenWidget`).
 - **Print** a recipe or the shopping list through Android's print service, which can also save a PDF.
+- **Share into Goodstock:** Goodstock is in the share menu. A recipe link from the browser opens Import with it; other text (a recipe, or a list from a message) asks whether to fill in a recipe or put each line on the shopping list.
 - **Updates:** once a day the app checks GitHub for a newer release (Settings → Your data → Updates) and links to it; download the `.apk` and open it. It installs over your app only when both are signed with the same key, so GitHub builds need the signing secrets below.
 - **Translation** uses DeepL: add your DeepL API key in **Settings** (saved on the phone).
 - **Mealie is optional.** Connect it in **Settings**; the connection is saved on the phone, and the phone must be able to reach your Mealie server. Without it, add recipes with **New recipe** or **Import** on the Recipes page.

@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "Tüm miktar için. Atılan yiyeceğin maliyetini gösterir ve bir dahaki sefere kendiliğinden dolar.",
   "Thrown away worth about {amount}": "Yaklaşık {amount} değerinde atıldı",
   "About {amount} for {count} items with a known price": { "one": "Fiyatı bilinen {count} ürün için yaklaşık {amount}", "other": "Fiyatı bilinen {count} ürün için yaklaşık {amount}" },
+  "SHARED WITH GOODSTOCK": "GOODSTOCK İLE PAYLAŞILDI",
+  "What is it?": "Bu ne?",
+  "Add to the shopping list": "Alışveriş listesine ekle",
+  "Fill in a recipe": "Tarif olarak doldur",
+  "Shared": "Paylaşıldı",
+  "{count} items added to the shopping list": { "one": "Listeye {count} ürün eklendi", "other": "Listeye {count} ürün eklendi" },
 };

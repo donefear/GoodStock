@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "按全部数量计。可显示扔掉的食物花了多少钱，下次会自动填写。",
   "Thrown away worth about {amount}": "扔掉了约 {amount} 的食物",
   "About {amount} for {count} items with a known price": "{count} 件已知价格的物品约 {amount}",
+  "SHARED WITH GOODSTOCK": "分享到 GOODSTOCK",
+  "What is it?": "这是什么？",
+  "Add to the shopping list": "加入购物清单",
+  "Fill in a recipe": "填入食谱",
+  "Shared": "分享",
+  "{count} items added to the shopping list": "已将 {count} 件物品加入购物清单",
 };

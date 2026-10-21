@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "全量の金額です。捨てた食品の金額がわかり、次回は自動で入ります。",
   "Thrown away worth about {amount}": "約 {amount} 分を捨てました",
   "About {amount} for {count} items with a known price": "価格がわかる {count} 品で約 {amount}",
+  "SHARED WITH GOODSTOCK": "GOODSTOCK に共有",
+  "What is it?": "これは何ですか？",
+  "Add to the shopping list": "買い物リストに追加",
+  "Fill in a recipe": "レシピとして入力",
+  "Shared": "共有",
+  "{count} items added to the shopping list": "{count} 品を買い物リストに追加しました",
 };

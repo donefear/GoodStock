@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "للكمية كلها. يُظهر تكلفة الطعام المرمي، ويُملأ تلقائيًا في المرة القادمة.",
   "Thrown away worth about {amount}": "رُمي ما قيمته نحو {amount}",
   "About {amount} for {count} items with a known price": { "zero": "نحو {amount} لأصناف معروفة السعر", "one": "نحو {amount} لصنف واحد معروف السعر", "two": "نحو {amount} لصنفين معروفي السعر", "few": "نحو {amount} لـ{count} أصناف معروفة السعر", "many": "نحو {amount} لـ{count} صنفًا معروف السعر", "other": "نحو {amount} لـ{count} صنف معروف السعر" },
+  "SHARED WITH GOODSTOCK": "مشارَك مع GOODSTOCK",
+  "What is it?": "ما هذا؟",
+  "Add to the shopping list": "أضف إلى قائمة التسوق",
+  "Fill in a recipe": "املأ وصفة",
+  "Shared": "مشارَك",
+  "{count} items added to the shopping list": { "zero": "لم يُضف أي صنف إلى القائمة", "one": "أُضيف صنف واحد إلى القائمة", "two": "أُضيف صنفان إلى القائمة", "few": "أُضيفت {count} أصناف إلى القائمة", "many": "أُضيف {count} صنفًا إلى القائمة", "other": "أُضيف {count} صنف إلى القائمة" },
 };

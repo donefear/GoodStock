@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "Por toda la cantidad. Muestra lo que costó la comida tirada y se rellena sola la próxima vez.",
   "Thrown away worth about {amount}": "Tirado por valor de unos {amount}",
   "About {amount} for {count} items with a known price": { "one": "Unos {amount} por {count} producto con precio conocido", "other": "Unos {amount} por {count} productos con precio conocido" },
+  "SHARED WITH GOODSTOCK": "COMPARTIDO CON GOODSTOCK",
+  "What is it?": "¿Qué es?",
+  "Add to the shopping list": "Añadir a la lista de la compra",
+  "Fill in a recipe": "Rellenar una receta",
+  "Shared": "Compartido",
+  "{count} items added to the shopping list": { "one": "{count} producto añadido a la lista", "other": "{count} productos añadidos a la lista" },
 };

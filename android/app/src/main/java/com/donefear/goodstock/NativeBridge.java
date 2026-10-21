@@ -141,6 +141,14 @@ final class NativeBridge {
         return view == null ? "" : view;
     }
 
+    /** Text or a link shared into the app from the share menu (0.52), once; empty otherwise. */
+    @JavascriptInterface
+    public String takeSharedText() {
+        String text = MainActivity.pendingShare;
+        MainActivity.pendingShare = null;
+        return text == null ? "" : text;
+    }
+
     /** The page as it prints (its @media print styles) through Android's print service: a printer or Save as PDF. */
     @JavascriptInterface
     public void print() {

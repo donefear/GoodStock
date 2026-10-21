@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "Pentru toată cantitatea. Arată cât a costat mâncarea aruncată și se completează singur data viitoare.",
   "Thrown away worth about {amount}": "Aruncat în valoare de aproximativ {amount}",
   "About {amount} for {count} items with a known price": { "one": "Aproximativ {amount} pentru {count} produs cu preț cunoscut", "few": "Aproximativ {amount} pentru {count} produse cu preț cunoscut", "other": "Aproximativ {amount} pentru {count} de produse cu preț cunoscut" },
+  "SHARED WITH GOODSTOCK": "TRIMIS CĂTRE GOODSTOCK",
+  "What is it?": "Ce este?",
+  "Add to the shopping list": "Adaugă pe lista de cumpărături",
+  "Fill in a recipe": "Completează o rețetă",
+  "Shared": "Partajat",
+  "{count} items added to the shopping list": { "one": "{count} produs adăugat pe listă", "few": "{count} produse adăugate pe listă", "other": "{count} de produse adăugate pe listă" },
 };

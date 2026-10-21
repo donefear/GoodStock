@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "Voor de hele hoeveelheid. Laat zien wat weggegooid eten kostte, en vult zichzelf de volgende keer in.",
   "Thrown away worth about {amount}": "Voor ongeveer {amount} weggegooid",
   "About {amount} for {count} items with a known price": { "one": "Ongeveer {amount} voor {count} product met een bekende prijs", "other": "Ongeveer {amount} voor {count} producten met een bekende prijs" },
+  "SHARED WITH GOODSTOCK": "GEDEELD MET GOODSTOCK",
+  "What is it?": "Wat is het?",
+  "Add to the shopping list": "Op de boodschappenlijst",
+  "Fill in a recipe": "Vul een recept in",
+  "Shared": "Gedeeld",
+  "{count} items added to the shopping list": { "one": "{count} product op de boodschappenlijst gezet", "other": "{count} producten op de boodschappenlijst gezet" },
 };

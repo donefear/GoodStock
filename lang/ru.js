@@ -1064,4 +1064,10 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "За всё количество. Показывает, сколько стоила выброшенная еда, и в следующий раз заполнится само.",
   "Thrown away worth about {amount}": "Выброшено примерно на {amount}",
   "About {amount} for {count} items with a known price": { "one": "Около {amount} за {count} позицию с известной ценой", "few": "Около {amount} за {count} позиции с известной ценой", "many": "Около {amount} за {count} позиций с известной ценой", "other": "Около {amount} за {count} позиции с известной ценой" },
+  "SHARED WITH GOODSTOCK": "ОТПРАВЛЕНО В GOODSTOCK",
+  "What is it?": "Что это?",
+  "Add to the shopping list": "В список покупок",
+  "Fill in a recipe": "Заполнить рецепт",
+  "Shared": "Отправлено",
+  "{count} items added to the shopping list": { "one": "В список добавлена {count} позиция", "few": "В список добавлены {count} позиции", "many": "В список добавлено {count} позиций", "other": "В список добавлено {count} позиции" },
 };

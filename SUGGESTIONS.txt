@@ -118,10 +118,14 @@ EVERYDAY USE
 PHONE, DESKTOP AND SERVER
 -------------------------
 
-0.52 Share into Goodstock.
-    On a phone, a recipe is usually found in the browser. Goodstock could appear in Android's and iOS's share menu:
-    a shared web address opens Import with that address, shared text goes into "Fill in from text", and a shared
-    list of words can go onto the shopping list.
+[x] DONE 0.52 Share into Goodstock. (v4.0.12, Android)
+    The Android app is in the share menu for text (an ACTION_SEND intent filter); MainActivity keeps what was shared
+    (with the page title browsers send as the subject) and the page takes it with takeSharedText() at start and on
+    resume. A web address with at most a title opens Import with it and fetches the recipe; other text asks "What is
+    it?": Fill in a recipe (the editor's "Fill in from text") or Add to the shopping list (each line an item, bullets
+    and tick boxes dropped, amounts read: "- 2 kg potatoes" → 2 kg Potatoes, source "Shared", with Undo).
+    tests/e2e/phone-share-in.mjs. Not done for iPhone: a share extension is an app target of its own, built and
+    tried on a Mac (like 0.4).
 
 0.53 The meal plan in your calendar.
     The plan lives only in Goodstock. The server could offer it as a calendar feed (/api/plan.ics, with a token in
