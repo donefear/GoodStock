@@ -1,6 +1,6 @@
 # Goodstock tests
 
-`npm test` runs everything: the translation check, the version check, a static check for code the kitchen tablet's Chrome 81 can't run (`tools/check-chrome81.mjs`), an accessibility check with axe-core (`tests/e2e/accessibility.mjs`: every page in light, dark and large text) (the `sw.js` cache name matches the
+`npm test` runs everything: the translation check, the version check, a static check for code the kitchen tablet's Chrome 81 can't run (`tools/check-chrome81.mjs`), an accessibility check with axe-core (`tests/e2e/accessibility.mjs`: every page, cook mode and the main dialogs in light, dark and large text, and touch targets of at least 44 × 44 in cook mode) (the `sw.js` cache name matches the
 `index.html` label, see `npm run bump`), the page tests in `tests/page/` (run inside the real app in
 Chromium) and the end-to-end tests in `tests/e2e/`, each against its own fresh server with an empty data folder, so
 your kitchen is never touched. `node tests/run.mjs pin sync` runs only the tests whose names contain those words;

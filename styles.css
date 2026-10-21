@@ -703,7 +703,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 .timer-view-list { overflow: visible; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .timer-view-list .timer-pill { box-shadow: none; }
 .timer-view-list .timer-pill-open strong { font-size: 28px; }
-.timer-pill .timer-pill-extend { flex: 0 0 auto; padding: 0 12px; border-inline-start: 1px solid currentColor; font-size: 13px; font-weight: 700; }
+.timer-pill .timer-pill-extend { flex: 0 0 auto; padding: 0 12px; border-inline-start: 1px solid currentColor; color: var(--green-dark); font-size: 13px; font-weight: 700; }
 .timer-view-empty { margin: 0; padding: 18px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted); font-size: 13px; text-align: center; }
 .timer-view-empty[hidden] { display: none; }
 .timer-presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
@@ -735,7 +735,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 .timer-pill-icon { font-size: 20px; }
 .timer-pill-open strong, .timer-pill-open small { display: block; }
 .timer-pill-open strong { font-size: 21px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.timer-pill-open small { overflow: hidden; font-size: 11px; font-weight: 700; opacity: .8; text-overflow: ellipsis; white-space: nowrap; }
+.timer-pill-open small { overflow: hidden; color: var(--green-dark); font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .timer-pill .timer-pill-stop { width: 44px; flex: 0 0 auto; border-inline-start: 1px solid currentColor; font-size: 20px; opacity: .8; }
 .timer-pill.is-done { border-color: var(--coral); background: var(--coral-pale); color: var(--coral); animation: timer-pill-alert 1s ease-in-out infinite; }
 @keyframes timer-pill-alert { 50% { box-shadow: 0 0 0 6px rgba(213, 105, 78, .28), 0 8px 22px rgba(28, 48, 37, .18); } }
@@ -762,7 +762,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 .steps-tools li { min-height: 40px; padding: 6px 12px 6px 8px; border: 1px solid var(--line); border-radius: 20px; display: flex; align-items: center; gap: 8px; color: var(--green); font-size: 14px; font-weight: 600; }
 .steps-tools li span { color: var(--ink); }
 .steps-timer-button {align-self: flex-start; min-height: 52px; font-size: 15px; }
-.steps-restart { align-self: flex-start; padding: 0; min-height: 30px; }
+.steps-restart { align-self: flex-start; padding: 0; min-height: 44px; }
 .steps-check-all { align-self: flex-start; margin: -4px 0 -6px; padding: 0; min-height: 36px; font-weight: 700; }
 .steps-done { display: grid; justify-items: center; gap: 14px; text-align: center; }
 .steps-done > span { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: var(--green); font-size: 30px; font-weight: 700; }

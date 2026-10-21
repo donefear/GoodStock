@@ -383,7 +383,7 @@ function syncTimerList(container, timers, { extend = false } = {}) {
       pill.className = 'timer-pill';
       pill.dataset.timerId = timer.id;
       pill.innerHTML = `<button class="timer-pill-open" type="button" data-action="timer-open" data-timer="${escapeHtml(timer.id)}"><span class="timer-pill-icon" aria-hidden="true">⏱</span><span><strong></strong><small></small></span></button><button class="timer-pill-stop" type="button" data-action="timer-stop" data-timer="${escapeHtml(timer.id)}" aria-label="${t('Stop timer')}">×</button>`;
-      if (extend) pill.querySelector('.timer-pill-stop').insertAdjacentHTML('beforebegin', `<button class="timer-pill-extend" type="button" data-action="timer-extend" data-timer="${escapeHtml(timer.id)}" aria-label="${t('Add one minute')}">${t('+1 min')}</button>`);
+      if (extend) pill.querySelector('.timer-pill-stop').insertAdjacentHTML('beforebegin', `<button class="timer-pill-extend" type="button" data-action="timer-extend" data-timer="${escapeHtml(timer.id)}" title="${t('Add one minute')}">${t('+1 min')}</button>`);
     }
     if (container.children[position] !== pill) container.insertBefore(pill, container.children[position] || null);
     const text = timerPillText(timer);

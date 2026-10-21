@@ -139,10 +139,13 @@ PHONE, DESKTOP AND SERVER
 KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
 --------------------------------------------------
 
-0.54 Check the rest of the app for accessibility.
-    From 0.40: cook mode, the scan and put-away dialogs and touch-target sizes aren't checked yet. Cook mode matters
-    most, because it's the page used with wet hands and from a distance: it should pass axe in light, dark and large
-    text, and every button there should be at least 44 by 44 pixels.
+[x] DONE 0.54 Check the rest of the app for accessibility. (v4.0.14)
+    tests/e2e/accessibility.mjs now also checks cook mode (get ready and a step), the "Cooked ✓" dialog, Put away, both
+    kinds of scan result, a running timer and the kitchen screen: 21 views in light, dark and large text. And in cook
+    mode, at tablet and phone width, every button, checkbox and ingredient row must be at least 44 × 44 pixels. Found
+    and fixed: cook mode's "start again" was 39 px tall; a running timer's small text (faded with opacity) and its
+    "+1 min" were below 4.5:1 contrast; "+1 min" was named "Add one minute" for screen readers, which voice control
+    can't match to what it shows (now its visible text, with the longer text as a tooltip).
 
 0.55 Keep the kitchen file small.
     state.json grows with every removal (state.log) and every recipe photo, and every device loads and syncs all of
