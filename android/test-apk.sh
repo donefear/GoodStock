@@ -35,3 +35,10 @@ sleep 40
 run "adb shell screencap -p /data/local/tmp/screen.png && adb pull /data/local/tmp/screen.png '/src/dist/test/screen-api$API.png' > /dev/null"
 run "adb logcat -d | grep -iE 'goodstock|CONSOLE|AndroidRuntime|FATAL|WebViewAssetLoader|net::' | tail -60" > "dist/test/log-api$API.txt" || true
 echo "Screenshot: dist/test/screen-api$API.png, log: dist/test/log-api$API.txt"
+# Android 4.4–6 ship a WebView older than Chrome 80, so the app runs the old-tablet page there: check it through the
+# WebView's DevTools (tests/legacy-device/smoke.mjs, screenshots in dist/test/legacy/). Debug builds only.
+if [ "$API" -le 23 ] && [[ "$APK" == *debug* ]]; then
+  socket=$(run 'adb shell cat /proc/net/unix' | grep -o 'webview_devtools_remote_[0-9]*' | head -1 || true)
+  run "adb forward tcp:9222 localabstract:$socket" > /dev/null
+  run 'cd /src && node tests/legacy-device/smoke.mjs 9222'
+fi

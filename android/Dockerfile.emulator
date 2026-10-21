@@ -16,3 +16,6 @@ RUN yes | sdkmanager --licenses > /dev/null \
     && echo no | avdmanager create avd -n test -k "system-images;android-${API};${TAG};${ABI}" -d "pixel_c" > /dev/null
 
 ENV PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools
+
+# Node for tests/legacy-device/smoke.mjs (the old-tablet page check), which also takes screenshots with adb.
+COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node

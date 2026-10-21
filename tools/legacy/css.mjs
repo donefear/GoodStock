@@ -199,13 +199,13 @@ export const legacyGrid = () => {
       if (!columns || columns.tracks && columns.tracks.length === 1) {
         // One column: stack the children.
         add('', { display: 'flex', 'flex-direction': 'column', 'flex-wrap': 'nowrap' });
-        add(' > :nth-child(n)', { 'margin-right': '0', 'margin-bottom': gap.row, width: 'auto' });
+        add(' > :nth-child(n)', { 'margin-left': '0', 'margin-right': '0', 'margin-bottom': gap.row, width: 'auto' });
         add(' > :last-child', { 'margin-bottom': '0' });
       } else if (columns.autoFill) {
         const min = trackKind(columns.autoFill);
         const basis = /^minmax\(([^,]+),/.exec(columns.autoFill);
         add('', { display: 'flex', 'flex-direction': 'row', 'flex-wrap': 'wrap' });
-        add(' > :nth-child(n)', { flex: `1 1 ${basis ? basis[1].trim() : min.fixed || '150px'}`, 'min-width': '0', 'box-sizing': 'border-box', 'margin-right': gap.column, 'margin-bottom': gap.row, width: 'auto' });
+        add(' > :nth-child(n)', { flex: `1 1 ${basis ? basis[1].trim() : min.fixed || '150px'}`, 'min-width': '0', 'box-sizing': 'border-box', 'margin-left': '0', 'margin-right': gap.column, 'margin-bottom': gap.row, width: 'auto' });
       } else {
         const tracks = columns.tracks.map(trackKind);
         const count = tracks.length;
@@ -214,7 +214,7 @@ export const legacyGrid = () => {
         const hasAuto = tracks.some((track) => track.auto);
         const free = ['100%', ...fixed, ...(zero(gap.column) ? [] : [`${count - 1} * ${gap.column}`])].join(' - ');
         add('', { display: 'flex', 'flex-direction': 'row', 'flex-wrap': hasAuto ? 'nowrap' : 'wrap' });
-        add(' > :nth-child(n)', { 'box-sizing': 'border-box', 'min-width': '0', 'margin-bottom': gap.row, 'margin-right': gap.column });
+        add(' > :nth-child(n)', { 'box-sizing': 'border-box', 'min-width': '0', 'margin-left': '0', 'margin-bottom': gap.row, 'margin-right': gap.column });
         tracks.forEach((track, index) => {
           const nth = ` > :nth-child(${count}n+${index + 1})`;
           const width = track.fr ? `calc((${free}) * ${Math.floor((track.fr / totalFr) * 10000) / 10000})` : track.fixed || 'auto';

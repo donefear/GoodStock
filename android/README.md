@@ -34,7 +34,7 @@ The first run downloads the Android SDK and Gradle into a Docker image (about 2 
 
 ## Test in an emulator
 
-`bash android/test-apk.sh [apk] [api]` boots a headless Android emulator in Docker (needs /dev/kvm, which WSL2 has), installs the APK, opens it and saves a screenshot and log in `dist/test/`. For example `19` is Android 4.4 with its WebView 30 and `22` is Android 5.1 with its original WebView 39 (both run the legacy page), `30` is Android 11 (runs the normal app). Without `/dev/kvm` the emulator runs in software, slower.
+`bash android/test-apk.sh [apk] [api]` boots a headless Android emulator in Docker (needs /dev/kvm, which WSL2 has), installs the APK, opens it and saves a screenshot and log in `dist/test/`. For example `19` is Android 4.4 with its WebView 30 and `22` is Android 5.1 with its original WebView 39 (both run the legacy page), `30` is Android 11 (runs the normal app). Without `/dev/kvm` the emulator runs in software, slower. On Android 4.4–6 a debug APK also gets the old-tablet check (`android/legacy-check.sh`, `tests/legacy-device/smoke.mjs`): every page, the main dialogs, cook mode, another language and dark mode through the WebView's DevTools, with screenshots in `dist/test/legacy/`. GitHub runs it on Android 4.4 for every push (job "old-tablet").
 
 ## Build on GitHub
 

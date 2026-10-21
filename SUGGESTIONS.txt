@@ -25,11 +25,14 @@ OLD TABLETS
     and newer, iOS and the desktop keep the WebView's own picker. Tested in tests/e2e/phone-pick-file.mjs (restore with
     accented text, a recipe file, a photo, cancelling); the picker opens in the Android 4.4 emulator.
 
-0.42 Test the old-tablet page on Android 4.4 on GitHub, on every push.
-    The legacy-build test runs the legacy page in a new Chromium, so it can't see what only an old engine gets wrong:
-    the missing fonts and the dark-mode colours of v3.3.21 and v3.3.23 were only found by looking. GitHub's runners
-    have KVM, so the workflow can boot the Android 4.4 emulator (android/test-apk.sh … 19), open every page, a dialog
-    and cook mode through the WebView's DevTools, fail on any script error, and keep the screenshots.
+[x] DONE 0.42 Test the old-tablet page on Android 4.4 on GitHub, on every push. (v4.0.1)
+    The Android workflow has a job "old-tablet": it builds legacy/ and a debug APK, boots the Android 4.4 emulator
+    (WebView 30) and runs android/legacy-check.sh. That opens the app, connects to its WebView's DevTools and runs
+    tests/legacy-device/smoke.mjs: reload with the console on, then every page, the Tools tabs, a recipe page, Settings,
+    the item dialog, the recipe editor, cook mode, Dutch and back, and the dark theme (the dark stylesheet swapped in,
+    the page really dark). Any script error or failed step fails the job; screenshots of each page in light and dark
+    are kept as the artifact "Old-tablet-screenshots". Locally, `bash android/test-apk.sh <debug apk> 19` runs the same
+    check (Android 4.4–6, debug builds), and the emulator image now has Node for it.
 
 0.43 Old browsers on the server version get the old-tablet page too.
     A tablet that can't install apps at all, or an old iPad, only has its own old browser, and the server version

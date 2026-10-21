@@ -25,6 +25,7 @@
     "puppeteer": "^24.10.0",
     "regenerate": "^1.5.0",
     "regenerate-unicode-properties": "^10.3.0",
-    "whatwg-fetch": "^3.6.20"
+    "whatwg-fetch": "^3.6.20",
+    "ws": "^8.22.0"
   }
 }
