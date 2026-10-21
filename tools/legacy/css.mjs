@@ -157,7 +157,9 @@ function gapsOf(rule, known) {
 
 const zero = (length) => /^0(px|rem|em)?$/.test(length);
 
-export const legacyGrid = () => {
+// The gaps become margins on the end side of each child: the right in left-to-right, the left in right-to-left.
+export const legacyGrid = (direction = 'ltr') => {
+  const [START, END] = direction === 'rtl' ? ['margin-right', 'margin-left'] : ['margin-left', 'margin-right'];
   const grids = new Map();
   return {
     postcssPlugin: 'goodstock-legacy-grid',
@@ -199,13 +201,13 @@ export const legacyGrid = () => {
       if (!columns || columns.tracks && columns.tracks.length === 1) {
         // One column: stack the children.
         add('', { display: 'flex', 'flex-direction': 'column', 'flex-wrap': 'nowrap' });
-        add(' > :nth-child(n)', { 'margin-left': '0', 'margin-right': '0', 'margin-bottom': gap.row, width: 'auto' });
+        add(' > :nth-child(n)', { [START]: '0', [END]: '0', 'margin-bottom': gap.row, width: 'auto' });
         add(' > :last-child', { 'margin-bottom': '0' });
       } else if (columns.autoFill) {
         const min = trackKind(columns.autoFill);
         const basis = /^minmax\(([^,]+),/.exec(columns.autoFill);
         add('', { display: 'flex', 'flex-direction': 'row', 'flex-wrap': 'wrap' });
-        add(' > :nth-child(n)', { flex: `1 1 ${basis ? basis[1].trim() : min.fixed || '150px'}`, 'min-width': '0', 'box-sizing': 'border-box', 'margin-left': '0', 'margin-right': gap.column, 'margin-bottom': gap.row, width: 'auto' });
+        add(' > :nth-child(n)', { flex: `1 1 ${basis ? basis[1].trim() : min.fixed || '150px'}`, 'min-width': '0', 'box-sizing': 'border-box', [START]: '0', [END]: gap.column, 'margin-bottom': gap.row, width: 'auto' });
       } else {
         const tracks = columns.tracks.map(trackKind);
         const count = tracks.length;
@@ -214,11 +216,11 @@ export const legacyGrid = () => {
         const hasAuto = tracks.some((track) => track.auto);
         const free = ['100%', ...fixed, ...(zero(gap.column) ? [] : [`${count - 1} * ${gap.column}`])].join(' - ');
         add('', { display: 'flex', 'flex-direction': 'row', 'flex-wrap': hasAuto ? 'nowrap' : 'wrap' });
-        add(' > :nth-child(n)', { 'box-sizing': 'border-box', 'min-width': '0', 'margin-left': '0', 'margin-bottom': gap.row, 'margin-right': gap.column });
+        add(' > :nth-child(n)', { 'box-sizing': 'border-box', 'min-width': '0', [START]: '0', 'margin-bottom': gap.row, [END]: gap.column });
         tracks.forEach((track, index) => {
           const nth = ` > :nth-child(${count}n+${index + 1})`;
           const width = track.fr ? `calc((${free}) * ${Math.floor((track.fr / totalFr) * 10000) / 10000})` : track.fixed || 'auto';
-          add(nth, { flex: track.fr && hasAuto ? `${track.fr} 1 0%` : '0 0 auto', width, ...(index === count - 1 ? { 'margin-right': '0' } : {}) });
+          add(nth, { flex: track.fr && hasAuto ? `${track.fr} 1 0%` : '0 0 auto', width, ...(index === count - 1 ? { [END]: '0' } : {}) });
         });
       }
       let after = rule;

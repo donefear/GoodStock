@@ -439,7 +439,7 @@ final class NativeBridge {
     /** Read aloud in cook mode: Android's web view has no speech of its own, so the phone's text-to-speech does it. */
     @JavascriptInterface
     public boolean canSpeak() {
-        return Build.VERSION.SDK_INT >= 21;
+        return true;
     }
 
     /** Speaks [{text, lang}] in order, each in its own language (a step in the recipe's, a label in the app's). */
@@ -462,15 +462,24 @@ final class NativeBridge {
         });
     }
 
-    @android.annotation.TargetApi(21)
+    @SuppressWarnings("deprecation")
     private void speakNow(String json) {
         try {
             org.json.JSONArray parts = new org.json.JSONArray(json);
             speech.stop();
             for (int i = 0; i < parts.length(); i++) {
                 org.json.JSONObject part = parts.getJSONObject(i);
-                speech.setLanguage(java.util.Locale.forLanguageTag(part.optString("lang", "en")));
-                speech.speak(part.optString("text", ""), android.speech.tts.TextToSpeech.QUEUE_ADD, null, "goodstock-" + i);
+                String text = part.optString("text", "");
+                String lang = part.optString("lang", "en");
+                // Android 4.4 has neither Locale.forLanguageTag nor the speak() with an utterance id (both 5.0).
+                if (Build.VERSION.SDK_INT >= 21) {
+                    speech.setLanguage(java.util.Locale.forLanguageTag(lang));
+                    speech.speak(text, android.speech.tts.TextToSpeech.QUEUE_ADD, null, "goodstock-" + i);
+                } else {
+                    String[] tag = lang.split("-");
+                    speech.setLanguage(tag.length > 1 ? new java.util.Locale(tag[0], tag[1]) : new java.util.Locale(tag[0]));
+                    speech.speak(text, android.speech.tts.TextToSpeech.QUEUE_ADD, null);
+                }
             }
         } catch (org.json.JSONException ignored) {
             // Nothing to say.

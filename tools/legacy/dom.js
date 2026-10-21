@@ -128,15 +128,15 @@
     if (reason && console && console.error) console.error('Goodstock: ' + (reason.stack || reason.message || reason));
   });
 
-  // Dark theme: old engines have no CSS custom properties, so the dark colours are a stylesheet of their own
-  // (legacy/styles-dark.css, tools/build-legacy.mjs), swapped in when the app sets data-theme. The new sheet is added
-  // before the old one goes, so the page is never unstyled.
+  // Theme and direction: old engines have no CSS custom properties or logical properties, so each theme and reading
+  // direction is a stylesheet of its own (legacy/styles[-dark][-rtl].css, tools/build-legacy.mjs), swapped in when the
+  // app sets data-theme or dir. The new sheet is added before the old one goes, so the page is never unstyled.
   var root = document.documentElement;
   var pending = null;
   var showTheme = function () {
     var current = document.getElementById('legacy-styles');
     if (!current) return;
-    var wanted = root.getAttribute('data-theme') === 'dark' ? 'legacy/styles-dark.css' : 'legacy/styles.css';
+    var wanted = 'legacy/styles' + (root.getAttribute('data-theme') === 'dark' ? '-dark' : '') + (root.getAttribute('dir') === 'rtl' ? '-rtl' : '') + '.css';
     if (pending) {
       // Switched again before the last sheet loaded.
       if (pending.parentNode) pending.parentNode.removeChild(pending);
@@ -156,7 +156,7 @@
     current.parentNode.insertBefore(next, current.nextSibling);
   };
   var ThemeObserver = window.MutationObserver || window.WebKitMutationObserver;
-  new ThemeObserver(showTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  new ThemeObserver(showTheme).observe(root, { attributes: true, attributeFilter: ['data-theme', 'dir'] });
   showTheme();
 
   // Layout fallbacks in legacy/styles.css apply under these classes.

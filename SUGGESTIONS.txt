@@ -44,10 +44,13 @@ OLD TABLETS
     legacy page, and an item added there reaches the server. Not tried with a real old browser yet: the old tablet's
     Chrome 81 still gets the normal app.
 
-0.44 Read aloud and right-to-left on old tablets.
-    Two of the things the old-tablet page leaves out are cheap to bring back. Android's text-to-speech has an older
-    speak() that Android 4.4 has, so canSpeak doesn't need Android 5.0. Arabic and Hebrew could get the mirrored
-    layout with two more stylesheets (postcss-logical with right-to-left), swapped in the same way as the dark one.
+[x] DONE 0.44 Read aloud and right-to-left on old tablets. (v4.0.3)
+    Read aloud works on Android 4.4: the bridge uses the older speak() and a Locale made from the language code there
+    (forLanguageTag and the speak() with an utterance id are Android 5.0), so canSpeak() is always true. The legacy
+    build now makes four stylesheets, light and dark each left-to-right and right-to-left (postcss-logical with either
+    direction; the grid fallbacks put their gaps on the right side for each), and tools/legacy/dom.js swaps them when
+    the app sets data-theme or dir. The legacy-build test and the Android 4.4 check switch to Arabic and look for the
+    right-to-left sheet with the sidebar's space on the right. Read aloud itself is not tried on a real tablet.
 
 0.45 A lighter old-tablet page.
     The old-tablet copy is about 1.2 MB of scripts before the app shows anything (app/cook.js alone grows to 245 kB,
@@ -271,8 +274,8 @@ ALSO DONE SINCE THESE IDEAS (not in them)
                   (fonts/legacy), which Android 4.4 lacks. Empty badges are hidden again.
 [x] DONE v3.3.23  Dark mode on old tablets: two stylesheets with the light and the dark colours filled in, swapped
                   with the theme. The pale yellow icon circles got dark-mode colours in both versions.
-    Still missing on old tablets: picking files (→ 0.41), read aloud and the mirrored layout for Arabic and Hebrew
-    (→ 0.44); on Android 4.4 also barcode scanning, shared folder, backup folder and hosting (they need Android 5.0).
+    Still missing on old tablets: on Android 4.4 barcode scanning, shared folder, backup folder and hosting (they need
+    Android 5.0). Picking files (0.41), read aloud and the mirrored layout (0.44) were added since.
 
 
 =====================================================================================================================

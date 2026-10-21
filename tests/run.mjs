@@ -130,10 +130,12 @@ async function main() {
         // Dark theme: the page swaps in legacy/styles-dark.css (colours written out for engines without custom
         // properties), and back.
         const themes = await page.evaluate(async () => {
+          const legacySheets = () => [...document.querySelectorAll('link[rel="stylesheet"]')].map((link) => link.getAttribute('href')).filter((href) => href.startsWith('legacy/'));
           const look = async (theme) => {
             applyTheme(theme);
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            const sheets = [...document.querySelectorAll('link[rel="stylesheet"]')].map((link) => link.getAttribute('href')).filter((href) => href.startsWith('legacy/'));
+            // Until the new sheet has loaded and the old one is gone (at most five seconds).
+            for (let tries = 0; tries < 50 && (legacySheets().length !== 1 || /dark/.test(legacySheets()[0]) !== (theme === 'dark')); tries++) await new Promise((resolve) => setTimeout(resolve, 100));
+            const sheets = legacySheets();
             return { sheets, body: getComputedStyle(document.body).backgroundColor, card: getComputedStyle(document.querySelector('.stats-row, .section-block')).color };
           };
           return { dark: await look('dark'), light: await look('light') };
@@ -142,6 +144,17 @@ async function main() {
         if (themes.dark.sheets.join() !== 'legacy/styles-dark.css') fail.push(`dark theme stylesheets: ${themes.dark.sheets.join(', ')}`);
         if (themes.dark.body !== 'rgb(21, 29, 25)') fail.push(`dark theme background is ${themes.dark.body}, not #151d19`);
         if (themes.light.sheets.join() !== 'legacy/styles.css' || themes.light.body !== 'rgb(244, 245, 239)') fail.push(`back to light: ${JSON.stringify(themes.light)}`);
+        // Right to left (Arabic): legacy/styles-rtl.css, with the space for the sidebar on the right.
+        const rtl = await page.evaluate(async () => {
+          await setLanguage('ar');
+          for (let tries = 0; tries < 50 && document.getElementById('legacy-styles').getAttribute('href') !== 'legacy/styles-rtl.css'; tries++) await new Promise((resolve) => setTimeout(resolve, 100));
+          const main = getComputedStyle(document.querySelector('.main-area'));
+          const result = { sheet: document.getElementById('legacy-styles').getAttribute('href'), dir: document.documentElement.dir, right: main.marginRight, left: main.marginLeft };
+          await setLanguage('en');
+          return result;
+        });
+        log.push(`rtl: ${JSON.stringify(rtl)}`);
+        if (rtl.sheet !== 'legacy/styles-rtl.css' || rtl.right !== '236px' || rtl.left !== '0px') fail.push(`right to left: ${JSON.stringify(rtl)}`);
       } finally {
         await browser.close();
       }

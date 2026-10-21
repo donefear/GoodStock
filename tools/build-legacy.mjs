@@ -147,22 +147,23 @@ const newSymbols = (await symbolsInApp(root)).filter((symbol) => !knownSymbols.h
 if (newSymbols.length) throw new Error(`New symbols ${newSymbols.join(' ')} are not in the old tablets' fonts yet: run node fonts/build-legacy-fonts.mjs`);
 const css = read('styles.css').replace("@import url('fonts/fonts.css');", "@import url('../fonts/legacy/fonts.css');");
 if (!css.includes('fonts/legacy/fonts.css')) throw new Error("styles.css no longer imports fonts/fonts.css; update tools/build-legacy.mjs");
-// Two stylesheets with the theme colours written out (old engines have no custom properties): styles.css (light)
-// and styles-dark.css. tools/legacy/dom.js switches between them when the app sets data-theme.
-for (const theme of ['light', 'dark']) {
+// Four stylesheets: the theme colours written out (old engines have no custom properties) and the logical properties
+// turned into left/right for each direction: styles.css (light, left to right), styles-dark.css, styles-rtl.css and
+// styles-dark-rtl.css. tools/legacy/dom.js picks one from data-theme and dir.
+for (const [theme, direction] of [['light', 'ltr'], ['dark', 'ltr'], ['light', 'rtl'], ['dark', 'rtl']]) {
   const styled = await postcss([
     legacyThemeValues(theme),
     customProperties({ preserve: true }),
-    logical(),
+    logical({ inlineDirection: direction === 'rtl' ? 'right-to-left' : 'left-to-right' }),
     legacyValues(),
     legacySelectors(),
-    legacyGrid(),
+    legacyGrid(direction),
     autoprefixer({ overrideBrowserslist: [TARGET, 'android 4.4'] }),
   ]).process(css, { from: join(root, 'styles.css'), to: join(out, 'styles.css') });
   // @import only counts at the very top, so the fonts' import goes before dialog-polyfill's styles.
   const imports = styled.css.match(/^@import [^;]+;\n?/gm) || [];
   if (!imports.length) throw new Error('legacy styles: the fonts @import is missing');
-  write(theme === 'dark' ? 'styles-dark.css' : 'styles.css', [...imports, read('node_modules/dialog-polyfill/dist/dialog-polyfill.css'), styled.css.replace(/^@import [^;]+;\n?/gm, ''), read('tools/legacy/legacy.css')].join('\n'));
+  write(`styles${theme === 'dark' ? '-dark' : ''}${direction === 'rtl' ? '-rtl' : ''}.css`, [...imports, read('node_modules/dialog-polyfill/dist/dialog-polyfill.css'), styled.css.replace(/^@import [^;]+;\n?/gm, ''), read('tools/legacy/legacy.css')].join('\n'));
 }
 
 // The page: same markup, files from legacy/ (the <base> keeps every other address, like ingredients.json, at the root).

@@ -38,10 +38,10 @@ socket.on('message', (data) => {
     if (level === 'error' && !/Invalid CSS/.test(text)) fail.push(`console: ${text} ${url || ''}:${line || ''}`);
   }
 });
-// A frozen device must fail the check, not hang it: every call gets a minute.
+// A frozen device must fail the check, not hang it: every call gets two minutes (a software emulator can freeze that long while taking a screenshot).
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const id = ++nextId;
-  const timer = setTimeout(() => { pending.delete(id); reject(new Error(`${method}: no answer from the WebView within a minute`)); }, 60_000);
+  const timer = setTimeout(() => { pending.delete(id); reject(new Error(`${method}: no answer from the WebView within two minutes`)); }, 120_000);
   pending.set(id, (message) => { clearTimeout(timer); resolve(message); });
   socket.send(JSON.stringify({ id, method, params }));
 });
@@ -63,8 +63,14 @@ const screenshot = async (name) => {
 const step = async (name, expression, check) => {
   try {
     const value = await evaluate(`(function () { ${expression} })()`);
-    await wait(1500);
-    const outcome = check ? await evaluate(`(function () { ${check} })()`) : true;
+    // An old tablet (or a slow emulator) can take a while to load a language file or a stylesheet: the check gets
+    // up to 20 seconds to come true.
+    let outcome = true;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await wait(attempt ? 1000 : 1500);
+      outcome = check ? await evaluate(`(function () { ${check} })()`) : true;
+      if (outcome !== false && outcome !== null && outcome !== '') break;
+    }
     log.push(`${name}: ${outcome}`);
     if (outcome === false || outcome === null || outcome === '') fail.push(`${name}: ${value} / ${outcome}`);
   } catch (error) {
@@ -102,6 +108,11 @@ if (started) {
   await step('amounts', 'return 1;', "return metricText('8 oz butter') === '225 g butter' && kitchenToolsIn('Whisk in a bowl').length === 2;");
   await step('Dutch', "setLanguage('nl'); return 1;", "activeView = 'week'; render(); return document.querySelector('#view-container .page-heading h1').textContent !== 'Make room for dinner.';");
   await step('English again', "setLanguage('en').then(function () { activeView = 'inventory'; render(); }); return 1;", "return document.querySelector('#view-container .page-heading h1').textContent === 'Good things on hand.';");
+  // Right to left: Arabic swaps in legacy/styles-rtl.css, the sidebar moves to the right.
+  await step('Arabic', "setLanguage('ar').then(function () { activeView = 'inventory'; render(); }); return 1;", "return document.getElementById('legacy-styles').getAttribute('href') === 'legacy/styles-rtl.css' && getComputedStyle(document.querySelector('.main-area')).marginRight === '236px';");
+  await wait(5000); // fonts for the new stylesheet
+  await screenshot('rtl-inventory');
+  await step('English after Arabic', "setLanguage('en').then(function () { render(); }); return 1;", "return document.getElementById('legacy-styles').getAttribute('href') === 'legacy/styles.css';");
   // Dark theme: legacy/styles-dark.css replaces the light sheet and the page turns dark.
   await step('dark theme', "applyTheme('dark'); return 1;", "var sheet = document.getElementById('legacy-styles'); return sheet && /styles-dark/.test(sheet.getAttribute('href')) && getComputedStyle(document.body).backgroundColor === 'rgb(21, 29, 25)';");
   for (const view of ['inventory', 'recipes']) {
