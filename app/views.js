@@ -411,6 +411,9 @@ function renderWeek() {
   const copyRow = copyingDay === dateKey(selectedDate) && selectedPlans.length ? renderCopyDayTargets() : '';
   const copyButton = selectedPlans.length ? `<button class="text-button" data-action="copy-day" aria-expanded="${Boolean(copyRow)}">${t('Copy this day to…')}</button>` : '';
   const repeatCount = lastWeekMeals().length;
+  // Suggestions belong to the week they were made for.
+  if (weekSuggestions && !weekSuggestions.every((entry) => entry.date >= dateKey(weekStart) && entry.date <= dateKey(weekEnd))) weekSuggestions = null;
+  const fillButton = !weekSuggestions && state.recipes.length && emptyDaysThisWeek().length ? `<button class="button button-outline" data-action="suggest-week">${t('Fill the empty days')} <span aria-hidden="true">✨</span></button>` : '';
   const repeatButton = repeatCount ? `<button class="button button-outline" data-action="repeat-last-week" title="${tp(repeatCount, 'Plan {count} meal from last week again', 'Plan {count} meals from last week again')}">${t('Repeat last week')} <span aria-hidden="true">↻</span></button>` : '';
   const planned = selectedPlans.length ? selectedPlans.map((entry) => {
     const recipe = recipeById(entry.recipeId);
@@ -423,8 +426,9 @@ function renderWeek() {
   const usesSoon = new Map(state.recipes.map((recipe) => [recipe.id, soon.filter((item) => (recipe.ingredients || []).some((ingredient) => matchingInventory(ingredient)?.id === item.id))]));
   const recipeOptions = [...state.recipes].sort((first, second) => usesSoon.get(second.id).length - usesSoon.get(first.id).length || missingIngredients(first).length - missingIngredients(second).length);
   const soonTag = (recipe) => (usesSoon.get(recipe.id).length ? `<span class="use-soon-tag">${escapeHtml(t('Uses {items} soon', { items: usesSoon.get(recipe.id).slice(0, 2).map((item) => item.name).join(', ') }))}</span>` : '');
-  return `${pageHeading(t('A GOOD WEEK STARTS HERE'), t('Make room for dinner.'), t('Plan meals at your own pace. Your list will follow along.'), `<div class="week-heading-actions">${repeatButton}<button class="button button-outline" data-action="generate-shopping">${t('Build shopping list')} <span aria-hidden="true">↗</span></button></div>`)}
+  return `${pageHeading(t('A GOOD WEEK STARTS HERE'), t('Make room for dinner.'), t('Plan meals at your own pace. Your list will follow along.'), `<div class="week-heading-actions">${fillButton}${repeatButton}<button class="button button-outline" data-action="generate-shopping">${t('Build shopping list')} <span aria-hidden="true">↗</span></button></div>`)}
     <div class="week-navigation"><button class="icon-button" data-action="previous-week" aria-label="${t('Previous week')}" title="${t('Previous week')}">‹</button><label class="date-jump">${t('Jump to date')}<input id="week-date" type="date" value="${dateKey(selectedDate)}" aria-label="${t('Select a date')}" /></label><span class="week-range">${escapeHtml(weekLabel)}</span><button class="button button-quiet today-button" data-action="go-today">${t('Today')}</button><button class="icon-button" data-action="next-week" aria-label="${t('Next week')}" title="${t('Next week')}">›</button></div>
+    ${renderWeekSuggestions()}
     <section class="week-planner"><div class="week-strip">${dayButtons}</div><div class="day-detail"><div class="section-heading"><div><span class="eyebrow">${t('YOUR PLAN')}</span><h2>${escapeHtml(selectedLabel)}</h2></div><div class="day-detail-actions">${copyButton}<span class="plan-count">${tp(selectedPlans.length, '{count} meal', '{count} meals')}</span></div></div>${copyRow}<div class="planned-list">${planned}</div></div></section>
     <section class="section-block recipe-picker"><div class="section-heading"><div><span class="eyebrow">${t('PICK SOMETHING GOOD')}</span><h2>${t('Add a recipe to this day')}</h2></div><button class="text-button" data-view="recipes">${t('Browse all recipes')} <span aria-hidden="true">→</span></button></div><div class="picker-grid">${recipeOptions.slice(0, 3).map((recipe) => `<article class="picker-item"><span class="recipe-number">${tp(recipe.ingredients.length, '{count} INGREDIENT', '{count} INGREDIENTS', { count: String(recipe.ingredients.length).padStart(2, '0') })}</span><strong>${escapeHtml(recipe.name)}</strong>${soonTag(recipe)}<p>${escapeHtml(recipe.description || t('An idea from your recipe shelf.'))}</p><div class="picker-foot"><span class="match-tag ${missingIngredients(recipe).length ? 'has-missing' : ''}">${missingIngredients(recipe).length ? tp(missingIngredients(recipe).length, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</span><button class="button button-small button-dark" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${t('Add')} <span aria-hidden="true">＋</span></button></div></article>`).join('') || `<p class="muted">${t('Add recipes in your recipe library first.')}</p>`}</div></section>`;
 }
@@ -457,6 +461,66 @@ function repeatLastWeek() {
   withUndo(tp(meals.length, '{count} meal from last week planned again', '{count} meals from last week planned again'), ['plan'], () => {
     state.plan.push(...meals.map(plannedMeal));
   });
+}
+
+// "Fill the empty days" (0.47): a recipe for each day of the shown week (from today on) that has nothing planned.
+// Recipes that use up something from Use soon go first and on the earliest days, then the ones needing the least
+// shopping; nothing that was planned or cooked in the last ten days, and no recipe twice. Each suggestion can be
+// swapped for the next one or left out; nothing is planned until "Plan these".
+let weekSuggestions = null; // [{ date, recipeId }] while the suggestions are shown
+
+function emptyDaysThisWeek() {
+  const today = dateKey(new Date());
+  return Array.from({ length: 7 }, (_, index) => dateKey(dateAtOffset(index)))
+    .filter((key) => key >= today && !state.plan.some((entry) => entry.date === key));
+}
+
+function rankedForWeek() {
+  const soon = itemsNeedingExpiryAttention();
+  const recentFrom = shiftDateKey(dateKey(new Date()), -10);
+  const recent = new Set(state.plan.filter((entry) => entry.date >= recentFrom).map((entry) => entry.recipeId));
+  return state.recipes
+    .filter((recipe) => !recent.has(recipe.id) && (recipe.ingredients || []).length)
+    .map((recipe) => ({ recipe, uses: soon.filter((item) => recipe.ingredients.some((ingredient) => matchingInventory(ingredient)?.id === item.id)).length, missing: missingIngredients(recipe).length }))
+    .sort((first, second) => second.uses - first.uses || first.missing - second.missing || first.recipe.name.localeCompare(second.recipe.name))
+    .map(({ recipe }) => recipe.id);
+}
+
+function suggestWeek() {
+  const ranked = rankedForWeek();
+  weekSuggestions = emptyDaysThisWeek().map((date, index) => ({ date, recipeId: ranked[index] || '' })).filter((entry) => entry.recipeId);
+  render();
+}
+
+// The next recipe not suggested on another day.
+function swapWeekSuggestion(date) {
+  const ranked = rankedForWeek();
+  const taken = new Set(weekSuggestions.map((entry) => entry.recipeId));
+  const entry = weekSuggestions.find((suggestion) => suggestion.date === date);
+  if (!entry) return;
+  const start = ranked.indexOf(entry.recipeId);
+  const next = [...ranked.slice(start + 1), ...ranked.slice(0, Math.max(0, start))].find((id) => !taken.has(id));
+  if (next) entry.recipeId = next;
+  render();
+}
+
+function planWeekSuggestions() {
+  const meals = (weekSuggestions || []).filter((entry) => recipeById(entry.recipeId) && !alreadyPlanned(entry.date, entry.recipeId));
+  weekSuggestions = null;
+  if (!meals.length) { render(); return; }
+  withUndo(tp(meals.length, '{count} meal planned', '{count} meals planned'), ['plan'], () => {
+    state.plan.push(...meals.map((entry) => ({ id: makeId(), date: entry.date, recipeId: entry.recipeId, cooked: false })));
+  });
+}
+
+function renderWeekSuggestions() {
+  if (!weekSuggestions) return '';
+  const rows = weekSuggestions.map((entry) => {
+    const recipe = recipeById(entry.recipeId);
+    const missing = missingIngredients(recipe).length;
+    return `<li><span class="suggestion-day">${escapeHtml(formatDate(dateFromKey(entry.date), { weekday: 'short', day: 'numeric' }))}</span><span class="suggestion-recipe"><strong>${escapeHtml(recipe.name)}</strong><small>${missing ? tp(missing, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</small></span><button class="text-button" type="button" data-action="swap-suggestion" data-date="${entry.date}">${t('Swap')} <span aria-hidden="true">↻</span></button><button class="icon-button remove-button" type="button" data-action="drop-suggestion" data-date="${entry.date}" aria-label="${t('Leave this day empty')}" title="${t('Leave this day empty')}">×</button></li>`;
+  }).join('');
+  return `<section class="week-suggestions" aria-label="${t('Suggested for the empty days')}"><div class="section-heading"><div><span class="eyebrow">${t('PLAN MY WEEK')}</span><h2>${t('Suggested for the empty days')}</h2></div></div>${rows ? `<ul>${rows}</ul>` : `<p class="muted">${t('No recipe fits: add recipes, or ones you have not had lately.')}</p>`}<div class="week-suggestion-actions"><button class="button button-quiet" type="button" data-action="cancel-suggestions">${t('Cancel')}</button>${rows ? `<button class="button button-primary" type="button" data-action="plan-suggestions">${t('Plan these')}</button>` : ''}</div></section>`;
 }
 
 function renderCopyDayTargets() {

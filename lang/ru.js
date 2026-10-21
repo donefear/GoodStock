@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Nothing planned for today.": "На сегодня ничего не запланировано.",
   "No timers running.": "Таймеры не запущены.",
   "Nothing to use soon.": "Ничего не нужно срочно использовать.",
+  "Fill the empty days": "Заполнить пустые дни",
+  "PLAN MY WEEK": "ПЛАН НА НЕДЕЛЮ",
+  "Suggested for the empty days": "Предложения на пустые дни",
+  "Swap": "Заменить",
+  "Leave this day empty": "Оставить этот день пустым",
+  "Plan these": "Запланировать",
+  "No recipe fits: add recipes, or ones you have not had lately.": "Ничего не подходит: добавьте рецепты или те, что давно не готовили.",
+  "{count} meals planned": { "one": "Запланировано {count} блюдо", "few": "Запланировано {count} блюда", "many": "Запланировано {count} блюд", "other": "Запланировано {count} блюда" },
 };

@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Nothing planned for today.": "今日の予定はありません。",
   "No timers running.": "動いているタイマーはありません。",
   "Nothing to use soon.": "早めに使うものはありません。",
+  "Fill the empty days": "空いている日を埋める",
+  "PLAN MY WEEK": "今週の計画",
+  "Suggested for the empty days": "空いている日のおすすめ",
+  "Swap": "入れ替え",
+  "Leave this day empty": "この日は空けておく",
+  "Plan these": "これで計画する",
+  "No recipe fits: add recipes, or ones you have not had lately.": "合うレシピがありません。レシピを追加するか、最近食べていないものを。",
+  "{count} meals planned": "{count} 食を計画しました",
 };

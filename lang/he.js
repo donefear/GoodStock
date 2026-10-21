@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Nothing planned for today.": "שום דבר לא מתוכנן להיום.",
   "No timers running.": "אין טיימרים פעילים.",
   "Nothing to use soon.": "אין מה לנצל בקרוב.",
+  "Fill the empty days": "מלא את הימים הריקים",
+  "PLAN MY WEEK": "תכנון השבוע שלי",
+  "Suggested for the empty days": "הצעות לימים הריקים",
+  "Swap": "החלף",
+  "Leave this day empty": "השאר את היום הזה ריק",
+  "Plan these": "תכנן אותן",
+  "No recipe fits: add recipes, or ones you have not had lately.": "אין מתכון מתאים: הוסיפו מתכונים, או כאלה שלא אכלתם לאחרונה.",
+  "{count} meals planned": { "one": "תוכננה ארוחה אחת", "two": "תוכננו שתי ארוחות", "other": "תוכננו {count} ארוחות" },
 };

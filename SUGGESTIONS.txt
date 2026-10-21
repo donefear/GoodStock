@@ -74,10 +74,12 @@ EVERYDAY USE
     app" (or Escape). Works on the old-tablet page too. tests/page/kitchen-screen.js; the accessibility test checks it
     in light, dark and large text.
 
-0.47 "Plan my week" fills the empty days.
-    The planner already puts recipes that use something from Use soon first, but you still pick each day. One button
-    could suggest a recipe for every empty day: first what uses up Use soon, then what needs the least shopping,
-    without repeating a recent meal. Each suggestion can be kept or swapped, and nothing is planned until you say so.
+[x] DONE 0.47 "Plan my week" fills the empty days. (v4.0.6)
+    "Fill the empty days ✨" on the week page (when the shown week has empty days from today on) suggests a recipe for
+    each: recipes that use something from Use soon first and on the earliest days, then the ones with the least to
+    buy; nothing planned or cooked in the last ten days (or already planned ahead), and no recipe twice. Each row has
+    Swap (the next free recipe) and × (leave the day empty); "Plan these" plans them all at once, with Undo, and
+    Cancel drops them. tests/page/plan-my-week.js.
 
 0.48 "Use by" and "best before".
     Every date is treated the same now, but a "use by" date on meat or fish means "don't eat it after", and a "best

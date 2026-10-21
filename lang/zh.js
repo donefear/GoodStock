@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Nothing planned for today.": "今天没有安排。",
   "No timers running.": "没有正在运行的计时器。",
   "Nothing to use soon.": "没有需要尽快用掉的。",
+  "Fill the empty days": "填满空白日子",
+  "PLAN MY WEEK": "规划我的一周",
+  "Suggested for the empty days": "为空白日子推荐",
+  "Swap": "换一个",
+  "Leave this day empty": "这天留空",
+  "Plan these": "就这么安排",
+  "No recipe fits: add recipes, or ones you have not had lately.": "没有合适的食谱：添加食谱，或最近没吃过的。",
+  "{count} meals planned": "已安排 {count} 顿饭",
 };

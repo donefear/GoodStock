@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.de = {
   "Nothing planned for today.": "Für heute nichts geplant.",
   "No timers running.": "Keine Timer aktiv.",
   "Nothing to use soon.": "Nichts muss bald weg.",
+  "Fill the empty days": "Leere Tage füllen",
+  "PLAN MY WEEK": "MEINE WOCHE PLANEN",
+  "Suggested for the empty days": "Vorschläge für die leeren Tage",
+  "Swap": "Tauschen",
+  "Leave this day empty": "Diesen Tag leer lassen",
+  "Plan these": "Diese planen",
+  "No recipe fits: add recipes, or ones you have not had lately.": "Kein Rezept passt: Füge Rezepte hinzu oder solche, die es lange nicht gab.",
+  "{count} meals planned": { "one": "{count} Mahlzeit geplant", "other": "{count} Mahlzeiten geplant" },
 };

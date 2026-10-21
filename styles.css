@@ -966,6 +966,18 @@ body.kitchen-screen-open { overflow: hidden; }
 .no-flex-gap .day-detail-actions > * + * { margin-inline-start: 14px; }
 .no-flex-gap .copy-day-targets > * { margin: 0 0 6px; margin-inline-end: 6px; }
 
+/* "Fill the empty days" (0.47): a suggestion per empty day, to swap, leave out or plan. */
+.week-suggestions { margin: 0 0 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
+.week-suggestions .section-heading { margin-bottom: 8px; }
+.week-suggestions ul { margin: 0; padding: 0; list-style: none; }
+.week-suggestions li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.week-suggestions li:first-child { border-top: 0; }
+.suggestion-day { flex: 0 0 76px; color: var(--muted); font-size: 13px; font-weight: 700; text-transform: uppercase; }
+.suggestion-recipe { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.suggestion-recipe small { color: var(--muted); }
+.week-suggestion-actions { margin-top: 12px; display: flex; justify-content: flex-end; gap: 10px; }
+.no-flex-gap .week-suggestions li > * + *, .no-flex-gap .week-suggestion-actions > * + * { margin-inline-start: 12px; }
+
 /* Favourites and "cooked … times" (0.16). */
 .favourite-button { min-width: 30px; min-height: 30px; padding: 0 4px; border: 0; background: none; color: #b9a46a; font-size: 18px; line-height: 1; cursor: pointer; }
 .favourite-button.is-on { color: #d79b1d; }

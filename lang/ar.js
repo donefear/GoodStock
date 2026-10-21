@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Nothing planned for today.": "لا شيء مخطط لليوم.",
   "No timers running.": "لا توجد مؤقتات تعمل.",
   "Nothing to use soon.": "لا شيء يجب استخدامه قريبًا.",
+  "Fill the empty days": "املأ الأيام الفارغة",
+  "PLAN MY WEEK": "خطط أسبوعي",
+  "Suggested for the empty days": "اقتراحات للأيام الفارغة",
+  "Swap": "بدّل",
+  "Leave this day empty": "اترك هذا اليوم فارغًا",
+  "Plan these": "خطط لهذه",
+  "No recipe fits: add recipes, or ones you have not had lately.": "لا توجد وصفة مناسبة: أضف وصفات، أو وصفات لم تطبخها مؤخرًا.",
+  "{count} meals planned": { "zero": "لم تُخطَّط أي وجبة", "one": "خُطّطت وجبة واحدة", "two": "خُطّطت وجبتان", "few": "خُطّطت {count} وجبات", "many": "خُطّطت {count} وجبة", "other": "خُطّطت {count} وجبة" },
 };

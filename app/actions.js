@@ -361,6 +361,14 @@ document.addEventListener('click', async (event) => {
     render();
   }
   if (action === 'repeat-last-week') repeatLastWeek();
+  if (action === 'suggest-week') suggestWeek();
+  if (action === 'swap-suggestion') swapWeekSuggestion(button.dataset.date);
+  if (action === 'drop-suggestion') {
+    weekSuggestions = weekSuggestions.filter((entry) => entry.date !== button.dataset.date);
+    render();
+  }
+  if (action === 'cancel-suggestions') { weekSuggestions = null; render(); }
+  if (action === 'plan-suggestions') planWeekSuggestions();
   if (action === 'copy-day') {
     copyingDay = copyingDay === dateKey(selectedDate) ? '' : dateKey(selectedDate);
     render();

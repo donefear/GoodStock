@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Nothing planned for today.": "Bugün için plan yok.",
   "No timers running.": "Çalışan zamanlayıcı yok.",
   "Nothing to use soon.": "Yakında kullanılacak bir şey yok.",
+  "Fill the empty days": "Boş günleri doldur",
+  "PLAN MY WEEK": "HAFTAMI PLANLA",
+  "Suggested for the empty days": "Boş günler için öneriler",
+  "Swap": "Değiştir",
+  "Leave this day empty": "Bu günü boş bırak",
+  "Plan these": "Bunları planla",
+  "No recipe fits: add recipes, or ones you have not had lately.": "Uygun tarif yok: tarif ekleyin ya da son zamanlarda yemediklerinizi.",
+  "{count} meals planned": { "one": "{count} öğün planlandı", "other": "{count} öğün planlandı" },
 };

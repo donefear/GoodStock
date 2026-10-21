@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Nothing planned for today.": "Niets gepland voor vandaag.",
   "No timers running.": "Er lopen geen timers.",
   "Nothing to use soon.": "Niets om snel op te maken.",
+  "Fill the empty days": "Vul de lege dagen",
+  "PLAN MY WEEK": "PLAN MIJN WEEK",
+  "Suggested for the empty days": "Voorstellen voor de lege dagen",
+  "Swap": "Wissel",
+  "Leave this day empty": "Laat deze dag leeg",
+  "Plan these": "Plan deze",
+  "No recipe fits: add recipes, or ones you have not had lately.": "Geen recept past: voeg recepten toe, of recepten die je een tijd niet hebt gegeten.",
+  "{count} meals planned": { "one": "{count} maaltijd gepland", "other": "{count} maaltijden gepland" },
 };

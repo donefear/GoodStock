@@ -51,6 +51,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 
 ### 📅 This week
 - **Plan meals by day.** Pick recipes for the week, with servings for each meal. **Repeat last week** in one tap, or **copy a day** to another day. Recipes that use something from Use soon are suggested first.
+- **Fill the empty days.** One tap suggests a recipe for every empty day: what uses up Use soon first, then what needs the least shopping, nothing you had in the last ten days. Swap any of them or leave a day out; nothing is planned until you say so.
 - **One tap builds the shopping list** from the week's plan. It only adds what you don't already have.
 
 ### 🛒 Shopping list

@@ -1020,4 +1020,12 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Nothing planned for today.": "Nimic planificat pentru azi.",
   "No timers running.": "Niciun cronometru pornit.",
   "Nothing to use soon.": "Nimic de folosit curând.",
+  "Fill the empty days": "Completează zilele libere",
+  "PLAN MY WEEK": "PLANIFICĂ-MI SĂPTĂMÂNA",
+  "Suggested for the empty days": "Sugestii pentru zilele libere",
+  "Swap": "Schimbă",
+  "Leave this day empty": "Lasă ziua aceasta liberă",
+  "Plan these": "Planifică-le",
+  "No recipe fits: add recipes, or ones you have not had lately.": "Nicio rețetă nu se potrivește: adaugă rețete sau unele pe care nu le-ai mai mâncat de mult.",
+  "{count} meals planned": { "one": "{count} masă planificată", "few": "{count} mese planificate", "other": "{count} de mese planificate" },
 };
