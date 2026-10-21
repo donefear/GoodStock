@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "On the release page, download the .apk file and open it to install the update.": "Na página da versão, baixe o arquivo .apk e abra-o para instalar a atualização.",
   "Every backup is also copied to a second folder.": "Cada backup também é copiado para uma segunda pasta.",
   "Copying to the second folder failed: {reason}": "Não foi possível copiar para a segunda pasta: {reason}",
+  "Kitchen screen": "Tela da cozinha",
+  "Back to the app": "Voltar ao app",
+  "Nothing planned for today.": "Nada planejado para hoje.",
+  "No timers running.": "Nenhum timer rodando.",
+  "Nothing to use soon.": "Nada para usar logo.",
 };

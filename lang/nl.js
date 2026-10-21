@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "On the release page, download the .apk file and open it to install the update.": "Download op de releasepagina het .apk-bestand en open het om de update te installeren.",
   "Every backup is also copied to a second folder.": "Elke back-up wordt ook naar een tweede map gekopieerd.",
   "Copying to the second folder failed: {reason}": "Kopiëren naar de tweede map is mislukt: {reason}",
+  "Kitchen screen": "Keukenscherm",
+  "Back to the app": "Terug naar de app",
+  "Nothing planned for today.": "Niets gepland voor vandaag.",
+  "No timers running.": "Er lopen geen timers.",
+  "Nothing to use soon.": "Niets om snel op te maken.",
 };

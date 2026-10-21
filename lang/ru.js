@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "On the release page, download the .apk file and open it to install the update.": "На странице выпуска скачайте файл .apk и откройте его, чтобы установить обновление.",
   "Every backup is also copied to a second folder.": "Каждая резервная копия также копируется во вторую папку.",
   "Copying to the second folder failed: {reason}": "Не удалось скопировать во вторую папку: {reason}",
+  "Kitchen screen": "Кухонный экран",
+  "Back to the app": "Назад в приложение",
+  "Nothing planned for today.": "На сегодня ничего не запланировано.",
+  "No timers running.": "Таймеры не запущены.",
+  "Nothing to use soon.": "Ничего не нужно срочно использовать.",
 };

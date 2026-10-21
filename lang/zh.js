@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "On the release page, download the .apk file and open it to install the update.": "在发布页面下载 .apk 文件并打开即可安装更新。",
   "Every backup is also copied to a second folder.": "每份备份也会复制到第二个文件夹。",
   "Copying to the second folder failed: {reason}": "复制到第二个文件夹失败：{reason}",
+  "Kitchen screen": "厨房屏幕",
+  "Back to the app": "返回应用",
+  "Nothing planned for today.": "今天没有安排。",
+  "No timers running.": "没有正在运行的计时器。",
+  "Nothing to use soon.": "没有需要尽快用掉的。",
 };

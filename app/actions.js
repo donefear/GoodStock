@@ -369,6 +369,12 @@ document.addEventListener('click', async (event) => {
   if (action === 'remove-plan') withUndo(t('Meal removed from the plan'), ['plan'], () => { state.plan = state.plan.filter((entry) => entry.id !== id); });
   if (action === 'undo') undoLastChange();
   if (action === 'cook') openCookDialog(state.plan.find((entry) => entry.id === id));
+  if (action === 'kitchen-screen') openKitchenScreen();
+  if (action === 'close-kitchen-screen') closeKitchenScreen();
+  if (action === 'kitchen-cook') {
+    // Cook mode opens over the kitchen screen, which is still there afterwards.
+    startCookSteps(recipeById(id), button.dataset.plan || '');
+  }
   if (action === 'generate-shopping') generateShopping();
   if (action === 'search-stocked') {
     recipeQuery = '';
@@ -1241,4 +1247,15 @@ window.goodstockResume = () => {
 document.addEventListener('pointerdown', unlockAlarmAudio, { once: true, capture: true });
 window.addEventListener('offline', () => { updateSyncStatus('offline'); render(); });
 
-initialize().then(openViewFromApp);
+// The kitchen screen: Escape goes back to the app; at night a tap anywhere on it brightens it first.
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !$('#kitchen-screen').hidden && !document.querySelector('dialog[open]')) closeKitchenScreen();
+});
+$('#kitchen-screen').addEventListener('click', (event) => {
+  if (!event.currentTarget.classList.contains('night')) return;
+  event.preventDefault();
+  event.stopPropagation();
+  wakeKitchenScreen();
+}, true);
+
+initialize().then(openViewFromApp).then(() => { if (kitchenScreenRemembered()) openKitchenScreen(); });

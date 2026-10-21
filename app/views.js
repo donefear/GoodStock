@@ -167,6 +167,7 @@ function render() {
   refreshTimers();
   if (activeView === 'tools') afterToolsRender();
   mirrorArrows($('#view-container'));
+  renderKitchenScreen();
   updateSyncStatus(navigator.onLine ? (localStorage.getItem(PENDING_KEY) ? 'pending' : 'online') : 'offline');
 }
 
@@ -179,6 +180,75 @@ function mirrorArrows(root) {
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     if (/[→←↗↖]/.test(node.nodeValue) && !node.parentElement.closest('.recipe-method, .recipe-page-ingredients, .term-card p')) node.nodeValue = node.nodeValue.replace(/[→←↗↖]/g, (arrow) => MIRRORED_ARROWS[arrow]);
   }
+}
+
+// Kitchen screen (0.46): for a tablet on the wall or the counter, read from across the room. Only the big things:
+// the time, today's meals, running timers, what to use soon and the shopping count, in large type. The screen stays
+// on, dims between 22:00 and 6:00 (a tap brightens it for a minute), and comes back after a restart on this device.
+const KITCHEN_SCREEN_KEY = 'goodstock-kitchen-screen';
+let kitchenScreenTick = null;
+let kitchenScreenAwakeUntil = 0;
+
+function openKitchenScreen() {
+  $('#kitchen-screen').hidden = false;
+  document.body.classList.add('kitchen-screen-open');
+  try { localStorage.setItem(KITCHEN_SCREEN_KEY, '1'); } catch { /* Only remembered where storage works. */ }
+  keepScreenOn(true);
+  renderKitchenScreen();
+}
+
+function closeKitchenScreen() {
+  $('#kitchen-screen').hidden = true;
+  document.body.classList.remove('kitchen-screen-open');
+  try { localStorage.removeItem(KITCHEN_SCREEN_KEY); } catch { /* See openKitchenScreen. */ }
+  clearTimeout(kitchenScreenTick);
+  // Cook mode keeps the screen on by itself.
+  if (!$('#steps-dialog')?.open) keepScreenOn(false);
+}
+
+function kitchenScreenRemembered() {
+  try { return localStorage.getItem(KITCHEN_SCREEN_KEY) === '1'; } catch { return false; }
+}
+
+function renderKitchenScreen() {
+  const screen = $('#kitchen-screen');
+  if (!screen || screen.hidden) return;
+  clearTimeout(kitchenScreenTick);
+  const now = new Date();
+  const hour = now.getHours();
+  screen.classList.toggle('night', (hour >= 22 || hour < 6) && Date.now() > kitchenScreenAwakeUntil);
+  const today = dateKey(now);
+  const meals = state.plan.filter((entry) => entry.date === today).map((entry) => ({ entry, recipe: recipeById(entry.recipeId) })).filter(({ recipe }) => recipe);
+  const timers = timersByUrgency(cookTimers);
+  const soon = itemsNeedingExpiryAttention().slice(0, 6);
+  const shopping = state.shopping.filter((item) => !item.checked).length;
+  const card = (title, body) => `<section class="kitchen-card"><h2>${title}</h2>${body}</section>`;
+  screen.innerHTML = `
+    <header class="kitchen-screen-head">
+      <div><strong class="kitchen-clock">${escapeHtml(new Intl.DateTimeFormat(languageLocale(), { hour: '2-digit', minute: '2-digit' }).format(now))}</strong><span>${escapeHtml(formatDate(now, { weekday: 'long', day: 'numeric', month: 'long' }))}</span></div>
+      <button class="button button-outline" type="button" data-action="close-kitchen-screen">${t('Back to the app')}</button>
+    </header>
+    <div class="kitchen-screen-grid">
+      ${card(t('Today'), meals.length
+        ? `<ul class="kitchen-list">${meals.map(({ entry, recipe }) => `<li><span>${escapeHtml(recipe.name)}</span><button class="button button-primary" type="button" data-action="kitchen-cook" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}">${t('Step by step')} <span aria-hidden="true">▶</span></button></li>`).join('')}</ul>`
+        : `<p class="kitchen-empty">${t('Nothing planned for today.')}</p>`)}
+      ${card(t('Timers'), timers.length
+        ? `<ul class="kitchen-list">${timers.map((timer) => `<li class="${timer.done ? 'done' : ''}"><span>${escapeHtml(timer.name || timer.label || '')}</span><strong class="kitchen-timer">${timer.done ? t('Done') : formatTimer(timerRemaining(timer))}</strong></li>`).join('')}</ul>`
+        : `<p class="kitchen-empty">${t('No timers running.')}</p>`)}
+      ${card(t('Use soon'), soon.length
+        ? `<ul class="kitchen-list">${soon.map((item) => `<li class="${expiryClass(item.expiresOn)}"><span>${escapeHtml(item.name)}</span><small>${escapeHtml(expirationLabel(item.expiresOn))}</small></li>`).join('')}</ul>`
+        : `<p class="kitchen-empty">${t('Nothing to use soon.')}</p>`)}
+      ${card(t('Shopping'), `<p class="kitchen-count">${shopping ? tp(shopping, '{count} thing on the shopping list', '{count} things on the shopping list') : t('The shopping list is empty')}</p>`)}
+    </div>`;
+  mirrorArrows(screen);
+  // Every second while a timer runs, otherwise twice a minute for the clock.
+  kitchenScreenTick = setTimeout(renderKitchenScreen, timers.some((timer) => !timer.done) ? 1000 : 30000);
+}
+
+// At night a tap on the dimmed screen brightens it for a minute.
+function wakeKitchenScreen() {
+  kitchenScreenAwakeUntil = Date.now() + 60000;
+  renderKitchenScreen();
 }
 
 function pageHeading(eyebrow, title, subtitle, action = '') {

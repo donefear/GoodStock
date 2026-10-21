@@ -895,6 +895,34 @@ html:not(.is-standalone) .phone-only { display: none; }
 .recipe-photo-field .field-hint:empty { display: none; }
 .no-flex-gap .recipe-photo-field > * + * { margin-top: 8px; }
 
+/* Kitchen screen (0.46): the big things for a tablet across the room. Covers the app (dialogs such as cook mode still
+   open on top); dims at night. */
+.kitchen-screen { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 25; overflow: auto; padding: 28px clamp(18px, 4vw, 48px); background: var(--paper); color: var(--ink); transition: opacity .4s; }
+.kitchen-screen[hidden] { display: none; }
+.kitchen-screen.night { opacity: .55; }
+.kitchen-screen-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.kitchen-screen-head > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 18px; }
+.kitchen-clock { font: 600 clamp(48px, 9vw, 96px)/1 'Fraunces', Georgia, serif; }
+.kitchen-screen-head span { color: var(--muted); font-size: clamp(18px, 2.4vw, 26px); }
+.kitchen-screen-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.kitchen-card { padding: 20px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
+.kitchen-card h2 { margin: 0 0 12px; font: 600 clamp(22px, 2.6vw, 30px) 'Fraunces', Georgia, serif; }
+.kitchen-list { margin: 0; padding: 0; list-style: none; }
+.kitchen-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: clamp(19px, 2.2vw, 25px); }
+.kitchen-list li:first-child { border-top: 0; }
+.kitchen-list small { color: var(--muted); font-size: .8em; text-align: end; }
+.kitchen-list li.expired small, .kitchen-list li.done .kitchen-timer { color: #b23a26; }
+.kitchen-timer { font: 600 clamp(26px, 3.4vw, 40px)/1 'DM Sans', sans-serif; font-variant-numeric: tabular-nums; }
+.kitchen-empty, .kitchen-count { margin: 0; color: var(--muted); font-size: clamp(19px, 2.2vw, 25px); }
+.kitchen-count { color: var(--ink); }
+body.kitchen-screen-open { overflow: hidden; }
+:root[data-theme="dark"] .kitchen-list li.expired small, :root[data-theme="dark"] .kitchen-list li.done .kitchen-timer { color: #f09988; }
+@media (max-width: 760px) { .kitchen-screen-grid { grid-template-columns: 1fr; } .kitchen-screen-head { align-items: flex-start; flex-direction: column; } }
+.no-flex-gap .kitchen-screen-head > * + * { margin-inline-start: 16px; }
+.no-flex-gap .top-actions > * + * { margin-inline-start: 18px; }
+.no-flex-gap .kitchen-list li > * + * { margin-inline-start: 12px; }
+@media print { .kitchen-screen { display: none !important; } }
+
 /* Printing (0.14): a clean recipe page, or the shopping list with tick boxes, always light and without menus. */
 .print-only { display: none; }
 @media print {

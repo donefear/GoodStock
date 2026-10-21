@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "On the release page, download the .apk file and open it to install the update.": "Na stronie wydania pobierz plik .apk i otwórz go, aby zainstalować aktualizację.",
   "Every backup is also copied to a second folder.": "Każda kopia zapasowa trafia też do drugiego folderu.",
   "Copying to the second folder failed: {reason}": "Nie udało się skopiować do drugiego folderu: {reason}",
+  "Kitchen screen": "Ekran kuchenny",
+  "Back to the app": "Wróć do aplikacji",
+  "Nothing planned for today.": "Nic nie zaplanowano na dziś.",
+  "No timers running.": "Żaden minutnik nie działa.",
+  "Nothing to use soon.": "Nic do szybkiego zużycia.",
 };

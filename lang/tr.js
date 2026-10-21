@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "On the release page, download the .apk file and open it to install the update.": "Sürüm sayfasından .apk dosyasını indirip açarak güncellemeyi yükleyin.",
   "Every backup is also copied to a second folder.": "Her yedek ikinci bir klasöre de kopyalanır.",
   "Copying to the second folder failed: {reason}": "İkinci klasöre kopyalanamadı: {reason}",
+  "Kitchen screen": "Mutfak ekranı",
+  "Back to the app": "Uygulamaya dön",
+  "Nothing planned for today.": "Bugün için plan yok.",
+  "No timers running.": "Çalışan zamanlayıcı yok.",
+  "Nothing to use soon.": "Yakında kullanılacak bir şey yok.",
 };

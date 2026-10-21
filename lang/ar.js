@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "On the release page, download the .apk file and open it to install the update.": "من صفحة الإصدار، نزّل ملف ‎.apk وافتحه لتثبيت التحديث.",
   "Every backup is also copied to a second folder.": "تُنسخ كل نسخة احتياطية أيضًا إلى مجلد ثانٍ.",
   "Copying to the second folder failed: {reason}": "تعذّر النسخ إلى المجلد الثاني: {reason}",
+  "Kitchen screen": "شاشة المطبخ",
+  "Back to the app": "العودة إلى التطبيق",
+  "Nothing planned for today.": "لا شيء مخطط لليوم.",
+  "No timers running.": "لا توجد مؤقتات تعمل.",
+  "Nothing to use soon.": "لا شيء يجب استخدامه قريبًا.",
 };

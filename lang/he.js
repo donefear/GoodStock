@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "On the release page, download the .apk file and open it to install the update.": "בעמוד הגרסה, הורידו את קובץ ה־‎.apk ופתחו אותו כדי להתקין את העדכון.",
   "Every backup is also copied to a second folder.": "כל גיבוי מועתק גם לתיקייה שנייה.",
   "Copying to the second folder failed: {reason}": "ההעתקה לתיקייה השנייה נכשלה: {reason}",
+  "Kitchen screen": "מסך מטבח",
+  "Back to the app": "חזרה לאפליקציה",
+  "Nothing planned for today.": "שום דבר לא מתוכנן להיום.",
+  "No timers running.": "אין טיימרים פעילים.",
+  "Nothing to use soon.": "אין מה לנצל בקרוב.",
 };

@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "On the release page, download the .apk file and open it to install the update.": "リリースページで .apk ファイルをダウンロードして開くと、アップデートをインストールできます。",
   "Every backup is also copied to a second folder.": "バックアップは 2 つ目のフォルダーにもコピーされます。",
   "Copying to the second folder failed: {reason}": "2 つ目のフォルダーへのコピーに失敗しました：{reason}",
+  "Kitchen screen": "キッチン画面",
+  "Back to the app": "アプリに戻る",
+  "Nothing planned for today.": "今日の予定はありません。",
+  "No timers running.": "動いているタイマーはありません。",
+  "Nothing to use soon.": "早めに使うものはありません。",
 };

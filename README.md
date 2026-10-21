@@ -72,6 +72,7 @@ The interface is available in **English, Dutch, Spanish, French, German, Italian
 - **Works offline.** The app keeps working without a connection and syncs when it's back.
 - **Undo** instead of "are you sure?" pop-ups.
 - **Light and dark themes**, and **Large / Extra large text** for a tablet across the room.
+- **Kitchen screen** (◷ at the top): a wall or counter tablet shows just the time, today's meals with a cook button, running timers, what to use soon and the shopping count, in large type. The screen stays on, dims at night (a tap brightens it), and comes back after a restart.
 - **Household PIN (optional).** Locks the server version so only your devices can use it.
 - **Backups.** Export and import your whole kitchen as a file. The phone apps can also make an automatic weekly backup to a folder you choose, such as Google Drive or iCloud. The server keeps a daily copy by itself (and one before any change that removes most of the kitchen), ready to restore from Settings → Your data. Set `BACKUP_COPY_PATH` (a folder on the Docker host, for example a NAS share) and every server backup is copied there too, so a broken disk or a deleted volume doesn't take the backups with it.
 

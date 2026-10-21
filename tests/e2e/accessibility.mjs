@@ -18,6 +18,11 @@ const VIEWS = [
   ['settings: general', () => { document.querySelector('#settings-button').click(); showSettingsTab('general'); }],
   ['settings: connections', () => { document.querySelector('#settings-button').click(); showSettingsTab('connections'); }],
   ['settings: your data', () => { document.querySelector('#settings-button').click(); showSettingsTab('data'); }],
+  ['kitchen screen', () => {
+    state.plan.push({ id: 'a11y-meal', date: dateKey(new Date()), recipeId: state.recipes[0].id, cooked: false });
+    cookTimers.push({ id: 'a11y-timer', label: 'Pasta', name: 'Pasta', endsAt: Date.now() + 300000, done: false });
+    openKitchenScreen();
+  }],
 ];
 
 export default async function run({ browser, base }) {
@@ -32,10 +37,14 @@ export default async function run({ browser, base }) {
     for (const [name, open] of VIEWS) {
       const violations = await page.evaluate(async (setupCode, openCode) => {
         document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
+        if (!document.querySelector('#kitchen-screen').hidden) closeKitchenScreen();
+        cookTimers = cookTimers.filter((timer) => timer.id !== 'a11y-timer');
+        state.plan = state.plan.filter((entry) => entry.id !== 'a11y-meal');
         new Function(setupCode)();
         new Function(`(${openCode})()`)();
         await new Promise((resolve) => setTimeout(resolve, 350)); // past the colour transitions
-        const scope = document.querySelector('dialog[open]') || document.body;
+        const kitchen = document.querySelector('#kitchen-screen');
+        const scope = document.querySelector('dialog[open]') || (kitchen && !kitchen.hidden ? kitchen : document.body);
         const result = await window.axe.run(scope, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }, resultTypes: ['violations'] });
         return result.violations.map((violation) => ({ id: violation.id, count: violation.nodes.length, target: String(violation.nodes[0].target[0]), summary: (violation.nodes[0].failureSummary || '').split('\n').slice(1, 2).join(' ').trim() }));
       }, setup, open.toString());
@@ -43,7 +52,7 @@ export default async function run({ browser, base }) {
     }
   }
   log.push(`${VIEWS.length} views × 3 modes checked`);
-  await page.evaluate(() => { document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close()); applyTheme('light'); applyTextSize('normal'); });
+  await page.evaluate(() => { document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close()); closeKitchenScreen(); applyTheme('light'); applyTextSize('normal'); });
   await page.close();
   return { fail, log };
 }

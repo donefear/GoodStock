@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.it = {
   "On the release page, download the .apk file and open it to install the update.": "Nella pagina della versione scarica il file .apk e aprilo per installare l’aggiornamento.",
   "Every backup is also copied to a second folder.": "Ogni backup viene copiato anche in una seconda cartella.",
   "Copying to the second folder failed: {reason}": "Copia nella seconda cartella non riuscita: {reason}",
+  "Kitchen screen": "Schermo cucina",
+  "Back to the app": "Torna all'app",
+  "Nothing planned for today.": "Niente in programma per oggi.",
+  "No timers running.": "Nessun timer attivo.",
+  "Nothing to use soon.": "Niente da usare a breve.",
 };

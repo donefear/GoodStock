@@ -66,10 +66,13 @@ OLD TABLETS
 EVERYDAY USE
 ------------
 
-0.46 A kitchen screen.
-    A tablet on the wall or the counter is used from a distance, but every page is made for reading up close. A
-    "Kitchen screen" view with only the big things (today's meal, running timers, what to use soon, the shopping
-    count), large type, the screen kept on and dimmed at night, and one tap back to the full app.
+[x] DONE 0.46 A kitchen screen. (v4.0.5)
+    ◷ in the top bar opens a full-screen view for a tablet across the room: the time and date in large type, today's
+    meals with "Step by step" (cook mode opens on top of it), running timers counting down every second, what to use
+    soon with its date, and the shopping count. It follows the kitchen as it changes, keeps the screen on, dims between
+    22:00 and 6:00 (a tap brightens it for a minute), and opens again after a restart on that device until "Back to the
+    app" (or Escape). Works on the old-tablet page too. tests/page/kitchen-screen.js; the accessibility test checks it
+    in light, dark and large text.
 
 0.47 "Plan my week" fills the empty days.
     The planner already puts recipes that use something from Use soon first, but you still pick each day. One button

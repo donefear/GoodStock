@@ -1015,4 +1015,9 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "On the release page, download the .apk file and open it to install the update.": "Pe pagina versiunii, descarcă fișierul .apk și deschide-l ca să instalezi actualizarea.",
   "Every backup is also copied to a second folder.": "Fiecare copie de rezervă e copiată și într-un al doilea dosar.",
   "Copying to the second folder failed: {reason}": "Copierea în al doilea dosar nu a reușit: {reason}",
+  "Kitchen screen": "Ecran de bucătărie",
+  "Back to the app": "Înapoi la aplicație",
+  "Nothing planned for today.": "Nimic planificat pentru azi.",
+  "No timers running.": "Niciun cronometru pornit.",
+  "Nothing to use soon.": "Nimic de folosit curând.",
 };
