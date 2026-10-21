@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Shrink large photos": "Уменьшить большие фото",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "Всего {size}, из них фото {photos}. Каждое устройство хранит и синхронизирует всё.",
   "{count} photos are larger than they need to be.": { "one": "{count} фото больше, чем нужно.", "few": "{count} фото больше, чем нужно.", "many": "{count} фото больше, чем нужно.", "other": "{count} фото больше, чем нужно." },
+  "Feedback": "Обратная связь",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "Нашли проблему или есть идея для Goodstock? Напишите письмо — оно придёт прямо автору.",
+  "Report a problem": "Сообщить о проблеме",
+  "Suggest an idea": "Предложить идею",
+  "What happened, and what did you expect to happen?": "Что произошло и чего вы ожидали?",
+  "Your idea:": "Ваша идея:",
 };

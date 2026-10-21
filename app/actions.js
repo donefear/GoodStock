@@ -1304,6 +1304,23 @@ document.addEventListener('click', (event) => {
   setTimeout(() => signature.classList.remove('made-by-egg'), 4000);
 });
 
+// Settings → Feedback: an email with room for the person's own words, then what helps to look into a problem.
+const FEEDBACK_EMAIL = 'donefear.space@gmail.com';
+function feedbackMailto(kind) {
+  const problem = kind === 'problem';
+  const version = appVersion();
+  const where = STANDALONE ? `${nativeApp.platform || 'android'} app${isShared() ? ', shared kitchen' : ''}` : 'browser, server kitchen';
+  const subject = `Goodstock ${problem ? 'problem' : 'idea'} (v${version})`;
+  const body = [problem ? t('What happened, and what did you expect to happen?') : t('Your idea:'), '', '', '', '---',
+    `Goodstock v${version} · ${where} · ${currentLanguage}`, navigator.userAgent].join('\n');
+  return `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+document.addEventListener('click', (event) => {
+  const link = event.target.closest && event.target.closest('[data-feedback]');
+  if (link) link.href = feedbackMailto(link.dataset.feedback);
+});
+
 // A recipe photo that can't load (a web address while offline, a Mealie server that's off) is simply left out.
 document.addEventListener('error', (event) => {
   if (event.target.classList && event.target.classList.contains('recipe-photo')) event.target.hidden = true;

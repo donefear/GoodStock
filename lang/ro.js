@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Shrink large photos": "Micșorează fotografiile mari",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} în total, din care {photos} fotografii. Fiecare dispozitiv păstrează și sincronizează totul.",
   "{count} photos are larger than they need to be.": { "one": "{count} fotografie este mai mare decât trebuie.", "few": "{count} fotografii sunt mai mari decât trebuie.", "other": "{count} de fotografii sunt mai mari decât trebuie." },
+  "Feedback": "Părerea ta",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "Ai găsit o problemă sau ai o idee pentru Goodstock? Trimite un e-mail; ajunge direct la autorul aplicației.",
+  "Report a problem": "Raportează o problemă",
+  "Suggest an idea": "Propune o idee",
+  "What happened, and what did you expect to happen?": "Ce s-a întâmplat și ce te așteptai să se întâmple?",
+  "Your idea:": "Ideea ta:",
 };

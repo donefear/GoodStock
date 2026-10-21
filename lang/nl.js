@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Shrink large photos": "Grote foto's verkleinen",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} in totaal, waarvan {photos} foto's. Elk apparaat bewaart en synchroniseert alles.",
   "{count} photos are larger than they need to be.": { "one": "{count} foto is groter dan nodig.", "other": "{count} foto's zijn groter dan nodig." },
+  "Feedback": "Feedback",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "Iets mis of een idee voor Goodstock? Stuur een e-mail; die gaat rechtstreeks naar de maker.",
+  "Report a problem": "Een probleem melden",
+  "Suggest an idea": "Een idee voorstellen",
+  "What happened, and what did you expect to happen?": "Wat gebeurde er, en wat had je verwacht?",
+  "Your idea:": "Je idee:",
 };

@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Shrink large photos": "Büyük fotoğrafları küçült",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "Toplam {size}, bunun {photos} kadarı fotoğraf. Her cihaz hepsini saklar ve eşitler.",
   "{count} photos are larger than they need to be.": { "one": "{count} fotoğraf gereğinden büyük.", "other": "{count} fotoğraf gereğinden büyük." },
+  "Feedback": "Geri bildirim",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "Bir sorun mu buldun ya da Goodstock için bir fikrin mi var? Bir e-posta gönder; doğrudan yapımcısına gider.",
+  "Report a problem": "Sorun bildir",
+  "Suggest an idea": "Fikir öner",
+  "What happened, and what did you expect to happen?": "Ne oldu ve ne olmasını bekliyordun?",
+  "Your idea:": "Fikrin:",
 };

@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Shrink large photos": "صغّر الصور الكبيرة",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} في المجموع، منها {photos} صور. كل جهاز يحفظ كل شيء ويزامنه.",
   "{count} photos are larger than they need to be.": { "zero": "لا توجد صور أكبر من اللازم.", "one": "صورة واحدة أكبر من اللازم.", "two": "صورتان أكبر من اللازم.", "few": "{count} صور أكبر من اللازم.", "many": "{count} صورة أكبر من اللازم.", "other": "{count} صورة أكبر من اللازم." },
+  "Feedback": "ملاحظات",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "وجدت مشكلة أو لديك فكرة لـ Goodstock؟ أرسل رسالة بريد إلكتروني، فهي تصل مباشرة إلى صانعه.",
+  "Report a problem": "الإبلاغ عن مشكلة",
+  "Suggest an idea": "اقتراح فكرة",
+  "What happened, and what did you expect to happen?": "ماذا حدث، وما الذي توقعت أن يحدث؟",
+  "Your idea:": "فكرتك:",
 };

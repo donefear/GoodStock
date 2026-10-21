@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Shrink large photos": "הקטן תמונות גדולות",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} בסך הכול, מהם {photos} תמונות. כל מכשיר שומר ומסנכרן את הכול.",
   "{count} photos are larger than they need to be.": { "one": "תמונה אחת גדולה מהנדרש.", "two": "שתי תמונות גדולות מהנדרש.", "other": "{count} תמונות גדולות מהנדרש." },
+  "Feedback": "משוב",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "מצאת בעיה או שיש לך רעיון ל־Goodstock? אפשר לשלוח מייל – הוא מגיע ישירות למי שיצר אותו.",
+  "Report a problem": "דיווח על בעיה",
+  "Suggest an idea": "הצעת רעיון",
+  "What happened, and what did you expect to happen?": "מה קרה, ומה ציפית שיקרה?",
+  "Your idea:": "הרעיון שלך:",
 };

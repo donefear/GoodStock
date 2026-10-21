@@ -258,7 +258,7 @@ ipcMain.on('native', (event, method, args) => {
 
 // Links to recipe sites, Mealie, DeepL and YouTube open in the normal browser, never inside the app window.
 function openOutside(url) {
-  if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+  if (/^(https?:\/\/|mailto:)/i.test(url)) shell.openExternal(url);
 }
 
 function createWindow() {

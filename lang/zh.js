@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Shrink large photos": "压缩大照片",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "共 {size}，其中照片 {photos}。每台设备都会保存并同步全部内容。",
   "{count} photos are larger than they need to be.": "{count} 张照片比需要的大。",
+  "Feedback": "反馈",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "发现问题或对 Goodstock 有想法？发一封邮件，它会直接送到开发者手中。",
+  "Report a problem": "报告问题",
+  "Suggest an idea": "提出建议",
+  "What happened, and what did you expect to happen?": "发生了什么？你原本期望的是什么？",
+  "Your idea:": "你的想法：",
 };

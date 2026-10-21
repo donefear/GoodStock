@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Shrink large photos": "大きい写真を小さくする",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "合計 {size}、うち写真 {photos}。どの端末もすべてを保存・同期します。",
   "{count} photos are larger than they need to be.": "{count} 枚の写真が必要以上に大きいです。",
+  "Feedback": "フィードバック",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "問題を見つけた、または Goodstock へのアイデアがありますか？メールを送ってください。作者に直接届きます。",
+  "Report a problem": "問題を報告",
+  "Suggest an idea": "アイデアを提案",
+  "What happened, and what did you expect to happen?": "何が起きましたか？本来はどうなるはずでしたか？",
+  "Your idea:": "あなたのアイデア：",
 };

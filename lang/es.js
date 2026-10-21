@@ -1085,4 +1085,10 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "Shrink large photos": "Reducir las fotos grandes",
   "{size} in all, of which {photos} photos. Every device keeps and syncs all of it.": "{size} en total, de los que {photos} son fotos. Cada dispositivo lo guarda y sincroniza todo.",
   "{count} photos are larger than they need to be.": { "one": "{count} foto es más grande de lo necesario.", "other": "{count} fotos son más grandes de lo necesario." },
+  "Feedback": "Comentarios",
+  "Found a problem or have an idea for Goodstock? Send an email; it goes straight to its maker.": "¿Has encontrado un problema o tienes una idea para Goodstock? Envía un correo; llega directamente a quien lo creó.",
+  "Report a problem": "Informar de un problema",
+  "Suggest an idea": "Proponer una idea",
+  "What happened, and what did you expect to happen?": "¿Qué ha pasado y qué esperabas que pasara?",
+  "Your idea:": "Tu idea:",
 };
