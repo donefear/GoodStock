@@ -34,3 +34,4 @@ backups/
 
 # Web app for old Android WebViews (tools/build-legacy.mjs), built before the APK
 /legacy/
+potato
