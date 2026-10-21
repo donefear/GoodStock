@@ -420,6 +420,13 @@ document.addEventListener('click', async (event) => {
   if (action === 'edit-recipe') openRecipeEditor(recipeById(id));
   if (action === 'delete-recipe') deleteRecipe(id);
   if (action === 'recipe-import-url') await importRecipeFromUrl();
+  if (action === 'calendar-make') await makeCalendarLink();
+  if (action === 'calendar-stop') await stopCalendarLink();
+  if (action === 'calendar-copy') {
+    const link = $('#calendar-link');
+    link.select();
+    try { await navigator.clipboard.writeText(link.value); button.textContent = t('Copied'); } catch { document.execCommand?.('copy'); }
+  }
   if (action === 'share-to-recipe') {
     $('#shared-in-dialog').close();
     openRecipeEditor(null, { importFirst: true });
@@ -1074,7 +1081,42 @@ function showSettingsTab(tab) {
 }
 
 // The parts of Settings that depend on this device and on the connections, in the chosen language.
+// The meal plan as a calendar feed (0.53, server version): the server keeps only a hash of the link's token, so a
+// link is shown once, when it is made; making another replaces it.
+async function loadCalendarStatus() {
+  if (STANDALONE) return;
+  try {
+    const { enabled } = await (await fetch('api/calendar')).json();
+    showCalendarStatus(enabled, '');
+  } catch {
+    $('#calendar-note').textContent = t('Could not reach the server.');
+  }
+}
+
+function showCalendarStatus(enabled, link) {
+  $('#calendar-note').textContent = enabled ? t('On: your calendar gets every planned meal') : t('Off');
+  $('#calendar-link-row').hidden = !link;
+  $('#calendar-link').value = link;
+  $('#calendar-copy').hidden = !link;
+  $('#calendar-stop').hidden = !enabled;
+  $('#calendar-make').textContent = enabled ? t('Make a new link') : t('Make a calendar link');
+}
+
+async function makeCalendarLink() {
+  const response = await fetch('api/calendar', { method: 'POST' });
+  if (!response.ok) { $('#calendar-note').textContent = t('Could not reach the server.'); return; }
+  const { token } = await response.json();
+  showCalendarStatus(true, new URL(`api/plan.ics?token=${encodeURIComponent(token)}`, location.href).href);
+  $('#calendar-link').select();
+}
+
+async function stopCalendarLink() {
+  await fetch('api/calendar', { method: 'DELETE' });
+  showCalendarStatus(false, '');
+}
+
 async function fillSettings() {
+  loadCalendarStatus();
   const expiryToggle = $('#expiry-notifications-toggle');
   const expiryNote = $('#expiry-notifications-note');
   const canNotify = STANDALONE || (window.isSecureContext && 'Notification' in window);

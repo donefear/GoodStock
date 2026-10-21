@@ -151,6 +151,10 @@ rest:
         value_template: "{{ value_json.today | map(attribute='name') | join(', ') or 'Nothing planned' }}"
 ```
 
+### The meal plan in your calendar (optional)
+
+**Settings → Connections → Meal plan in your calendar → Make a calendar link** gives a link (`/api/plan.ics?token=…`) that a phone's or computer's calendar can subscribe to ("subscribe to a calendar", "add from URL"). Every planned meal from two weeks back to two months ahead shows as an all-day event with its ingredients, and stays up to date. The link works without the household PIN, so anyone who has it can see the plan; making a new link replaces it, and "Stop the link" turns it off. Your calendar has to reach the server, so this works on your home network (or over a VPN).
+
 > **Security note:** Goodstock is made for a trusted home network. Even with a household PIN and HTTPS, don't expose it directly to the internet.
 
 ## Phone apps

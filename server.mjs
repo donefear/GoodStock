@@ -422,6 +422,79 @@ async function disconnectDeepl() {
   return { configured: Boolean(deepl.key), source: deepl.key ? deepl.source : '' };
 }
 
+// The meal plan as a calendar feed (0.53): /api/plan.ics?token=… for a phone's or computer's calendar to subscribe
+// to. The token (saved in /data/calendar.json as a hash, like the household PIN's sessions) is the key, so calendar
+// apps that can't log in still get it; anyone with the link can read the plan, so Settings can make a new one.
+const calendarConfigPath = join(dataDirectory, 'calendar.json');
+let calendarTokenHash = '';
+
+async function loadCalendarConfig() {
+  try {
+    calendarTokenHash = String(JSON.parse(await readFile(calendarConfigPath, 'utf8'))?.hash || '');
+  } catch (error) {
+    if (error.code !== 'ENOENT') console.error('Could not read the calendar settings:', error.message);
+  }
+}
+
+async function makeCalendarToken() {
+  const token = randomBytes(24).toString('base64url');
+  await mkdir(dataDirectory, { recursive: true });
+  const temporaryPath = `${calendarConfigPath}.tmp`;
+  await writeFile(temporaryPath, JSON.stringify({ hash: tokenHash(token) }), { encoding: 'utf8', mode: 0o600 });
+  await rename(temporaryPath, calendarConfigPath);
+  calendarTokenHash = tokenHash(token);
+  return token;
+}
+
+async function stopCalendarFeed() {
+  try { await unlink(calendarConfigPath); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  calendarTokenHash = '';
+}
+
+function calendarTokenValid(token) {
+  if (!calendarTokenHash || !token) return false;
+  const given = Buffer.from(tokenHash(String(token)));
+  const stored = Buffer.from(calendarTokenHash);
+  return given.length === stored.length && timingSafeEqual(given, stored);
+}
+
+// iCalendar text: every planned meal from two weeks back to two months ahead as an all-day event, its ingredients
+// in the description. Lines are folded at 75 bytes and text escaped as RFC 5545 asks.
+function planCalendar(state, now = new Date()) {
+  const escapeText = (text) => String(text || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  const fold = (line) => {
+    const parts = [];
+    let rest = Buffer.from(line, 'utf8');
+    while (rest.length > 75) {
+      let cut = parts.length ? 74 : 75;
+      while (cut > 0 && (rest[cut] & 0xc0) === 0x80) cut -= 1; // never inside a UTF-8 character
+      parts.push(rest.subarray(0, cut).toString('utf8'));
+      rest = rest.subarray(cut);
+    }
+    parts.push(rest.toString('utf8'));
+    return parts.join('\r\n ');
+  };
+  const day = (key) => key.replace(/-/g, '');
+  const nextDay = (key) => {
+    const [year, month, date] = key.split('-').map(Number);
+    const next = new Date(Date.UTC(year, month - 1, date + 1));
+    return next.toISOString().slice(0, 10).replace(/-/g, '');
+  };
+  const from = new Date(now.getTime() - 14 * 86_400_000).toISOString().slice(0, 10);
+  const until = new Date(now.getTime() + 62 * 86_400_000).toISOString().slice(0, 10);
+  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const recipes = new Map((state?.recipes || []).map((recipe) => [recipe.id, recipe]));
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Goodstock//Meal plan//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Goodstock', 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
+  for (const entry of state?.plan || []) {
+    const recipe = recipes.get(entry.recipeId) || (state?.recipes || []).find((item) => item.slug === entry.recipeId);
+    if (!recipe || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date || '') || entry.date < from || entry.date > until) continue;
+    lines.push('BEGIN:VEVENT', `UID:${escapeText(entry.id)}@goodstock`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${day(entry.date)}`, `DTEND;VALUE=DATE:${nextDay(entry.date)}`,
+      `SUMMARY:${escapeText(`${entry.cooked ? '✓ ' : ''}${recipe.name}`)}`, `DESCRIPTION:${escapeText((recipe.ingredients || []).join('\n'))}`, 'TRANSP:TRANSPARENT', 'END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  return `${lines.map(fold).join('\r\n')}\r\n`;
+}
+
 // Translates a list of texts, keeping their order.
 async function translateTexts(body) {
   if (!deepl.key) throw Object.assign(new Error('Add a DeepL API key in Settings to translate recipes.'), { status: 503 });
@@ -513,7 +586,8 @@ const validPin = (pin) => typeof pin === 'string' && pin.length >= 4 && pin.leng
 
 // Routes that work without unlocking: the PIN screen itself, a health check, and QR shopping-list downloads (random
 // links that expire after 30 minutes, opened on a phone that has never unlocked).
-const OPEN_API = [/^\/api\/auth\//, /^\/api\/health$/, /^\/api\/shopping\/download\//];
+// /api/plan.ics checks its own token (the calendar feed, 0.53).
+const OPEN_API = [/^\/api\/auth\//, /^\/api\/health$/, /^\/api\/shopping\/download\//, /^\/api\/plan\.ics$/];
 
 async function handleAuth(request, response, url) {
   const address = request.socket.remoteAddress || '';
@@ -559,6 +633,18 @@ const server = createServer(async (request, response) => {
     if (request.method === 'GET' && url.pathname === '/api/state') {
       sendJson(response, 200, kitchen.state ? { ...kitchen.state, _revision: kitchen.revision } : null);
       return;
+    }
+    // The calendar feed (0.53): open to whoever has the link's token, nobody else.
+    if (request.method === 'GET' && url.pathname === '/api/plan.ics') {
+      if (!calendarTokenValid(url.searchParams.get('token'))) return sendJson(response, 404, { error: 'Not found' });
+      response.writeHead(200, { 'content-type': 'text/calendar; charset=utf-8', 'cache-control': 'no-cache', 'content-disposition': 'inline; filename="goodstock.ics"' });
+      response.end(planCalendar(kitchen.state));
+      return;
+    }
+    if (url.pathname === '/api/calendar') {
+      if (request.method === 'GET') return sendJson(response, 200, { enabled: Boolean(calendarTokenHash) });
+      if (request.method === 'POST') return sendJson(response, 200, { enabled: true, token: await makeCalendarToken() });
+      if (request.method === 'DELETE') { await stopCalendarFeed(); return sendJson(response, 200, { enabled: false }); }
     }
     if (request.method === 'GET' && url.pathname === '/api/summary') {
       sendJson(response, 200, kitchenSummary(kitchen.state, kitchen.revision));
@@ -827,6 +913,7 @@ const server = createServer(async (request, response) => {
 await loadKitchen();
 await copyBackups();
 await loadMealieConfig();
+await loadCalendarConfig();
 await loadDeeplConfig();
 await loadAuth();
 server.listen(port, '0.0.0.0', () => {

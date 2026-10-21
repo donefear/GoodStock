@@ -127,10 +127,13 @@ PHONE, DESKTOP AND SERVER
     tests/e2e/phone-share-in.mjs. Not done for iPhone: a share extension is an app target of its own, built and
     tried on a Mac (like 0.4).
 
-0.53 The meal plan in your calendar.
-    The plan lives only in Goodstock. The server could offer it as a calendar feed (/api/plan.ics, with a token in
-    the address like the PIN's), so the phone's own calendar shows "Dinner: Chicken curry" and the household sees
-    the week without opening the app.
+[x] DONE 0.53 The meal plan in your calendar. (v4.0.13, server version)
+    Settings → Connections → "Meal plan in your calendar" makes a secret link, /api/plan.ics?token=…, for a calendar to
+    subscribe to: every planned meal from two weeks back to two months ahead as an all-day event (✓ once cooked), its
+    ingredients in the description, refreshed hourly (iCalendar, escaped and folded at 75 bytes). The server keeps only
+    a hash of the token in /data/calendar.json, so the link is shown once; "Make a new link" replaces it and "Stop the
+    link" turns it off. It works without the household PIN (calendar apps can't log in) and nothing else opens with
+    it. tests/e2e/calendar-feed.mjs. Not tried with a real calendar app yet.
 
 
 KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
