@@ -19,6 +19,6 @@ for i in $(seq 1 60); do
   [ -n "$socket" ] && break
   sleep 2
 done
-[ -n "$socket" ] || { echo "FAIL: the app's WebView never offered DevTools"; exit 1; }
+[ -n "$socket" ] || { echo "FAIL: the app's WebView never offered DevTools"; echo "::error title=Old tablet::the app's WebView never offered DevTools"; exit 1; }
 adb forward tcp:9222 "localabstract:$socket" > /dev/null
 node tests/legacy-device/smoke.mjs 9222

@@ -137,5 +137,7 @@ if (started) {
 socket.close();
 for (const line of log) console.log(`  ${line}`);
 for (const line of fail) console.log(`✗ ${line}`);
+// On GitHub every problem is also an annotation, readable on the run page without the full log.
+if (process.env.GITHUB_ACTIONS) for (const line of fail) console.log(`::error title=Old tablet::${line.replace(/\s+/g, ' ')}`);
 console.log(fail.length ? `FAIL  old-tablet page: ${fail.length} problem(s)` : 'PASS  old-tablet page');
 process.exit(fail.length ? 1 : 0);
