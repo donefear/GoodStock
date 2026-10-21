@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "A hint from the ingredient names. Check the packaging when it matters.": "根据食材名称的提示。重要时请查看包装。",
   "In the order of your shop, learned from {count} trips.": "按你常去商店的顺序，根据 {count} 次购物学会。",
   "Forget the order": "忘记这个顺序",
+  "Money": "货币",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "用于物品价格、扔掉食物的花费和购物清单总额（本设备）",
+  "Price": "价格",
+  "Price paid": "实付价格",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "按全部数量计。可显示扔掉的食物花了多少钱，下次会自动填写。",
+  "Thrown away worth about {amount}": "扔掉了约 {amount} 的食物",
+  "About {amount} for {count} items with a known price": "{count} 件已知价格的物品约 {amount}",
 };

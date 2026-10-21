@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "A hint from the ingredient names. Check the packaging when it matters.": "材料名からの目安です。大事なときはパッケージを確認してください。",
   "In the order of your shop, learned from {count} trips.": "お店の順番で表示（{count} 回の買い物から学習）。",
   "Forget the order": "順番をリセット",
+  "Money": "通貨",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "品物の価格、捨てた食品の金額、買い物リストの合計に使います（この端末）",
+  "Price": "価格",
+  "Price paid": "支払った金額",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "全量の金額です。捨てた食品の金額がわかり、次回は自動で入ります。",
+  "Thrown away worth about {amount}": "約 {amount} 分を捨てました",
+  "About {amount} for {count} items with a known price": "価格がわかる {count} 品で約 {amount}",
 };

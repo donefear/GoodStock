@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "A hint from the ingredient names. Check the packaging when it matters.": "Подсказка по названиям ингредиентов. Когда это важно, проверьте упаковку.",
   "In the order of your shop, learned from {count} trips.": { "one": "В порядке вашего магазина, по {count} походу за покупками.", "few": "В порядке вашего магазина, по {count} походам за покупками.", "many": "В порядке вашего магазина, по {count} походам за покупками.", "other": "В порядке вашего магазина, по {count} похода за покупками." },
   "Forget the order": "Забыть порядок",
+  "Money": "Валюта",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "Для цен продуктов, стоимости выброшенной еды и суммы списка покупок на этом устройстве",
+  "Price": "Цена",
+  "Price paid": "Заплачено",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "За всё количество. Показывает, сколько стоила выброшенная еда, и в следующий раз заполнится само.",
+  "Thrown away worth about {amount}": "Выброшено примерно на {amount}",
+  "About {amount} for {count} items with a known price": { "one": "Около {amount} за {count} позицию с известной ценой", "few": "Около {amount} за {count} позиции с известной ценой", "many": "Около {amount} за {count} позиций с известной ценой", "other": "Около {amount} за {count} позиции с известной ценой" },
 };

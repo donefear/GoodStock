@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "A hint from the ingredient names. Check the packaging when it matters.": "Un indiciu după numele ingredientelor. Verifică ambalajul când contează.",
   "In the order of your shop, learned from {count} trips.": { "one": "În ordinea magazinului tău, învățată din {count} drum la cumpărături.", "few": "În ordinea magazinului tău, învățată din {count} drumuri la cumpărături.", "other": "În ordinea magazinului tău, învățată din {count} de drumuri la cumpărături." },
   "Forget the order": "Uită ordinea",
+  "Money": "Monedă",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "Pentru prețurile produselor, cât a costat mâncarea aruncată și totalul listei de cumpărături, pe acest dispozitiv",
+  "Price": "Preț",
+  "Price paid": "Preț plătit",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "Pentru toată cantitatea. Arată cât a costat mâncarea aruncată și se completează singur data viitoare.",
+  "Thrown away worth about {amount}": "Aruncat în valoare de aproximativ {amount}",
+  "About {amount} for {count} items with a known price": { "one": "Aproximativ {amount} pentru {count} produs cu preț cunoscut", "few": "Aproximativ {amount} pentru {count} produse cu preț cunoscut", "other": "Aproximativ {amount} pentru {count} de produse cu preț cunoscut" },
 };

@@ -187,6 +187,9 @@ function freshState() {
     locations: localDefaultLocations(),
     timerPresets: [],
     log: [],
+    checks: [],
+    shelfLife: [],
+    prices: [],
   };
 }
 
@@ -220,6 +223,8 @@ function normalizeState(value) {
     checks: Array.isArray(value.checks) ? value.checks : [],
     // Shelf lives this kitchen learned from what it threw away ({ id: 'catalog id|storage', days }; 0 = keep the estimate).
     shelfLife: Array.isArray(value.shelfLife) ? value.shelfLife : [],
+    // Last known unit prices per product ({ id: cleaned name, unitPrice, unit, date }), 0.51.
+    prices: Array.isArray(value.prices) ? value.prices : [],
     // The order of the shop, learned from shopping trips ({ trips, groups: { group: { rank, seen } } }), 0.50.
     ...(value.shopOrder && typeof value.shopOrder === 'object' ? { shopOrder: value.shopOrder } : {}),
   };
@@ -850,7 +855,56 @@ function logRemoval(item, outcome) {
   const since = storage === 'freezer' && item.frozenOn > (item.addedOn || '') ? item.frozenOn : item.addedOn;
   const start = dateFromKey(since);
   if (start) Object.assign(entry, { kept: Math.max(0, -expiryDaysRemaining(since)), storage });
+  // What was thrown away was worth something (0.51): its unit price times what was left.
+  if (outcome === 'wasted' && Number(item.unitPrice) > 0 && Number(item.quantity) > 0) entry.value = Math.round(item.unitPrice * item.quantity * 100) / 100;
   state.log.push(entry);
+}
+
+// Prices (0.51), all optional. An item can carry unitPrice: what one unit of its quantity cost, in the money chosen
+// on this device. state.prices remembers the last unit price per product ({ id: cleaned name, unitPrice, unit, date },
+// merged like the other lists), so the price field fills itself in next time and the shopping list can show a rough
+// total; thrown-away items log what they were worth, and "This month" adds it up.
+const CURRENCY_KEY = 'goodstock-currency';
+const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'RON', 'CZK', 'HUF', 'TRY', 'RUB', 'ILS', 'AED', 'SAR', 'EGP', 'JPY', 'CNY', 'INR', 'BRL', 'CAD', 'AUD', 'NZD', 'ZAR', 'MXN'];
+
+function defaultCurrency() {
+  const tags = [].concat(navigator.languages || [], navigator.language || []).map((tag) => String(tag));
+  const regions = { US: 'USD', GB: 'GBP', CH: 'CHF', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', RO: 'RON', CZ: 'CZK', HU: 'HUF', TR: 'TRY', RU: 'RUB', IL: 'ILS', AE: 'AED', SA: 'SAR', EG: 'EGP', JP: 'JPY', CN: 'CNY', IN: 'INR', BR: 'BRL', CA: 'CAD', AU: 'AUD', NZ: 'NZD', ZA: 'ZAR', MX: 'MXN' };
+  const languages = { pl: 'PLN', ro: 'RON', tr: 'TRY', ru: 'RUB', he: 'ILS', ja: 'JPY', zh: 'CNY' };
+  for (const tag of tags) {
+    const region = (tag.split('-')[1] || '').toUpperCase();
+    if (regions[region]) return regions[region];
+  }
+  return languages[currentLanguage] || 'EUR';
+}
+
+function currentCurrency() {
+  try { const saved = localStorage.getItem(CURRENCY_KEY); if (CURRENCIES.includes(saved)) return saved; } catch { /* Default below. */ }
+  return defaultCurrency();
+}
+
+function formatMoney(amount) {
+  try {
+    return new Intl.NumberFormat(languageLocale(), { style: 'currency', currency: currentCurrency(), maximumFractionDigits: amount >= 100 ? 0 : 2 }).format(amount);
+  } catch {
+    return `${currentCurrency()} ${amount.toFixed(2)}`;
+  }
+}
+
+const knownPrice = (name) => state.prices.find((entry) => entry.id === cleanIngredient(name));
+
+function rememberPrice(name, unitPrice, unit) {
+  const id = cleanIngredient(name);
+  if (!id || !(unitPrice > 0)) return;
+  state.prices = [...state.prices.filter((entry) => entry.id !== id), { id, unitPrice: Math.round(unitPrice * 10000) / 10000, unit: canonicalUnit(unit), date: dateKey(new Date()) }];
+}
+
+// What an amount of something costs, from its remembered price; null when unknown or the units don't compare.
+function priceOf(name, quantity, unit) {
+  const known = knownPrice(name);
+  if (!known) return null;
+  const amount = deductionAmount(`${quantity || ''} ${unit || ''} ${name}`.trim(), { unit: known.unit });
+  return amount > 0 ? Math.round(amount * known.unitPrice * 100) / 100 : null;
 }
 
 // Learning shelf life from what gets thrown away (0.30). When the same thing, in the same kind of storage, was thrown

@@ -814,6 +814,9 @@ html:not(.is-standalone) .phone-only { display: none; }
 .restock-tag { margin-inline-start: 6px; padding: 1px 6px; border-radius: 10px; background: var(--mint); color: var(--green-dark); font-size: 10px; font-weight: 700; letter-spacing: .3px; vertical-align: middle; }
 .month-overview { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: -15px 0 30px; padding: 14px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
 .month-overview strong { font-size: 14px; }
+.month-cost { color: #9a3f2e; font-size: 13px; font-weight: 700; }
+:root[data-theme="dark"] .month-cost { color: #f09988; }
+.shopping-total { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
 .shelf-life-suggestions { display: block; }
 .shelf-life-suggestion { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 .shelf-life-suggestion strong, .shelf-life-suggestion .muted { display: block; }

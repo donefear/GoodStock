@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "A hint from the ingredient names. Check the packaging when it matters.": "Malzeme adlarından bir ipucu. Önemliyse ambalajı kontrol edin.",
   "In the order of your shop, learned from {count} trips.": { "one": "Mağazanızın sırasıyla, {count} alışverişten öğrenildi.", "other": "Mağazanızın sırasıyla, {count} alışverişten öğrenildi." },
   "Forget the order": "Sırayı unut",
+  "Money": "Para birimi",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "Ürün fiyatları, atılan yiyeceğin maliyeti ve alışveriş listesi toplamı için, bu cihazda",
+  "Price": "Fiyat",
+  "Price paid": "Ödenen fiyat",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "Tüm miktar için. Atılan yiyeceğin maliyetini gösterir ve bir dahaki sefere kendiliğinden dolar.",
+  "Thrown away worth about {amount}": "Yaklaşık {amount} değerinde atıldı",
+  "About {amount} for {count} items with a known price": { "one": "Fiyatı bilinen {count} ürün için yaklaşık {amount}", "other": "Fiyatı bilinen {count} ürün için yaklaşık {amount}" },
 };

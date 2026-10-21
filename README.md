@@ -24,7 +24,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **Opened and frozen.** "Opened today" shortens the date for things that keep less once open (milk, a can of tomatoes). Freezer items remember the day they were frozen, and their estimate counts from then.
 - **Use soon panel.** Shows items that expire within three days, and anything overdue, together with saved recipes that use them.
 - **Staples.** Give an item a "Keep at least" amount, and it goes on the shopping list by itself when it runs low.
-- **Less waste.** When you remove an item you can say whether it was used up or thrown away. A small "This month" card shows the count and what was thrown away most.
+- **Less waste.** When you remove an item you can say whether it was used up or thrown away. A small "This month" card shows the count and what was thrown away most, and, when you add prices (optional, in the item dialog or when putting shopping away), what it cost. Prices are remembered per product, fill themselves in next time, and give the shopping list a rough total.
 - **Barcode scanning** in the phone apps (and Chrome on a phone over HTTPS) fills in a product's name and pack size when you add it or put the shopping away. Scan something from the cupboard on the Inventory page to use one, mark it used up or thrown away, or add it if it isn't there yet; the barcode is remembered with the item.
 - **Reminders.** In the browser you get notifications while the app is open. The phone apps send a daily "use soon" notification even when the app is closed.
 

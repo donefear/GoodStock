@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "A hint from the ingredient names. Check the packaging when it matters.": "Een hint op basis van de ingrediëntnamen. Kijk op de verpakking als het ertoe doet.",
   "In the order of your shop, learned from {count} trips.": { "one": "In de volgorde van je winkel, geleerd van {count} boodschappenronde.", "other": "In de volgorde van je winkel, geleerd van {count} boodschappenrondes." },
   "Forget the order": "Vergeet de volgorde",
+  "Money": "Geld",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "Voor prijzen bij producten, wat weggegooid eten kostte en het totaal van de boodschappenlijst, op dit apparaat",
+  "Price": "Prijs",
+  "Price paid": "Betaald",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "Voor de hele hoeveelheid. Laat zien wat weggegooid eten kostte, en vult zichzelf de volgende keer in.",
+  "Thrown away worth about {amount}": "Voor ongeveer {amount} weggegooid",
+  "About {amount} for {count} items with a known price": { "one": "Ongeveer {amount} voor {count} product met een bekende prijs", "other": "Ongeveer {amount} voor {count} producten met een bekende prijs" },
 };

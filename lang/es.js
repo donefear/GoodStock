@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "A hint from the ingredient names. Check the packaging when it matters.": "Una pista según los nombres de los ingredientes. Revisa el envase cuando importe.",
   "In the order of your shop, learned from {count} trips.": { "one": "En el orden de tu tienda, aprendido de {count} compra.", "other": "En el orden de tu tienda, aprendido de {count} compras." },
   "Forget the order": "Olvidar el orden",
+  "Money": "Moneda",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "Para los precios de los productos, lo que costó la comida tirada y el total de la lista de la compra, en este dispositivo",
+  "Price": "Precio",
+  "Price paid": "Precio pagado",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "Por toda la cantidad. Muestra lo que costó la comida tirada y se rellena sola la próxima vez.",
+  "Thrown away worth about {amount}": "Tirado por valor de unos {amount}",
+  "About {amount} for {count} items with a known price": { "one": "Unos {amount} por {count} producto con precio conocido", "other": "Unos {amount} por {count} productos con precio conocido" },
 };

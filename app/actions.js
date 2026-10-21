@@ -16,6 +16,7 @@ function openPutawayDialog(item) {
   $('#putaway-item-name').textContent = item.name;
   fillLocationSelect(form.elements.location, state.locations[0]);
   updateExpirationSuggestion(item.name, form.elements.location.value, form.elements.expiresOn, $('#putaway-expiry-note'));
+  form.elements.price.value = priceOf(item.name, form.elements.quantity.value, form.elements.unit.value) ?? '';
   $('#putaway-dialog').showModal();
 }
 
@@ -440,6 +441,13 @@ document.addEventListener('click', async (event) => {
 });
 
 document.addEventListener('input', (event) => {
+  // The price fills in from the last known price while it wasn't typed by hand (0.51).
+  const priceForm = event.target.form && ['item-form', 'putaway-form'].includes(event.target.form.getAttribute('id')) ? event.target.form : null;
+  if (priceForm && event.target.name === 'price') priceForm.elements.price.dataset.auto = event.target.value ? 'false' : 'true';
+  if (priceForm && ['name', 'quantity', 'unit'].includes(event.target.name) && priceForm.elements.price.dataset.auto !== 'false') {
+    const name = priceForm.elements.name ? priceForm.elements.name.value : $('#putaway-item-name').textContent;
+    priceForm.elements.price.value = priceOf(name, priceForm.elements.quantity.value, priceForm.elements.unit.value) ?? '';
+  }
   // Tools tab: update results in place so the field keeps focus while typing.
   if (event.target.id === 'conv-amount') { converterInput.amount = event.target.value; updateConverter(); return; }
   if (event.target.id === 'conv-unit') { converterInput.unit = event.target.value; updateConverter(); return; }
@@ -522,6 +530,11 @@ document.addEventListener('change', async (event) => {
     render();
   }
   if (event.target.id === 'language-select') { await changeLanguage(event.target.value); return; }
+  if (event.target.id === 'currency-select') {
+    try { localStorage.setItem(CURRENCY_KEY, event.target.value); } catch { /* For this visit only. */ }
+    render();
+    return;
+  }
   if (event.target.id === 'text-size-select') {
     try { localStorage.setItem(TEXT_SIZE_KEY, event.target.value); } catch { /* For this visit only. */ }
     applyTextSize(event.target.value);
@@ -599,6 +612,12 @@ $('#item-form').addEventListener('submit', (event) => {
     location,
     kind: form.elements.kind.value,
   });
+  // A price is for the whole amount; the item keeps it per unit, and the product remembers it (0.51).
+  const price = Number(form.elements.price.value);
+  if (price > 0 && item.quantity > 0) {
+    item.unitPrice = Math.round((price / item.quantity) * 10000) / 10000;
+    rememberPrice(item.name, item.unitPrice, item.unit);
+  }
   // Only a date from the package can be "best before"; an estimate is just an estimate.
   if (form.elements.dateKind.value === 'best-before' && item.expiresOn && item.expirationSource !== 'estimated') item.dateKind = 'best-before';
   const minimum = Number(form.elements.minimum.value);
@@ -648,6 +667,7 @@ $('#putaway-form').addEventListener('submit', (event) => {
       expiration: resolvedExpiration(form.elements.estimateName.value || shoppingItem.name, location, form.elements.expiresOn),
       packageDate: Boolean(form.elements.expiresOn.value) && form.elements.expiresOn.dataset.estimated !== 'true',
       barcode: form.elements.barcode.value,
+      price: Number(form.elements.price.value) || 0,
     });
     persist();
   }
@@ -674,13 +694,15 @@ function addLeftovers(recipe) {
   state.inventory.unshift({ id: makeId(), name: t('Leftovers: {name}', { name: recipe.name }), addedOn: dateKey(new Date()), quantity: 1, unit: '', expiresOn: dateKey(date), expirationSource: 'estimated', location, kind: 'Food', leftovers: true });
 }
 
-function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration, packageDate, barcode = '' }) {
+function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration, packageDate, barcode = '', price = 0 }) {
   const bought = metricInventoryItem({ quantity, unit });
   const existing = state.inventory.find((entry) => cleanIngredient(entry.name) === cleanIngredient(shoppingItem.name));
   if (existing) {
     if (barcode) existing.barcode = barcode;
     const added = deductionAmount(`${bought.quantity} ${bought.unit}`.trim(), existing) || bought.quantity;
     existing.quantity = Math.round((Number(existing.quantity) + added) * 100) / 100;
+    // The price paid for what was just bought sets the unit price (0.51).
+    if (price > 0 && added > 0) existing.unitPrice = Math.round((price / added) * 10000) / 10000;
     if (packageDate) Object.assign(existing, expiration);
     else if (!existing.expiresOn && expiration.expiresOn) Object.assign(existing, expiration);
     // A fresh pack replaces the opened one's shorter date.
@@ -691,8 +713,10 @@ function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration,
     if (barcode) item.barcode = barcode;
     item.addedOn = dateKey(new Date());
     if (isFrozen(item)) item.frozenOn = dateKey(new Date());
+    if (price > 0 && item.quantity > 0) item.unitPrice = Math.round((price / item.quantity) * 10000) / 10000;
     state.inventory.unshift(item);
   }
+  if (price > 0 && bought.quantity > 0) rememberPrice(shoppingItem.name, price / bought.quantity, bought.unit);
   state.shopping = state.shopping.filter((entry) => entry.id !== shoppingItem.id);
 }
 

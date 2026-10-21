@@ -25,6 +25,11 @@ function applyTheme(theme) {
 
 function fillLanguageSelect() {
   $('#language-select').innerHTML = LANGUAGES.map((language) => `<option value="${language.code}" ${language.code === currentLanguage ? 'selected' : ''}>${escapeHtml(language.name)}</option>`).join('');
+  // Money for prices (0.51): each currency by code and, where the browser can name it, its name in the app's language.
+  let names = null;
+  try { names = new Intl.DisplayNames([languageLocale()], { type: 'currency' }); } catch { names = null; }
+  const chosen = currentCurrency();
+  $('#currency-select').innerHTML = CURRENCIES.map((code) => `<option value="${code}" ${code === chosen ? 'selected' : ''}>${escapeHtml(names ? `${code} · ${names.of(code)}` : code)}</option>`).join('');
 }
 
 // Switching language redraws everything that was written in the old one: the fixed page (i18n.js), the current
@@ -302,7 +307,10 @@ function renderMonthOverview() {
   for (const entry of wasted) counts.set(entry.name, (counts.get(entry.name) || 0) + 1);
   const names = [...counts].sort((first, second) => second[1] - first[1]).slice(0, 4).map(([name, count]) => (count > 1 ? `${name} ×${count}` : name));
   const summary = `${tp(used, '{count} used up', '{count} used up')} · ${tp(wasted.length, '{count} thrown away', '{count} thrown away')}`;
-  return `<section class="month-overview" aria-label="${t('This month')}"><span class="eyebrow">${t('THIS MONTH')}</span><strong>${escapeHtml(summary)}</strong>${names.length ? `<span class="muted">${escapeHtml(t('Thrown away: {items}', { items: names.join(', ') }))}</span>` : ''}</section>`;
+  // What it cost, when prices are known (0.51).
+  const worth = wasted.reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
+  const cost = worth > 0 ? `<span class="month-cost">${escapeHtml(t('Thrown away worth about {amount}', { amount: formatMoney(worth) }))}</span>` : '';
+  return `<section class="month-overview" aria-label="${t('This month')}"><span class="eyebrow">${t('THIS MONTH')}</span><strong>${escapeHtml(summary)}</strong>${cost}${names.length ? `<span class="muted">${escapeHtml(t('Thrown away: {items}', { items: names.join(', ') }))}</span>` : ''}</section>`;
 }
 
 // Shelf lives learned from what was thrown away (shelfLifeSuggestions in app/core.js): "Use 4 days" or "Keep 7 days".
@@ -627,6 +635,9 @@ function resetShopOrder() {
 
 function renderShopping() {
   const remaining = state.shopping.filter((item) => !item.checked).length;
+  // A rough total for what's left to buy, from remembered prices (0.51).
+  const priced = state.shopping.filter((item) => !item.checked).map((item) => priceOf(item.name, item.quantity, item.unit)).filter((price) => price !== null);
+  const total = priced.length ? `<span class="shopping-total">${escapeHtml(tp(priced.length, 'About {amount} for {count} item with a known price', 'About {amount} for {count} items with a known price', { amount: formatMoney(priced.reduce((sum, price) => sum + price, 0)) }))}</span>` : '';
   const row = (item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}${item.restock ? ` <small class="restock-tag">${t('restock')}</small>` : ''}</span></label><span class="shopping-amount">${escapeHtml(item.quantity || '')} ${escapeHtml(item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">${t('Put away')}</button>` : `<span class="shopping-source">${escapeHtml(item.source || t('Shopping list'))}</span>`}</article>`;
   const groups = shoppingGroups(state.shopping);
   const rows = groups.length > 1
@@ -638,7 +649,7 @@ function renderShopping() {
   const printButton = canPrint() && remaining ? `<button class="button button-outline" data-action="print">${t('Print')} <span aria-hidden="true">⎙</span></button>` : '';
   const actions = `<div class="shopping-heading-actions">${state.shopping.length ? shareButton : ''}${printButton}<button class="button button-outline" data-action="generate-shopping">${t('Refresh from plan')} <span aria-hidden="true">↻</span></button></div>`;
   return `${pageHeading(t('OUT AND ABOUT'), t('The list, in hand.'), tp(remaining, '{count} thing left to pick up. Check off as you go.', '{count} things left to pick up. Check off as you go.'), actions)}
-    <section class="section-block shopping-block"><div class="section-heading"><div><h2>${t('This week’s list')}</h2><span class="muted">${tp(state.shopping.length, '{count} item', '{count} items')}</span></div><div class="list-actions">${remaining ? `<button class="text-button" data-action="check-all">✓ ${t('Check all')}</button>` : ''}${state.shopping.some((item) => item.checked) ? `<button class="button button-small button-outline" data-action="put-all-away">${t('Put all away')}</button><button class="text-button" data-action="clear-checked">${t('Clear checked')}</button>` : ''}${state.shopping.length ? `<button class="text-button clear-list-button" data-action="clear-list">× ${t('Clear list')}</button>` : ''}</div></div>${shopOrderNote()}${rows ? `<div class="shopping-list">${rows}</div>` : `<div class="empty-state compact"><span class="empty-mark">☷</span><strong>${t('Your list is nice and clear.')}</strong><p>${t('Build it from the meals in your weekly plan.')}</p><button class="button button-primary" data-action="generate-shopping">${t('Build from this week')}</button></div>`}</section>${printFooter()}`;
+    <section class="section-block shopping-block"><div class="section-heading"><div><h2>${t('This week’s list')}</h2><span class="muted">${tp(state.shopping.length, '{count} item', '{count} items')}</span>${total}</div><div class="list-actions">${remaining ? `<button class="text-button" data-action="check-all">✓ ${t('Check all')}</button>` : ''}${state.shopping.some((item) => item.checked) ? `<button class="button button-small button-outline" data-action="put-all-away">${t('Put all away')}</button><button class="text-button" data-action="clear-checked">${t('Clear checked')}</button>` : ''}${state.shopping.length ? `<button class="text-button clear-list-button" data-action="clear-list">× ${t('Clear list')}</button>` : ''}</div></div>${shopOrderNote()}${rows ? `<div class="shopping-list">${rows}</div>` : `<div class="empty-state compact"><span class="empty-mark">☷</span><strong>${t('Your list is nice and clear.')}</strong><p>${t('Build it from the meals in your weekly plan.')}</p><button class="button button-primary" data-action="generate-shopping">${t('Build from this week')}</button></div>`}</section>${printFooter()}`;
 }
 
 // Printing: the browser's print dialog with the print styles at the end of styles.css (a clean recipe page, or the
@@ -1136,6 +1147,10 @@ function openItemDialog(item) {
   form.elements.quantity.value = item?.quantity ?? 1;
   form.elements.unit.value = item?.unit || '';
   form.elements.minimum.value = Number(item?.minimum) > 0 ? item.minimum : '';
+  // A price saved with the item, else the last known one for this product and amount (0.51).
+  const savedPrice = Number(item?.unitPrice) > 0 && Number(item?.quantity) > 0 ? Math.round(item.unitPrice * item.quantity * 100) / 100 : null;
+  form.elements.price.value = savedPrice ?? (item ? priceOf(item.name, item.quantity, item.unit) ?? '' : '');
+  form.elements.price.dataset.auto = savedPrice === null ? 'true' : 'false';
   form.elements.expiresOn.value = item?.expiresOn || '';
   form.elements.expiresOn.dataset.estimated = item?.expirationSource === 'estimated' ? 'true' : 'false';
   form.elements.dateKind.value = item?.dateKind || '';

@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "A hint from the ingredient names. Check the packaging when it matters.": "تلميح من أسماء المكونات. تحقق من الغلاف عندما يكون الأمر مهمًا.",
   "In the order of your shop, learned from {count} trips.": { "zero": "بترتيب متجرك، تعلّمه من {count} جولات تسوق.", "one": "بترتيب متجرك، تعلّمه من جولة تسوق واحدة.", "two": "بترتيب متجرك، تعلّمه من جولتي تسوق.", "few": "بترتيب متجرك، تعلّمه من {count} جولات تسوق.", "many": "بترتيب متجرك، تعلّمه من {count} جولة تسوق.", "other": "بترتيب متجرك، تعلّمه من {count} جولة تسوق." },
   "Forget the order": "انسَ الترتيب",
+  "Money": "العملة",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "لأسعار الأصناف، وتكلفة الطعام المرمي، وإجمالي قائمة التسوق، على هذا الجهاز",
+  "Price": "السعر",
+  "Price paid": "المبلغ المدفوع",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "للكمية كلها. يُظهر تكلفة الطعام المرمي، ويُملأ تلقائيًا في المرة القادمة.",
+  "Thrown away worth about {amount}": "رُمي ما قيمته نحو {amount}",
+  "About {amount} for {count} items with a known price": { "zero": "نحو {amount} لأصناف معروفة السعر", "one": "نحو {amount} لصنف واحد معروف السعر", "two": "نحو {amount} لصنفين معروفي السعر", "few": "نحو {amount} لـ{count} أصناف معروفة السعر", "many": "نحو {amount} لـ{count} صنفًا معروف السعر", "other": "نحو {amount} لـ{count} صنف معروف السعر" },
 };

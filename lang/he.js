@@ -1057,4 +1057,11 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "A hint from the ingredient names. Check the packaging when it matters.": "רמז לפי שמות המרכיבים. כשזה חשוב, בדקו את האריזה.",
   "In the order of your shop, learned from {count} trips.": { "one": "לפי סדר החנות שלך, נלמד מקנייה אחת.", "two": "לפי סדר החנות שלך, נלמד משתי קניות.", "other": "לפי סדר החנות שלך, נלמד מ־{count} קניות." },
   "Forget the order": "שכח את הסדר",
+  "Money": "מטבע",
+  "For prices you add to items, what thrown-away food cost and the shopping list total, on this device": "למחירי פריטים, לעלות האוכל שנזרק ולסכום רשימת הקניות, במכשיר הזה",
+  "Price": "מחיר",
+  "Price paid": "שולם",
+  "For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.": "לכל הכמות. מראה כמה עלה האוכל שנזרק, ובפעם הבאה יתמלא לבד.",
+  "Thrown away worth about {amount}": "נזרק בשווי של כ־{amount}",
+  "About {amount} for {count} items with a known price": { "one": "בערך {amount} לפריט אחד עם מחיר ידוע", "two": "בערך {amount} לשני פריטים עם מחיר ידוע", "other": "בערך {amount} ל־{count} פריטים עם מחיר ידוע" },
 };

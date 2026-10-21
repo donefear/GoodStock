@@ -106,10 +106,13 @@ EVERYDAY USE
     learned from 3 trips. Forget the order". Shared and printed lists use the same order. One shop only: a household
     that shops in several places gets their average. tests/page/shop-order.js.
 
-0.51 What waste costs.
-    "This month" counts what was thrown away. An optional price on items (remembered from the last time) would turn
-    that into money ("thrown away this month: about €14"), which is what makes people change habits, and would give
-    the shopping list a rough total.
+[x] DONE 0.51 What waste costs. (v4.0.11)
+    The item dialog has an optional Price (for the whole amount) and Put away has "Price paid". The item keeps it per
+    unit (unitPrice), and state.prices remembers the last unit price per product (merged between devices), so the
+    field fills itself in next time for whatever amount and unit (1 kg from a price per gram). "Thrown away" logs what
+    the rest was worth, "This month" adds "Thrown away worth about €3.00", and the shopping list shows "About €7.50 for
+    1 item with a known price". The money is chosen per device in Settings → General (26 currencies, named in the app's
+    language; the default follows the browser's region or the language). tests/page/prices.js.
 
 
 PHONE, DESKTOP AND SERVER
