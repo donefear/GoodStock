@@ -593,6 +593,8 @@ $('#item-form').addEventListener('submit', (event) => {
     location,
     kind: form.elements.kind.value,
   });
+  // Only a date from the package can be "best before"; an estimate is just an estimate.
+  if (form.elements.dateKind.value === 'best-before' && item.expiresOn && item.expirationSource !== 'estimated') item.dateKind = 'best-before';
   const minimum = Number(form.elements.minimum.value);
   if (minimum > 0) item.minimum = minimum;
   if (form.elements.barcode.value) item.barcode = form.elements.barcode.value;

@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Plan these": "Bunları planla",
   "No recipe fits: add recipes, or ones you have not had lately.": "Uygun tarif yok: tarif ekleyin ya da son zamanlarda yemediklerinizi.",
   "{count} meals planned": { "one": "{count} öğün planlandı", "other": "{count} öğün planlandı" },
+  "The package says": "Pakette yazan",
+  "Use by": "Son tüketim tarihi",
+  "Best before": "Tavsiye edilen tüketim tarihi",
+  "Best before: still fine after the date, just check it.": "Tavsiye edilen tarih: sonrasında da genelde iyidir, kontrol edin yeter.",
+  "Past its best-before date · {date} · check it": "Tarihi geçti · {date} · kontrol edin",
+  "Best before {date}": "TETT {date}",
+  "Best before in {count} days · {date}": { "one": "TETT {count} gün sonra · {date}", "other": "TETT {count} gün sonra · {date}" },
+  "Best before today · {date}": "TETT bugün · {date}",
 };

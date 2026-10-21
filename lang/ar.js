@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Plan these": "خطط لهذه",
   "No recipe fits: add recipes, or ones you have not had lately.": "لا توجد وصفة مناسبة: أضف وصفات، أو وصفات لم تطبخها مؤخرًا.",
   "{count} meals planned": { "zero": "لم تُخطَّط أي وجبة", "one": "خُطّطت وجبة واحدة", "two": "خُطّطت وجبتان", "few": "خُطّطت {count} وجبات", "many": "خُطّطت {count} وجبة", "other": "خُطّطت {count} وجبة" },
+  "The package says": "يقول الغلاف",
+  "Use by": "يُستهلك قبل",
+  "Best before": "يُفضَّل استهلاكه قبل",
+  "Best before: still fine after the date, just check it.": "يُفضَّل استهلاكه قبل: غالبًا يبقى صالحًا بعد التاريخ، فقط تحقق منه.",
+  "Past its best-before date · {date} · check it": "تجاوز التاريخ المفضَّل · {date} · تحقق منه",
+  "Best before {date}": "يُفضَّل قبل {date}",
+  "Best before in {count} days · {date}": { "zero": "يُفضَّل استهلاكه اليوم · {date}", "one": "يُفضَّل استهلاكه خلال يوم · {date}", "two": "يُفضَّل استهلاكه خلال يومين · {date}", "few": "يُفضَّل استهلاكه خلال {count} أيام · {date}", "many": "يُفضَّل استهلاكه خلال {count} يومًا · {date}", "other": "يُفضَّل استهلاكه خلال {count} يوم · {date}" },
+  "Best before today · {date}": "يُفضَّل استهلاكه اليوم · {date}",
 };

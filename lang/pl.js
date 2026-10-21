@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "Plan these": "Zaplanuj je",
   "No recipe fits: add recipes, or ones you have not had lately.": "Żaden przepis nie pasuje: dodaj przepisy albo takie, których dawno nie było.",
   "{count} meals planned": { "one": "Zaplanowano {count} posiłek", "few": "Zaplanowano {count} posiłki", "many": "Zaplanowano {count} posiłków", "other": "Zaplanowano {count} posiłku" },
+  "The package says": "Na opakowaniu",
+  "Use by": "Należy spożyć do",
+  "Best before": "Najlepiej spożyć przed",
+  "Best before: still fine after the date, just check it.": "Najlepiej spożyć przed: po tej dacie zwykle nadal dobre, wystarczy sprawdzić.",
+  "Past its best-before date · {date} · check it": "Po dacie · {date} · sprawdź",
+  "Best before {date}": "Najlepiej przed {date}",
+  "Best before in {count} days · {date}": { "one": "Najlepiej spożyć za {count} dzień · {date}", "few": "Najlepiej spożyć za {count} dni · {date}", "many": "Najlepiej spożyć za {count} dni · {date}", "other": "Najlepiej spożyć za {count} dnia · {date}" },
+  "Best before today · {date}": "Najlepiej spożyć dziś · {date}",
 };

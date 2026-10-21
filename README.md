@@ -20,7 +20,7 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 ### 🥫 Inventory
 - **Everything you have, by location**: Fridge, Freezer, Pantry and any storage spots you add. You can see it as a **list** or as a visual **map** of your kitchen.
 - **Smart ingredient names.** A catalog of common ingredients in all 15 languages suggests names as you type. Recipes and search match across languages, so a Spanish "harina" finds the "Flour" in stock.
-- **Expiry dates, estimated for you.** Common perishables get a shelf-life estimate for their storage type. A date from the package always overrides the estimate.
+- **Expiry dates, estimated for you.** Common perishables get a shelf-life estimate for their storage type. A date from the package always overrides the estimate, and can be marked **use by** (don't eat it after) or **best before** (past it, the item says "check it" instead of "expired").
 - **Opened and frozen.** "Opened today" shortens the date for things that keep less once open (milk, a can of tomatoes). Freezer items remember the day they were frozen, and their estimate counts from then.
 - **Use soon panel.** Shows items that expire within three days, and anything overdue, together with saved recipes that use them.
 - **Staples.** Give an item a "Keep at least" amount, and it goes on the shopping list by itself when it runs low.

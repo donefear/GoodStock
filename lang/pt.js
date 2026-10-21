@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.pt = {
   "Plan these": "Planejar estas",
   "No recipe fits: add recipes, or ones you have not had lately.": "Nenhuma receita serve: adicione receitas, ou outras que você não comeu recentemente.",
   "{count} meals planned": { "one": "{count} refeição planejada", "other": "{count} refeições planejadas" },
+  "The package says": "A embalagem diz",
+  "Use by": "Consumir até",
+  "Best before": "Consumir de preferência antes de",
+  "Best before: still fine after the date, just check it.": "De preferência antes: costuma estar bom depois da data, é só conferir.",
+  "Past its best-before date · {date} · check it": "Passou da data · {date} · confira",
+  "Best before {date}": "Melhor antes de {date}",
+  "Best before in {count} days · {date}": { "one": "Melhor antes em {count} dia · {date}", "other": "Melhor antes em {count} dias · {date}" },
+  "Best before today · {date}": "Melhor antes de hoje · {date}",
 };

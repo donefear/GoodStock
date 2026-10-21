@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Plan these": "תכנן אותן",
   "No recipe fits: add recipes, or ones you have not had lately.": "אין מתכון מתאים: הוסיפו מתכונים, או כאלה שלא אכלתם לאחרונה.",
   "{count} meals planned": { "one": "תוכננה ארוחה אחת", "two": "תוכננו שתי ארוחות", "other": "תוכננו {count} ארוחות" },
+  "The package says": "על האריזה כתוב",
+  "Use by": "לשימוש עד",
+  "Best before": "מומלץ לשימוש עד",
+  "Best before: still fine after the date, just check it.": "מומלץ לשימוש עד: לרוב עדיין טוב אחרי התאריך, רק לבדוק.",
+  "Past its best-before date · {date} · check it": "עבר התאריך המומלץ · {date} · כדאי לבדוק",
+  "Best before {date}": "מומלץ עד {date}",
+  "Best before in {count} days · {date}": { "one": "מומלץ עד מחר · {date}", "two": "מומלץ עד בעוד יומיים · {date}", "other": "מומלץ עד בעוד {count} ימים · {date}" },
+  "Best before today · {date}": "מומלץ עד היום · {date}",
 };

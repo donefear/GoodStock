@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Plan these": "就这么安排",
   "No recipe fits: add recipes, or ones you have not had lately.": "没有合适的食谱：添加食谱，或最近没吃过的。",
   "{count} meals planned": "已安排 {count} 顿饭",
+  "The package says": "包装上写的是",
+  "Use by": "食用期限",
+  "Best before": "最佳食用期",
+  "Best before: still fine after the date, just check it.": "最佳食用期：过期后通常还能吃，检查一下即可。",
+  "Past its best-before date · {date} · check it": "已过最佳食用期 · {date} · 请检查",
+  "Best before {date}": "最佳食用期 {date}",
+  "Best before in {count} days · {date}": "{count} 天后到最佳食用期 · {date}",
+  "Best before today · {date}": "今天到最佳食用期 · {date}",
 };

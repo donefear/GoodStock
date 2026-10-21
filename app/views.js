@@ -236,7 +236,7 @@ function renderKitchenScreen() {
         ? `<ul class="kitchen-list">${timers.map((timer) => `<li class="${timer.done ? 'done' : ''}"><span>${escapeHtml(timer.name || timer.label || '')}</span><strong class="kitchen-timer">${timer.done ? t('Done') : formatTimer(timerRemaining(timer))}</strong></li>`).join('')}</ul>`
         : `<p class="kitchen-empty">${t('No timers running.')}</p>`)}
       ${card(t('Use soon'), soon.length
-        ? `<ul class="kitchen-list">${soon.map((item) => `<li class="${expiryClass(item.expiresOn)}"><span>${escapeHtml(item.name)}</span><small>${escapeHtml(expirationLabel(item.expiresOn))}</small></li>`).join('')}</ul>`
+        ? `<ul class="kitchen-list">${soon.map((item) => `<li class="${expiryClass(item.expiresOn, item.dateKind)}"><span>${escapeHtml(item.name)}</span><small>${escapeHtml(expirationLabel(item.expiresOn, item.dateKind))}</small></li>`).join('')}</ul>`
         : `<p class="kitchen-empty">${t('Nothing to use soon.')}</p>`)}
       ${card(t('Shopping'), `<p class="kitchen-count">${shopping ? tp(shopping, '{count} thing on the shopping list', '{count} things on the shopping list') : t('The shopping list is empty')}</p>`)}
     </div>`;
@@ -391,7 +391,7 @@ function renderExpirationPanel() {
       ? `<div class="expiry-suggestions"><span>${t('Try using it in')}</span>${recipes.slice(0, 2).map((recipe) => `<button class="text-button expiry-recipe-link" data-action="show-expiring-recipe" data-id="${escapeHtml(recipe.id)}">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`).join('')}</div>`
       : `<span class="expiry-no-recipe">${t('No saved recipe uses this yet')}</span>`;
     const ideasButton = `<button class="text-button expiry-ideas" type="button" data-action="use-it-up" data-id="${escapeHtml(item.id)}">${t('Recipe ideas')} <span aria-hidden="true">✨</span></button>`;
-    return `<article class="expiry-row"><div class="expiry-item-info"><span class="expiry-mark" aria-hidden="true">!</span><div><strong>${escapeHtml(item.name)}</strong><span class="item-expiry ${expiryClass(item.expiresOn)}">${escapeHtml(expirationText(item))} · ${escapeHtml(item.quantity)} ${escapeHtml(item.unit || '')}</span></div></div><div class="expiry-actions">${suggestions}${ideasButton}</div></article>`;
+    return `<article class="expiry-row"><div class="expiry-item-info"><span class="expiry-mark" aria-hidden="true">!</span><div><strong>${escapeHtml(item.name)}</strong><span class="item-expiry ${expiryClass(item.expiresOn, item.dateKind)}">${escapeHtml(expirationText(item))} · ${escapeHtml(item.quantity)} ${escapeHtml(item.unit || '')}</span></div></div><div class="expiry-actions">${suggestions}${ideasButton}</div></article>`;
   }).join('');
   return `<section class="expiration-panel" aria-label="${t('Items nearing expiration')}"><header><div><span class="eyebrow">${t('USE SOON')}</span><h2>${tp(expiringItems.length, '{count} item nearing its date', '{count} items nearing their date')}</h2></div><span class="expiry-window">${tp(EXPIRY_WINDOW_DAYS, 'Past due + {count} day', 'Past due + {count} days')}</span></header><div class="expiry-list">${rows}</div></section>`;
 }
@@ -1069,6 +1069,7 @@ function openItemDialog(item) {
   form.elements.minimum.value = Number(item?.minimum) > 0 ? item.minimum : '';
   form.elements.expiresOn.value = item?.expiresOn || '';
   form.elements.expiresOn.dataset.estimated = item?.expirationSource === 'estimated' ? 'true' : 'false';
+  form.elements.dateKind.value = item?.dateKind || '';
   form.elements.kind.value = item?.kind || 'Food';
   form.elements.openedOn.value = item?.openedOn || '';
   form.elements.frozenOn.value = item?.frozenOn || '';

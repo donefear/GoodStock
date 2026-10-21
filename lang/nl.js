@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Plan these": "Plan deze",
   "No recipe fits: add recipes, or ones you have not had lately.": "Geen recept past: voeg recepten toe, of recepten die je een tijd niet hebt gegeten.",
   "{count} meals planned": { "one": "{count} maaltijd gepland", "other": "{count} maaltijden gepland" },
+  "The package says": "Op de verpakking staat",
+  "Use by": "Te gebruiken tot",
+  "Best before": "Ten minste houdbaar tot",
+  "Best before: still fine after the date, just check it.": "Ten minste houdbaar tot: na die datum vaak nog goed, kijk en ruik even.",
+  "Past its best-before date · {date} · check it": "Over de datum · {date} · even controleren",
+  "Best before {date}": "THT {date}",
+  "Best before in {count} days · {date}": { "one": "THT over {count} dag · {date}", "other": "THT over {count} dagen · {date}" },
+  "Best before today · {date}": "THT vandaag · {date}",
 };

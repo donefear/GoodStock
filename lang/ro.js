@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Plan these": "Planifică-le",
   "No recipe fits: add recipes, or ones you have not had lately.": "Nicio rețetă nu se potrivește: adaugă rețete sau unele pe care nu le-ai mai mâncat de mult.",
   "{count} meals planned": { "one": "{count} masă planificată", "few": "{count} mese planificate", "other": "{count} de mese planificate" },
+  "The package says": "Pe ambalaj scrie",
+  "Use by": "A se consuma până la",
+  "Best before": "A se consuma de preferință înainte de",
+  "Best before: still fine after the date, just check it.": "De preferință înainte de: adesea bun și după dată, doar verifică.",
+  "Past its best-before date · {date} · check it": "Data a trecut · {date} · verifică",
+  "Best before {date}": "De preferință până la {date}",
+  "Best before in {count} days · {date}": { "one": "De preferință în {count} zi · {date}", "few": "De preferință în {count} zile · {date}", "other": "De preferință în {count} de zile · {date}" },
+  "Best before today · {date}": "De preferință azi · {date}",
 };

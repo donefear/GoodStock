@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.de = {
   "Plan these": "Diese planen",
   "No recipe fits: add recipes, or ones you have not had lately.": "Kein Rezept passt: Füge Rezepte hinzu oder solche, die es lange nicht gab.",
   "{count} meals planned": { "one": "{count} Mahlzeit geplant", "other": "{count} Mahlzeiten geplant" },
+  "The package says": "Auf der Packung steht",
+  "Use by": "Zu verbrauchen bis",
+  "Best before": "Mindestens haltbar bis",
+  "Best before: still fine after the date, just check it.": "Mindestens haltbar: nach dem Datum oft noch gut, einfach prüfen.",
+  "Past its best-before date · {date} · check it": "MHD überschritten · {date} · prüfen",
+  "Best before {date}": "MHD {date}",
+  "Best before in {count} days · {date}": { "one": "MHD in {count} Tag · {date}", "other": "MHD in {count} Tagen · {date}" },
+  "Best before today · {date}": "MHD heute · {date}",
 };

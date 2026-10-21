@@ -63,7 +63,7 @@
         <label>Keep at least<input name="minimum" type="number" min="0" step="any" inputmode="decimal" placeholder="Optional" /><span class="field-hint">For staples. Below this amount it goes on the shopping list by itself.</span></label>
         <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option value="Food">Food</option><option value="Household">Household</option></select></label></div>
         <label id="frozen-field" hidden>Frozen on<input name="frozenOn" type="date" /><span class="field-hint">The freezer estimate counts from this day.</span></label>
-        <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label>
+        <div class="form-row"><label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label><label>The package says<select name="dateKind"><option value="">Use by</option><option value="best-before">Best before</option></select><span class="field-hint">Best before: still fine after the date, just check it.</span></label></div>
         <input type="hidden" name="openedOn" />
         <div class="opened-row" id="opened-row" hidden><button class="button button-outline button-small" type="button" data-action="item-opened" id="item-opened-button">Opened today</button><span class="field-hint" id="item-opened-note" role="status" aria-live="polite"></span></div>
         <div class="remove-choice" id="item-remove-choice" hidden><span>Why is it gone?</span><button class="button button-outline button-small" type="button" data-action="remove-used">Used up</button><button class="button button-outline button-small" type="button" data-action="remove-wasted">Thrown away</button><button class="button button-quiet button-small" type="button" data-action="remove-plain">Just remove</button></div>
@@ -220,7 +220,7 @@
         <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v4.0.6 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v4.0.7 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

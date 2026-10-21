@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Plan these": "これで計画する",
   "No recipe fits: add recipes, or ones you have not had lately.": "合うレシピがありません。レシピを追加するか、最近食べていないものを。",
   "{count} meals planned": "{count} 食を計画しました",
+  "The package says": "パッケージの表示",
+  "Use by": "消費期限",
+  "Best before": "賞味期限",
+  "Best before: still fine after the date, just check it.": "賞味期限：過ぎてもたいてい大丈夫。確かめてから。",
+  "Past its best-before date · {date} · check it": "賞味期限切れ · {date} · 確認を",
+  "Best before {date}": "賞味期限 {date}",
+  "Best before in {count} days · {date}": "賞味期限まであと {count} 日 · {date}",
+  "Best before today · {date}": "賞味期限は今日 · {date}",
 };

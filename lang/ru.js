@@ -1028,4 +1028,12 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Plan these": "Запланировать",
   "No recipe fits: add recipes, or ones you have not had lately.": "Ничего не подходит: добавьте рецепты или те, что давно не готовили.",
   "{count} meals planned": { "one": "Запланировано {count} блюдо", "few": "Запланировано {count} блюда", "many": "Запланировано {count} блюд", "other": "Запланировано {count} блюда" },
+  "The package says": "На упаковке",
+  "Use by": "Употребить до",
+  "Best before": "Лучше употребить до",
+  "Best before: still fine after the date, just check it.": "«Лучше употребить до»: после даты обычно ещё можно, просто проверьте.",
+  "Past its best-before date · {date} · check it": "Дата прошла · {date} · проверьте",
+  "Best before {date}": "Лучше до {date}",
+  "Best before in {count} days · {date}": { "one": "Лучше употребить через {count} день · {date}", "few": "Лучше употребить через {count} дня · {date}", "many": "Лучше употребить через {count} дней · {date}", "other": "Лучше употребить через {count} дня · {date}" },
+  "Best before today · {date}": "Лучше употребить сегодня · {date}",
 };

@@ -125,6 +125,7 @@ h3 { margin: 0; font: 500 21px/1.25 'Fraunces', Georgia, serif; }
 .expiry-recipe-link { min-height: 32px; font-size: 10px; }
 .item-expiry.expiring { color: #996715 !important; font-weight: 700; }
 .item-expiry.expired { color: #ad493a !important; font-weight: 700; }
+.item-expiry.check-it { color: #8a5d0c !important; font-weight: 700; }
 .item-expiry.expiry-normal { color: var(--muted); }
 .item-expiry.expiry-missing { color: var(--muted); font-style: italic; opacity: 0.75; }
 .stat { min-height: 86px; display: flex; align-items: center; gap: 13px; padding: 16px 22px; }
@@ -612,6 +613,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 :root[data-theme="dark"] .expiry-suggestions > span, :root[data-theme="dark"] .expiry-no-recipe { color: #c8b98f; }
 :root[data-theme="dark"] .item-expiry.expiring { color: #f0d083 !important; }
 :root[data-theme="dark"] .item-expiry.expired { color: #f09988 !important; }
+:root[data-theme="dark"] .item-expiry.check-it { color: #f0d083 !important; }
 :root[data-theme="dark"] .section-heading h2, :root[data-theme="dark"] .day-empty p { color: var(--ink); }
 :root[data-theme="dark"] .search-field, :root[data-theme="dark"] select,
 :root[data-theme="dark"] .date-jump input, :root[data-theme="dark"] .quantity-stepper { border-color: #3c4d42; background: var(--white); color: var(--ink); }

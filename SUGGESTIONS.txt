@@ -81,11 +81,12 @@ EVERYDAY USE
     Swap (the next free recipe) and × (leave the day empty); "Plan these" plans them all at once, with Undo, and
     Cancel drops them. tests/page/plan-my-week.js.
 
-0.48 "Use by" and "best before".
-    Every date is treated the same now, but a "use by" date on meat or fish means "don't eat it after", and a "best
-    before" date on pasta only means it may be less good. Let a package date say which it is, keep the strict
-    warning for "use by", and show past "best before" items as "check it" instead of "expired", so less good food is
-    thrown away.
+[x] DONE 0.48 "Use by" and "best before". (v4.0.7)
+    The item dialog has "The package says: Use by / Best before" next to the date. A best-before package date is saved
+    as dateKind "best-before" (an estimate never gets one; old items without it count as use by). Its label reads
+    "Best before 12 Nov", "Best before in 2 days", and once past "Past its best-before date · … · check it" in amber
+    instead of "Expired … ago" in red, everywhere the date shows (inventory, Use soon, stocktake, kitchen screen). It
+    still shows in Use soon, so it gets looked at. tests/page/best-before.js.
 
 0.49 Allergens and diets.
     The ingredient catalog knows what each ingredient is, so it could also know gluten, milk, eggs, nuts, fish, meat.

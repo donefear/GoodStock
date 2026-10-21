@@ -576,10 +576,18 @@ function expirationDateText(value) {
   return formatDate(new Date(year, month - 1, day), options);
 }
 
-function expirationLabel(value) {
+// A package date is "use by" (don't eat it after: the default) or "best before" (dateKind 'best-before', 0.48): that
+// one only means it may be less good, so once past it says "check it" instead of "expired".
+function expirationLabel(value, kind = '') {
   const days = expiryDaysRemaining(value);
   if (days === null) return '';
   const date = expirationDateText(value);
+  if (kind === 'best-before') {
+    if (days < 0) return t('Past its best-before date · {date} · check it', { date });
+    if (days === 0) return t('Best before today · {date}', { date });
+    if (days <= EXPIRY_WINDOW_DAYS) return tp(days, 'Best before in {count} day · {date}', 'Best before in {count} days · {date}', { date });
+    return t('Best before {date}', { date });
+  }
   if (days < 0) return tp(Math.abs(days), 'Expired {count} day ago · {date}', 'Expired {count} days ago · {date}', { date });
   if (days === 0) return t('Expires today · {date}', { date });
   if (days === 1) return t('Expires tomorrow · {date}', { date });
@@ -587,9 +595,10 @@ function expirationLabel(value) {
   return t('Expires {date}', { date });
 }
 
-function expiryClass(value) {
+function expiryClass(value, kind = '') {
   const days = expiryDaysRemaining(value);
-  return days !== null && days < 0 ? 'expired' : days !== null && days <= EXPIRY_WINDOW_DAYS ? 'expiring' : 'expiry-normal';
+  if (days !== null && days < 0) return kind === 'best-before' ? 'check-it' : 'expired';
+  return days !== null && days <= EXPIRY_WINDOW_DAYS ? 'expiring' : 'expiry-normal';
 }
 
 // Items due within the window, as seen on a given day (today by default): days ahead shift every countdown.
@@ -902,12 +911,12 @@ function resolvedExpiration(name, location, input, from = new Date()) {
 }
 
 function expirationText(item) {
-  const label = expirationLabel(item.expiresOn);
+  const label = expirationLabel(item.expiresOn, item.dateKind);
   return item.expirationSource === 'estimated' ? t('Estimate · {label}', { label }) : label;
 }
 
 function inventoryExpiryMarkup(item, tag) {
-  if (item.expiresOn) return `<${tag} class="item-expiry ${expiryClass(item.expiresOn)}">${escapeHtml(expirationText(item))}</${tag}>`;
+  if (item.expiresOn) return `<${tag} class="item-expiry ${expiryClass(item.expiresOn, item.dateKind)}">${escapeHtml(expirationText(item))}</${tag}>`;
   return item.kind === 'Household' ? '' : `<${tag} class="item-expiry expiry-missing">${t('No expiry date')}</${tag}>`;
 }
 
