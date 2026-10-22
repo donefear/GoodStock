@@ -17,6 +17,14 @@ const show = () => state.shopping.map((entry) => `${entry.name} ${entry.quantity
 
 // The picker: tick Soup at 4 servings (twice the recipe) and Stew once, leaving out what is in stock.
 openRecipeShopping();
+// The layout (v4.5.5): one line per recipe (sizes allow for the 115% text size) with the app's own tick box, and a styled search field.
+const firstRow = document.querySelector('#recipe-shopping-list .recipe-shopping-row');
+const tick = firstRow && firstRow.querySelector('.custom-check');
+if (!tick || tick.getBoundingClientRect().width > 32) fail.push(`the tick box is ${tick ? tick.getBoundingClientRect().width : 'missing'}px wide`);
+if (!firstRow || firstRow.getBoundingClientRect().height > 75) fail.push(`a recipe row is ${firstRow && firstRow.getBoundingClientRect().height}px high`);
+const amountBox = firstRow && firstRow.querySelector('.recipe-shopping-amount input');
+if (!amountBox || amountBox.getBoundingClientRect().width > 95) fail.push('the amount field is stretched');
+if (getComputedStyle($('#recipe-shopping-search')).borderTopLeftRadius === '0px') fail.push('the search field has no dialog styling');
 const box = (id) => document.querySelector(`#recipe-shopping-list [data-shop-recipe="${id}"]`);
 if (document.querySelectorAll('#recipe-shopping-list .recipe-shopping-row').length !== 3) fail.push('the picker does not list the three recipes');
 box('r1').click();

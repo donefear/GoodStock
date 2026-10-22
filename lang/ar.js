@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Metric (g, kg, ml, l)": "متري (g، kg، ml، l)",
   "Imperial (oz, lb, fl oz)": "إمبراطوري (oz، lb، fl oz)",
   "Small": "صغير",
+  "Use some": "استخدام جزء",
+  "Use some of {name}": "استخدام جزء من {name}",
+  "Use some {name}": "استخدام {name}",
+  "You have {amount}.": "لديك {amount}.",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "لا يمكن خصم هذه الوحدة من {amount}. اختر وزنًا أو حجمًا.",
+  "Left after: {amount}": "المتبقي: {amount}",
+  "Amount used": "الكمية المستخدمة",
+  "Take it off": "خصم",
 };

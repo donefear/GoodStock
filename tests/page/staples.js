@@ -2,7 +2,8 @@
 // tagged "restock"; removing a staple lists it too; putting it away again keeps it a staple.
 const fail = []; const log = [];
 const wait = () => new Promise((resolve) => setTimeout(resolve, 50));
-state.inventory = [{ id: 'm1', name: 'Milk', quantity: 3, unit: 'l', location: state.locations[1], kind: 'Food' }];
+// Cartons (pieces), so − takes off one at a time (litres step 0.1 since v4.5.5).
+state.inventory = [{ id: 'm1', name: 'Milk', quantity: 3, unit: 'pcs', location: state.locations[1], kind: 'Food' }];
 state.shopping = [];
 activeView = 'inventory';
 render();
@@ -17,7 +18,7 @@ await wait();
 const milk = () => state.inventory.find((item) => item.id === 'm1');
 if (milk().minimum !== 2) fail.push(`minimum not saved: ${JSON.stringify(milk())}`);
 if (state.shopping.length) fail.push('listed while still above the minimum');
-if (!document.querySelector('.inventory-row').textContent.includes('2 l')) fail.push('the row does not show the minimum');
+if (!document.querySelector('.inventory-row').textContent.includes('2 pcs')) fail.push('the row does not show the minimum');
 
 // 3 → 2: not below yet. 2 → 1: listed once.
 const minus = () => { document.querySelector('[data-action="adjust"][data-id="m1"][data-delta="-1"]').click(); };

@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.de = {
   "Metric (g, kg, ml, l)": "Metrisch (g, kg, ml, l)",
   "Imperial (oz, lb, fl oz)": "Imperial (oz, lb, fl oz)",
   "Small": "Klein",
+  "Use some": "Etwas verbrauchen",
+  "Use some of {name}": "Etwas von {name} verbrauchen",
+  "Use some {name}": "{name} verbrauchen",
+  "You have {amount}.": "Du hast {amount}.",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "Diese Einheit lässt sich nicht von {amount} abziehen. Wähle ein Gewicht oder ein Volumen.",
+  "Left after: {amount}": "Danach übrig: {amount}",
+  "Amount used": "Verbraucht",
+  "Take it off": "Abziehen",
 };

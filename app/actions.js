@@ -196,7 +196,7 @@ function renderRecipeShopping() {
     const amount = recipe.servings
       ? `<label class="recipe-shopping-amount"><input type="number" inputmode="numeric" min="1" step="1" data-shop-servings="${escapeHtml(recipe.id)}" value="${escapeHtml(String(Math.max(1, Math.round(recipe.servings * (factor || 1)))))}" aria-label="${escapeHtml(t('Servings'))}" ${picked ? '' : 'disabled'} /> <span>${escapeHtml(t('Servings'))}</span></label>`
       : `<label class="recipe-shopping-amount"><span>×</span> <input type="number" inputmode="decimal" min="0.5" step="0.5" data-shop-factor="${escapeHtml(recipe.id)}" value="${escapeHtml(String(factor || 1))}" aria-label="${escapeHtml(t('Times the recipe'))}" ${picked ? '' : 'disabled'} /></label>`;
-    return `<div class="recipe-shopping-row${picked ? ' is-picked' : ''}"><label class="recipe-shopping-pick"><input type="checkbox" data-shop-recipe="${escapeHtml(recipe.id)}" ${picked ? 'checked' : ''} /> <span>${escapeHtml(recipe.name)}</span></label>${amount}</div>`;
+    return `<div class="recipe-shopping-row${picked ? ' is-picked' : ''}"><label class="recipe-shopping-pick"><input type="checkbox" data-shop-recipe="${escapeHtml(recipe.id)}" ${picked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span>${escapeHtml(recipe.name)}</span></label>${amount}</div>`;
   };
   $('#recipe-shopping-list').innerHTML = recipes.length
     ? recipes.map(row).join('')
@@ -432,6 +432,7 @@ document.addEventListener('click', async (event) => {
     if (inventoryLowOnly && list && list.scrollIntoView) list.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   if (action === 'add-shopping-item') openShoppingItemDialog();
+  if (action === 'use-some') openUseDialog(id);
   if (action === 'select-date') {
     const [year, month, day] = button.dataset.date.split('-').map(Number);
     selectedDate = new Date(year, month - 1, day);
@@ -774,6 +775,17 @@ $('#item-form').addEventListener('submit', (event) => {
   $('#item-dialog').close();
 });
 
+$('#use-form').addEventListener('input', updateUseLeft);
+$('#use-form').addEventListener('change', updateUseLeft);
+$('#use-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const result = useLeftover();
+  if (!result || result.left === null) return;
+  result.item.quantity = result.left;
+  persist();
+  $('#use-dialog').close();
+});
+
 // Shopping → Add item: a line typed by hand, added to the same product already on the list when the units fit.
 $('#shopping-item-form').addEventListener('submit', (event) => {
   event.preventDefault();
@@ -795,8 +807,11 @@ $('#cook-form').addEventListener('submit', (event) => {
     const usedIndices = new Set($$('#cook-ingredients input[name="ingredient"]:checked').map((input) => Number(input.value)));
     for (const index of usedIndices) {
       const item = matchingInventory(recipe.ingredients[index]);
-      const used = Number(form.elements[`amount-${index}`]?.value);
-      if (item && used > 0) item.quantity = Math.max(0, Math.round((Number(item.quantity) - used) * 100) / 100);
+      // The amount is shown in a friendly unit (150 g off a 1 kg bag); it comes off in the item's own unit.
+      const input = form.elements[`amount-${index}`];
+      const typed = Number(input?.value);
+      const used = item && typed > 0 ? (amountForItem(typed, input.dataset.unit || item.unit, item) ?? typed) : 0;
+      if (item && used > 0) item.quantity = Math.max(0, roundTo(Number(item.quantity) - used, 3));
     }
     if (form.elements.leftovers.checked) addLeftovers(recipe);
     plan.cooked = true;

@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Metric (g, kg, ml, l)": "Metric (g, kg, ml, l)",
   "Imperial (oz, lb, fl oz)": "Imperial (oz, lb, fl oz)",
   "Small": "Mic",
+  "Use some": "Folosește o parte",
+  "Use some of {name}": "Folosește o parte din {name}",
+  "Use some {name}": "Folosește {name}",
+  "You have {amount}.": "Ai {amount}.",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "Unitatea aceasta nu se poate scădea din {amount}. Alege o greutate sau un volum.",
+  "Left after: {amount}": "Rămâne: {amount}",
+  "Amount used": "Cantitate folosită",
+  "Take it off": "Scade",
 };

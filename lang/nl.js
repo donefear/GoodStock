@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Metric (g, kg, ml, l)": "Metrisch (g, kg, ml, l)",
   "Imperial (oz, lb, fl oz)": "Imperiaal (oz, lb, fl oz)",
   "Small": "Klein",
+  "Use some": "Iets gebruiken",
+  "Use some of {name}": "Iets van {name} gebruiken",
+  "Use some {name}": "{name} gebruiken",
+  "You have {amount}.": "Je hebt {amount}.",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "Die eenheid kan niet van {amount} af. Kies een gewicht of een inhoud.",
+  "Left after: {amount}": "Daarna over: {amount}",
+  "Amount used": "Gebruikt",
+  "Take it off": "Eraf halen",
 };

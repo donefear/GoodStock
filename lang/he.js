@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Metric (g, kg, ml, l)": "מטרי (g, kg, ml, l)",
   "Imperial (oz, lb, fl oz)": "אימפריאלי (oz, lb, fl oz)",
   "Small": "קטן",
+  "Use some": "להשתמש בחלק",
+  "Use some of {name}": "להשתמש בחלק מ{name}",
+  "Use some {name}": "שימוש ב{name}",
+  "You have {amount}.": "יש לך {amount}.",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "אי אפשר להוריד את היחידה הזו מ־{amount}. בחרו משקל או נפח.",
+  "Left after: {amount}": "יישאר: {amount}",
+  "Amount used": "כמות ששימשה",
+  "Take it off": "להוריד",
 };

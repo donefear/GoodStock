@@ -538,14 +538,38 @@ function metricInventoryItem(item) {
 // How much of an inventory item a recipe line uses, in the item's own unit. 0 when the units can't be compared.
 function deductionAmount(ingredient, item) {
   const { amount, unit } = parseIngredient(ingredient);
-  const itemUnit = canonicalUnit(item.unit);
   const isCount = (value) => value === '' || value === 'pcs';
-  if (amount === null) return isCount(itemUnit) ? 1 : 0;
-  if (unit === itemUnit || (isCount(unit) && isCount(itemUnit))) return amount;
-  const from = UNIT_SCALES[unit];
-  const to = UNIT_SCALES[itemUnit];
-  if (from && to && from[0] === to[0]) return Math.round((amount * from[1] / to[1]) * 100) / 100;
-  return 0;
+  if (amount === null) return isCount(canonicalUnit(item.unit)) ? 1 : 0;
+  return amountForItem(amount, unit, item) ?? 0;
+}
+
+// Grams per millilitre for an item, from the Tools converter's table (kitchen-reference.js), so a cup of oats can
+// come off a kilo bag. Liquids the table lists as water count as 1.
+const DENSITY_ALIASES = { milk: 'water', stock: 'water', cream: 'water', 'olive-oil': 'oil', 'vegetable-oil': 'oil' };
+
+function densityFor(name) {
+  const record = ingredientRecord(name);
+  if (!record || typeof CONVERTER_INGREDIENTS === 'undefined') return null;
+  const entry = CONVERTER_INGREDIENTS.find((ingredient) => ingredient.id === (DENSITY_ALIASES[record.id] || record.id));
+  return entry ? entry.density : null;
+}
+
+// An amount ("150", "g") in an item's own unit: the same unit, pieces for pieces, weight for weight, volume for
+// volume, and weight for volume when the item's density is known. null when they can't be compared.
+function amountForItem(amount, unit, item) {
+  const from = canonicalUnit(unit);
+  const to = canonicalUnit(item.unit);
+  const isCount = (value) => value === '' || value === 'pcs';
+  if (!Number.isFinite(amount)) return null;
+  if (from === to || (isCount(from) && isCount(to))) return amount;
+  const a = UNIT_SCALES[from];
+  const b = UNIT_SCALES[to];
+  if (!a || !b) return null;
+  if (a[0] === b[0]) return roundTo((amount * a[1]) / b[1], 3);
+  const density = densityFor(item.name);
+  if (!density) return null;
+  const grams = a[0] === 'mass' ? amount * a[1] : amount * a[1] * density;
+  return roundTo(b[0] === 'mass' ? grams / b[1] : grams / density / b[1], 3);
 }
 
 // An amount in another unit when both measure the same thing ("1 kg" as 1000 g, "2" as 2 pcs), otherwise null.
@@ -578,12 +602,19 @@ function unitSystem() {
   try { return localStorage.getItem(UNITS_KEY) === 'imperial' ? 'imperial' : 'metric'; } catch { return 'metric'; }
 }
 
-// A stored amount as this device shows it: as stored, or in oz/lb (16 oz and up) and fl oz on an imperial device.
+// A stored amount as this device shows it: in metric under 1 kg or 1 l as grams or millilitres (0.85 kg is 850 g)
+// and from 1000 g or ml up as kg or l; on an imperial device in oz/lb (16 oz and up) and fl oz.
 function shownAmount(quantity, unit) {
   const amount = Number(quantity);
   const canonical = canonicalUnit(unit);
-  if (unitSystem() !== 'imperial' || !Number.isFinite(amount) || !METRIC_ONLY.has(canonical)) return { quantity, unit: unit || '' };
+  if (!Number.isFinite(amount) || !METRIC_ONLY.has(canonical) || String(quantity).trim() === '') return { quantity, unit: unit || '' };
   const [kind, scale] = UNIT_SCALES[canonical];
+  if (unitSystem() !== 'imperial') {
+    if (!['g', 'kg', 'ml', 'l'].includes(canonical) || amount === 0) return { quantity, unit: unit || '' };
+    const base = amount * scale;
+    if (base >= 1000) return { quantity: roundTo(base / 1000, 3), unit: kind === 'mass' ? 'kg' : 'l' };
+    return { quantity: roundTo(base, base < 10 ? 1 : 0), unit: kind === 'mass' ? 'g' : 'ml' };
+  }
   if (kind === 'volume') return { quantity: roundTo((amount * scale) / 29.5735, 1), unit: 'fl oz' };
   const ounces = (amount * scale) / 28.3495;
   return ounces >= 16 ? { quantity: roundTo(ounces / 16, 2), unit: 'lb' } : { quantity: roundTo(ounces, 1), unit: 'oz' };
@@ -603,8 +634,9 @@ function storedAmount(quantity, unit) {
   return { quantity: Math.round(base), unit: conversion[1] };
 }
 
-// How much the − and ＋ buttons change, in the unit shown: 50 g or 50 ml, else one.
-const stepFor = (unit) => (['g', 'ml'].includes(canonicalUnit(unit)) ? 50 : 1);
+// How much the − and ＋ buttons change, in the unit shown: 50 g or ml, 0.1 kg or l, a quarter pound, else one.
+// "Use some" (tap the amount) takes off any amount.
+const stepFor = (unit) => ({ g: 50, ml: 50, kg: 0.1, l: 0.1, lb: 0.25 }[canonicalUnit(unit)] || 1);
 
 // Running low: below the amount a staple should keep, else 1 or less of something counted, or 100 g or 100 ml or
 // less of something weighed or poured.

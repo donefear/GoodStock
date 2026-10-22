@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Metric (g, kg, ml, l)": "Metrik (g, kg, ml, l)",
   "Imperial (oz, lb, fl oz)": "İngiliz (oz, lb, fl oz)",
   "Small": "Küçük",
+  "Use some": "Biraz kullan",
+  "Use some of {name}": "{name} ürününden biraz kullan",
+  "Use some {name}": "{name} kullan",
+  "You have {amount}.": "Elinde {amount} var.",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "Bu birim {amount} miktarından düşülemez. Bir ağırlık ya da hacim seç.",
+  "Left after: {amount}": "Kalacak: {amount}",
+  "Amount used": "Kullanılan miktar",
+  "Take it off": "Düş",
 };

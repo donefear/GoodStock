@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Metric (g, kg, ml, l)": "メートル法（g、kg、ml、l）",
   "Imperial (oz, lb, fl oz)": "ヤード・ポンド法（oz、lb、fl oz）",
   "Small": "小",
+  "Use some": "一部を使う",
+  "Use some of {name}": "{name}を一部使う",
+  "Use some {name}": "{name}を使う",
+  "You have {amount}.": "{amount}あります。",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "この単位は{amount}から引けません。重さか容量を選んでください。",
+  "Left after: {amount}": "残り：{amount}",
+  "Amount used": "使った量",
+  "Take it off": "差し引く",
 };

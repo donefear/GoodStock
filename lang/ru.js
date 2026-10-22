@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Metric (g, kg, ml, l)": "Метрические (г, кг, мл, л)",
   "Imperial (oz, lb, fl oz)": "Имперские (oz, lb, fl oz)",
   "Small": "Мелкий",
+  "Use some": "Использовать часть",
+  "Use some of {name}": "Использовать часть: {name}",
+  "Use some {name}": "Использовать: {name}",
+  "You have {amount}.": "У вас {amount}.",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "Эту единицу нельзя вычесть из {amount}. Выберите вес или объём.",
+  "Left after: {amount}": "Останется: {amount}",
+  "Amount used": "Использовано",
+  "Take it off": "Списать",
 };

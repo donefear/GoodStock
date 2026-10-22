@@ -1120,4 +1120,12 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Metric (g, kg, ml, l)": "公制（g、kg、ml、l）",
   "Imperial (oz, lb, fl oz)": "英制（oz、lb、fl oz）",
   "Small": "小",
+  "Use some": "用掉一些",
+  "Use some of {name}": "用掉一些{name}",
+  "Use some {name}": "用掉{name}",
+  "You have {amount}.": "你有 {amount}。",
+  "That unit can’t be taken off {amount}. Pick a weight or a volume.": "这个单位不能从 {amount} 中扣除。请选择重量或容量。",
+  "Left after: {amount}": "剩下：{amount}",
+  "Amount used": "用量",
+  "Take it off": "扣除",
 };

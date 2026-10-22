@@ -295,7 +295,7 @@ function renderInventory() {
     ${renderMonthOverview()}
     ${renderShelfLifeSuggestions()}
     <section class="section-block" id="inventory-items"><div class="section-heading"><div><h2>${inventoryLowOnly ? t('Running low') : t('Everything in its place')}</h2><span class="muted">${tp(rows.length, '{count} item', '{count} items')}</span>${inventoryLowOnly ? `<button class="text-button" type="button" data-action="filter-low">× ${t('Show everything')}</button>` : ''}</div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="${t('Find something')}" aria-label="${t('Find an item')}" /></label><select id="location-filter" aria-label="${t('Filter by location')}">${locations.map((location) => `<option value="${escapeHtml(location)}" ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location === ALL_LOCATIONS ? t(ALL_LOCATIONS) : location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="${t('Inventory display mode')}"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">${t('List')}</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">${t('Map')}</button></div></div></div>
-    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><span>${escapeHtml(shownAmount(item.quantity, item.unit).quantity)} <small>${escapeHtml(shownAmount(item.quantity, item.unit).unit)}</small></span><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery || inventoryLowOnly ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryLowOnly ? t('Nothing is running low.') : inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery || inventoryLowOnly ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
+    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><button class="stepper-amount" type="button" data-action="use-some" data-id="${escapeHtml(item.id)}" title="${t('Use some')}">${escapeHtml(shownAmount(item.quantity, item.unit).quantity)} <small>${escapeHtml(shownAmount(item.quantity, item.unit).unit)}</small><span class="visually-hidden"> · ${t('Use some of {name}', { name: escapeHtml(item.name) })}</span></button><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery || inventoryLowOnly ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryLowOnly ? t('Nothing is running low.') : inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery || inventoryLowOnly ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
 }
 
 // Extra notes on an inventory row: a staple's minimum, when it was opened, when it went into the freezer.
@@ -1164,6 +1164,45 @@ function fillAmountFields(form, quantity, unit) {
 // The amount as it is saved: metric, also when this device enters imperial.
 const readAmountFields = (form) => storedAmount(Number(form.elements.quantity.value), form.elements.unit.value);
 
+// "Use some": tap an item's amount, say how much went ("150 g" off "1 kg"), see what is left, take it off.
+function openUseDialog(id) {
+  const item = state.inventory.find((entry) => entry.id === id);
+  if (!item) return;
+  const form = $('#use-form');
+  form.reset();
+  form.elements.id.value = item.id;
+  // Start in the small unit of the same kind: grams for a kilo bag, ml for a litre, ounces for pounds.
+  const shown = shownAmount(item.quantity, item.unit);
+  const small = { kg: 'g', l: 'ml', lb: 'oz' }[canonicalUnit(shown.unit)] || shown.unit || 'pcs';
+  fillAmountFields(form, '', small);
+  form.elements.quantity.value = '';
+  $('#use-title').textContent = t('Use some {name}', { name: item.name });
+  $('#use-have').textContent = t('You have {amount}.', { amount: amountText(item.quantity, item.unit) });
+  updateUseLeft();
+  $('#use-dialog').showModal();
+  form.elements.quantity.focus();
+}
+
+// What would be left, in the item's unit, or null when the amount can't be taken off it (pieces from a kilo).
+function useLeftover() {
+  const form = $('#use-form');
+  const item = state.inventory.find((entry) => entry.id === form.elements.id.value);
+  if (!item) return null;
+  const typed = readAmountFields(form);
+  if (!(typed.quantity > 0)) return { item, left: Number(item.quantity) };
+  const used = amountForItem(typed.quantity, typed.unit, item);
+  return used === null ? { item, left: null } : { item, left: Math.max(0, roundTo(Number(item.quantity) - used, 3)) };
+}
+
+function updateUseLeft() {
+  const result = useLeftover();
+  const note = $('#use-left');
+  if (!result) return;
+  note.textContent = result.left === null
+    ? t('That unit can’t be taken off {amount}. Pick a weight or a volume.', { amount: amountText(result.item.quantity, result.item.unit) })
+    : t('Left after: {amount}', { amount: amountText(result.left, result.item.unit) });
+}
+
 function openShoppingItemDialog() {
   const form = $('#shopping-item-form');
   form.reset();
@@ -1252,7 +1291,7 @@ function openCookDialog(plan) {
   $('#cook-form').elements.leftovers.checked = false;
   $('#cook-ingredients').innerHTML = recipe.ingredients.map((ingredient, index) => {
     const item = matchingInventory(ingredient);
-    const amount = item ? `<span class="cook-amount"><span>${t('Remove')}</span><input type="number" name="amount-${index}" min="0" step="any" value="${Math.round(Math.min(deductionAmount(ingredient, item), Number(item.quantity)) * 100) / 100}" inputmode="decimal" aria-label="${t('Amount of {name} to remove', { name: escapeHtml(item.name) })}"><span>${escapeHtml(item.unit || t('pcs'))} <i>${t('of {quantity}', { quantity: escapeHtml(item.quantity) })}</i></span></span>` : '';
+    const amount = item ? `<span class="cook-amount"><span>${t('Remove')}</span><input type="number" name="amount-${index}" min="0" step="any" value="${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).quantity)}" data-unit="${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).unit)}" inputmode="decimal" aria-label="${t('Amount of {name} to remove', { name: escapeHtml(item.name) })}"><span>${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).unit || t('pcs'))} <i>${t('of {quantity}', { quantity: escapeHtml(amountText(item.quantity, item.unit)) })}</i></span></span>` : '';
     return `<label class="ingredient-check cook-check ${item ? '' : 'not-stocked'}"><input type="checkbox" name="ingredient" value="${index}" ${item ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span><span>${escapeHtml(ingredient)}</span><small>${inStockText(item)}</small>${amount}</label>`;
   }).join('');
   $('#cook-dialog').showModal();
