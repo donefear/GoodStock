@@ -24,6 +24,8 @@ await wait();
 const form = document.querySelector('#item-form');
 if (form.elements.dateKind.value !== 'best-before') fail.push('the dialog did not show the saved kind of date');
 form.elements.dateKind.value = '';
+// The pasta was saved as "1 bag", which the Unit list no longer offers, so a real unit is picked first (v4.5.4).
+form.elements.unit.value = 'pcs';
 form.requestSubmit();
 await wait();
 if (state.inventory.find((item) => item.id === 'pasta').dateKind) fail.push('switching to use by did not drop best before');

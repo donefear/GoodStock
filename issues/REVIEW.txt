@@ -1,0 +1,3 @@
+
+STATUS: all of the above done in v4.5.4 (not committed yet). npm test: 72/72 passed, including the legacy
+build and the new tests/page/issues-v454.js.

@@ -15,7 +15,7 @@ function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
   form.elements.instructions.value = recipeInstructions(recipe || {}).join('\n');
   setEditorPhoto(recipe?.photo || '');
   $('#recipe-photo-status').textContent = '';
-  $('#recipe-edit-title').textContent = recipe ? t('Edit {name}', { name: recipe.name }) : t('New recipe');
+  $('#recipe-edit-title').textContent = recipe ? t('Edit {name}', { name: recipe.name }) : importFirst ? t('Import a recipe') : t('New recipe');
   $('#recipe-edit-eyebrow').textContent = recipe ? t('EDIT RECIPE') : t('YOUR RECIPE');
   $('#recipe-import').hidden = Boolean(recipe);
   $('#recipe-import').open = importFirst;
@@ -792,7 +792,7 @@ function renderRecipes() {
   const sorted = [...localRecipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
   const actions = `<div class="recipe-heading-actions"><button class="button button-primary" data-action="new-recipe">＋ ${t('New recipe')}</button><button class="button button-outline" data-action="open-recipe-import">${t('Import')} <span aria-hidden="true">↓</span></button></div>`;
   return `${pageHeading(t('FROM YOUR SHELF'), t('What sounds good?'), t('Find something to make with what you have, or a few things you could grab.'), actions)}
-    <form class="recipe-search" id="recipe-search-form"><span aria-hidden="true">⌕</span><input id="recipe-search" value="${escapeHtml(recipeQuery)}" placeholder="${t('Search recipes or ingredients')}" aria-label="${t('Search recipes or ingredients')}"/><button class="button button-primary" type="submit">${t('Search')}</button></form>
+    <form class="recipe-search" id="recipe-search-form"><span aria-hidden="true">⌕</span><input id="recipe-search" value="${escapeHtml(recipeQuery)}" placeholder="${t('Search recipes or ingredients')}" aria-label="${t('Search recipes or ingredients')}"/><button class="button button-primary" type="submit">${t('Search my recipes')}</button><button class="button button-outline search-online-button" type="button" data-action="search-online" ${recipeQuery.trim() ? '' : 'hidden'}>${t('Search online')} <span aria-hidden="true">↗</span></button></form>
     ${renderIdeas()}
     ${mealieConfigured ? `<button class="button button-outline stock-search-button" data-action="search-stocked">${t('Find with my inventory')} <span aria-hidden="true">↗</span></button>` : ''}
     <div class="recipe-results-heading"><div><span class="eyebrow">${t('YOUR RECIPE BOX')}</span><h2>${onlyFavourites ? t('Favourites') : t('Closest to ready')}</h2></div><div class="recipe-results-tools">${hasFavourites ? `<button class="favourites-filter ${onlyFavourites ? 'active' : ''}" type="button" data-action="favourites-filter" aria-pressed="${onlyFavourites}">★ ${t('Favourites')}</button>` : ''}<span class="muted">${tp(sorted.length, '{count} recipe', '{count} recipes')}</span></div></div>
@@ -822,6 +822,7 @@ async function openRecipeDialog(id, isRemote, planId = '') {
   $('#recipe-dialog-description').textContent = recipe.description || '';
   $('#recipe-dialog-description').hidden = !recipe.description;
   const ingredients = recipe.ingredients || [];
+  $('#recipe-dialog-steps').hidden = true;
   $('#recipe-dialog-ingredients').innerHTML = ingredients.length
     ? ingredients.map((ingredient) => {
       const item = matchingInventory(ingredient);

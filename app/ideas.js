@@ -111,8 +111,8 @@ function scoreIdea(recipe, history, stocked) {
 // With a focus (an item from Use soon, by its English catalog name) only recipes with that ingredient are looked up.
 async function findIdeas(focus = '') {
   if (ideas.loading) return;
-  if (focus !== ideas.focus) ideas.results = [];
-  ideas = { ...ideas, focus, loading: true, error: '' };
+  if (focus !== ideas.focus || ideas.query) ideas.results = [];
+  ideas = { ...ideas, focus, query: '', loading: true, error: '' };
   render();
   try {
     const history = cookingHistory();
@@ -172,6 +172,60 @@ async function useItUp(id) {
   if (panel && panel.scrollIntoView && !document.querySelector('.recipe-card')) panel.scrollIntoView({ block: 'start' });
 }
 
+// "Search online" on the Recipes page: TheMealDB by recipe name (its recipes are English), shown in the same cards
+// as the ideas, each with a preview before anything is saved.
+const ONLINE_RESULTS = 12;
+
+async function searchOnline(query) {
+  const text = String(query || '').trim();
+  if (!text || ideas.loading) return;
+  ideas = { ...ideas, focus: '', query: text, loading: true, error: '', results: [] };
+  render();
+  try {
+    const history = cookingHistory();
+    const stocked = stockedIngredients();
+    const meals = (await mealDb('search.php', { s: text })).meals || [];
+    const results = meals.slice(0, ONLINE_RESULTS).map((meal) => {
+      const recipe = mealToRecipe(meal);
+      const { reasons, missing } = scoreIdea(recipe, history, stocked);
+      return { meal, recipe, reasons, missing };
+    }).filter((idea) => idea.recipe.name && idea.recipe.ingredients.length);
+    ideas = { focus: '', query: text, loading: false, searched: true, error: '', results };
+  } catch {
+    ideas = { ...ideas, loading: false, searched: true, error: t('Could not reach the recipe collection. Check the internet connection and try again.') };
+  }
+  if (activeView === 'recipes') render();
+}
+
+// A look at a web recipe before it is added: ingredients (with what is in stock) and the steps, in the recipe popup.
+function previewIdea(id) {
+  const idea = ideas.results.find((entry) => entry.meal.idMeal === id);
+  if (!idea) return;
+  const recipe = idea.recipe;
+  $('#recipe-dialog-source').textContent = t('FROM THE WEB');
+  $('#recipe-dialog-title').textContent = recipe.name;
+  $('#recipe-dialog-description').textContent = recipe.description || '';
+  $('#recipe-dialog-description').hidden = !recipe.description;
+  $('#recipe-dialog-ingredients').innerHTML = recipe.ingredients.map((ingredient) => {
+    const item = matchingInventory(ingredient);
+    return `<li class="${item ? 'in-stock' : 'not-stocked'}"><span aria-hidden="true">${item ? '✓' : '○'}</span><span>${escapeHtml(ingredient)}</span><small>${inStockText(item)}</small></li>`;
+  }).join('');
+  const steps = recipeInstructions(recipe);
+  const method = $('#recipe-dialog-steps');
+  method.innerHTML = steps.length ? `<h3>${t('Method')}</h3><ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol>` : '';
+  method.hidden = !steps.length;
+  recipeDialogRecipe = recipe;
+  recipeDialogPlanId = '';
+  const safeSourceUrl = /^https?:\/\//i.test(recipe.sourceUrl || '') ? recipe.sourceUrl : '';
+  const original = safeSourceUrl ? `<a class="button button-quiet" href="${escapeHtml(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">${t('Original recipe')} <span aria-hidden="true">↗</span></a>` : '';
+  const add = idea.added
+    ? `<button class="button button-primary" type="button" data-action="view-recipe" data-id="${escapeHtml(idea.added)}">${t('Open')}</button>`
+    : `<button class="button button-primary" type="button" data-action="add-idea" data-id="${escapeHtml(id)}">${t('Add to my recipes')} <span aria-hidden="true">＋</span></button>`;
+  $('#recipe-dialog-actions').innerHTML = `<button class="button button-quiet" type="button" data-close>${t('Close')}</button>${original}${add}`;
+  const dialog = $('#recipe-dialog');
+  if (!dialog.open) dialog.showModal();
+}
+
 function addIdea(id) {
   const idea = ideas.results.find((entry) => entry.meal.idMeal === id);
   if (!idea) return;
@@ -179,25 +233,28 @@ function addIdea(id) {
   state.recipes.unshift(recipe);
   idea.added = recipe.id;
   persist();
+  if ($('#recipe-dialog').open) $('#recipe-dialog').close();
   openRecipePage(recipe.id);
 }
 
 function renderIdeas() {
   const focus = ideas.focus ? localIngredientName(ideas.focus).toLowerCase() : '';
-  const button = `${focus ? `<button class="text-button" type="button" data-action="find-ideas-all" ${ideas.loading ? 'disabled' : ''}>${t('All ideas')}</button>` : ''}<button class="button button-outline" type="button" data-action="find-ideas" ${ideas.loading ? 'disabled' : ''}>${ideas.searched ? t('Find other ideas') : t('Find recipes for me')} <span aria-hidden="true">✨</span></button>`;
+  const query = ideas.query || '';
+  const button = `${focus || query ? `<button class="text-button" type="button" data-action="find-ideas-all" ${ideas.loading ? 'disabled' : ''}>${t('All ideas')}</button>` : ''}<button class="button button-outline" type="button" data-action="find-ideas" ${ideas.loading ? 'disabled' : ''}>${ideas.searched ? t('Find other ideas') : t('Find recipes for me')} <span aria-hidden="true">✨</span></button>`;
   let body = '';
   if (ideas.loading) body = `<p class="muted ideas-status">${t('Looking for recipes you might like…')}</p>`;
   else if (ideas.error) body = `<p class="muted ideas-status">${escapeHtml(ideas.error)}</p>`;
   else if (!ideas.searched) body = `<p class="muted ideas-status">${t('Ideas based on what you cook and what you have, from TheMealDB, a free recipe collection on the web.')}</p>`;
+  else if (!ideas.results.length && query) body = `<p class="muted ideas-status">${t('No recipes called “{name}” found on the web. TheMealDB knows English names, like “pancakes”.', { name: escapeHtml(query) })}</p>`;
   else if (!ideas.results.length) body = `<p class="muted ideas-status">${focus ? t('No recipes with {ingredient} found on the web.', { ingredient: escapeHtml(focus) }) : t('No new ideas this time. Try again later.')}</p>`;
   else {
-    body = `<div class="ideas-grid">${ideas.results.map((idea) => `<article class="idea-card">
+    // The whole card opens the preview (previewIdea); its buttons and the Original recipe link do their own thing.
+    body = `<div class="ideas-grid">${ideas.results.map((idea) => `<article class="idea-card" data-action="preview-idea" data-id="${escapeHtml(idea.meal.idMeal)}">
         ${idea.meal.strMealThumb ? `<img class="idea-photo" src="${escapeHtml(idea.meal.strMealThumb)}/preview" alt="" loading="lazy" />` : ''}
         <div class="idea-body">
-          <h3>${escapeHtml(idea.recipe.name)}</h3>
+          <h3><button class="recipe-title-link idea-title" type="button" data-action="preview-idea" data-id="${escapeHtml(idea.meal.idMeal)}" title="${t('Show recipe')}">${escapeHtml(idea.recipe.name)}</button></h3>
           ${idea.recipe.description ? `<span class="muted">${escapeHtml(idea.recipe.description)}</span>` : ''}
-          <ul class="idea-reasons">${idea.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul>
-          <span class="match-tag ${idea.missing ? 'has-missing' : ''}">${idea.missing ? tp(idea.missing, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</span>
+          <ul class="idea-reasons">${idea.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}<li class="match-tag ${idea.missing ? 'has-missing' : ''}">${idea.missing ? tp(idea.missing, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</li></ul>
           <div class="idea-actions">${idea.added
             ? `<button class="button button-small button-outline" type="button" data-action="view-recipe" data-id="${escapeHtml(idea.added)}">${t('Open')}</button>`
             : `<button class="button button-small button-dark" type="button" data-action="add-idea" data-id="${escapeHtml(idea.meal.idMeal)}">${t('Add to my recipes')} <span aria-hidden="true">＋</span></button>`}
@@ -205,5 +262,6 @@ function renderIdeas() {
         </div>
       </article>`).join('')}</div>`;
   }
+  if (query) return `<section class="ideas-panel"><div class="recipe-results-heading"><div><span class="eyebrow">${t('FROM THE WEB')}</span><h2>${t('Recipes called “{name}”', { name: escapeHtml(query) })}</h2></div>${button}</div>${body}</section>`;
   return `<section class="ideas-panel"><div class="recipe-results-heading"><div><span class="eyebrow">${t('IDEAS FOR YOU')}</span><h2>${focus ? t('Recipes from the web with {ingredient}', { ingredient: escapeHtml(focus) }) : t('Recipes from the web')}</h2></div>${button}</div>${body}</section>`;
 }

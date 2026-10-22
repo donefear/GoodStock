@@ -1,13 +1,13 @@
-// Text size (4.8): Large and Extra large still fit the screen on a tablet and a phone.
+// Text size (4.8): Normal and Large still fit the screen on a tablet and a phone.
 export default async function run({ browser, base }) {
   const fail = [];
-  for (const [lang, size] of [['en', 'xlarge'], ['de', 'xlarge'], ['de', 'large']]) {
+  for (const [lang, size] of [['en', 'large'], ['de', 'large'], ['de', 'normal']]) {
     for (const viewport of [{ width: 1280, height: 800, name: 'tablet' }, { width: 390, height: 844, name: 'phone' }]) {
       const page = await browser.newPage();
       await page.setViewport(viewport);
       page.on('pageerror', (error) => fail.push(`${lang} ${size}: ${error.message}`));
       await page.goto(base, { waitUntil: 'networkidle2' });
-      await page.evaluate((l, s) => { localStorage.setItem('goodstock-language-v1', l); localStorage.setItem('goodstock-text-size-v1', s); }, lang, size);
+      await page.evaluate((l, s) => { localStorage.setItem('goodstock-language-v1', l); localStorage.setItem('goodstock-text-size-v2', s); }, lang, size);
       await page.reload({ waitUntil: 'networkidle2' });
       for (const view of ['inventory', 'week', 'shopping', 'recipes', 'tools']) {
         await page.evaluate((v) => document.querySelector(`.nav-item[data-view="${v}"]`).click(), view);

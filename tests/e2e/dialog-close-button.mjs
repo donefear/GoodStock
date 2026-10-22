@@ -7,11 +7,11 @@ export default async function run({ browser, base }) {
     { name: 'recipe editor', open: () => openRecipeEditor(), dialog: '#recipe-edit-dialog' },
     { name: 'DeepL help', open: () => document.querySelector('#deepl-help-dialog').showModal(), dialog: '#deepl-help-dialog' },
   ];
-  for (const setup of [{ theme: 'light', size: 'normal' }, { theme: 'dark', size: 'normal' }, { theme: 'light', size: 'xlarge' }]) {
+  for (const setup of [{ theme: 'light', size: 'normal' }, { theme: 'dark', size: 'normal' }, { theme: 'light', size: 'large' }]) {
     const page = await browser.newPage();
     await page.setViewport({ width: 390, height: 700 });
     await page.goto(base, { waitUntil: 'networkidle2' });
-    await page.evaluate(({ theme, size }) => { localStorage.setItem('goodstock-theme-v1', theme); localStorage.setItem('goodstock-text-size-v1', size); }, setup);
+    await page.evaluate(({ theme, size }) => { localStorage.setItem('goodstock-theme-v1', theme); localStorage.setItem('goodstock-text-size-v2', size); }, setup);
     await page.reload({ waitUntil: 'networkidle2' });
     for (const { name, open, dialog } of cases) {
       await page.evaluate(open);

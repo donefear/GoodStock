@@ -5,8 +5,7 @@
 function openPutawayDialog(item) {
   const form = $('#putaway-form');
   form.elements.shoppingId.value = item.id;
-  form.elements.quantity.value = item.quantity || 1;
-  form.elements.unit.value = item.unit || '';
+  fillAmountFields(form, item.quantity || 1, item.unit || 'pcs');
   form.elements.expiresOn.value = '';
   form.elements.expiresOn.dataset.estimated = '';
   form.elements.barcode.value = '';
@@ -16,7 +15,8 @@ function openPutawayDialog(item) {
   $('#putaway-item-name').textContent = item.name;
   fillLocationSelect(form.elements.location, state.locations[0]);
   updateExpirationSuggestion(item.name, form.elements.location.value, form.elements.expiresOn, $('#putaway-expiry-note'));
-  form.elements.price.value = priceOf(item.name, form.elements.quantity.value, form.elements.unit.value) ?? '';
+  const amount = readAmountFields(form);
+  form.elements.price.value = priceOf(item.name, amount.quantity, amount.unit) ?? '';
   $('#putaway-dialog').showModal();
 }
 
@@ -54,22 +54,27 @@ async function importMealieRecipe(id) {
   render();
 }
 
-// The week's meals that aren't cooked yet, added up per ingredient and compared with what is in stock: only what is
-// short goes on the list ("Flour 400 g · Pancakes, Bread"). An ingredient in stock whose amounts can't be compared
-// with the stored unit ("1 bunch" against "200 g") counts as enough, as before. Small kilos and litres become grams
-// and millilitres.
-function shoppingNeeds() {
+// The week's meals that aren't cooked yet.
+const weekMeals = () => currentWeekPlans().filter((plan) => !plan.cooked).map((plan) => ({ recipe: recipeById(plan.recipeId), scale: planScale(plan) }));
+
+// Meals ({ recipe, scale }) added up per ingredient and compared with what is in stock: only what is short goes on
+// the list ("Flour 400 g · Pancakes, Bread"). Lines for the same ingredient become one ("2 potatoes" and "1 potato"
+// make 3), in the first line's unit when the units measure the same thing; an amount that can't be added to it
+// ("500 g" against "2") gets a line of its own. An ingredient in stock whose amounts can't be compared with the stored
+// unit ("1 bunch" against "200 g") counts as enough, as before. With fromStock false, stock is left out of it. Small
+// kilos and litres become grams and millilitres.
+function shoppingNeeds(meals = weekMeals(), { fromStock = true } = {}) {
   const needs = new Map();
-  for (const plan of currentWeekPlans()) {
-    const recipe = scaledRecipe(recipeById(plan.recipeId), planScale(plan));
-    if (!recipe || plan.cooked) continue;
+  for (const meal of meals) {
+    const recipe = scaledRecipe(meal.recipe, meal.scale);
+    if (!recipe) continue;
     for (const ingredient of recipe.ingredients || []) {
       const parsed = parseIngredient(ingredient);
       const name = parsed.name.trim();
       if (!name) continue;
-      const item = matchingInventory(ingredient);
-      const key = item ? `item:${item.id}` : cleanIngredient(name);
-      const need = needs.get(key) || { name: item ? item.name : name, item, amount: 0, unit: item ? item.unit || '' : '', comparable: true, sources: [] };
+      const item = fromStock ? matchingInventory(ingredient) : undefined;
+      const key = item ? `item:${item.id}` : shoppingKey(name);
+      const need = needs.get(key) || { name: item ? item.name : name, item, amount: 0, unit: item ? item.unit || '' : '', comparable: true, sources: [], more: [] };
       if (!need.sources.includes(recipe.name)) need.sources.push(recipe.name);
       if (item) {
         const used = deductionAmount(ingredient, item);
@@ -78,24 +83,48 @@ function shoppingNeeds() {
         need.amount = parsed.amount || 1;
         need.unit = parsed.amount ? parsed.unitText : '';
       } else if (parsed.amount) {
-        const from = UNIT_SCALES[parsed.unit];
-        const to = UNIT_SCALES[canonicalUnit(need.unit)];
-        if (canonicalUnit(need.unit) === parsed.unit) need.amount += parsed.amount;
-        else if (from && to && from[0] === to[0]) need.amount += parsed.amount * from[1] / to[1];
+        const part = [need, ...need.more].find((entry) => amountIn(parsed.amount, parsed.unitText, entry.unit) !== null);
+        if (part) part.amount += amountIn(parsed.amount, parsed.unitText, part.unit);
+        else need.more.push({ amount: parsed.amount, unit: parsed.unitText });
       }
       needs.set(key, need);
     }
   }
   const short = [];
   for (const need of needs.values()) {
-    let amount = need.item ? need.amount - Number(need.item.quantity) : need.amount;
-    if (need.item && (!need.comparable || amount <= 0)) continue;
-    let unit = need.unit;
-    const canonical = canonicalUnit(unit);
-    if ((canonical === 'kg' || canonical === 'l') && amount < 1) { amount *= 1000; unit = canonical === 'kg' ? 'g' : 'ml'; }
-    short.push({ name: need.name, quantity: Math.round(amount * 100) / 100, unit, source: need.sources.join(', ') });
+    for (const part of need.item ? [need] : [need, ...need.more]) {
+      let amount = need.item ? need.amount - Number(need.item.quantity) : part.amount;
+      if (need.item && (!need.comparable || amount <= 0)) continue;
+      let unit = part.unit;
+      const canonical = canonicalUnit(unit);
+      if ((canonical === 'kg' || canonical === 'l') && amount < 1) { amount *= 1000; unit = canonical === 'kg' ? 'g' : 'ml'; }
+      short.push({ name: need.name, quantity: Math.round(amount * 100) / 100, unit, source: need.sources.join(', ') });
+    }
   }
   return short;
+}
+
+// Puts lines on the shopping list. With combine, a line for the same ingredient that isn't ticked yet takes the
+// amount and the recipe names ("Potatoes 3 · Soup, Stew"); without it (Refresh from plan) an ingredient already on
+// the list is left as it is, so refreshing twice doesn't double it. Returns how many lines were added or grew.
+function addToShoppingList(lines, { combine = false } = {}) {
+  let changed = 0;
+  for (const line of lines) {
+    const key = shoppingKey(line.name);
+    const same = state.shopping.filter((entry) => shoppingKey(entry.name) === key);
+    if (!combine && same.length) continue;
+    const target = combine && same.find((entry) => !entry.checked && amountIn(Number(line.quantity) || 0, line.unit, entry.unit) !== null);
+    if (target) {
+      target.quantity = Math.round(((Number(target.quantity) || 0) + amountIn(Number(line.quantity) || 0, line.unit, target.unit)) * 100) / 100 || '';
+      const sources = String(target.source || '').split(', ').filter(Boolean);
+      for (const source of String(line.source || '').split(', ')) if (source && !sources.includes(source)) sources.push(source);
+      target.source = sources.join(', ');
+    } else {
+      state.shopping.push({ id: makeId(), ...line, checked: false });
+    }
+    changed += 1;
+  }
+  return changed;
 }
 
 // The stocktake's buttons (renderStocktake in app/views.js).
@@ -139,12 +168,69 @@ function thawItem(id) {
 }
 
 function generateShopping() {
-  const additions = shoppingNeeds()
-    .filter((need) => !state.shopping.some((entry) => cleanIngredient(entry.name) === cleanIngredient(need.name)))
-    .map((need) => ({ id: makeId(), ...need, checked: false }));
-  state.shopping.push(...additions);
+  addToShoppingList(shoppingNeeds());
   persist();
   activeView = 'shopping';
+  render();
+}
+
+// Shopping → From recipes: tick recipes (with servings) and their ingredients go on the list, added to what is
+// already there. Picks are { recipe id: factor } and stay while the search changes.
+let recipeShoppingPicks = new Map();
+
+function openRecipeShopping() {
+  recipeShoppingPicks = new Map();
+  $('#recipe-shopping-search').value = '';
+  renderRecipeShopping();
+  $('#recipe-shopping-dialog').showModal();
+}
+
+function renderRecipeShopping() {
+  const query = cleanIngredient($('#recipe-shopping-search').value);
+  const recipes = [...state.recipes]
+    .sort((a, b) => Number(Boolean(b.favourite)) - Number(Boolean(a.favourite)) || String(a.name).localeCompare(String(b.name)))
+    .filter((recipe) => !query || cleanIngredient(recipe.name).includes(query));
+  const row = (recipe) => {
+    const factor = recipeShoppingPicks.get(recipe.id);
+    const picked = factor !== undefined;
+    const amount = recipe.servings
+      ? `<label class="recipe-shopping-amount"><input type="number" inputmode="numeric" min="1" step="1" data-shop-servings="${escapeHtml(recipe.id)}" value="${escapeHtml(String(Math.max(1, Math.round(recipe.servings * (factor || 1)))))}" aria-label="${escapeHtml(t('Servings'))}" ${picked ? '' : 'disabled'} /> <span>${escapeHtml(t('Servings'))}</span></label>`
+      : `<label class="recipe-shopping-amount"><span>×</span> <input type="number" inputmode="decimal" min="0.5" step="0.5" data-shop-factor="${escapeHtml(recipe.id)}" value="${escapeHtml(String(factor || 1))}" aria-label="${escapeHtml(t('Times the recipe'))}" ${picked ? '' : 'disabled'} /></label>`;
+    return `<div class="recipe-shopping-row${picked ? ' is-picked' : ''}"><label class="recipe-shopping-pick"><input type="checkbox" data-shop-recipe="${escapeHtml(recipe.id)}" ${picked ? 'checked' : ''} /> <span>${escapeHtml(recipe.name)}</span></label>${amount}</div>`;
+  };
+  $('#recipe-shopping-list').innerHTML = recipes.length
+    ? recipes.map(row).join('')
+    : `<p class="muted">${escapeHtml(state.recipes.length ? t('No recipes match that search.') : t('No recipes yet. Add one on the Recipes page.'))}</p>`;
+  const count = recipeShoppingPicks.size;
+  const button = $('#recipe-shopping-add');
+  button.disabled = !count;
+  button.textContent = count ? tp(count, 'Add {count} recipe to the list', 'Add {count} recipes to the list') : t('Add to the shopping list');
+}
+
+function updateRecipeShoppingPick(input) {
+  const id = input.dataset.shopRecipe || input.dataset.shopServings || input.dataset.shopFactor;
+  const recipe = recipeById(id);
+  if (!recipe) return;
+  if (input.dataset.shopRecipe) {
+    if (input.checked) recipeShoppingPicks.set(recipe.id, 1); else recipeShoppingPicks.delete(recipe.id);
+    return renderRecipeShopping();
+  }
+  const value = Number(input.value);
+  if (!(value > 0) || !recipeShoppingPicks.has(recipe.id)) return;
+  recipeShoppingPicks.set(recipe.id, input.dataset.shopServings ? value / recipe.servings : value);
+}
+
+function addRecipesToShopping() {
+  const meals = [...recipeShoppingPicks].map(([id, scale]) => ({ recipe: recipeById(id), scale })).filter((meal) => meal.recipe);
+  if (!meals.length) return;
+  const lines = shoppingNeeds(meals, { fromStock: $('#recipe-shopping-stock').checked });
+  $('#recipe-shopping-dialog').close();
+  activeView = 'shopping';
+  if (!lines.length) {
+    withUndo(t('Everything for these recipes is in stock.'), ['shopping'], () => {});
+    return render();
+  }
+  withUndo(tp(meals.length, '{count} recipe added to the shopping list', '{count} recipes added to the shopping list'), ['shopping'], () => addToShoppingList(lines, { combine: true }));
   render();
 }
 
@@ -241,7 +327,17 @@ document.addEventListener('click', async (event) => {
     const connection = button.dataset.open && $(`#${button.dataset.open}`);
     if (connection) { showSettingsTab('connections'); connection.open = true; }
   }
+  // The sidebar's sync card: Your data (backups) for a kitchen kept on this device, else Connections.
+  if (action === 'open-sync-settings') {
+    $('#settings-button').click();
+    showSettingsTab(!isShared() && !folderSync() ? 'data' : 'connections');
+  }
   if (action === 'settings-tab') showSettingsTab(button.dataset.tab);
+  if (action === 'preview-idea' && !event.target.closest('a')) previewIdea(id);
+  if (action === 'search-online') {
+    recipeQuery = $('#recipe-search').value.trim();
+    await searchOnline(recipeQuery);
+  }
   if (action === 'restore-data') openFilePicker($('#restore-file'));
   if (action === 'restore-server-backup') await restoreServerBackup(button.dataset.name);
   if (action === 'view-recipe') {
@@ -318,10 +414,24 @@ document.addEventListener('click', async (event) => {
     $('#item-dialog').close();
   }
   if (action === 'item-opened') markItemOpened($('#item-form'));
+  // − and ＋ step in the unit shown (50 g, 0.1 kg, 1 oz…), so a weighed item doesn't change by one gram.
   if (action === 'adjust') {
     const item = state.inventory.find((entry) => entry.id === id);
-    if (item) { item.quantity = Math.max(0, Number(item.quantity) + Number(button.dataset.delta)); persist(); }
+    if (item) {
+      const shown = shownAmount(item.quantity, item.unit);
+      const next = Math.max(0, roundTo(Number(shown.quantity) + Number(button.dataset.delta) * stepFor(shown.unit), 2));
+      const stored = shown.unit === (item.unit || '') ? next : amountIn(next, shown.unit, item.unit);
+      item.quantity = stored === null ? next : stored;
+      persist();
+    }
   }
+  if (action === 'filter-low') {
+    inventoryLowOnly = !inventoryLowOnly;
+    render();
+    const list = $('#inventory-items');
+    if (inventoryLowOnly && list && list.scrollIntoView) list.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  if (action === 'add-shopping-item') openShoppingItemDialog();
   if (action === 'select-date') {
     const [year, month, day] = button.dataset.date.split('-').map(Number);
     selectedDate = new Date(year, month - 1, day);
@@ -386,6 +496,7 @@ document.addEventListener('click', async (event) => {
     startCookSteps(recipeById(id), button.dataset.plan || '');
   }
   if (action === 'generate-shopping') generateShopping();
+  if (action === 'recipe-shopping') openRecipeShopping();
   if (action === 'search-stocked') {
     recipeQuery = '';
     mealieResults = [];
@@ -461,7 +572,8 @@ document.addEventListener('input', (event) => {
   if (priceForm && event.target.name === 'price') priceForm.elements.price.dataset.auto = event.target.value ? 'false' : 'true';
   if (priceForm && ['name', 'quantity', 'unit'].includes(event.target.name) && priceForm.elements.price.dataset.auto !== 'false') {
     const name = priceForm.elements.name ? priceForm.elements.name.value : $('#putaway-item-name').textContent;
-    priceForm.elements.price.value = priceOf(name, priceForm.elements.quantity.value, priceForm.elements.unit.value) ?? '';
+    const amount = readAmountFields(priceForm);
+    priceForm.elements.price.value = priceOf(name, amount.quantity, amount.unit) ?? '';
   }
   // Tools tab: update results in place so the field keeps focus while typing.
   if (event.target.id === 'conv-amount') { converterInput.amount = event.target.value; updateConverter(); return; }
@@ -478,7 +590,11 @@ document.addEventListener('input', (event) => {
     input.focus();
     input.setSelectionRange(cursor, cursor);
   }
-  if (event.target.id === 'recipe-search') recipeQuery = event.target.value;
+  if (event.target.id === 'recipe-search') {
+    recipeQuery = event.target.value;
+    const online = $('.search-online-button');
+    if (online) online.hidden = !recipeQuery.trim();
+  }
   if (event.target.form?.getAttribute('id') === 'item-form' && event.target.name === 'name') {
     const form = event.target.form;
     updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'), itemFormStartDate(form));
@@ -547,6 +663,11 @@ document.addEventListener('change', async (event) => {
   if (event.target.id === 'language-select') { await changeLanguage(event.target.value); return; }
   if (event.target.id === 'currency-select') {
     try { localStorage.setItem(CURRENCY_KEY, event.target.value); } catch { /* For this visit only. */ }
+    render();
+    return;
+  }
+  if (event.target.id === 'units-select') {
+    try { localStorage.setItem(UNITS_KEY, event.target.value === 'imperial' ? 'imperial' : 'metric'); } catch { /* For this visit only. */ }
     render();
     return;
   }
@@ -621,8 +742,7 @@ $('#item-form').addEventListener('submit', (event) => {
   const item = metricInventoryItem({
     id,
     name,
-    quantity: Number(form.elements.quantity.value),
-    unit: form.elements.unit.value.trim(),
+    ...readAmountFields(form),
     ...expiration,
     location,
     kind: form.elements.kind.value,
@@ -635,7 +755,9 @@ $('#item-form').addEventListener('submit', (event) => {
   }
   // Only a date from the package can be "best before"; an estimate is just an estimate.
   if (form.elements.dateKind.value === 'best-before' && item.expiresOn && item.expirationSource !== 'estimated') item.dateKind = 'best-before';
-  const minimum = Number(form.elements.minimum.value);
+  // The minimum was typed in the unit picked for the amount; it is kept in the unit the item is saved in.
+  const typedMinimum = Number(form.elements.minimum.value);
+  const minimum = typedMinimum > 0 ? (amountIn(typedMinimum, form.elements.unit.value, item.unit) ?? typedMinimum) : 0;
   if (minimum > 0) item.minimum = minimum;
   if (form.elements.barcode.value) item.barcode = form.elements.barcode.value;
   // Still listed for restocking while below the same minimum, so saving doesn't add it to the list again.
@@ -650,6 +772,18 @@ $('#item-form').addEventListener('submit', (event) => {
   if (stocktake && stocktake.location && existingIndex >= 0 && !stocktake.seen.includes(item.id)) stocktake.seen.push(item.id);
   persist();
   $('#item-dialog').close();
+});
+
+// Shopping → Add item: a line typed by hand, added to the same product already on the list when the units fit.
+$('#shopping-item-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const name = form.elements.name.value.trim();
+  if (!name) return;
+  const amount = readAmountFields(form);
+  addToShoppingList([{ name, quantity: amount.quantity, unit: amount.unit }], { combine: true });
+  persist();
+  $('#shopping-item-dialog').close();
 });
 
 $('#cook-form').addEventListener('submit', (event) => {
@@ -678,7 +812,7 @@ $('#putaway-form').addEventListener('submit', (event) => {
   if (shoppingItem) {
     const location = form.elements.location.value;
     storeShoppingItem(shoppingItem, {
-      quantity: Number(form.elements.quantity.value), unit: form.elements.unit.value.trim(), location,
+      ...readAmountFields(form), location,
       expiration: resolvedExpiration(form.elements.estimateName.value || shoppingItem.name, location, form.elements.expiresOn),
       packageDate: Boolean(form.elements.expiresOn.value) && form.elements.expiresOn.dataset.estimated !== 'true',
       barcode: form.elements.barcode.value,
@@ -996,6 +1130,18 @@ function openWipeDialog() {
   form.elements.confirmation.focus();
 }
 
+$('#recipe-shopping-form').addEventListener('input', (event) => {
+  if (event.target.id === 'recipe-shopping-search') renderRecipeShopping();
+  else if (event.target.dataset.shopServings || event.target.dataset.shopFactor) updateRecipeShoppingPick(event.target);
+});
+$('#recipe-shopping-form').addEventListener('change', (event) => {
+  if (event.target.dataset.shopRecipe) updateRecipeShoppingPick(event.target);
+});
+$('#recipe-shopping-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  addRecipesToShopping();
+});
+
 $('#wipe-form').addEventListener('input', (event) => {
   const form = event.currentTarget;
   form.querySelector('[type="submit"]').disabled = form.elements.confirmation.value.trim().toUpperCase() !== 'WIPE';
@@ -1063,6 +1209,7 @@ document.addEventListener('submit', (event) => {
 $('#settings-button').addEventListener('click', async () => {
   $('#settings-form').elements.locations.value = state.locations.join(', ');
   $('#dark-mode-toggle').checked = document.documentElement.dataset.theme === 'dark';
+  $('#units-select').value = unitSystem();
   fillLanguageSelect();
   showSettingsTab('general');
   for (const connection of $$('#settings-dialog .settings-connection')) connection.open = false;
@@ -1423,10 +1570,11 @@ function sharedLinesToShopping(text) {
   const lines = text.split('\n').map((line) => line.replace(/^\s*(?:[-*•·]|\[\s?[xX]?\]|☐|☑|\d+[.)])\s*/, '').trim()).filter((line) => line && !/^https?:\/\//.test(line));
   if (!lines.length) return;
   withUndo(tp(lines.length, '{count} item added to the shopping list', '{count} items added to the shopping list'), ['shopping'], () => {
-    for (const line of lines) {
+    addToShoppingList(lines.map((line) => {
       const { amount, unitText, name } = parseIngredient(line);
-      state.shopping.push(metricInventoryItem({ id: makeId(), name: name.charAt(0).toUpperCase() + name.slice(1), quantity: amount ?? '', unit: unitText || '', checked: false, source: t('Shared') }));
-    }
+      const { id, ...item } = metricInventoryItem({ id: '', name: name.charAt(0).toUpperCase() + name.slice(1), quantity: amount ?? '', unit: unitText || '', source: t('Shared') });
+      return item;
+    }), { combine: true });
   });
   activeView = 'shopping';
   render();

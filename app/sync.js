@@ -150,7 +150,8 @@ function updateSyncStatus(mode, detail) {
   }
   if (!isShared()) {
     dot.className = 'sync-dot online';
-    label.textContent = t('Saved on this phone');
+    // The desktop app is a computer, the iOS app may be an iPad; only the Android app says phone.
+    label.textContent = nativeApp && nativeApp.platform === 'desktop' ? t('Saved on this computer') : nativeApp && nativeApp.platform === 'ios' ? t('Saved on this device') : t('Saved on this phone');
     text.textContent = t('Back up in Settings');
     return;
   }

@@ -177,7 +177,7 @@ function freshState() {
   const [pantry, fridge, , cleaning] = localDefaultLocations();
   return {
     inventory: [
-      { id: makeId(), name: t('Rolled oats'), quantity: 1, unit: 'bag', location: pantry, kind: 'Food' },
+      { id: makeId(), name: t('Rolled oats'), quantity: 1, unit: 'kg', location: pantry, kind: 'Food' },
       { id: makeId(), name: t('Eggs'), quantity: 6, unit: 'pcs', location: fridge, kind: 'Food' },
       { id: makeId(), name: t('Potatoes'), quantity: 4, unit: 'pcs', location: pantry, kind: 'Food' },
       { id: makeId(), name: t('Dish soap'), quantity: 1, unit: 'bottle', location: cleaning, kind: 'Household' },
@@ -396,7 +396,7 @@ const UNIT_ALIASES = {
   stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|stuks?|st|x|whole|items?|stk|stück|uds?|un|pz|buc|bucăți|bucată|szt|sztuki|sztuk|adet|шт|個|个|حبة|حبات|قطعة|יח׳|יח'|יחידות)$/,
 };
 const TO_METRIC = { oz: [28.3495, 'g'], lb: [453.592, 'g'], 'fl oz': [29.5735, 'ml'], pint: [473.176, 'ml'], quart: [946.353, 'ml'], gallon: [3785.41, 'ml'], inch: [2.54, 'cm'] };
-const UNIT_SCALES = { mg: ['mass', 0.001], g: ['mass', 1], kg: ['mass', 1000], ml: ['volume', 1], cl: ['volume', 10], dl: ['volume', 100], l: ['volume', 1000], tsp: ['volume', 5], tbsp: ['volume', 15], cup: ['volume', 240] };
+const UNIT_SCALES = { mg: ['mass', 0.001], g: ['mass', 1], kg: ['mass', 1000], oz: ['mass', 28.3495], lb: ['mass', 453.592], ml: ['volume', 1], cl: ['volume', 10], dl: ['volume', 100], l: ['volume', 1000], 'fl oz': ['volume', 29.5735], tsp: ['volume', 5], tbsp: ['volume', 15], cup: ['volume', 240] };
 const FRACTION_UNITS = new Set(['cup', 'tbsp', 'tsp', '', 'pcs', 'can', 'jar', 'bag', 'bottle', 'pack', 'clove', 'bunch', 'pinch', 'slice', 'sprig', 'handful', 'stick']);
 
 function parseAmount(text) {
@@ -546,6 +546,82 @@ function deductionAmount(ingredient, item) {
   const to = UNIT_SCALES[itemUnit];
   if (from && to && from[0] === to[0]) return Math.round((amount * from[1] / to[1]) * 100) / 100;
   return 0;
+}
+
+// An amount in another unit when both measure the same thing ("1 kg" as 1000 g, "2" as 2 pcs), otherwise null.
+// Units the app doesn't know ("2 sprigs") only add up with the same word.
+function amountIn(amount, unit, toUnit) {
+  const from = canonicalUnit(unit);
+  const to = canonicalUnit(toUnit);
+  const isCount = (value) => value === '' || value === 'pcs';
+  if (from === null || to === null) return String(unit || '').trim().toLowerCase() === String(toUnit || '').trim().toLowerCase() ? amount : null;
+  if (from === to || (isCount(from) && isCount(to))) return amount;
+  const a = UNIT_SCALES[from];
+  const b = UNIT_SCALES[to];
+  return a && b && a[0] === b[0] ? Math.round((amount * a[1] / b[1]) * 100) / 100 : null;
+}
+
+// Units you pick for an item or a shopping line (v4.5.4): amounts that can be measured, so cooking can take off what
+// a recipe uses (no bags or jars). The kitchen stays metric; a device set to imperial (Settings → Units) shows and
+// enters lb, oz and fl oz instead of g, kg, ml and l, converted where it is shown and where it is saved.
+const UNITS_KEY = 'goodstock-units-v1';
+const METRIC_UNITS = ['g', 'kg', 'ml', 'l', 'pcs', 'cup', 'tbsp', 'tsp'];
+const IMPERIAL_UNITS = ['oz', 'lb', 'fl oz', 'pcs', 'cup', 'tbsp', 'tsp'];
+const UNIT_NAMES = {
+  g: N_('grams (g)'), kg: N_('kilograms (kg)'), ml: N_('millilitres (ml)'), l: N_('litres (l)'), pcs: N_('pieces'),
+  cup: N_('cups'), tbsp: N_('tablespoons (tbsp)'), tsp: N_('teaspoons (tsp)'), oz: N_('ounces (oz)'), lb: N_('pounds (lb)'), 'fl oz': N_('fluid ounces (fl oz)'),
+};
+const METRIC_ONLY = new Set(['mg', 'g', 'kg', 'ml', 'cl', 'dl', 'l']);
+const roundTo = (value, places) => Math.round(value * 10 ** places) / 10 ** places;
+
+function unitSystem() {
+  try { return localStorage.getItem(UNITS_KEY) === 'imperial' ? 'imperial' : 'metric'; } catch { return 'metric'; }
+}
+
+// A stored amount as this device shows it: as stored, or in oz/lb (16 oz and up) and fl oz on an imperial device.
+function shownAmount(quantity, unit) {
+  const amount = Number(quantity);
+  const canonical = canonicalUnit(unit);
+  if (unitSystem() !== 'imperial' || !Number.isFinite(amount) || !METRIC_ONLY.has(canonical)) return { quantity, unit: unit || '' };
+  const [kind, scale] = UNIT_SCALES[canonical];
+  if (kind === 'volume') return { quantity: roundTo((amount * scale) / 29.5735, 1), unit: 'fl oz' };
+  const ounces = (amount * scale) / 28.3495;
+  return ounces >= 16 ? { quantity: roundTo(ounces / 16, 2), unit: 'lb' } : { quantity: roundTo(ounces, 1), unit: 'oz' };
+}
+
+function amountText(quantity, unit) {
+  const shown = shownAmount(quantity, unit);
+  return `${shown.quantity}${shown.unit ? ` ${shown.unit}` : ''}`;
+}
+
+// An amount entered in imperial, saved metric: whole grams or millilitres, or kg and l from 1000 up.
+function storedAmount(quantity, unit) {
+  const conversion = TO_METRIC[canonicalUnit(unit)];
+  if (!conversion || !Number.isFinite(quantity)) return { quantity, unit };
+  const base = quantity * conversion[0];
+  if (base >= 1000) return { quantity: roundTo(base / 1000, 2), unit: conversion[1] === 'g' ? 'kg' : 'l' };
+  return { quantity: Math.round(base), unit: conversion[1] };
+}
+
+// How much the − and ＋ buttons change, in the unit shown: 50 g or 50 ml, else one.
+const stepFor = (unit) => (['g', 'ml'].includes(canonicalUnit(unit)) ? 50 : 1);
+
+// Running low: below the amount a staple should keep, else 1 or less of something counted, or 100 g or 100 ml or
+// less of something weighed or poured.
+function isRunningLow(item) {
+  const quantity = Number(item.quantity);
+  if (!(quantity > 0)) return false;
+  if (Number(item.minimum) > 0) return quantity < Number(item.minimum);
+  const unit = canonicalUnit(item.unit);
+  if (METRIC_ONLY.has(unit) || ['oz', 'lb', 'fl oz'].includes(unit)) return quantity * UNIT_SCALES[unit][1] <= 100;
+  return quantity <= 1;
+}
+
+// Shopping lines that are the same ingredient share this key: its catalog entry, so "2 potatoes" and "1 potato" (or
+// "Kartoffeln") are one line, otherwise its cleaned name.
+function shoppingKey(name) {
+  const record = ingredientRecord(name);
+  return record ? `catalog:${record.id}` : cleanIngredient(name);
 }
 
 function matchingInventory(ingredient) {

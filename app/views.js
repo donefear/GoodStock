@@ -2,13 +2,21 @@
 // shopping and tools, undo, the item and cook dialogs, and barcodes. Recipes are in part 4 (app/recipes.js).
 // The parts load in order as plain scripts (see index.html) and share one global scope.
 
-// Text size: a per-device preference that scales the whole interface (CSS zoom, which Chrome 81 has too).
-const TEXT_SIZE_KEY = 'goodstock-text-size-v1';
-const TEXT_SIZES = { normal: 1, large: 1.15, xlarge: 1.3 };
+// Text size: a per-device preference that scales the whole interface (CSS zoom, which Chrome 81 has too). Normal
+// (115%) is the default since v4.5.4; the old names (normal, large, xlarge) move one step down so a saved size stays.
+const TEXT_SIZE_KEY = 'goodstock-text-size-v2';
+const OLD_TEXT_SIZE_KEY = 'goodstock-text-size-v1';
+const TEXT_SIZES = { small: 1, normal: 1.15, large: 1.3 };
+
+function savedTextSize() {
+  const saved = localStorage.getItem(TEXT_SIZE_KEY);
+  if (saved) return saved;
+  return { normal: 'small', large: 'normal', xlarge: 'large' }[localStorage.getItem(OLD_TEXT_SIZE_KEY)] || 'normal';
+}
 
 function applyTextSize(size) {
   const chosen = TEXT_SIZES[size] ? size : 'normal';
-  document.documentElement.style.zoom = chosen === 'normal' ? '' : String(TEXT_SIZES[chosen]);
+  document.documentElement.style.zoom = TEXT_SIZES[chosen] === 1 ? '' : String(TEXT_SIZES[chosen]);
   document.documentElement.dataset.textSize = chosen;
   const select = $('#text-size-select');
   if (select) select.value = chosen;
@@ -93,7 +101,7 @@ async function initialize() {
   detectFlexGap();
   await setLanguage(preferredLanguage());
   applyTheme(localStorage.getItem(THEME_KEY) || 'light');
-  try { applyTextSize(localStorage.getItem(TEXT_SIZE_KEY)); } catch { applyTextSize('normal'); }
+  try { applyTextSize(savedTextSize()); } catch { applyTextSize('normal'); }
   document.documentElement.classList.toggle('is-standalone', STANDALONE);
   const cached = localStorage.getItem(STORAGE_KEY);
   // First visit on this device: the starting kitchen in the device's language (an existing server kitchen
@@ -266,31 +274,34 @@ const KIND_LABELS = { Food: N_('Food'), Household: N_('Household') };
 const kindLabel = (kind) => (KIND_LABELS[kind] ? t(KIND_LABELS[kind]) : kind || '');
 const ALL_LOCATIONS = N_('All locations');
 
+// "Running low" at the top of the inventory is a filter: tap it to see only those items (isRunningLow in core.js).
+let inventoryLowOnly = false;
+
 function renderInventory() {
   const locations = [ALL_LOCATIONS, ...state.locations];
   const rows = state.inventory.filter((item) => {
     const matchesText = matchesSearch(inventoryQuery, `${item.name} ${item.kind} ${kindLabel(item.kind)}`, [item.name]);
-    return matchesText && (inventoryLocation === ALL_LOCATIONS || item.location === inventoryLocation);
+    return matchesText && (inventoryLocation === ALL_LOCATIONS || item.location === inventoryLocation) && (!inventoryLowOnly || isRunningLow(item));
   });
   const foodCount = state.inventory.filter((item) => item.kind !== 'Household' && Number(item.quantity) > 0).length;
-  const lowCount = state.inventory.filter((item) => Number(item.quantity) > 0 && Number(item.quantity) <= 1).length;
+  const lowCount = state.inventory.filter(isRunningLow).length;
   const scan = canScanBarcodes() ? `<button class="button button-outline" data-action="scan-inventory" title="${t('Scan a product to use it up or add it')}"><span aria-hidden="true">▥</span> ${t('Scan')}</button>` : '';
   const action = `<div class="inventory-heading-actions">${scan}<button class="button button-outline" data-action="stocktake-pick" title="${t('Go through one place, item by item')}"><span aria-hidden="true">☑</span> ${t('Check a place')}</button><button class="button button-primary" data-action="add-item"><span aria-hidden="true">＋</span> ${t('Add item')}</button></div>`;
   return `${pageHeading(t('THE KITCHEN, AT A GLANCE'), t('Good things on hand.'), t('A clear picture of what is here, and where it lives.'), action)}
-    <div class="stats-row"><div class="stat"><span class="stat-icon mint">▤</span><div><strong>${foodCount}</strong><span>${tp(foodCount, 'food item', 'food items')}</span></div></div><div class="stat"><span class="stat-icon coral">◷</span><div><strong>${lowCount}</strong><span>${t('running low')}</span></div></div><div class="stat"><span class="stat-icon yellow">⌂</span><div><strong>${state.locations.length}</strong><span>${tp(state.locations.length, 'storage spot', 'storage spots')}</span></div></div></div>
+    <div class="stats-row"><div class="stat"><span class="stat-icon mint">▤</span><div><strong>${foodCount}</strong><span>${tp(foodCount, 'food item', 'food items')}</span></div></div><button class="stat stat-button ${inventoryLowOnly ? 'active' : ''}" type="button" data-action="filter-low" aria-pressed="${inventoryLowOnly}" title="${t('Show only what is running low')}" ${lowCount || inventoryLowOnly ? '' : 'disabled'}><span class="stat-icon coral">◷</span><div><strong>${lowCount}</strong><span>${t('running low')}</span></div></button><div class="stat"><span class="stat-icon yellow">⌂</span><div><strong>${state.locations.length}</strong><span>${tp(state.locations.length, 'storage spot', 'storage spots')}</span></div></div></div>
     ${renderStocktake()}
     ${renderThawPanel()}
     ${renderExpirationPanel()}
     ${renderMonthOverview()}
     ${renderShelfLifeSuggestions()}
-    <section class="section-block"><div class="section-heading"><div><h2>${t('Everything in its place')}</h2><span class="muted">${tp(rows.length, '{count} item', '{count} items')}</span></div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="${t('Find something')}" aria-label="${t('Find an item')}" /></label><select id="location-filter" aria-label="${t('Filter by location')}">${locations.map((location) => `<option value="${escapeHtml(location)}" ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location === ALL_LOCATIONS ? t(ALL_LOCATIONS) : location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="${t('Inventory display mode')}"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">${t('List')}</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">${t('Map')}</button></div></div></div>
-    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><span>${escapeHtml(item.quantity)} <small>${escapeHtml(item.unit || '')}</small></span><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
+    <section class="section-block" id="inventory-items"><div class="section-heading"><div><h2>${inventoryLowOnly ? t('Running low') : t('Everything in its place')}</h2><span class="muted">${tp(rows.length, '{count} item', '{count} items')}</span>${inventoryLowOnly ? `<button class="text-button" type="button" data-action="filter-low">× ${t('Show everything')}</button>` : ''}</div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="${t('Find something')}" aria-label="${t('Find an item')}" /></label><select id="location-filter" aria-label="${t('Filter by location')}">${locations.map((location) => `<option value="${escapeHtml(location)}" ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location === ALL_LOCATIONS ? t(ALL_LOCATIONS) : location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="${t('Inventory display mode')}"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">${t('List')}</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">${t('Map')}</button></div></div></div>
+    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><span>${escapeHtml(shownAmount(item.quantity, item.unit).quantity)} <small>${escapeHtml(shownAmount(item.quantity, item.unit).unit)}</small></span><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery || inventoryLowOnly ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryLowOnly ? t('Nothing is running low.') : inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery || inventoryLowOnly ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
 }
 
 // Extra notes on an inventory row: a staple's minimum, when it was opened, when it went into the freezer.
 function itemDetails(item) {
   const notes = [];
-  if (Number(item.minimum) > 0) notes.push(t('keep at least {amount}', { amount: `${item.minimum}${item.unit ? ` ${item.unit}` : ''}` }));
+  if (Number(item.minimum) > 0) notes.push(t('keep at least {amount}', { amount: amountText(item.minimum, item.unit) }));
   if (item.openedOn && dateFromKey(item.openedOn)) notes.push(t('opened {date}', { date: expirationDateText(item.openedOn) }));
   if (isFrozen(item) && item.frozenOn && dateFromKey(item.frozenOn)) notes.push(t('frozen {date}', { date: expirationDateText(item.frozenOn) }));
   return notes.map((note) => ` <i>·</i> ${escapeHtml(note)}`).join('');
@@ -336,7 +347,7 @@ function renderInventoryMap(rows) {
   const itemIcon = (item) => item.kind === 'Household' ? '🧽' : categoryIcons[ingredientRecord(item.name)?.category] || '◌';
   return `<div class="storage-map">${locations.map((location) => {
     const items = rows.filter((item) => item.location === location);
-    return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${tp(items.length, '{count} item', '{count} items')}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(kindLabel(item.kind))}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(item.quantity)}</strong><small>${escapeHtml(item.unit || t('items'))}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<p class="storage-zone-empty">${t('Nothing stored here yet')}</p>`}</section>`;
+    return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${tp(items.length, '{count} item', '{count} items')}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(kindLabel(item.kind))}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(shownAmount(item.quantity, item.unit).quantity)}</strong><small>${escapeHtml(shownAmount(item.quantity, item.unit).unit || t('items'))}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<p class="storage-zone-empty">${t('Nothing stored here yet')}</p>`}</section>`;
   }).join('')}</div>`;
 }
 
@@ -374,7 +385,7 @@ function renderStocktake() {
       : stocktake.asking === item.id
         ? `<button class="button button-small button-outline" type="button" data-action="stocktake-used" data-id="${id}">${t('Used up')}</button><button class="button button-small button-outline" type="button" data-action="stocktake-wasted" data-id="${id}">${t('Thrown away')}</button><button class="button button-small button-quiet" type="button" data-action="stocktake-gone-cancel">${t('Cancel')}</button>`
         : `<button class="button button-small button-primary" type="button" data-action="stocktake-ok" data-id="${id}">${t('Still there')}</button><button class="button button-small button-outline" type="button" data-action="edit-item" data-id="${id}">${t('Less')}</button><button class="button button-small button-outline" type="button" data-action="stocktake-gone" data-id="${id}">${t('Gone')}</button>`;
-    return `<article class="stocktake-row${seen ? ' is-seen' : ''}"><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.quantity)} ${escapeHtml(item.unit || '')}${item.expiresOn ? ` · ${escapeHtml(expirationText(item))}` : ''}</span></div><div class="stocktake-actions">${actions}</div></article>`;
+    return `<article class="stocktake-row${seen ? ' is-seen' : ''}"><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(amountText(item.quantity, item.unit))}${item.expiresOn ? ` · ${escapeHtml(expirationText(item))}` : ''}</span></div><div class="stocktake-actions">${actions}</div></article>`;
   }).join('');
   return `<section class="section-block stocktake-panel"><div class="section-heading"><div><span class="eyebrow">${t('STOCKTAKE')} · ${escapeHtml(stocktake.location.toUpperCase())}</span><h2>${left ? tp(left, '{count} item to check', '{count} items to check') : t('All checked')}</h2></div>${close}</div>
     ${items.length ? `<div class="stocktake-list">${rows}</div>` : `<p class="muted">${t('Nothing is stored here.')}</p>`}
@@ -438,7 +449,7 @@ function renderWeek() {
   return `${pageHeading(t('A GOOD WEEK STARTS HERE'), t('Make room for dinner.'), t('Plan meals at your own pace. Your list will follow along.'), `<div class="week-heading-actions">${fillButton}${repeatButton}<button class="button button-outline" data-action="generate-shopping">${t('Build shopping list')} <span aria-hidden="true">↗</span></button></div>`)}
     <div class="week-navigation"><button class="icon-button" data-action="previous-week" aria-label="${t('Previous week')}" title="${t('Previous week')}">‹</button><label class="date-jump">${t('Jump to date')}<input id="week-date" type="date" value="${dateKey(selectedDate)}" aria-label="${t('Select a date')}" /></label><span class="week-range">${escapeHtml(weekLabel)}</span><button class="button button-quiet today-button" data-action="go-today">${t('Today')}</button><button class="icon-button" data-action="next-week" aria-label="${t('Next week')}" title="${t('Next week')}">›</button></div>
     ${renderWeekSuggestions()}
-    <section class="week-planner"><div class="week-strip">${dayButtons}</div><div class="day-detail"><div class="section-heading"><div><span class="eyebrow">${t('YOUR PLAN')}</span><h2>${escapeHtml(selectedLabel)}</h2></div><div class="day-detail-actions">${copyButton}<span class="plan-count">${tp(selectedPlans.length, '{count} meal', '{count} meals')}</span></div></div>${copyRow}<div class="planned-list">${planned}</div></div></section>
+    <section class="week-planner"><div class="week-strip">${dayButtons}</div><div class="day-detail"><h2 class="visually-hidden">${escapeHtml(selectedLabel)}</h2><div class="planned-list">${planned}</div>${copyButton ? `<div class="day-detail-actions">${copyButton}</div>` : ''}${copyRow}</div></section>
     <section class="section-block recipe-picker"><div class="section-heading"><div><span class="eyebrow">${t('PICK SOMETHING GOOD')}</span><h2>${t('Add a recipe to this day')}</h2></div><button class="text-button" data-view="recipes">${t('Browse all recipes')} <span aria-hidden="true">→</span></button></div><div class="picker-grid">${recipeOptions.slice(0, 3).map((recipe) => `<article class="picker-item"><span class="recipe-number">${tp(recipe.ingredients.length, '{count} INGREDIENT', '{count} INGREDIENTS', { count: String(recipe.ingredients.length).padStart(2, '0') })}</span><strong>${escapeHtml(recipe.name)}</strong>${soonTag(recipe)}<p>${escapeHtml(recipe.description || t('An idea from your recipe shelf.'))}</p><div class="picker-foot"><span class="match-tag ${missingIngredients(recipe).length ? 'has-missing' : ''}">${missingIngredients(recipe).length ? tp(missingIngredients(recipe).length, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</span><button class="button button-small button-dark" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${t('Add')} <span aria-hidden="true">＋</span></button></div></article>`).join('') || `<p class="muted">${t('Add recipes in your recipe library first.')}</p>`}</div></section>`;
 }
 
@@ -639,7 +650,7 @@ function renderShopping() {
   // A rough total for what's left to buy, from remembered prices (0.51).
   const priced = state.shopping.filter((item) => !item.checked).map((item) => priceOf(item.name, item.quantity, item.unit)).filter((price) => price !== null);
   const total = priced.length ? `<span class="shopping-total">${escapeHtml(tp(priced.length, 'About {amount} for {count} item with a known price', 'About {amount} for {count} items with a known price', { amount: formatMoney(priced.reduce((sum, price) => sum + price, 0)) }))}</span>` : '';
-  const row = (item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}${item.restock ? ` <small class="restock-tag">${t('restock')}</small>` : ''}</span></label><span class="shopping-amount">${escapeHtml(item.quantity || '')} ${escapeHtml(item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">${t('Put away')}</button>` : `<span class="shopping-source">${escapeHtml(item.source || t('Shopping list'))}</span>`}</article>`;
+  const row = (item) => `<article class="shopping-row ${item.checked ? 'checked' : ''}"><label class="check-wrap"><input type="checkbox" data-action="check-shopping" data-id="${escapeHtml(item.id)}" ${item.checked ? 'checked' : ''} /><span class="custom-check" aria-hidden="true"></span><span class="shopping-name">${escapeHtml(item.name)}${item.restock ? ` <small class="restock-tag">${t('restock')}</small>` : ''}</span></label><span class="shopping-amount">${escapeHtml(item.quantity ? amountText(item.quantity, item.unit) : item.unit || '')}</span>${item.checked ? `<button class="button button-small button-outline putaway-button" data-action="put-away" data-id="${escapeHtml(item.id)}">${t('Put away')}</button>` : `<span class="shopping-source">${escapeHtml(item.source || t('Shopping list'))}</span>`}</article>`;
   const groups = shoppingGroups(state.shopping);
   const rows = groups.length > 1
     ? groups.map((group) => `<h3 class="shopping-group${group.items.some((item) => !item.checked) ? '' : ' is-done'}">${escapeHtml(t(group.key))} <span>${group.items.filter((item) => !item.checked).length || '✓'}</span></h3>${group.items.map(row).join('')}`).join('')
@@ -648,9 +659,10 @@ function renderShopping() {
     ? `<button class="button button-outline" data-action="share-shopping-text">${t('Share list')} <span aria-hidden="true">↗</span></button>`
     : `<button class="button button-outline" data-action="show-shopping-qr">${t('Share to phone')} <span aria-hidden="true">▦</span></button>`;
   const printButton = canPrint() && remaining ? `<button class="button button-outline" data-action="print">${t('Print')} <span aria-hidden="true">⎙</span></button>` : '';
-  const actions = `<div class="shopping-heading-actions">${state.shopping.length ? shareButton : ''}${printButton}<button class="button button-outline" data-action="generate-shopping">${t('Refresh from plan')} <span aria-hidden="true">↻</span></button></div>`;
+  const recipesButton = state.recipes.length ? `<button class="button button-outline" data-action="recipe-shopping">${t('From recipes')}</button>` : '';
+  const actions = `<div class="shopping-heading-actions">${state.shopping.length ? shareButton : ''}${printButton}${recipesButton}<button class="button button-outline" data-action="generate-shopping">${t('Refresh from plan')} <span aria-hidden="true">↻</span></button><button class="button button-primary" data-action="add-shopping-item"><span aria-hidden="true">＋</span> ${t('Add item')}</button></div>`;
   return `${pageHeading(t('OUT AND ABOUT'), t('The list, in hand.'), tp(remaining, '{count} thing left to pick up. Check off as you go.', '{count} things left to pick up. Check off as you go.'), actions)}
-    <section class="section-block shopping-block"><div class="section-heading"><div><h2>${t('This week’s list')}</h2><span class="muted">${tp(state.shopping.length, '{count} item', '{count} items')}</span>${total}</div><div class="list-actions">${remaining ? `<button class="text-button" data-action="check-all">✓ ${t('Check all')}</button>` : ''}${state.shopping.some((item) => item.checked) ? `<button class="button button-small button-outline" data-action="put-all-away">${t('Put all away')}</button><button class="text-button" data-action="clear-checked">${t('Clear checked')}</button>` : ''}${state.shopping.length ? `<button class="text-button clear-list-button" data-action="clear-list">× ${t('Clear list')}</button>` : ''}</div></div>${shopOrderNote()}${rows ? `<div class="shopping-list">${rows}</div>` : `<div class="empty-state compact"><span class="empty-mark">☷</span><strong>${t('Your list is nice and clear.')}</strong><p>${t('Build it from the meals in your weekly plan.')}</p><button class="button button-primary" data-action="generate-shopping">${t('Build from this week')}</button></div>`}</section>${printFooter()}`;
+    <section class="section-block shopping-block"><div class="section-heading"><div><h2>${t('This week’s list')}</h2><span class="muted">${tp(state.shopping.length, '{count} item', '{count} items')}</span>${total}</div><div class="list-actions">${remaining ? `<button class="text-button" data-action="check-all">✓ ${t('Check all')}</button>` : ''}${state.shopping.some((item) => item.checked) ? `<button class="button button-small button-outline" data-action="put-all-away">${t('Put all away')}</button><button class="text-button" data-action="clear-checked">${t('Clear checked')}</button>` : ''}${state.shopping.length ? `<button class="text-button clear-list-button" data-action="clear-list">× ${t('Clear list')}</button>` : ''}</div></div>${shopOrderNote()}${rows ? `<div class="shopping-list">${rows}</div>` : `<div class="empty-state compact"><span class="empty-mark">☷</span><strong>${t('Your list is nice and clear.')}</strong><p>${t('Build it from the meals in your weekly plan.')}</p><button class="button button-primary" data-action="generate-shopping">${t('Build from this week')}</button>${state.recipes.length ? ` <button class="button button-outline" data-action="recipe-shopping">${t('From recipes')}</button>` : ''}</div>`}</section>${printFooter()}`;
 }
 
 // Printing: the browser's print dialog with the print styles at the end of styles.css (a clean recipe page, or the
@@ -860,7 +872,7 @@ function shoppingListText(items) {
   let group = '';
   for (const item of groupedShoppingItems(items)) {
     if (item.group && item.group !== group) { group = item.group; lines.push('', group.toUpperCase()); }
-    lines.push(`☐ ${item.name}${item.quantity ? ` · ${item.quantity}${item.unit ? ` ${item.unit}` : ''}` : ''}`);
+    lines.push(`☐ ${item.name}${item.quantity ? ` · ${amountText(item.quantity, item.unit)}` : ''}`);
   }
   return lines.join('\n');
 }
@@ -966,7 +978,7 @@ async function fillFromBarcode(code) {
     }
     form.elements.name.value = product.name;
     form.elements.barcode.value = code;
-    if (product.amount) { form.elements.quantity.value = product.amount; form.elements.unit.value = product.unit; }
+    if (product.amount) fillAmountFields(form, product.amount, product.unit);
     status.textContent = t('Found: {name}', { name: product.name });
     updateExpirationSuggestion(form.elements.name.value, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'));
   } catch {
@@ -1009,7 +1021,7 @@ async function scanPutaway() {
   try {
     const product = await lookupBarcode(code);
     if (!product) { status.textContent = t('Product not found. The barcode is kept with the item.'); return; }
-    if (product.amount) { form.elements.quantity.value = product.amount; form.elements.unit.value = product.unit; }
+    if (product.amount) fillAmountFields(form, product.amount, product.unit);
     const listed = $('#putaway-item-name').textContent;
     if (!ingredientRecord(listed) && ingredientRecord(product.name)) form.elements.estimateName.value = product.name;
     updateExpirationSuggestion(form.elements.estimateName.value || listed, form.elements.location.value, form.elements.expiresOn, $('#putaway-expiry-note'));
@@ -1061,7 +1073,7 @@ function showScanResult({ code = '', item = null, product = null, failed = false
     copy.textContent = message;
   } else if (item) {
     title.textContent = item.name;
-    copy.textContent = t('{amount} in {location}', { amount: `${item.quantity}${item.unit ? ` ${item.unit}` : ''}`, location: item.location });
+    copy.textContent = t('{amount} in {location}', { amount: amountText(item.quantity, item.unit), location: item.location });
     actions = (countsInPieces(item) && Number(item.quantity) > 1 ? button('scan-use-one', t('Use one')) : '')
       + button('scan-used', t('Used up'), 'button-primary') + button('scan-wasted', t('Thrown away')) + button('scan-edit', t('Edit'), 'button-quiet');
   } else {
@@ -1092,7 +1104,7 @@ function handleScanAction(action) {
     form.elements.barcode.value = code || '';
     if (product) {
       form.elements.name.value = product.name;
-      if (product.amount) { form.elements.quantity.value = product.amount; form.elements.unit.value = product.unit; }
+      if (product.amount) fillAmountFields(form, product.amount, product.unit);
       updateExpirationSuggestion(product.name, form.elements.location.value, form.elements.expiresOn, $('#expiry-estimate-note'), itemFormStartDate(form));
     }
   }
@@ -1134,6 +1146,32 @@ function scanBarcodeInPage() {
   });
 }
 
+// The Unit field is a list of this device's units (fillAmountFields). An item saved with a unit that can't be
+// measured ("bag") leaves it empty, so a real one gets picked, and the hint says what it was.
+function fillAmountFields(form, quantity, unit) {
+  const shown = shownAmount(quantity, unit);
+  const units = unitSystem() === 'imperial' ? IMPERIAL_UNITS : METRIC_UNITS;
+  const chosen = shown.unit ? canonicalUnit(shown.unit) : 'pcs';
+  const extra = chosen && !units.includes(chosen) && UNIT_SCALES[chosen] ? chosen : '';
+  const known = units.includes(chosen) || Boolean(extra);
+  const options = extra ? [...units, extra] : units;
+  form.elements.unit.innerHTML = `<option value="" disabled ${known ? '' : 'selected'}>${t('Choose a unit')}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${option === chosen ? 'selected' : ''}>${escapeHtml(UNIT_NAMES[option] ? t(UNIT_NAMES[option]) : option)}</option>`).join('')}`;
+  form.elements.quantity.value = shown.quantity === '' || shown.quantity === undefined || shown.quantity === null ? 1 : shown.quantity;
+  const hint = form.querySelector('.unit-hint');
+  if (hint) hint.textContent = known ? t('Weigh or count it: 1 kg of oats, not 1 bag.') : t('Was “{unit}”. Pick a weight, a volume or pieces.', { unit: shown.unit });
+}
+
+// The amount as it is saved: metric, also when this device enters imperial.
+const readAmountFields = (form) => storedAmount(Number(form.elements.quantity.value), form.elements.unit.value);
+
+function openShoppingItemDialog() {
+  const form = $('#shopping-item-form');
+  form.reset();
+  fillAmountFields(form, 1, 'pcs');
+  $('#shopping-item-dialog').showModal();
+  form.elements.name.focus();
+}
+
 function openItemDialog(item) {
   const dialog = $('#item-dialog');
   const form = $('#item-form');
@@ -1145,9 +1183,10 @@ function openItemDialog(item) {
   form.elements.id.value = item?.id || '';
   form.elements.barcode.value = item?.barcode || '';
   form.elements.name.value = item?.name || '';
-  form.elements.quantity.value = item?.quantity ?? 1;
-  form.elements.unit.value = item?.unit || '';
-  form.elements.minimum.value = Number(item?.minimum) > 0 ? item.minimum : '';
+  fillAmountFields(form, item ? item.quantity : 1, item ? item.unit : 'pcs');
+  // The minimum in the unit the amount is shown in.
+  const minimum = Number(item?.minimum) > 0 ? amountIn(Number(item.minimum), item.unit, shownAmount(item.quantity, item.unit).unit) : null;
+  form.elements.minimum.value = minimum === null ? (Number(item?.minimum) > 0 ? item.minimum : '') : roundTo(minimum, 2);
   // A price saved with the item, else the last known one for this product and amount (0.51).
   const savedPrice = Number(item?.unitPrice) > 0 && Number(item?.quantity) > 0 ? Math.round(item.unitPrice * item.quantity * 100) / 100 : null;
   form.elements.price.value = savedPrice ?? (item ? priceOf(item.name, item.quantity, item.unit) ?? '' : '');

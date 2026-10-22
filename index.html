@@ -36,7 +36,7 @@
           <button class="nav-item" data-view="tools"><span class="nav-icon" aria-hidden="true">⚒</span>Tools <span class="nav-count" id="timer-count"></span></button>
         </nav>
         <div class="sidebar-bottom">
-          <div class="sync-card"><span class="sync-dot" id="sync-dot"></span><div><strong id="sync-label">Checking sync</strong><small id="sync-detail">Your kitchen, in sync</small></div></div>
+          <button class="sync-card" type="button" data-action="open-sync-settings" title="Open settings"><span class="sync-dot" id="sync-dot"></span><span class="sync-text"><strong id="sync-label">Checking sync</strong><small id="sync-detail">Your kitchen, in sync</small></span></button>
           <span class="side-foot">A little less waste, every day.</span>
           <span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Made by donefear</span>
         </div>
@@ -59,7 +59,7 @@
         <input type="hidden" name="barcode" />
         <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients, in your language and in English. A barcode number works too.</span></label>
         <div class="barcode-row"><button class="button button-outline button-small" type="button" data-action="scan-barcode" id="scan-barcode-button" hidden>Scan barcode</button><span class="field-hint" id="barcode-status" role="status" aria-live="polite"></span></div>
-        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<input name="unit" placeholder="e.g. bags" /></label></div>
+        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
         <label>Keep at least<input name="minimum" type="number" min="0" step="any" inputmode="decimal" placeholder="Optional" /><span class="field-hint">For staples. Below this amount it goes on the shopping list by itself.</span></label>
         <label>Price<input name="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Optional" /><span class="field-hint">For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.</span></label>
         <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option value="Food">Food</option><option value="Household">Household</option></select></label></div>
@@ -69,6 +69,15 @@
         <div class="opened-row" id="opened-row" hidden><button class="button button-outline button-small" type="button" data-action="item-opened" id="item-opened-button">Opened today</button><span class="field-hint" id="item-opened-note" role="status" aria-live="polite"></span></div>
         <div class="remove-choice" id="item-remove-choice" hidden><span>Why is it gone?</span><button class="button button-outline button-small" type="button" data-action="remove-used">Used up</button><button class="button button-outline button-small" type="button" data-action="remove-wasted">Thrown away</button><button class="button button-quiet button-small" type="button" data-action="remove-plain">Just remove</button></div>
         <div class="dialog-actions"><button class="button button-quiet item-remove-button" type="button" data-action="remove-item" id="item-remove" hidden>Remove item</button><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Save item</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="shopping-item-dialog" class="app-dialog">
+      <form id="shopping-item-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow">SHOPPING</span><h2>Add to the list</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><span class="field-hint">Common ingredients, in your language and in English.</span></label>
+        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
+        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Add to the shopping list</button></div>
       </form>
     </dialog>
 
@@ -105,6 +114,7 @@
         <div class="dialog-heading"><div><span class="eyebrow" id="recipe-dialog-source">RECIPE</span><h2 id="recipe-dialog-title">Recipe</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <p class="dialog-copy" id="recipe-dialog-description"></p>
         <ul class="recipe-ingredient-list" id="recipe-dialog-ingredients"></ul>
+        <div class="recipe-dialog-steps" id="recipe-dialog-steps" hidden></div>
         <div class="dialog-actions" id="recipe-dialog-actions"></div>
       </form>
     </dialog>
@@ -116,8 +126,7 @@
           <summary>Import from a website or pasted text</summary>
           <label>Recipe link<span class="recipe-import-row"><input name="importUrl" type="url" inputmode="url" placeholder="https://…" autocomplete="off" /><button class="button button-outline" type="button" data-action="recipe-import-url">Fetch</button></span><span class="field-hint">Works with most recipe websites. The app host needs internet access.</span></label>
           <label>Or paste the recipe<textarea name="importText" rows="5" placeholder="Paste the title, the ingredients and the steps. Headings like “Ingredients” and “Instructions” help."></textarea></label>
-          <button class="button button-outline" type="button" data-action="recipe-import-text">Fill in from text</button>
-          <label class="button button-outline recipe-file-button">Open a recipe file<input type="file" id="recipe-file" accept=".goodstock-recipe,.json,application/json" hidden /></label>
+          <div class="recipe-import-actions"><button class="button button-outline" type="button" data-action="recipe-import-text">Fill in from text</button><label class="button button-outline recipe-file-button">Open a recipe file<input type="file" id="recipe-file" accept=".goodstock-recipe,.json,application/json" hidden /></label></div>
           <p class="recipe-import-status" id="recipe-import-status" role="status" aria-live="polite"></p>
         </details>
         <input type="hidden" name="recipeId" />
@@ -140,7 +149,7 @@
         <input type="hidden" name="estimateName" />
         <p class="putaway-item" id="putaway-item-name"></p>
         <div class="barcode-row"><button class="button button-outline button-small" type="button" data-action="scan-putaway" id="putaway-scan-button" hidden>Scan barcode</button><span class="field-hint" id="putaway-barcode-status" role="status" aria-live="polite"></span></div>
-        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" value="1" required /></label><label>Unit<input name="unit" placeholder="e.g. cans" /></label></div>
+        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" value="1" required /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
         <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="putaway-expiry-note">An estimate is added for supported products.</span></label>
         <label>Stored in<select name="location"></select></label>
         <label>Price paid<input name="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Optional" /></label>
@@ -168,7 +177,8 @@
         <div class="inventory-mode-switch settings-tabs" role="tablist" aria-label="Settings"><button type="button" role="tab" class="active" aria-selected="true" data-action="settings-tab" data-tab="general">General</button><button type="button" role="tab" aria-selected="false" data-action="settings-tab" data-tab="connections">Connections</button><button type="button" role="tab" aria-selected="false" data-action="settings-tab" data-tab="data">Your data</button></div>
         <div class="settings-panel" data-panel="general" role="tabpanel">
         <label class="setting-language" for="language-select"><span><strong>Language</strong><small>Menus and buttons on this device. Recipes can be translated with DeepL.</small></span><select id="language-select"></select></label>
-        <label class="setting-language" for="text-size-select"><span><strong>Text size</strong><small>Bigger text and buttons on this device, for reading from across the kitchen</small></span><select id="text-size-select"><option value="normal">Normal</option><option value="large">Large</option><option value="xlarge">Extra large</option></select></label>
+        <label class="setting-language" for="units-select"><span><strong>Units</strong><small>Weights and volumes on this device. The kitchen itself is kept in metric.</small></span><select id="units-select"><option value="metric">Metric (g, kg, ml, l)</option><option value="imperial">Imperial (oz, lb, fl oz)</option></select></label>
+        <label class="setting-language" for="text-size-select"><span><strong>Text size</strong><small>Bigger text and buttons on this device, for reading from across the kitchen</small></span><select id="text-size-select"><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option></select></label>
         <label class="setting-language" for="currency-select"><span><strong>Money</strong><small>For prices you add to items, what thrown-away food cost and the shopping list total, on this device</small></span><select id="currency-select"></select></label>
         <label class="setting-toggle" for="dark-mode-toggle"><span><strong>Dark mode</strong><small>Use a darker palette on this device</small></span><input id="dark-mode-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
         <label class="setting-toggle" for="expiry-notifications-toggle"><span><strong>Expiration notifications</strong><small>Get a daily browser alert for items due within 3 days</small></span><input id="expiry-notifications-toggle" type="checkbox" /><span class="toggle-track" aria-hidden="true"></span></label>
@@ -231,7 +241,7 @@
         <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v4.5.2 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v4.5.4 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 
@@ -264,6 +274,16 @@
         <div class="dialog-heading"><div><span class="eyebrow">SHARED WITH GOODSTOCK</span><h2>What is it?</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <p class="dialog-copy shared-preview" id="shared-preview"></p>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-outline" type="button" data-action="share-to-shopping">Add to the shopping list</button><button class="button button-primary" type="button" data-action="share-to-recipe">Fill in a recipe</button></div>
+      </form>
+    </dialog>
+    <dialog id="recipe-shopping-dialog" class="app-dialog recipe-shopping-dialog">
+      <form id="recipe-shopping-form" method="dialog">
+        <div class="dialog-heading"><div><span class="eyebrow">SHOP FOR RECIPES</span><h2>Pick the recipes</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
+        <p class="dialog-copy">Their ingredients go on the shopping list. The same ingredient becomes one line with the amounts added up.</p>
+        <input id="recipe-shopping-search" type="search" placeholder="Search your recipes" aria-label="Search your recipes" autocomplete="off" />
+        <div class="recipe-shopping-list" id="recipe-shopping-list"></div>
+        <label class="recipe-shopping-stock"><input type="checkbox" id="recipe-shopping-stock" checked /> <span>Leave out what is in stock</span></label>
+        <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit" id="recipe-shopping-add" disabled>Add to the shopping list</button></div>
       </form>
     </dialog>
     <dialog id="wipe-dialog" class="app-dialog wipe-dialog">

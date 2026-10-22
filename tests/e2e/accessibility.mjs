@@ -50,7 +50,7 @@ export default async function run({ browser, base }) {
   await page.setViewport({ width: 1280, height: 800 });
   await page.goto(`${base}/index.html`, { waitUntil: 'networkidle2' });
   await page.addScriptTag({ path: axePath });
-  for (const [mode, setup] of [['light', "applyTheme('light'); applyTextSize('normal');"], ['dark', "applyTheme('dark'); applyTextSize('normal');"], ['large text', "applyTheme('light'); applyTextSize('xlarge');"]]) {
+  for (const [mode, setup] of [['light', "applyTheme('light'); applyTextSize('normal');"], ['dark', "applyTheme('dark'); applyTextSize('normal');"], ['large text', "applyTheme('light'); applyTextSize('large');"]]) {
     for (const [name, open] of VIEWS) {
       const violations = await page.evaluate(async (setupCode, openCode) => {
         document.querySelectorAll('dialog[open]').forEach((dialog) => dialog.close());
