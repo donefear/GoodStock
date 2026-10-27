@@ -1141,4 +1141,13 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "This device becomes the home server for your household on your Wi-Fi. Other devices open the address shown here in a browser, or connect in the Goodstock app under Home server, with the PIN shown here. They stay in step while Goodstock runs on this device. Best on a computer or a phone that stays at home on the charger.": "Bu cihaz Wi-Fi ağınızda evin sunucusu olur. Diğer cihazlar burada gösterilen adresi bir tarayıcıda açar ya da Goodstock uygulamasında Ev sunucusu bölümünden burada gösterilen PIN ile bağlanır. Goodstock bu cihazda çalıştığı sürece eşit kalırlar. En iyisi bir bilgisayar ya da evde şarjda duran bir telefon.",
   "In a browser on any device on this Wi-Fi, open:": "Bu Wi-Fi ağındaki herhangi bir cihazda tarayıcıda şunu açın:",
   "Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.": "Bağlantıdan içe aktarma Goodstock uygulamasında çalışır. Burada tarif metnini kopyalayıp yapıştırın.",
+  "Sort": "Sırala",
+  "Sort recipes": "Tarifleri sırala",
+  "A to Z": "A’dan Z’ye",
+  "Best rated": "En yüksek puanlı",
+  "Cooked most": "En çok pişirilen",
+  "Cooked lately": "Son pişirilen",
+  "Not cooked in a while": "Uzun süredir pişirilmeyen",
+  "Newest first": "Önce en yeni",
+  "Fewest ingredients": "En az malzemeli",
 };

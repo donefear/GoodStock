@@ -1053,7 +1053,11 @@ body.kitchen-screen-open { overflow: hidden; }
 .favourite-button.with-label { padding: 0; font-size: 12px; font-weight: 700; color: var(--green); }
 .favourite-button.with-label span { margin-inline-end: 2px; color: #d79b1d; font-size: 15px; }
 .recipe-card-top .favourite-button { margin: -7px -6px -7px 0; }
-.recipe-results-heading > .recipe-results-tools { flex-direction: row; align-items: center; gap: 14px; }
+.recipe-results-heading > .recipe-results-tools { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px 14px; }
+@media (max-width: 560px) { .recipe-results-heading:not(.remote-heading) { flex-wrap: wrap; } .recipe-results-heading > .recipe-results-tools { justify-content: flex-start; } }
+.recipe-sort { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.recipe-sort select { min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.no-flex-gap .recipe-sort > * + * { margin-inline-start: 6px; }
 .favourites-filter { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
 .favourites-filter.active { border-color: #d79b1d; background: #fbf1d8; color: #7a5a10; }
 :root[data-theme="dark"] .favourites-filter.active { background: #44391c; color: #f0d48a; }

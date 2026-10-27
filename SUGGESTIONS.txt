@@ -180,6 +180,10 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     http://<its address>:8486, enters the PIN once and shares the kitchen; Settings on the host shows that address.
     Features that need the Docker server (DeepL, QR lists, server backups, link import) are hidden there.
     tests/e2e/browser-opens-host.mjs.
+[x] DONE 0.58 Sort the recipe box. (v4.6.3, released as v4.7.0)
+    A Sort menu on the Recipes page: closest to ready (default), A to Z, best rated, cooked most, cooked lately, not
+    cooked in a while, newest first, fewest ingredients. Kept per browser (goodstock-recipe-sort-v1); the list heading
+    names the sort. sortRecipes in app/recipes.js. tests/page/recipe-sort.js.
 
 
 =====================================================================================================================

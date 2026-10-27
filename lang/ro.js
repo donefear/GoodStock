@@ -1141,4 +1141,13 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "This device becomes the home server for your household on your Wi-Fi. Other devices open the address shown here in a browser, or connect in the Goodstock app under Home server, with the PIN shown here. They stay in step while Goodstock runs on this device. Best on a computer or a phone that stays at home on the charger.": "Acest dispozitiv devine serverul de acasă al familiei pe Wi-Fi. Celelalte dispozitive deschid adresa afișată aici într-un browser sau se conectează în aplicația Goodstock la Server de acasă, cu PIN-ul afișat aici. Rămân sincronizate cât timp Goodstock rulează pe acest dispozitiv. Cel mai bine pe un calculator sau pe un telefon care stă acasă la încărcat.",
   "In a browser on any device on this Wi-Fi, open:": "Într-un browser, pe orice dispozitiv din acest Wi-Fi, deschide:",
   "Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.": "Importul unui link merge în aplicația Goodstock. Aici, copiază textul rețetei și lipește-l în schimb.",
+  "Sort": "Sortează",
+  "Sort recipes": "Sortează rețetele",
+  "A to Z": "De la A la Z",
+  "Best rated": "Cele mai bine notate",
+  "Cooked most": "Gătite cel mai des",
+  "Cooked lately": "Gătite recent",
+  "Not cooked in a while": "Negătite de mult",
+  "Newest first": "Cele mai noi întâi",
+  "Fewest ingredients": "Cele mai puține ingrediente",
 };

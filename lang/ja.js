@@ -1141,4 +1141,13 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "This device becomes the home server for your household on your Wi-Fi. Other devices open the address shown here in a browser, or connect in the Goodstock app under Home server, with the PIN shown here. They stay in step while Goodstock runs on this device. Best on a computer or a phone that stays at home on the charger.": "このデバイスが Wi-Fi 上の家庭のホームサーバーになります。ほかのデバイスはここに表示されるアドレスをブラウザで開くか、Goodstock アプリの「ホームサーバー」でここに表示される PIN を使って接続します。このデバイスで Goodstock が動いている間は同期されます。パソコンか、家で充電したままのスマホがおすすめです。",
   "In a browser on any device on this Wi-Fi, open:": "この Wi-Fi 上のどのデバイスでも、ブラウザで次を開いてください：",
   "Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.": "リンクからの取り込みは Goodstock アプリでできます。ここではレシピの文章をコピーして貼り付けてください。",
+  "Sort": "並べ替え",
+  "Sort recipes": "レシピを並べ替え",
+  "A to Z": "名前順",
+  "Best rated": "評価が高い順",
+  "Cooked most": "よく作る順",
+  "Cooked lately": "最近作った順",
+  "Not cooked in a while": "しばらく作っていない順",
+  "Newest first": "新しい順",
+  "Fewest ingredients": "材料が少ない順",
 };

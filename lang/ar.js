@@ -1141,4 +1141,13 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "This device becomes the home server for your household on your Wi-Fi. Other devices open the address shown here in a browser, or connect in the Goodstock app under Home server, with the PIN shown here. They stay in step while Goodstock runs on this device. Best on a computer or a phone that stays at home on the charger.": "يصبح هذا الجهاز خادم المنزل لعائلتك على شبكة Wi-Fi. تفتح الأجهزة الأخرى العنوان المعروض هنا في متصفح، أو تتصل في تطبيق Goodstock من خادم المنزل، باستخدام الرمز السري المعروض هنا. تبقى متزامنة ما دام Goodstock يعمل على هذا الجهاز. الأفضل على حاسوب أو هاتف يبقى في المنزل على الشاحن.",
   "In a browser on any device on this Wi-Fi, open:": "في متصفح على أي جهاز متصل بشبكة Wi-Fi هذه، افتح:",
   "Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.": "استيراد رابط يعمل في تطبيق Goodstock. هنا، انسخ نص الوصفة والصقه بدلًا من ذلك.",
+  "Sort": "ترتيب",
+  "Sort recipes": "ترتيب الوصفات",
+  "A to Z": "من أ إلى ي",
+  "Best rated": "الأعلى تقييمًا",
+  "Cooked most": "الأكثر طبخًا",
+  "Cooked lately": "طُبخت مؤخرًا",
+  "Not cooked in a while": "لم تُطبخ منذ مدة",
+  "Newest first": "الأحدث أولًا",
+  "Fewest ingredients": "أقل المكونات",
 };

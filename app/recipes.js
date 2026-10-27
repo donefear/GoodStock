@@ -845,6 +845,48 @@ function passesDietFilters(recipe) {
           : !contents.has('nuts') && !contents.has('peanuts')));
 }
 
+// How the recipe box is sorted (0.58), a per-browser preference. Ties fall back to closest to ready, then the name.
+const RECIPE_SORT_KEY = 'goodstock-recipe-sort-v1';
+const RECIPE_SORTS = {
+  ready: N_('Closest to ready'),
+  name: N_('A to Z'),
+  rating: N_('Best rated'),
+  cooked: N_('Cooked most'),
+  recent: N_('Cooked lately'),
+  forgotten: N_('Not cooked in a while'),
+  newest: N_('Newest first'),
+  fewest: N_('Fewest ingredients'),
+};
+let recipeSort = (() => { try { const saved = localStorage.getItem(RECIPE_SORT_KEY); return saved in RECIPE_SORTS ? saved : 'ready'; } catch { return 'ready'; } })();
+
+function setRecipeSort(name) {
+  recipeSort = name in RECIPE_SORTS ? name : 'ready';
+  try { localStorage.setItem(RECIPE_SORT_KEY, recipeSort); } catch { /* A per-browser convenience only. */ }
+  render();
+}
+
+function sortRecipes(recipes, sort = recipeSort) {
+  const order = new Map(state.recipes.map((recipe, index) => [recipe.id, index]));
+  const facts = new Map(recipes.map((recipe) => [recipe.id, { missing: missingIngredients(recipe).length, rating: Number(recipe.rating) || 0, cooked: cookedStats(recipe.id) }]));
+  const byName = (first, second) => String(first.name || '').localeCompare(String(second.name || ''), languageLocale(), { sensitivity: 'base', numeric: true });
+  const compare = {
+    ready: (a, b) => a.missing - b.missing || b.rating - a.rating,
+    rating: (a, b) => b.rating - a.rating,
+    cooked: (a, b) => b.cooked.count - a.cooked.count || b.cooked.last.localeCompare(a.cooked.last),
+    recent: (a, b) => b.cooked.last.localeCompare(a.cooked.last),
+    // Never cooked comes first, then the longest ago.
+    forgotten: (a, b) => a.cooked.last.localeCompare(b.cooked.last),
+  }[sort] || (() => 0);
+  return [...recipes].sort((first, second) => {
+    const a = facts.get(first.id);
+    const b = facts.get(second.id);
+    if (sort === 'name') return byName(first, second);
+    if (sort === 'newest') return (order.get(first.id) || 0) - (order.get(second.id) || 0);
+    if (sort === 'fewest') return (first.ingredients?.length || 0) - (second.ingredients?.length || 0) || a.missing - b.missing || byName(first, second);
+    return compare(a, b) || a.missing - b.missing || byName(first, second);
+  });
+}
+
 function recipeCard(recipe, isRemote = false) {
   const missing = missingIngredients(recipe);
   const status = missing.length === 0 ? t('You have everything') : tp(missing.length, '{count} missing: {items}', '{count} missing: {items}', { items: `${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''}` });
@@ -859,14 +901,14 @@ function renderRecipes() {
   const hasFavourites = state.recipes.some((recipe) => recipe.favourite);
   const onlyFavourites = favouritesOnly && hasFavourites;
   const localRecipes = state.recipes.filter((recipe) => (!onlyFavourites || recipe.favourite) && passesDietFilters(recipe) && matchesSearch(recipeQuery, `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`, recipe.ingredients || []));
-  // Closest to ready first; between equals, the best rated.
-  const sorted = [...localRecipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length || (Number(second.rating) || 0) - (Number(first.rating) || 0));
+  const sorted = sortRecipes(localRecipes);
+  const sortPicker = state.recipes.length > 1 ? `<label class="recipe-sort"><span>${t('Sort')}</span><select id="recipe-sort" aria-label="${t('Sort recipes')}">${Object.entries(RECIPE_SORTS).map(([name, label]) => `<option value="${name}" ${name === recipeSort ? 'selected' : ''}>${t(label)}</option>`).join('')}</select></label>` : '';
   const actions = `<div class="recipe-heading-actions"><button class="button button-primary" data-action="new-recipe">＋ ${t('New recipe')}</button><button class="button button-outline" data-action="open-recipe-import">${t('Import')} <span aria-hidden="true">↓</span></button></div>`;
   return `${pageHeading(t('FROM YOUR SHELF'), t('What sounds good?'), t('Find something to make with what you have, or a few things you could grab.'), actions)}
     <form class="recipe-search" id="recipe-search-form"><span aria-hidden="true">⌕</span><input id="recipe-search" value="${escapeHtml(recipeQuery)}" placeholder="${t('Search recipes or ingredients')}" aria-label="${t('Search recipes or ingredients')}"/><button class="button button-primary" type="submit">${t('Search my recipes')}</button><button class="button button-outline search-online-button" type="button" data-action="search-online" ${recipeQuery.trim() ? '' : 'hidden'}>${t('Search online')} <span aria-hidden="true">↗</span></button></form>
     ${renderIdeas()}
     ${mealieConfigured ? `<button class="button button-outline stock-search-button" data-action="search-stocked">${t('Find with my inventory')} <span aria-hidden="true">↗</span></button>` : ''}
-    <div class="recipe-results-heading"><div><span class="eyebrow">${t('YOUR RECIPE BOX')}</span><h2>${onlyFavourites ? t('Favourites') : t('Closest to ready')}</h2></div><div class="recipe-results-tools">${hasFavourites ? `<button class="favourites-filter ${onlyFavourites ? 'active' : ''}" type="button" data-action="favourites-filter" aria-pressed="${onlyFavourites}">★ ${t('Favourites')}</button>` : ''}<span class="muted">${tp(sorted.length, '{count} recipe', '{count} recipes')}</span></div></div>
+    <div class="recipe-results-heading"><div><span class="eyebrow">${t('YOUR RECIPE BOX')}</span><h2>${onlyFavourites ? t('Favourites') : t(RECIPE_SORTS[recipeSort])}</h2></div><div class="recipe-results-tools">${sortPicker}${hasFavourites ? `<button class="favourites-filter ${onlyFavourites ? 'active' : ''}" type="button" data-action="favourites-filter" aria-pressed="${onlyFavourites}">★ ${t('Favourites')}</button>` : ''}<span class="muted">${tp(sorted.length, '{count} recipe', '{count} recipes')}</span></div></div>
     ${state.recipes.length ? `<div class="diet-filters" role="group" aria-label="${t('Diets and allergens')}">${Object.entries(DIET_FILTERS).map(([name, label]) => `<button class="diet-filter ${dietFilters.includes(name) ? 'active' : ''}" type="button" data-action="diet-filter" data-filter="${name}" aria-pressed="${dietFilters.includes(name)}">${t(label)}</button>`).join('')}</div>` : ''}
     <div class="recipe-grid">${sorted.length ? sorted.map((recipe) => recipeCard(recipe)).join('') : `<p class="muted">${t('No recipes match that search.')}</p>`}</div>
     ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">${t('MEALIE LIBRARY')}</span><h2>${mealieResults.length ? t('From Mealie') : t('Search your recipes')}</h2></div><span class="muted">${t('Connected')}</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : STANDALONE || HOSTED ? "" : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>${t('Already using Mealie?')}</strong><br/>${t('Connect it in Settings to search and import your recipe library here.')}</p><button class="button button-small button-outline" type="button" data-action="open-settings" data-open="mealie-settings">${t('Connect')}</button></div>`}`;

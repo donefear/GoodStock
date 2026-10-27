@@ -636,6 +636,7 @@ document.addEventListener('change', async (event) => {
     return;
   }
   if (event.target.id === 'host-start-at-login') { setStartAtLogin(event.target.checked); return; }
+  if (event.target.id === 'recipe-sort') { setRecipeSort(event.target.value); return; }
   if (event.target.id === 'updates-daily') {
     saveUpdateSettings({ daily: event.target.checked });
     if (event.target.checked) await checkForUpdates();

@@ -1141,4 +1141,13 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "This device becomes the home server for your household on your Wi-Fi. Other devices open the address shown here in a browser, or connect in the Goodstock app under Home server, with the PIN shown here. They stay in step while Goodstock runs on this device. Best on a computer or a phone that stays at home on the charger.": "המכשיר הזה הופך לשרת הביתי של משק הבית ברשת ה-Wi-Fi. מכשירים אחרים פותחים בדפדפן את הכתובת שמוצגת כאן, או מתחברים באפליקציית Goodstock תחת שרת ביתי, עם הקוד שמוצג כאן. הם נשארים מסונכרנים כל עוד Goodstock פועל במכשיר הזה. הכי טוב במחשב או בטלפון שנשאר בבית על המטען.",
   "In a browser on any device on this Wi-Fi, open:": "בדפדפן בכל מכשיר ברשת ה-Wi-Fi הזו, פתחו:",
   "Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.": "ייבוא מקישור עובד באפליקציית Goodstock. כאן, העתיקו את טקסט המתכון והדביקו אותו במקום.",
+  "Sort": "מיון",
+  "Sort recipes": "מיון מתכונים",
+  "A to Z": "מא׳ עד ת׳",
+  "Best rated": "המדורגים ביותר",
+  "Cooked most": "הכי הרבה בישולים",
+  "Cooked lately": "בושלו לאחרונה",
+  "Not cooked in a while": "לא בושלו מזמן",
+  "Newest first": "החדשים קודם",
+  "Fewest ingredients": "הכי מעט מצרכים",
 };

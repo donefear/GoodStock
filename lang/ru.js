@@ -1141,4 +1141,13 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "This device becomes the home server for your household on your Wi-Fi. Other devices open the address shown here in a browser, or connect in the Goodstock app under Home server, with the PIN shown here. They stay in step while Goodstock runs on this device. Best on a computer or a phone that stays at home on the charger.": "Это устройство станет домашним сервером вашей семьи в сети Wi-Fi. Другие устройства открывают показанный здесь адрес в браузере или подключаются в приложении Goodstock в разделе «Домашний сервер» с показанным здесь PIN-кодом. Они синхронизируются, пока Goodstock работает на этом устройстве. Лучше всего — компьютер или телефон, который остаётся дома на зарядке.",
   "In a browser on any device on this Wi-Fi, open:": "В браузере на любом устройстве в этой сети Wi-Fi откройте:",
   "Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.": "Импорт по ссылке работает в приложении Goodstock. Здесь скопируйте текст рецепта и вставьте его.",
+  "Sort": "Сортировка",
+  "Sort recipes": "Сортировать рецепты",
+  "A to Z": "От А до Я",
+  "Best rated": "С лучшей оценкой",
+  "Cooked most": "Чаще всего готовили",
+  "Cooked lately": "Недавно готовили",
+  "Not cooked in a while": "Давно не готовили",
+  "Newest first": "Сначала новые",
+  "Fewest ingredients": "Меньше всего ингредиентов",
 };

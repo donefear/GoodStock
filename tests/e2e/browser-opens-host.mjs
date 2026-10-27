@@ -64,6 +64,7 @@ export default async function run({ browser }) {
     if (shown.length) fail.push(`server-only settings shown: ${shown.join(', ')}`);
     await page.evaluate(() => { document.querySelector('#settings-dialog').close(); activeView = 'shopping'; state.shopping = [{ id: 's1', name: 'Milk', quantity: 1, unit: 'l' }]; render(); });
     if (await page.evaluate(() => Boolean(document.querySelector('[data-action="show-shopping-qr"]')))) fail.push('the QR share button is shown');
+    if (await page.evaluate(() => { activeView = 'recipes'; render(); return Boolean(document.querySelector('.integration-note')); })) fail.push('"Already using Mealie?" is shown on Recipes');
     await page.close();
   } finally {
     running.server.close();

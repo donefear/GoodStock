@@ -1141,4 +1141,13 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "This device becomes the home server for your household on your Wi-Fi. Other devices open the address shown here in a browser, or connect in the Goodstock app under Home server, with the PIN shown here. They stay in step while Goodstock runs on this device. Best on a computer or a phone that stays at home on the charger.": "Este dispositivo se convierte en el servidor de casa en tu wifi. Los demás dispositivos abren en un navegador la dirección que se muestra aquí, o se conectan en la app Goodstock en Servidor de casa, con el PIN que se muestra aquí. Se mantienen al día mientras Goodstock funcione en este dispositivo. Mejor en un ordenador o un móvil que se quede en casa cargando.",
   "In a browser on any device on this Wi-Fi, open:": "En un navegador, en cualquier dispositivo de esta wifi, abre:",
   "Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.": "Importar un enlace funciona en la app Goodstock. Aquí, copia el texto de la receta y pégalo en su lugar.",
+  "Sort": "Ordenar",
+  "Sort recipes": "Ordenar recetas",
+  "A to Z": "De la A a la Z",
+  "Best rated": "Mejor valoradas",
+  "Cooked most": "Más cocinadas",
+  "Cooked lately": "Cocinadas hace poco",
+  "Not cooked in a while": "Sin cocinar hace tiempo",
+  "Newest first": "Más nuevas primero",
+  "Fewest ingredients": "Menos ingredientes",
 };

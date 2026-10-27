@@ -1141,4 +1141,13 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "This device becomes the home server for your household on your Wi-Fi. Other devices open the address shown here in a browser, or connect in the Goodstock app under Home server, with the PIN shown here. They stay in step while Goodstock runs on this device. Best on a computer or a phone that stays at home on the charger.": "这台设备会成为你家 Wi-Fi 上的家庭服务器。其他设备可以在浏览器中打开这里显示的地址，或在 Goodstock 应用的“家庭服务器”中用这里显示的 PIN 连接。只要这台设备上的 Goodstock 在运行，它们就会保持同步。最好用一台电脑，或一部留在家里充电的手机。",
   "In a browser on any device on this Wi-Fi, open:": "在这个 Wi-Fi 上任何设备的浏览器中打开：",
   "Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.": "导入链接需要用 Goodstock 应用。在这里，请复制菜谱文字并粘贴。",
+  "Sort": "排序",
+  "Sort recipes": "菜谱排序",
+  "A to Z": "按名称 A–Z",
+  "Best rated": "评分最高",
+  "Cooked most": "做得最多",
+  "Cooked lately": "最近做过",
+  "Not cooked in a while": "很久没做",
+  "Newest first": "最新优先",
+  "Fewest ingredients": "食材最少",
 };
