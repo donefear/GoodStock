@@ -119,9 +119,11 @@ const isShared = () => !STANDALONE || Boolean(homeServer());
 
 async function kitchenRequest(path, { method = 'GET', body = null } = {}) {
   if (!STANDALONE) {
+    // A hosting phone or computer counts the devices by the id they send.
+    const client = HOSTED ? { 'x-goodstock-client': CLIENT_ID } : {};
     const response = await fetch(path, {
       method, cache: 'no-store',
-      headers: body ? { 'content-type': 'application/json' } : {},
+      headers: body ? { 'content-type': 'application/json', ...client } : client,
       body: body ? JSON.stringify(body) : undefined,
     });
     return { status: response.status, ok: response.ok, json: () => response.json() };
@@ -161,7 +163,9 @@ function updateSyncStatus(mode, detail) {
     ? (hosting()
       ? tp(liveSync.devices, 'Hosting · {count} other device connected', 'Hosting · {count} other devices connected')
       : t('Home server · {address}', { address: homeServer().replace(/^https?:\/\//, '') }))
-    : liveSync.connected
+    : HOSTED
+      ? t('Home server · {address}', { address: location.host })
+      : liveSync.connected
       ? (liveSync.devices > 1 ? tp(liveSync.devices, 'Live · {count} device connected', 'Live · {count} devices connected') : t('Live · only this device right now'))
       : t('Synced with the server');
   text.textContent = detail || (mode === 'offline' ? t('Will sync when reconnected') : live);
@@ -257,7 +261,7 @@ function stamp(text) {
   return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
 }
 
-const MERGED_LISTS = ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets', 'log', 'checks', 'shelfLife', 'prices', 'logTotals'];
+const MERGED_LISTS = ['inventory', 'recipes', 'plan', 'shopping', 'timerPresets', 'log', 'checks', 'shelfLife', 'prices', 'logTotals', 'recipeNotes'];
 const itemStamp = (item) => stamp(String(JSON.stringify(item)));
 
 // A kitchen as fingerprints ({ inventory: { id: stamp }, …, locations: stamp }): all that mergeStates needs of a base.
@@ -374,11 +378,11 @@ async function checkRemoteRevision() {
   if (!isShared() || !navigator.onLine || document.visibilityState !== 'visible') return;
   try {
     const { revision, devices } = await (await kitchenRequest('/api/state/revision')).json();
-    if (hosting()) liveSync.devices = Number(devices) || 0;
+    if (hosting() || HOSTED) liveSync.devices = Number(devices) || 0;
     if (revision > (readSyncBase()?.revision || 0)) pullRemoteKitchen();
-    if (STANDALONE) showSyncStatus();
+    if (STANDALONE || HOSTED) showSyncStatus();
   } catch {
-    if (STANDALONE) updateSyncStatus('offline', t('Home server not reachable · will try again'));
+    if (STANDALONE || HOSTED) updateSyncStatus('offline', t('Home server not reachable · will try again'));
   }
 }
 
@@ -466,6 +470,8 @@ function disconnectHomeServer() {
 
 function connectLiveSync() {
   if (STANDALONE) { startPhonePolling(); startFolderSync(); return; }
+  // A hosting phone or computer has no event stream: ask it for a newer revision every few seconds.
+  if (HOSTED) { checkRemoteRevision(); setInterval(checkRemoteRevision, 5000); return; }
   if (typeof EventSource === 'undefined') return;
   const source = new EventSource(`/api/events?client=${encodeURIComponent(CLIENT_ID)}`);
   source.addEventListener('open', () => { liveSync.connected = true; showSyncStatus(); });
@@ -758,7 +764,10 @@ function fillHostSettings() {
   const addresses = host.addresses.length
     ? host.addresses.map((address) => `<dd><code>${escapeHtml(`${address}:${host.port}`)}</code></dd>`).join('')
     : `<dd>${escapeHtml(t('Not on a Wi-Fi network right now'))}</dd>`;
-  details.innerHTML = `<p>${escapeHtml(t('On the other phones, open Settings → Connections → Home server and enter:'))}</p>`
+  // Browsers open the same address (the host serves the app itself); the apps connect under Home server.
+  const links = host.addresses.map((address) => `<dd><code>${escapeHtml(`http://${address}:${host.port}`)}</code></dd>`).join('');
+  details.innerHTML = (links ? `<p>${escapeHtml(t('In a browser on any device on this Wi-Fi, open:'))}</p><dl class="host-codes">${links}</dl>` : '')
+    + `<p>${escapeHtml(t('On the other phones, open Settings → Connections → Home server and enter:'))}</p>`
     + `<dl class="host-codes"><dt>${escapeHtml(t('Address'))}</dt>${addresses}<dt>${escapeHtml(t('PIN'))}</dt><dd><code class="host-pin">${escapeHtml(host.pin)}</code></dd></dl>`
     + (canStartAtLogin()
       ? `<label class="host-login"><input type="checkbox" id="host-start-at-login" ${localStorage.getItem(START_AT_LOGIN_KEY) === 'true' ? 'checked' : ''} /> <span>${escapeHtml(t('Start with the computer, in the background'))}</span></label>`

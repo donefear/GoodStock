@@ -506,7 +506,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 #settings-button.has-update::after { content: ""; position: absolute; top: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%; background: #d9775b; border: 2px solid var(--white); }
 .test-zone .backup-status { color: var(--green); font-weight: 700; }
 .test-zone .backup-status:empty { display: none; }
-.is-standalone .server-only { display: none; }
+.is-standalone .server-only, .is-hosted .server-only, .is-hosted .hosted-hide { display: none; }
 html:not(.is-standalone) .phone-only { display: none; }
 .danger-zone { margin-top: 4px; padding: 14px 12px; border: 1px solid #efd2c9; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fcf4f0; }
 .danger-zone strong, .danger-zone span { display: block; }
@@ -1068,7 +1068,36 @@ body.kitchen-screen-open { overflow: hidden; }
 .no-flex-gap .diet-filters > * { margin: 0 0 8px; margin-inline-end: 8px; }
 .recipe-cooked-note { margin: 0 0 18px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 .no-flex-gap .recipe-results-tools > * + * { margin-inline-start: 14px; }
-@media print { .recipe-cooked-note, .favourite-button { display: none !important; } }
+.recipe-cooked-row { margin: 0 0 18px; padding-top: 6px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; }
+.recipe-cooked-row .recipe-cooked-note { margin: 0; padding-top: 0; border-top: 0; }
+@media print { .recipe-cooked-note, .favourite-button, .recipe-rating, .recipe-note-form, .recipe-note-delete { display: none !important; } }
+
+/* Ratings and notes on recipes (0.56). */
+.recipe-rating { display: inline-flex; align-items: center; }
+.rating-label { margin-inline-end: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.rating-star { min-width: 34px; min-height: 34px; padding: 0; border: 0; background: none; color: #8a7a4c; font-size: 22px; line-height: 1; cursor: pointer; }
+.rating-star.is-on { color: #b7800f; }
+:root[data-theme="dark"] .rating-star { color: #b9a46a; }
+:root[data-theme="dark"] .rating-star.is-on { color: #f0c457; }
+.recipe-card-rating { margin: 6px 0 0; color: #b7800f; font-size: 13px; letter-spacing: 1px; }
+:root[data-theme="dark"] .recipe-card-rating { color: #f0c457; }
+.recipe-notes-block { margin-top: 18px; }
+.recipe-notes { margin: 0 0 12px; padding: 0; list-style: none; }
+.recipe-notes li { padding: 8px 0; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.recipe-notes li:first-child { border-top: 0; }
+.recipe-notes time { flex: 0 0 auto; color: var(--muted); font-size: 12px; font-weight: 700; }
+.recipe-notes p { flex: 1 1 200px; margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
+.recipe-note-delete { font-size: 12px; }
+.recipe-note-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.recipe-note-form textarea { flex: 1 1 240px; min-height: 48px; }
+.no-flex-gap .recipe-note-form > * + *, .no-flex-gap .recipe-notes li > * + * { margin-inline-start: 10px; }
+.cook-feedback { margin: 14px 0 4px; }
+.cook-feedback-label { display: block; color: var(--ink); font-size: 13px; font-weight: 700; }
+.cook-feedback textarea { width: 100%; margin-top: 6px; }
+.steps-done .recipe-rating { margin-top: 10px; }
+.steps-notes { margin: 0 0 16px; padding: 10px 14px; border-radius: 12px; background: var(--mint); color: var(--ink); font-size: 13px; }
+.steps-notes .recipe-notes { margin: 4px 0 0; }
+.steps-notes .recipe-notes li { padding: 4px 0; border-top: 0; }
 .recipe-card-top .recipe-ingredient-count { margin-inline-start: auto; }
 
 /* Server backups (0.18) in Settings → Your data. */

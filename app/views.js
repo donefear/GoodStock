@@ -103,6 +103,9 @@ async function initialize() {
   applyTheme(localStorage.getItem(THEME_KEY) || 'light');
   try { applyTextSize(savedTextSize()); } catch { applyTextSize('normal'); }
   document.documentElement.classList.toggle('is-standalone', STANDALONE);
+  document.documentElement.classList.toggle('is-hosted', HOSTED);
+  // Mealie is for the Docker server only (4.6.2); a connection saved by an older phone app is forgotten.
+  if (STANDALONE) { try { localStorage.removeItem('goodstock-mealie-v1'); } catch { /* Nothing saved. */ } }
   const cached = localStorage.getItem(STORAGE_KEY);
   // First visit on this device: the starting kitchen in the device's language (an existing server kitchen
   // replaces it below).
@@ -146,7 +149,7 @@ async function initialize() {
   render();
   pushPendingState();
   connectLiveSync();
-  if (!STANDALONE) {
+  if (!STANDALONE && !HOSTED) {
     fetch('/api/mealie/status').then((response) => response.json()).then((result) => {
       mealieConfigured = Boolean(result.configured);
     }).catch(() => { mealieConfigured = false; }).finally(() => {
@@ -154,8 +157,6 @@ async function initialize() {
     });
     // The Android app ships its files inside the APK, so it needs no offline cache.
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-  } else {
-    mealieConfigured = Boolean(phoneMealie());
   }
   checkExpiryReminders();
   runAutoBackup();
@@ -343,7 +344,7 @@ function renderInventoryMap(rows) {
   const locations = [...new Set([...state.locations, ...rows.map((item) => item.location).filter(Boolean)])]
     .filter((location) => inventoryLocation === ALL_LOCATIONS || location === inventoryLocation);
   const categoryIcons = { Fruit: '🍎', Vegetables: '🥕', Herbs: '🌿', Dairy: '🥛', 'Meat and fish': '🍗', Bakery: '🍞', Baking: '🥣', Pantry: '🥫' };
-  const locationIcon = (location) => FREEZER_WORDS.test(location) || FRIDGE_WORDS.test(location) ? '❄' : PANTRY_WORDS.test(location) ? '▤' : /clean|schoonmaak|putz|nettoyage|limpieza|pulizia|limpeza|curățenie|sprzątan|temizlik|убор|清洁|掃除|تنظيف|ניקיון/i.test(location) ? '✦' : '⌂';
+  const locationIcon = (location) => FREEZER_WORDS.test(location) || FRIDGE_WORDS.test(location) ? '❄' : PANTRY_WORDS.test(location) ? '▤' : /clean|schoonmaak|putz|nettoyage|rengøring|städ|limpieza|pulizia|limpeza|curățenie|sprzątan|temizlik|убор|清洁|掃除|تنظيف|ניקיון/i.test(location) ? '✦' : '⌂';
   const itemIcon = (item) => item.kind === 'Household' ? '🧽' : categoryIcons[ingredientRecord(item.name)?.category] || '◌';
   return `<div class="storage-map">${locations.map((location) => {
     const items = rows.filter((item) => item.location === location);
@@ -655,7 +656,8 @@ function renderShopping() {
   const rows = groups.length > 1
     ? groups.map((group) => `<h3 class="shopping-group${group.items.some((item) => !item.checked) ? '' : ' is-done'}">${escapeHtml(t(group.key))} <span>${group.items.filter((item) => !item.checked).length || '✓'}</span></h3>${group.items.map(row).join('')}`).join('')
     : state.shopping.map(row).join('');
-  const shareButton = STANDALONE
+  // A hosting phone has no QR links, and plain http on the Wi-Fi has no share sheet.
+  const shareButton = HOSTED ? '' : STANDALONE
     ? `<button class="button button-outline" data-action="share-shopping-text">${t('Share list')} <span aria-hidden="true">↗</span></button>`
     : `<button class="button button-outline" data-action="show-shopping-qr">${t('Share to phone')} <span aria-hidden="true">▦</span></button>`;
   const printButton = canPrint() && remaining ? `<button class="button button-outline" data-action="print">${t('Print')} <span aria-hidden="true">⎙</span></button>` : '';
@@ -952,7 +954,8 @@ async function lookupBarcode(code) {
       JSON.stringify({ accept: 'application/json', 'user-agent': 'Goodstock/2 (home kitchen inventory app)' })));
     data = answer.status === 200 ? JSON.parse(answer.body || 'null') : null;
   } else {
-    const response = await fetch(`/api/product/${code}?fields=${OPEN_FOOD_FACTS_FIELDS}`);
+    // A hosting phone has no proxy; Open Food Facts also answers browsers directly.
+    const response = await fetch(HOSTED ? `https://world.openfoodfacts.org/api/v2/product/${code}?fields=${OPEN_FOOD_FACTS_FIELDS}` : `/api/product/${code}?fields=${OPEN_FOOD_FACTS_FIELDS}`);
     if (response.status === 502) throw new Error('unreachable');
     data = response.ok ? await response.json() : null;
   }
@@ -1289,6 +1292,8 @@ function openCookDialog(plan) {
   $('#cook-title').textContent = t('Cooked {name}?', { name: recipe.name });
   $('#cook-form').elements.planId.value = plan.id;
   $('#cook-form').elements.leftovers.checked = false;
+  $('#cook-form').elements.note.value = '';
+  $('#cook-rating').innerHTML = ratingStars(recipeById(plan.recipeId), true);
   $('#cook-ingredients').innerHTML = recipe.ingredients.map((ingredient, index) => {
     const item = matchingInventory(ingredient);
     const amount = item ? `<span class="cook-amount"><span>${t('Remove')}</span><input type="number" name="amount-${index}" min="0" step="any" value="${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).quantity)}" data-unit="${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).unit)}" inputmode="decimal" aria-label="${t('Amount of {name} to remove', { name: escapeHtml(item.name) })}"><span>${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).unit || t('pcs'))} <i>${t('of {quantity}', { quantity: escapeHtml(amountText(item.quantity, item.unit)) })}</i></span></span>` : '';

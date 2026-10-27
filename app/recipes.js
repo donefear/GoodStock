@@ -27,8 +27,8 @@ function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
 // Splits pasted recipe text into name, ingredients and steps. Headings ("Ingredients", "Method", "Bereiding") help;
 // without them, short lines that start with an amount count as ingredients and everything else as steps.
 function parseRecipeText(text) {
-  const ingredientHeading = /^(?:ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden|zutaten|ingrédients|ingredientes|ingredienti|ingrediente|składniki|malzemeler|ингредиенты|材料|食材|用料|المكونات|المقادير|מצרכים|רכיבים)\s*[:：]?$/i;
-  const stepHeading = /^(?:instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze|zubereitung|préparation|instructions|preparación|elaboración|preparazione|procedimento|modo de preparo|preparo|mod de preparare|preparare|przygotowanie|sposób przygotowania|hazırlanışı|yapılışı|приготовление|способ приготовления|作り方|手順|做法|步骤|طريقة التحضير|الطريقة|الخطوات|אופן ההכנה|הוראות הכנה|הכנה)\s*[:：]?$/i;
+  const ingredientHeading = /^(?:ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden|zutaten|ingredienser|det skal du bruge|du behöver|ingrédients|ingredientes|ingredienti|ingrediente|składniki|malzemeler|ингредиенты|材料|食材|用料|المكونات|المقادير|מצרכים|רכיבים)\s*[:：]?$/i;
+  const stepHeading = /^(?:instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze|zubereitung|fremgangsmåde|tilberedning|sådan gør du|gör så här|tillagning|instruktioner|préparation|instructions|preparación|elaboración|preparazione|procedimento|modo de preparo|preparo|mod de preparare|preparare|przygotowanie|sposób przygotowania|hazırlanışı|yapılışı|приготовление|способ приготовления|作り方|手順|做法|步骤|طريقة التحضير|الطريقة|الخطوات|אופן ההכנה|הוראות הכנה|הכנה)\s*[:：]?$/i;
   const clean = (line) => line.replace(/^(?:[-–•*▢☐□✓]\s*|(?:step\s*)?\d+[.)]\s+)/i, '').trim();
   const lines = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const hasHeadings = lines.some((line) => ingredientHeading.test(line) || stepHeading.test(line));
@@ -162,6 +162,10 @@ async function importRecipeFromUrl() {
       if (page.status >= 400) { status.textContent = t('The website refused the import (HTTP {status}). Some sites block this; copy the recipe text and paste it instead.', { status: page.status }); return; }
       result = window.GoodstockRecipeImport?.extractRecipeFromHtml(page.body, page.url || address);
       if (!result) { status.textContent = t(window.GoodstockRecipeImport?.NO_RECIPE_MESSAGE || N_('No recipe found on that page.')); return; }
+    } else if (HOSTED) {
+      // A hosting phone or computer can't fetch other websites for a browser.
+      status.textContent = t('Importing a link works in the Goodstock app. Here, copy the recipe text and paste it instead.');
+      return;
     } else {
       const response = await fetch(`/api/recipes/import?url=${encodeURIComponent(address)}`);
       result = await response.json().catch(() => ({}));
@@ -212,9 +216,10 @@ function saveRecipeFromEditor(form) {
 function deleteRecipe(id) {
   const recipe = recipeById(id);
   if (!recipe) return;
-  withUndo(t('Deleted “{name}”', { name: recipe.name }), ['recipes', 'plan'], () => {
+  withUndo(t('Deleted “{name}”', { name: recipe.name }), ['recipes', 'plan', 'recipeNotes'], () => {
     state.recipes = state.recipes.filter((entry) => entry.id !== recipe.id);
     state.plan = state.plan.filter((entry) => entry.recipeId !== recipe.id);
+    state.recipeNotes = state.recipeNotes.filter((entry) => entry.recipeId !== recipe.id);
   });
   $('#recipe-dialog').close();
   render();
@@ -300,7 +305,7 @@ function renderRecipePage() {
   return `<button class="text-button recipe-back" type="button" data-action="back-to-recipes">‹ ${t('All recipes')}</button>
     ${pageHeading(escapeHtml(sourceLabel(recipe.source).toUpperCase()), escapeHtml(recipe.name), escapeHtml(recipe.description || ''), actions)}
     <div class="recipe-page-links">${favouriteButton(saved, true)}${links}</div>
-    <p class="recipe-cooked-note">${escapeHtml(cookedText(saved.id))}</p>
+    <div class="recipe-cooked-row"><p class="recipe-cooked-note">${escapeHtml(cookedText(saved.id))}</p>${ratingStars(saved, true)}</div>
     ${dietLine(saved, true)}
     ${recipePhoto(recipe, 'recipe-page-photo')}
     ${renderTranslationPanel(recipe)}
@@ -308,7 +313,8 @@ function renderRecipePage() {
     <div class="recipe-page">
       <section class="section-block recipe-page-side"><div class="section-heading"><div><h2>${t('Ingredients')}</h2><span class="muted">${ingredients.length ? (missing.length ? tp(missing.length, '{count} missing', '{count} missing') : t('All in stock')) : ''}</span></div>${ingredients.length ? servingsControl : ''}</div>${ingredientList}</section>
       <section class="section-block recipe-page-main"><div class="section-heading"><div><h2>${t('Method')}</h2><span class="muted">${number ? tp(number, '{count} step', '{count} steps') : ''}</span></div></div>${toolRow}${method}</section>
-    </div>${printFooter(safeSourceUrl)}`;
+    </div>
+    ${renderRecipeNotes(saved)}${printFooter(safeSourceUrl)}`;
 }
 
 // Translating recipes between Dutch and English with DeepL. In the browser the server calls DeepL (it blocks
@@ -370,6 +376,8 @@ const RECIPE_LANGUAGE_WORDS = {
   ro: /\s(?:și|cu|în|de|la|pe|minute|adaugă|sare|piper|ceapă|ouă|lapte|unt|până)\s/g,
   pl: /\s(?:i|z|w|na|do|się|minut|dodaj|sól|pieprz|cebula|jajka|mleko|masło|aż)\s/g,
   tr: /\s(?:ve|ile|bir|için|dakika|ekle|ekleyin|tuz|biber|soğan|yumurta|süt|tereyağı|kadar)\s/g,
+  da: /\s(?:og|af|til|et|minutter|tilsæt|indtil|hak|steg|peber|løg|æg|mælk|smør|gryde|ovnen|lidt)\s/g,
+  sv: /\s(?:och|av|till|ett|minuter|tillsätt|tills|hacka|stek|peppar|lök|ägg|mjölk|smör|kastrull|ugnen|lite)\s/g,
 };
 
 function recipeLanguage(recipe) {
@@ -464,6 +472,8 @@ function saveRecipeTranslation() {
 
 function renderRecipeTranslation(recipe) {
   const current = recipeTranslation?.recipeId === recipe.id ? recipeTranslation : null;
+  // A hosting phone has no DeepL proxy.
+  if (HOSTED) return '';
   if (!current) return `<button class="text-button" type="button" data-action="translate-choose" data-id="${escapeHtml(recipe.id)}">${t('Translate')} ⇄</button>`;
   return '';
 }
@@ -676,6 +686,66 @@ function cookedText(recipeId) {
   return tp(count, 'Cooked once, last {when}', 'Cooked {count} times, last {when}', { when });
 }
 
+// Ratings and notes (0.56). A rating (1–5) is saved as recipe.rating, shared like the favourite; tapping the same star
+// again clears it. Notes ("less salt next time") are a list of their own (state.recipeNotes: { id, recipeId, date,
+// text }), so notes written on two devices at once merge one by one instead of one recipe copy winning.
+const NOTE_MAX_LENGTH = 500;
+
+function ratingStars(recipe, withLabel = false) {
+  const rating = Number(recipe.rating) || 0;
+  const stars = [1, 2, 3, 4, 5].map((value) => `<button class="rating-star ${value <= rating ? 'is-on' : ''}" type="button" data-action="rate-recipe" data-id="${escapeHtml(recipe.id)}" data-value="${value}" aria-pressed="${value === rating}" aria-label="${tp(value, '{count} star', '{count} stars')}"><span aria-hidden="true">${value <= rating ? '★' : '☆'}</span></button>`).join('');
+  const label = withLabel ? `<span class="rating-label">${rating ? t('Your rating') : t('Rate it')}</span>` : '';
+  return `<div class="recipe-rating" role="group" data-rating-for="${escapeHtml(recipe.id)}" aria-label="${rating ? t('Rated {rating} of 5', { rating }) : t('Rate this recipe')}">${label}${stars}</div>`;
+}
+
+// Recipe cards only show a rating, read-only.
+function ratingText(recipe) {
+  const rating = Number(recipe.rating) || 0;
+  if (!rating) return '';
+  return `<p class="recipe-card-rating"><span aria-hidden="true">${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}</span><span class="visually-hidden">${t('Rated {rating} of 5', { rating })}</span></p>`;
+}
+
+function rateRecipe(id, value) {
+  const recipe = recipeById(id);
+  if (!recipe || !(value >= 1 && value <= 5)) return;
+  if (Number(recipe.rating) === value) delete recipe.rating; else recipe.rating = value;
+  // Cook mode is a dialog the page render doesn't redraw: update its stars in place.
+  for (const group of $$('#steps-dialog [data-rating-for], #cook-dialog [data-rating-for]')) {
+    if (group.dataset.ratingFor === id) group.outerHTML = ratingStars(recipe, true);
+  }
+  persist();
+}
+
+function recipeNotes(recipeId) {
+  return state.recipeNotes.filter((note) => note.recipeId === recipeId).sort((first, second) => String(second.date).localeCompare(String(first.date)));
+}
+
+function addRecipeNote(recipeId, text) {
+  const clean = String(text || '').trim().slice(0, NOTE_MAX_LENGTH);
+  if (!clean || !recipeById(recipeId)) return false;
+  state.recipeNotes.unshift({ id: makeId(), recipeId, date: dateKey(new Date()), text: clean });
+  return true;
+}
+
+function deleteRecipeNote(id) {
+  const note = state.recipeNotes.find((entry) => entry.id === id);
+  if (!note) return;
+  withUndo(t('Note deleted'), ['recipeNotes'], () => {
+    state.recipeNotes = state.recipeNotes.filter((entry) => entry.id !== id);
+  });
+}
+
+function noteList(notes, withDelete = true) {
+  return `<ul class="recipe-notes">${notes.map((note) => `<li><time datetime="${escapeHtml(note.date)}">${escapeHtml(dateFromKey(note.date) ? expirationDateText(note.date) : '')}</time><p>${escapeHtml(note.text)}</p>${withDelete ? `<button class="text-button recipe-note-delete" type="button" data-action="delete-recipe-note" data-id="${escapeHtml(note.id)}" aria-label="${t('Delete note')}">${t('Delete')}</button>` : ''}</li>`).join('')}</ul>`;
+}
+
+function renderRecipeNotes(recipe) {
+  const notes = recipeNotes(recipe.id);
+  return `<section class="section-block recipe-notes-block"><div class="section-heading"><div><h2>${t('Notes')}</h2><span class="muted">${notes.length ? tp(notes.length, '{count} note', '{count} notes') : t('What to remember next time')}</span></div></div>
+    ${notes.length ? noteList(notes) : ''}
+    <form class="recipe-note-form" id="recipe-note-form" data-id="${escapeHtml(recipe.id)}"><textarea name="text" rows="2" maxlength="${NOTE_MAX_LENGTH}" placeholder="${t('Less salt next time, the kids loved it…')}" aria-label="${t('New note')}"></textarea><button class="button button-outline button-small" type="submit">${t('Add note')}</button></form></section>`;
+}
+
 // Allergens and diets (0.49), from the ingredient lines: the catalog entry a line is about, and words for common
 // allergens the catalog doesn't have, in the app's languages (accents dropped, matched at the start of a word; Chinese
 // and Japanese anywhere). Only a hint: a recipe's text can always hide something, and the page says so.
@@ -782,14 +852,15 @@ function recipeCard(recipe, isRemote = false) {
   const button = isRemote
     ? `<button class="button button-small button-dark" data-action="import-recipe" data-id="${escapeHtml(recipe.slug || recipe.id)}">${t('Add to library')} <span aria-hidden="true">＋</span></button>`
     : `<button class="button button-small ${planned ? 'button-outline' : 'button-dark'}" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${planned ? t('Plan another day') : t('Plan this week')} <span aria-hidden="true">→</span></button>`;
-  return `<article class="recipe-card${safePhoto(recipe.photo) ? ' has-photo' : ''}">${recipePhoto(recipe, 'recipe-card-photo')}<div class="recipe-card-top"><span class="recipe-source">${escapeHtml(sourceLabel(recipe.source))}</span><span class="recipe-ingredient-count">${tp(recipe.ingredients?.length || 0, '{count} INGREDIENT', '{count} INGREDIENTS')}</span>${isRemote ? '' : favouriteButton(recipe)}</div><h3><button class="recipe-title-link recipe-card-title" type="button" data-action="view-recipe" data-id="${escapeHtml(isRemote ? recipe.slug || recipe.id : recipe.id)}" data-remote="${isRemote}" title="${t('Show recipe')}">${escapeHtml(recipe.name)}</button></h3><p>${escapeHtml(recipe.description || t('A recipe from your collection.'))}</p>${isRemote ? '' : dietLine(recipe)}<div class="recipe-missing ${missing.length ? 'has-missing' : ''}"><span aria-hidden="true">${missing.length ? '◷' : '✓'}</span>${escapeHtml(status)}</div><div class="recipe-card-bottom">${button}</div></article>`;
+  return `<article class="recipe-card${safePhoto(recipe.photo) ? ' has-photo' : ''}">${recipePhoto(recipe, 'recipe-card-photo')}<div class="recipe-card-top"><span class="recipe-source">${escapeHtml(sourceLabel(recipe.source))}</span><span class="recipe-ingredient-count">${tp(recipe.ingredients?.length || 0, '{count} INGREDIENT', '{count} INGREDIENTS')}</span>${isRemote ? '' : favouriteButton(recipe)}</div><h3><button class="recipe-title-link recipe-card-title" type="button" data-action="view-recipe" data-id="${escapeHtml(isRemote ? recipe.slug || recipe.id : recipe.id)}" data-remote="${isRemote}" title="${t('Show recipe')}">${escapeHtml(recipe.name)}</button></h3><p>${escapeHtml(recipe.description || t('A recipe from your collection.'))}</p>${isRemote ? '' : `${ratingText(recipe)}${dietLine(recipe)}`}<div class="recipe-missing ${missing.length ? 'has-missing' : ''}"><span aria-hidden="true">${missing.length ? '◷' : '✓'}</span>${escapeHtml(status)}</div><div class="recipe-card-bottom">${button}</div></article>`;
 }
 
 function renderRecipes() {
   const hasFavourites = state.recipes.some((recipe) => recipe.favourite);
   const onlyFavourites = favouritesOnly && hasFavourites;
   const localRecipes = state.recipes.filter((recipe) => (!onlyFavourites || recipe.favourite) && passesDietFilters(recipe) && matchesSearch(recipeQuery, `${recipe.name} ${recipe.description || ''} ${(recipe.ingredients || []).join(' ')}`, recipe.ingredients || []));
-  const sorted = [...localRecipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length);
+  // Closest to ready first; between equals, the best rated.
+  const sorted = [...localRecipes].sort((first, second) => missingIngredients(first).length - missingIngredients(second).length || (Number(second.rating) || 0) - (Number(first.rating) || 0));
   const actions = `<div class="recipe-heading-actions"><button class="button button-primary" data-action="new-recipe">＋ ${t('New recipe')}</button><button class="button button-outline" data-action="open-recipe-import">${t('Import')} <span aria-hidden="true">↓</span></button></div>`;
   return `${pageHeading(t('FROM YOUR SHELF'), t('What sounds good?'), t('Find something to make with what you have, or a few things you could grab.'), actions)}
     <form class="recipe-search" id="recipe-search-form"><span aria-hidden="true">⌕</span><input id="recipe-search" value="${escapeHtml(recipeQuery)}" placeholder="${t('Search recipes or ingredients')}" aria-label="${t('Search recipes or ingredients')}"/><button class="button button-primary" type="submit">${t('Search my recipes')}</button><button class="button button-outline search-online-button" type="button" data-action="search-online" ${recipeQuery.trim() ? '' : 'hidden'}>${t('Search online')} <span aria-hidden="true">↗</span></button></form>
@@ -798,7 +869,7 @@ function renderRecipes() {
     <div class="recipe-results-heading"><div><span class="eyebrow">${t('YOUR RECIPE BOX')}</span><h2>${onlyFavourites ? t('Favourites') : t('Closest to ready')}</h2></div><div class="recipe-results-tools">${hasFavourites ? `<button class="favourites-filter ${onlyFavourites ? 'active' : ''}" type="button" data-action="favourites-filter" aria-pressed="${onlyFavourites}">★ ${t('Favourites')}</button>` : ''}<span class="muted">${tp(sorted.length, '{count} recipe', '{count} recipes')}</span></div></div>
     ${state.recipes.length ? `<div class="diet-filters" role="group" aria-label="${t('Diets and allergens')}">${Object.entries(DIET_FILTERS).map(([name, label]) => `<button class="diet-filter ${dietFilters.includes(name) ? 'active' : ''}" type="button" data-action="diet-filter" data-filter="${name}" aria-pressed="${dietFilters.includes(name)}">${t(label)}</button>`).join('')}</div>` : ''}
     <div class="recipe-grid">${sorted.length ? sorted.map((recipe) => recipeCard(recipe)).join('') : `<p class="muted">${t('No recipes match that search.')}</p>`}</div>
-    ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">${t('MEALIE LIBRARY')}</span><h2>${mealieResults.length ? t('From Mealie') : t('Search your recipes')}</h2></div><span class="muted">${t('Connected')}</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>${t('Already using Mealie?')}</strong><br/>${t('Connect it in Settings to search and import your recipe library here.')}</p><button class="button button-small button-outline" type="button" data-action="open-settings" data-open="mealie-settings">${t('Connect')}</button></div>`}`;
+    ${mealieConfigured ? `<div class="recipe-results-heading remote-heading"><div><span class="eyebrow">${t('MEALIE LIBRARY')}</span><h2>${mealieResults.length ? t('From Mealie') : t('Search your recipes')}</h2></div><span class="muted">${t('Connected')}</span></div><div class="recipe-grid">${mealieResults.map((recipe) => recipeCard(recipe, true)).join('')}</div>` : STANDALONE || HOSTED ? "" : `<div class="integration-note"><span class="integration-mark">M</span><p><strong>${t('Already using Mealie?')}</strong><br/>${t('Connect it in Settings to search and import your recipe library here.')}</p><button class="button button-small button-outline" type="button" data-action="open-settings" data-open="mealie-settings">${t('Connect')}</button></div>`}`;
 }
 
 function mealieRecipeLink(recipe, className, label) {

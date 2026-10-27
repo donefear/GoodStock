@@ -18,7 +18,8 @@ async function mealDb(path, params = {}) {
     if (answer.status !== 200) throw new Error('unreachable');
     return JSON.parse(answer.body || '{}');
   }
-  const response = await fetch(`/api/mealdb/${path}?${query}`);
+  // A hosting phone has no proxy; TheMealDB also answers browsers directly.
+  const response = await fetch(HOSTED ? `https://www.themealdb.com/api/json/v1/1/${path}?${query}` : `/api/mealdb/${path}?${query}`);
   if (!response.ok) throw new Error('unreachable');
   return response.json();
 }

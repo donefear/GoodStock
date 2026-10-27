@@ -2,6 +2,7 @@ package com.donefear.goodstock;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -34,14 +35,19 @@ import java.util.concurrent.Executors;
  * phones connect to this one under Home server. GET /api/state, GET /api/state/revision and POST /api/state (409 when
  * another device saved first) need the household token, which /api/auth/login gives for the PIN shown on this phone.
  * The kitchen is kept in a file so it survives a restart. Mirrors createKitchenHost in desktop/native.js.
+ * Any other GET answers the app's own web files from the APK, so a browser on the Wi-Fi can open http://phone:8486
+ * and use the shared kitchen without the app (the page is marked data-hosted, see HOSTED in app/core.js). Browsers
+ * sign in with the same PIN and keep the token as a cookie.
  */
 final class KitchenHost {
     private static final String PREFS = "goodstock-kitchen-host";
     private static final int[] PORTS = {8486, 8487, 8488, 8489, 8490};
     private static final int MAX_BODY = 20_000_000;
     private static final long DEVICE_SEEN_MS = 45_000;
+    private static final String COOKIE = "goodstock-host";
     private static KitchenHost running;
 
+    private final AssetManager assets;
     private final File file;
     private final String pin;
     private final String token;
@@ -54,6 +60,7 @@ final class KitchenHost {
     private long lockedUntil;
 
     private KitchenHost(Context context, String pin, String token) throws Exception {
+        this.assets = context.getAssets();
         this.file = new File(context.getFilesDir(), "host-kitchen.json");
         this.pin = pin;
         this.token = token;
@@ -228,7 +235,7 @@ final class KitchenHost {
             }
             int length = 0;
             try { length = Integer.parseInt(headers.containsKey("content-length") ? headers.get("content-length") : "0"); } catch (NumberFormatException ignored) { /* No body. */ }
-            if (length < 0 || length > MAX_BODY) { respond(connection, 413, "{\"error\":\"Too large\"}"); return; }
+            if (length < 0 || length > MAX_BODY) { respond(connection, 413, "{\"error\":\"Too large\"}", null); return; }
             byte[] body = new byte[length];
             int offset = 0;
             while (offset < length) {
@@ -236,23 +243,82 @@ final class KitchenHost {
                 if (read == -1) break;
                 offset += read;
             }
+            String method = parts[0].toUpperCase(Locale.ROOT);
             String path = parts[1].split("\\?")[0];
-            String[] answer = handle(parts[0].toUpperCase(Locale.ROOT), path, headers.get("authorization"), headers.get("x-goodstock-client"), new String(body, 0, offset, StandardCharsets.UTF_8));
-            respond(connection, Integer.parseInt(answer[0]), answer[1]);
+            if ((method.equals("GET") || method.equals("HEAD")) && !path.startsWith("/api/")) { serveFile(connection, path, method.equals("HEAD")); return; }
+            String authorization = headers.get("authorization");
+            String cookie = cookieToken(headers.get("cookie"));
+            if (authorization == null && cookie != null) authorization = "Bearer " + cookie;
+            String[] answer = handle(method, path, authorization, headers.get("x-goodstock-client"), new String(body, 0, offset, StandardCharsets.UTF_8));
+            // A browser keeps the token as a cookie after the PIN (phone apps read it from the answer).
+            String setCookie = path.equals("/api/auth/login") && answer[0].equals("200")
+                    ? COOKIE + "=" + token + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000" : null;
+            respond(connection, Integer.parseInt(answer[0]), answer[1], setCookie);
         } catch (Exception ignored) {
             // The device tries again.
         }
     }
 
-    private static void respond(Socket connection, int status, String json) throws Exception {
-        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+    private static void respond(Socket connection, int status, String json, String setCookie) throws Exception {
+        send(connection, status, "application/json; charset=utf-8", json.getBytes(StandardCharsets.UTF_8), setCookie, false);
+    }
+
+    private static void send(Socket connection, int status, String type, byte[] bytes, String setCookie, boolean headOnly) throws Exception {
         String head = "HTTP/1.1 " + status + " " + (status == 200 ? "OK" : "Error") + "\r\n"
-                + "Content-Type: application/json; charset=utf-8\r\nCache-Control: no-store\r\n"
+                + "Content-Type: " + type + "\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n"
+                + (setCookie != null ? "Set-Cookie: " + setCookie + "\r\n" : "")
                 + "Content-Length: " + bytes.length + "\r\nConnection: close\r\n\r\n";
         OutputStream out = connection.getOutputStream();
         out.write(head.getBytes(StandardCharsets.US_ASCII));
-        out.write(bytes);
+        if (!headOnly) out.write(bytes);
         out.flush();
+    }
+
+    private static String cookieToken(String header) {
+        if (header == null) return null;
+        for (String part : header.split(";")) {
+            String pair = part.trim();
+            if (pair.startsWith(COOKIE + "=")) return pair.substring(COOKIE.length() + 1);
+        }
+        return null;
+    }
+
+    private static final Map<String, String> TYPES = new HashMap<>();
+    static {
+        TYPES.put("html", "text/html; charset=utf-8");
+        TYPES.put("js", "text/javascript; charset=utf-8");
+        TYPES.put("mjs", "text/javascript; charset=utf-8");
+        TYPES.put("css", "text/css; charset=utf-8");
+        TYPES.put("json", "application/json; charset=utf-8");
+        TYPES.put("webmanifest", "application/manifest+json");
+        TYPES.put("svg", "image/svg+xml");
+        TYPES.put("png", "image/png");
+        TYPES.put("woff2", "font/woff2");
+        TYPES.put("woff", "font/woff");
+    }
+
+    /** The app's web files from the APK, for browsers. The pages say they come from a host (data-hosted). */
+    private void serveFile(Socket connection, String path, boolean headOnly) throws Exception {
+        String name = java.net.URLDecoder.decode(path, "UTF-8").replaceFirst("^/+", "");
+        if (name.isEmpty()) name = "index.html";
+        if (name.endsWith("/")) name += "index.html";
+        int dot = name.lastIndexOf('.');
+        String type = dot < 0 ? null : TYPES.get(name.substring(dot + 1).toLowerCase(Locale.ROOT));
+        if (type == null || name.contains("..") || name.contains("\\") || name.startsWith("sw.js")) {
+            send(connection, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8), null, headOnly);
+            return;
+        }
+        byte[] bytes;
+        try (InputStream in = assets.open(name)) {
+            bytes = readAll(in, MAX_BODY);
+        } catch (Exception missing) {
+            send(connection, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8), null, headOnly);
+            return;
+        }
+        if (name.endsWith("index.html")) {
+            bytes = new String(bytes, StandardCharsets.UTF_8).replaceFirst("<html", "<html data-hosted=\"1\"").getBytes(StandardCharsets.UTF_8);
+        }
+        send(connection, 200, type, bytes, null, headOnly);
     }
 
     /** Answers {status, json body}. */

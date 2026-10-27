@@ -145,7 +145,17 @@ const makeHostSecrets = () => ({ pin: String(randomInt(0, 1_000_000)).padStart(6
  * The kitchen host's answers, without the network: handle({ method, path, headers, body }) gives
  * { status, body }. The kitchen is kept in `file` so it survives a restart.
  */
-function createKitchenHost({ file, pin, token, now = Date.now }) {
+// Any other GET answers the app's own web files (webRoot), so a browser on the Wi-Fi can open the host's address and
+// use the shared kitchen without the app; the pages are marked data-hosted (HOSTED in app/core.js). Browsers sign in
+// with the same PIN and keep the token as a cookie. Mirrors KitchenHost.java.
+const HOST_COOKIE = 'goodstock-host';
+const HOST_FILE_TYPES = {
+  html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8',
+  css: 'text/css; charset=utf-8', json: 'application/json; charset=utf-8', webmanifest: 'application/manifest+json',
+  svg: 'image/svg+xml', png: 'image/png', woff2: 'font/woff2', woff: 'font/woff',
+};
+
+function createKitchenHost({ file, pin, token, webRoot = '', now = Date.now }) {
   let kitchen = { revision: 0, state: null };
   let writes = Promise.resolve();
   const devices = new Map();
@@ -167,8 +177,28 @@ function createKitchenHost({ file, pin, token, now = Date.now }) {
     return writes;
   }
 
+  async function webFile(path) {
+    let name = '';
+    try { name = decodeURIComponent(path).replace(/^\/+/, ''); } catch { return null; }
+    if (!name || name.endsWith('/')) name += 'index.html';
+    const type = HOST_FILE_TYPES[(/\.(\w+)$/.exec(name) || [])[1]];
+    if (!webRoot || !type || name.includes('..') || name.includes('\\') || name.includes(':') || name === 'sw.js') return null;
+    try {
+      let bytes = await readFile(join(webRoot, name));
+      if (name.endsWith('index.html')) bytes = Buffer.from(bytes.toString('utf8').replace('<html', '<html data-hosted="1"'));
+      return { status: 200, type, bytes };
+    } catch { return null; }
+  }
+
   async function handle({ method, path, headers = {}, body = '' }) {
-    const route = `${String(method).toUpperCase()} ${String(path).split('?')[0]}`;
+    const verb = String(method).toUpperCase();
+    const pathname = String(path).split('?')[0];
+    const route = `${verb} ${pathname}`;
+    if ((verb === 'GET' || verb === 'HEAD') && !pathname.startsWith('/api/')) {
+      return (await webFile(pathname)) || { status: 404, type: 'text/plain; charset=utf-8', bytes: Buffer.from('Not found') };
+    }
+    const cookie = String(headers.cookie || '').split(';').map((part) => part.trim()).find((part) => part.startsWith(`${HOST_COOKIE}=`));
+    if (!headers.authorization && cookie) headers = { ...headers, authorization: `Bearer ${cookie.slice(HOST_COOKIE.length + 1)}` };
     if (route === 'GET /api/health') return { status: 200, body: { ok: true, app: 'goodstock', host: true } };
     if (route === 'POST /api/auth/login') {
       if (now() < wrongPins.until) return { status: 429, body: { error: 'Too many wrong PINs.' } };
@@ -180,7 +210,8 @@ function createKitchenHost({ file, pin, token, now = Date.now }) {
         return { status: 401, body: { error: 'Wrong PIN' } };
       }
       wrongPins.count = 0;
-      return { status: 200, body: { token } };
+      // A browser keeps the token as a cookie (the apps read it from the answer).
+      return { status: 200, body: { token }, cookie: `${HOST_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000` };
     }
     if (String(headers.authorization || '') !== `Bearer ${token}`) return { status: 401, body: { error: 'PIN required', code: 'pin' } };
     // Devices are told apart by the id each app sends; the revision answer counts the others than the one asking.
@@ -228,8 +259,10 @@ async function startKitchenHost(host, ports = HOST_PORTS) {
         method: request.method, path: request.url, headers: request.headers,
         body: Buffer.concat(chunks).toString('utf8'),
       }).catch(() => ({ status: 500, body: { error: 'Host error' } }));
-      response.writeHead(answer.status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
-      response.end(JSON.stringify(answer.body));
+      const head = { 'content-type': answer.type || 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
+      if (answer.cookie) head['set-cookie'] = answer.cookie;
+      response.writeHead(answer.status, head);
+      response.end(request.method === 'HEAD' ? undefined : answer.bytes || JSON.stringify(answer.body));
     });
   });
   for (const port of ports) {

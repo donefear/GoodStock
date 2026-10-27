@@ -6,6 +6,10 @@ Finished items are marked [x] DONE, paused ones [ ] ON HOLD. The second list is 
 clash with the first list's numbers; the more ideas carry on from 0.26, the newest from 0.41.
 
 
+
+
+
+
 =====================================================================================================================
 NEWEST IDEAS (after v3.3.23)
 =====================================================================================================================
@@ -157,6 +161,25 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     big it is and how much of that is photos ("288 kB in all, of which 287 kB photos. Every device keeps and syncs all
     of it."), points out photos larger than about 110 kB (older or imported ones; the app has made small JPEGs since
     v3.2.3) and "Shrink large photos" makes them small JPEGs too. tests/page/kitchen-size.js.
+
+[x] DONE 0.56 Rate recipes and write notes on them. (v4.6.1)
+    One to five stars on the recipe page (next to "Cooked … times"), in "Cooked ✓" and at the end of cook mode; tapping
+    the same star again clears it. Saved as recipe.rating, shared like the favourite; recipe cards show it, and between
+    recipes that are equally ready the better rated one comes first. Notes ("less salt next time") go in a Notes section
+    under the method, with their date, and "Cooked ✓" has a box for one. They are a list of their own,
+    state.recipeNotes ({ id, recipeId, date, text }), merged one by one, so notes written on two devices at once are both
+    kept; cook mode shows the latest three on its first screen, and deleting a recipe deletes its notes.
+    tests/page/recipe-ratings.js.
+
+[x] DONE 0.57 Danish and Swedish, Mealie only on the server, browsers on a hosting phone. (v4.6.2)
+    Dansk and Svenska as interface languages (lang/da.js, lang/sv.js), with catalog names for every ingredient,
+    units (spsk/msk, tsk, fed/klyfta…), storage places, recipe headings, cook-mode times and voice commands, kitchen
+    tools, recipe-language detection, DeepL targets, DKK/SEK and the iOS app's languages. Mealie is now offered by the
+    Docker server only: the phone, desktop and iOS apps no longer show it (less technical for everyday use). A phone or
+    computer that hosts the kitchen now also serves the app itself, so any browser on the Wi-Fi opens
+    http://<its address>:8486, enters the PIN once and shares the kitchen; Settings on the host shows that address.
+    Features that need the Docker server (DeepL, QR lists, server backups, link import) are hidden there.
+    tests/e2e/browser-opens-host.mjs.
 
 
 =====================================================================================================================

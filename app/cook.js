@@ -6,12 +6,12 @@
 // Times in recipe steps, in the app's languages ("10 minutes", "10 Minuten", "10 minutos", "5 分钟", "1時間").
 // Longer words come before their short forms; the lookahead keeps "min" from matching inside "minced".
 const TIME_UNITS = [
-  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'oră', 'godzin[ayę]?', 'godz', 'saat', 'часов', 'часа', 'час', '小时', '小時', '時間', 'ساعات', 'ساعة', 'שעות', 'שעה', 'h',
-  'minutes?', 'minuten', 'minuut', 'minuti', 'minuto', 'minutos', 'minut[aeyę]?', 'dakika', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'دقائق', 'دقيقة', 'دقيقه', 'דקות', 'דקה', 'דק׳', "דק'", 'mins?', 'min',
-  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundos?', 'seg', 'secunde', 'secundă', 'sekund[ayę]?', 'saniye', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'ثوانٍ', 'ثوان', 'ثواني', 'ثانية', 'שניות', 'שנייה', 'שניה', 'שנ׳', 'secs?',
+  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'oră', 'godzin[ayę]?', 'godz', 'saat', 'timmar', 'timme', 'timer', 'time', 'tim', 'часов', 'часа', 'час', '小时', '小時', '時間', 'ساعات', 'ساعة', 'שעות', 'שעה', 'h',
+  'minutes?', 'minuten', 'minuut', 'minuti', 'minuto', 'minutos', 'minutter', 'minuter', 'minut[aeyę]?', 'dakika', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'دقائق', 'دقيقة', 'دقيقه', 'דקות', 'דקה', 'דק׳', "דק'", 'mins?', 'min',
+  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundos?', 'seg', 'secunde', 'secundă', 'sekunder', 'sekund[ayę]?', 'saniye', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'ثوانٍ', 'ثوان', 'ثواني', 'ثانية', 'שניות', 'שנייה', 'שניה', 'שנ׳', 'secs?',
 ];
-const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|bis|à|a|al|do|до|至|إلى|עד)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё؀-ۿ֐-׿])`, 'i');
-const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[aeă]|godz|saat|час|小时|小時|時間|ساع|שע)/i;
+const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|till|til|bis|à|a|al|do|до|至|إلى|עד)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё؀-ۿ֐-׿])`, 'i');
+const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[aeă]|godz|saat|tim|час|小时|小時|時間|ساع|שע)/i;
 const SECOND_UNIT = /^(?:s|сек|秒|ثو|ثان|שנ)/i;
 const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
 let recipeDialogRecipe = null;
@@ -576,9 +576,9 @@ let listening = false;
 const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const VOICE_COMMANDS = {
   // \b only knows Latin letters, so Russian, Chinese and Japanese words stand outside it.
-  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte|dalej|sonraki|ileri)\b|următorul|înainte|następny|дальше|далее|следующ|下一步|下一个|次へ|次|التالي|بعده|הבא/i,
-  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar|wstecz|cofnij|geri)\b|înapoi|назад|上一步|戻る|前へ|رجوع|السابق|ارجع|אחורה|הקודם/i,
-  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete|tekrar)\b|repetă|powtórz|повтори|重复|もう一度|كرر|أعد|שוב|שוב פעם/i,
+  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte|dalej|sonraki|ileri|næste|videre|nästa|vidare)\b|următorul|înainte|następny|дальше|далее|следующ|下一步|下一个|次へ|次|التالي|بعده|הבא/i,
+  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar|wstecz|cofnij|geri|tilbage|forrige|tillbaka|föregående)\b|înapoi|назад|上一步|戻る|前へ|رجوع|السابق|ارجع|אחורה|הקודם/i,
+  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete|tekrar|gentag|igen|upprepa)\b|repetă|powtórz|повтори|重复|もう一度|كرر|أعد|שוב|שוב פעם/i,
   timer: /\b(?:timer|minuteur|temporizador|cronometro|cronometru|temporizator|minutnik)\b|zamanlayıcı|cronômetro|таймер|计时|タイマー|مؤقت|مؤقّت|טיימר/i,
   stop: /\b(?:stop|stopp|para|ferma|pare|dur)\b|arrête|стоп|停止|止めて|توقف|أوقف|עצור|עצרי/i,
 };
@@ -714,8 +714,13 @@ function renderCookStep() {
     body = `<h3 class="steps-heading">${t('No steps saved for this recipe')}</h3><p class="steps-hint">${t('The ingredients are ready above.')} ${mealieRecipeLink(recipe, 'mealie-link', t('Check the full recipe in Mealie')) || t('Add instructions to the recipe to get small steps here.')}</p>`;
   } else {
     const plan = cookSession.planId && state.plan.find((entry) => entry.id === cookSession.planId);
-    body = `<div class="steps-done"><span aria-hidden="true">✓</span><h3 class="steps-heading">${t('You did it.')}</h3><p class="steps-hint">${plan && !plan.cooked ? t('Mark it as cooked and take the used ingredients out of your stock.') : t('Enjoy your meal.')}</p>${plan && !plan.cooked ? `<button class="button button-primary" type="button" data-action="steps-review" data-id="${escapeHtml(plan.id)}">${t('Mark as cooked')} ✓</button>` : ''}</div>`;
+    // "Mark as cooked" asks for a rating and a note itself; otherwise the stars are here.
+    const saved = recipeById(recipe.id);
+    body = `<div class="steps-done"><span aria-hidden="true">✓</span><h3 class="steps-heading">${t('You did it.')}</h3><p class="steps-hint">${plan && !plan.cooked ? t('Mark it as cooked and take the used ingredients out of your stock.') : t('Enjoy your meal.')}</p>${plan && !plan.cooked ? `<button class="button button-primary" type="button" data-action="steps-review" data-id="${escapeHtml(plan.id)}">${t('Mark as cooked')} ✓</button>` : saved ? ratingStars(saved, true) : ''}</div>`;
   }
+  // The household's notes on this recipe ("less salt next time"), on the first screen.
+  const notes = index === 0 ? recipeNotes(recipe.id).slice(0, 3) : [];
+  if (notes.length) body = `<div class="steps-notes"><strong>${t('Your notes')}</strong>${noteList(notes, false)}</div>${body}`;
   $('#steps-body').innerHTML = `${resume}${body}`;
   $('.steps-back').disabled = index === 0;
   $('.steps-next').textContent = index === bites.length - 1 ? t('Close') : index === bites.length - 2 ? `${t('Finish')} ›` : `${t('Next')} ›`;

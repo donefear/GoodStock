@@ -206,6 +206,50 @@ const RTL_TOOL_WORDS = {
 for (const [id, [arabic, hebrew]] of Object.entries(RTL_TOOL_WORDS)) {
   KITCHEN_TOOL_WORDS[id] = [...(KITCHEN_TOOL_WORDS[id] || []), ...arabic.map((word) => AR_PREFIX + word), ...hebrew.map((word) => HE_PREFIX + word)];
 }
+
+// Danish and Swedish join words ("stegepanden", "ugnsformen"), so most of these are word starts. Generic words say
+// what they are not where a more specific tool further down the list would be caught.
+const NORDIC_TOOL_WORDS = {
+  'air-fryer': [['airfryer', 'varmluftsfrituregryde'], ['airfryer', 'varmluftsfritös']],
+  'stick-blender': [['stavblender'], ['stavmixer']],
+  'food-processor': [['foodprocessor', 'køkkenmaskine'], ['matberedare', 'köksmaskin']],
+  'blender': [['blender(?!\\p{L})', 'blend'], ['mixer(?!\\p{L})', 'mixa', 'mixern']],
+  'hand-mixer': [['håndmikser', 'elpisker', 'røremaskine'], ['elvisp', 'handmixer', 'elvispen']],
+  'whisk': [['piskeris', 'pisk'], ['visp', 'vispa']],
+  'grill-pan': [['grillpande'], ['grillpanna']],
+  'dutch-oven': [['støbejernsgryde'], ['gjutjärnsgryta']],
+  'stock-pot': [['gryde(?!ske)', 'gryden'], ['gryta', 'grytan']],
+  'saucepan': [['kasserolle'], ['kastrull']],
+  'skillet': [['pande(?!kage)', 'stegepande', 'panden'], ['stekpanna', 'stekpannan', 'pannan']],
+  'baking-dish': [['ovnfast fad', 'fad(?!\\p{L})', 'fadet'], ['ugnsform', 'ugnsformen', 'ugnssäker form']],
+  'cake-tin': [['kageform', 'springform'], ['kakform', 'springform', 'sockerkaksform']],
+  'muffin-tin': [['muffinform'], ['muffinsform', 'muffinform']],
+  'baking-tray': [['bageplade', 'pladen'], ['plåt(?!\\p{L})', 'plåten', 'bakplåt', 'ugnsplåt']],
+  'baking-paper': [['bagepapir', 'sølvpapir', 'alufolie'], ['bakplåtspapper', 'aluminiumfolie', 'folie']],
+  'microwave': [['mikroovn', 'mikrobølgeovn'], ['mikrovågsugn', 'mikron']],
+  'oven': [['ovn(?!fast)', 'ovnen', 'forvarm'], ['ugn(?!s)', 'ugnen', 'sätt ugnen', 'förvärm']],
+  'kettle': [['elkedel', 'kedel'], ['vattenkokare']],
+  'colander': [['dørslag', 'si vandet fra', 'hæld vandet fra'], ['durkslag', 'häll av']],
+  'sieve': [['sigte', 'sigt'], ['sil(?!\\p{L})', 'sila', 'sikta']],
+  'ladle': [['grydeske', 'øse'], ['slev', 'soppslev']],
+  'spoon': [['træske', 'grydeske af træ'], ['träslev', 'träsked']],
+  'spatula': [['paletkniv', 'spatel', 'vend(?!\\p{L})', 'vendes'], ['stekspade', 'slickepott', 'vänd(?!\\p{L})', 'vänds']],
+  'tongs': [['tang(?!\\p{L})', 'køkkentang', 'grilltang'], ['tång(?!\\p{L})', 'grilltång', 'köksstång']],
+  'knife': [['kniv', 'hak(?:ket|kes|k)?(?!\\p{L})', 'skær', 'snit'], ['kniv', 'hacka', 'hackad', 'skär', 'strimla']],
+  'cutting-board': [['skærebræt'], ['skärbräda', 'skärbrädan']],
+  'grater': [['rivejern', 'riv(?:es|et|ede)?(?!\\p{L})', 'revet'], ['rivjärn', 'riv(?!\\p{L})', 'riven', 'rivna']],
+  'peeler': [['skrælle', 'skræl'], ['potatisskalare', 'skala', 'skalad', 'skalade']],
+  'masher': [['kartoffelmoser', 'mos(?!\\p{L})', 'moses'], ['potatisstöt', 'mosa', 'mosad']],
+  'mortar': [['morter'], ['mortel']],
+  'rolling-pin': [['kagerulle', 'rul dejen ud'], ['kavel', 'kavla']],
+  'bowl': [['skål', 'røreskål'], ['skål', 'bunke', 'bunken']],
+  'measuring-jug': [['målebæger'], ['decilitermått', 'måttsats', 'litermått']],
+  'scale': [['køkkenvægt', 'vej(?!\\p{L})', 'afvej'], ['köksvåg', 'våg(?!\\p{L})', 'väg(?!\\p{L})']],
+  'lid': [['låg(?!\\p{L})', 'låget'], ['lock(?!\\p{L})', 'locket', 'täck']],
+};
+for (const [id, [danish, swedish]] of Object.entries(NORDIC_TOOL_WORDS)) {
+  KITCHEN_TOOL_WORDS[id] = [...(KITCHEN_TOOL_WORDS[id] || []), ...danish, ...swedish];
+}
 const CJK_TOOL_WORD = /^[぀-ヿ㐀-鿿(]/;
 const kitchenToolWords = {};
 

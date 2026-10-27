@@ -9,6 +9,8 @@ const LANGUAGES = [
   { code: 'es', name: 'Español', locale: 'es-ES' },
   { code: 'fr', name: 'Français', locale: 'fr-FR' },
   { code: 'de', name: 'Deutsch', locale: 'de-DE' },
+  { code: 'da', name: 'Dansk', locale: 'da-DK' },
+  { code: 'sv', name: 'Svenska', locale: 'sv-SE' },
   { code: 'it', name: 'Italiano', locale: 'it-IT' },
   { code: 'pt', name: 'Português', locale: 'pt-BR' },
   { code: 'ru', name: 'Русский', locale: 'ru-RU' },

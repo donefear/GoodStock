@@ -162,7 +162,7 @@ async function startKitchenHost(id) {
     const secrets = settings.host || native.makeHostSecrets();
     if (!settings.host) await saveSettings({ ...settings, host: secrets });
     if (!kitchenHost) {
-      const host = native.createKitchenHost({ file: join(app.getPath('userData'), 'host-kitchen.json'), ...secrets });
+      const host = native.createKitchenHost({ file: join(app.getPath('userData'), 'host-kitchen.json'), webRoot: WEB_ROOT, ...secrets });
       await host.load();
       kitchenHost = await native.startKitchenHost(host);
     }

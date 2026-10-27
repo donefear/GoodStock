@@ -467,6 +467,8 @@ document.addEventListener('click', async (event) => {
     render();
   }
   if (action === 'toggle-favourite') toggleFavourite(id);
+  if (action === 'rate-recipe') rateRecipe(id, Number(button.dataset.value));
+  if (action === 'delete-recipe-note') deleteRecipeNote(id);
   if (action === 'diet-filter') toggleDietFilter(button.dataset.filter);
   if (action === 'favourites-filter') {
     favouritesOnly = !favouritesOnly;
@@ -814,6 +816,7 @@ $('#cook-form').addEventListener('submit', (event) => {
       if (item && used > 0) item.quantity = Math.max(0, roundTo(Number(item.quantity) - used, 3));
     }
     if (form.elements.leftovers.checked) addLeftovers(recipe);
+    addRecipeNote(recipe.id, form.elements.note.value);
     plan.cooked = true;
     persist();
   }
@@ -1089,8 +1092,8 @@ async function restoreKitchen(file) {
 // Server backups (server version): listed in Settings → Your data, restored like a backup file.
 async function fillServerBackups() {
   const zone = $('#server-backups-zone');
-  zone.hidden = STANDALONE;
-  if (STANDALONE) return;
+  zone.hidden = STANDALONE || HOSTED;
+  if (zone.hidden) return;
   const list = $('#server-backups');
   try {
     const { backups, copy } = await (await fetch('/api/backups')).json();
@@ -1212,6 +1215,12 @@ document.addEventListener('submit', (event) => {
       persist();
     }
     startCustomTimer(name || formatDuration(seconds), seconds);
+    return;
+  }
+  if (formId === 'recipe-note-form') {
+    event.preventDefault();
+    const form = event.target;
+    if (addRecipeNote(form.dataset.id, form.elements.text.value)) persist(); else form.elements.text.focus();
     return;
   }
   if (formId !== 'recipe-search-form') return;
@@ -1347,6 +1356,7 @@ function fillSettingsMode() {
   else if (folderSync()) mode.textContent = t('This device shares the kitchen through a shared folder and keeps a full copy, so it also works offline.');
   else if (phoneShared) mode.textContent = t('This phone shares the kitchen on your home server and keeps a copy, so it also works when you are out.');
   else if (STANDALONE) mode.textContent = t('The phone app keeps everything on this device and works without a server. Use Back up below to save a copy.');
+  else if (HOSTED) mode.textContent = t('This kitchen is shared from a phone or computer on your Wi-Fi. It stays in step while Goodstock runs there.');
   else if (liveSync.connected) mode.textContent = tp(liveSync.devices, 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} device connected now).', 'Everyone who opens Goodstock on this server sees the same kitchen, updated live ({count} devices connected now).');
   else mode.textContent = t('Everyone who opens Goodstock on this server sees the same kitchen, updated live.');
 }
@@ -1360,16 +1370,7 @@ function setMealieNote(text, kind = '') {
 async function loadMealieSettings() {
   const form = $('#settings-form');
   form.elements.mealieKey.value = '';
-  if (STANDALONE) {
-    const config = phoneMealie();
-    mealieConfigured = Boolean(config);
-    form.elements.mealieUrl.value = config?.url || '';
-    form.elements.mealiePublicUrl.value = config?.publicUrl || '';
-    form.elements.mealieKey.placeholder = config ? t('Saved. Leave empty to keep it.') : t('Paste a Mealie API token');
-    $('#mealie-disconnect').hidden = !config;
-    setMealieNote(config ? t('Connected to {url}.', { url: config.url }) : t('Not connected. Recipes added with New recipe or Import work without it.'), config ? 'connected' : '');
-    return;
-  }
+  if (!mealieAvailable()) { mealieConfigured = false; return; }
   try {
     const status = await (await fetch('/api/mealie/status')).json();
     mealieConfigured = Boolean(status.configured);
@@ -1406,28 +1407,14 @@ async function connectMealie(address) {
   const publicUrl = normalizeMealieUrl(form.elements.mealiePublicUrl.value);
   setMealieNote(t('Testing the connection…'));
   try {
-    let user = '';
-    if (STANDALONE) {
-      if (!url) throw new Error(t('Enter the address of your Mealie server.'));
-      const current = phoneMealie();
-      // A new address needs the key typed again, so a saved key is never sent to a different server.
-      const key = apiKey || (current?.url === url ? current.apiKey : '');
-      if (!key) throw new Error(t('Enter a Mealie API key. You can create one in Mealie under your profile → API Tokens.'));
-      const config = { url, apiKey: key, publicUrl };
-      const self = await phoneMealieGet('/users/self', config);
-      user = self?.fullName || self?.username || '';
-      config.groupSlug = await phoneMealieGet('/groups/self', config).then((group) => group?.slug || '').catch(() => '');
-      localStorage.setItem(MEALIE_PHONE_KEY, JSON.stringify(config));
-    } else {
-      const response = await fetch('/api/mealie/config', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ url, apiKey, publicUrl }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw Object.assign(serverError(result, N_('Could not connect to Mealie.')), { unreachable: /Could not reach/.test(result.error || '') });
-      user = result.user || '';
-    }
+    const response = await fetch('/api/mealie/config', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url, apiKey, publicUrl }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw Object.assign(serverError(result, N_('Could not connect to Mealie.')), { unreachable: /Could not reach/.test(result.error || '') });
+    const user = result.user || '';
     await loadMealieSettings();
     setMealieNote(user ? t('Connected to {url} as {user}.', { url, user }) : t('Connected to {url}.', { url }), 'connected');
     mealieResults = [];
@@ -1442,8 +1429,7 @@ async function connectMealie(address) {
 
 async function disconnectMealie() {
   if (!window.confirm(t('Disconnect Mealie? Recipes you already added to your library stay.'))) return;
-  if (STANDALONE) localStorage.removeItem(MEALIE_PHONE_KEY);
-  else await fetch('/api/mealie/config', { method: 'DELETE' }).catch(() => {});
+  await fetch('/api/mealie/config', { method: 'DELETE' }).catch(() => {});
   mealieResults = [];
   await loadMealieSettings();
   render();

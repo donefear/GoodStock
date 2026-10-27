@@ -67,6 +67,8 @@ export default async function run({ browser, base, phoneShim }) {
     await host.evaluate(() => { document.querySelector('#settings-button').click(); });
     await wait(300);
     if (await host.evaluate(() => document.querySelector('#host-settings').hidden)) fail.push('the Host section is not shown');
+    // Mealie is for the Docker server only (4.6.2).
+    if (await host.evaluate(() => getComputedStyle(document.querySelector('#mealie-settings')).display !== 'none')) fail.push('the phone app offers Mealie');
     await host.evaluate(() => beginHosting());
     await wait(800);
     const details = await host.evaluate(() => document.querySelector('#host-details').textContent);

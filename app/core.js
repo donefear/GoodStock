@@ -32,6 +32,9 @@ const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (character)
 // the phone, and phone features stand in for server ones (alarms, notifications, sharing, fetching recipe pages).
 const nativeApp = window.GoodstockNative || null;
 const STANDALONE = Boolean(nativeApp);
+// A browser that opened a hosting phone or computer (http://phone:8486, KitchenHost.java / desktop/native.js): the
+// kitchen API is there, the server's extras (Mealie, DeepL, recipe ideas, QR lists, backups, PIN settings) are not.
+const HOSTED = !STANDALONE && document.documentElement.getAttribute('data-hosted') === '1';
 const nativeCallbacks = new Map();
 window.__goodstockNativeCallback = (id, ok, payload) => {
   const callback = nativeCallbacks.get(id);
@@ -95,55 +98,27 @@ function serverError(result, fallback) {
 }
 const errorText = (error, fallback) => (error && error.local) || t((error && error.message) || fallback);
 
-// Mealie is reached one of two ways: in the browser through the server (which keeps the API key), in the Android
-// app straight from the phone, with the connection saved on the phone.
-const MEALIE_PHONE_KEY = 'goodstock-mealie-v1';
-
-function phoneMealie() {
-  try {
-    const config = JSON.parse(localStorage.getItem(MEALIE_PHONE_KEY) || 'null');
-    return config?.url && config?.apiKey ? config : null;
-  } catch { return null; }
-}
-
-async function phoneMealieGet(path, config = phoneMealie()) {
-  if (!config) throw new Error(t('Mealie is not connected.'));
-  let response;
-  try {
-    response = JSON.parse(await nativeCall('httpRequest', `${config.url}/api${path}`, JSON.stringify({ authorization: `Bearer ${config.apiKey}`, accept: 'application/json' })));
-  } catch {
-    throw Object.assign(new Error(t('Could not reach Mealie at {url}. Check the address and that this phone is on the same network.', { url: config.url })), { unreachable: true });
-  }
-  if (response.status >= 400) {
-    const message = window.GoodstockMealie.mealieErrorTemplate(response.status, config.url);
-    throw Object.assign(new Error(window.GoodstockMealie.mealieErrorMessage(response.status, config.url)), { local: localMessage(message) });
-  }
-  try { return JSON.parse(response.body); } catch { throw new Error(t('Found a website at {url}, but not the Mealie API. Check the address.', { url: config.url })); }
-}
-
-const phoneMealieMedia = () => { const config = phoneMealie(); return config ? config.publicUrl || config.url : ''; };
+// Mealie belongs to the Docker server, which keeps the API key and reaches it for every browser (4.6.2). The phone,
+// desktop and iOS apps, and browsers on a hosting phone, don't offer it: everyday users add recipes with New recipe
+// or Import. Recipes added from Mealie earlier stay; only fetching more of them needs the server.
+const mealieAvailable = () => !STANDALONE && !HOSTED;
 
 async function mealieSearch(term) {
-  if (STANDALONE) {
-    const { mealieRows, mapMealieRecipe } = window.GoodstockMealie;
-    return mealieRows(await phoneMealieGet(`/recipes?${new URLSearchParams({ search: term, perPage: '40' })}`)).map((row) => mapMealieRecipe(row, phoneMealieMedia()));
-  }
+  if (!mealieAvailable()) return [];
   const response = await fetch(`/api/mealie/recipes?search=${encodeURIComponent(term)}`);
   if (!response.ok) throw new Error(t('Mealie search failed.'));
   return response.json();
 }
 
 async function mealieRecipe(slug) {
-  if (STANDALONE) return window.GoodstockMealie.mapMealieRecipe(await phoneMealieGet(`/recipes/${encodeURIComponent(slug)}`), phoneMealieMedia());
+  if (!mealieAvailable()) throw new Error(t('That Mealie recipe is unavailable.'));
   const response = await fetch(`/api/mealie/recipes/${encodeURIComponent(slug)}`);
   if (!response.ok) throw new Error(t('That Mealie recipe is unavailable.'));
   return response.json();
 }
 
 function mealieOpenUrl(slug) {
-  if (!STANDALONE) return `/api/mealie/open/${encodeURIComponent(slug)}`;
-  const config = phoneMealie();
-  return config ? window.GoodstockMealie.mealieRecipePageUrl(config.publicUrl || config.url, config.groupSlug, slug) : '';
+  return mealieAvailable() ? `/api/mealie/open/${encodeURIComponent(slug)}` : '';
 }
 
 // Keep the screen on while cooking: the Wake Lock API in a browser, a window flag in the Android app.
@@ -192,6 +167,7 @@ function freshState() {
     shelfLife: [],
     prices: [],
     logTotals: [],
+    recipeNotes: [],
   };
 }
 
@@ -229,6 +205,8 @@ function normalizeState(value) {
     prices: Array.isArray(value.prices) ? value.prices : [],
     // Monthly totals of removals older than a year ({ id: 'YYYY-MM', used, wasted, value }), 0.55.
     logTotals: Array.isArray(value.logTotals) ? value.logTotals : [],
+    // Dated notes on recipes ({ id, recipeId, date, text }), 0.56.
+    recipeNotes: Array.isArray(value.recipeNotes) ? value.recipeNotes : [],
     // The order of the shop, learned from shopping trips ({ trips, groups: { group: { rank, seen } } }), 0.50.
     ...(value.shopOrder && typeof value.shopOrder === 'object' ? { shopOrder: value.shopOrder } : {}),
   };
@@ -278,7 +256,7 @@ function currentWeekPlans() {
 }
 
 // Every name of a catalog ingredient, in all the app's languages ("de": ["Kartoffel", "Kartoffeln"]).
-const CATALOG_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr', 'ar', 'he'];
+const CATALOG_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'da', 'sv', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr', 'ar', 'he'];
 const catalogNames = (ingredient, code) => [].concat(ingredient[code] || []).filter(Boolean);
 const CJK = /[぀-ヿ㐀-鿿]/;
 let catalogIndex = { source: null, entries: [] };
@@ -368,7 +346,7 @@ function cleanIngredientText(value) {
   // Arabic ta marbuta and alef maqsura count as their plain letters (hamza marks already go with the accents).
   return String(value || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/ı/g, 'i').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
     .replace(/^[\s\d\u00bc\u00bd\u00be\u2153\u2154\u215b\u215c\u215d\u215e./,\u2013-]+/, '')
-    .replace(/\b(?:g|gr|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|el|tl|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of|de|di|du|del|della|da|do|d|van|von|cdas?|cdtas?|cucharadas?|cucharaditas?|tazas?|cucchiai[oa]?|cucchiaini?|stk|st|uds?|pz)\b/g, ' ')
+    .replace(/\b(?:g|gr|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|el|tl|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of|de|di|du|del|della|da|do|d|van|von|cdas?|cdtas?|cucharadas?|cucharaditas?|tazas?|cucchiai[oa]?|cucchiaini?|stk|st|uds?|pz|spsk|msk|tsk|dl)\b/g, ' ')
     .replace(/[^\p{L}\p{N} ]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -389,11 +367,11 @@ const UNIT_ALIASES = {
   ml: /^(?:ml|millilit(?:er|re)s?|мл|毫升|مل|מ״ל|מ"ל)$/, cl: /^(?:cl|centilit(?:er|re)s?)$/, dl: /^(?:dl|decilit(?:er|re)s?)$/, l: /^(?:l|lit(?:er|re)s?|л|升|لتر|ل|ליטר)$/,
   oz: /^(?:oz|ounces?)$/, lb: /^(?:lbs?|pounds?)$/, 'fl oz': /^(?:fl\.?\s*oz|fluid\s+ounces?)$/,
   pint: /^(?:pints?|pt)$/, quart: /^(?:quarts?|qt)$/, gallon: /^(?:gallons?|gal)$/, inch: /^inch(?:es)?$/, cm: /^(?:cm|centimet(?:er|re)s?)$/,
-  cup: /^(?:cups?|kopjes?|tazas?|tazze|tazza|tasses?|كوب|أكواب|اكواب|כוס|כוסות)$/, tbsp: /^(?:tbsps?|tbs|tablespoons?|el|eetlepels?|cdas?|cucharadas?|cucchiai[oa]?|linguri|lingură|łyżki|łyżka|łyżek|כף|כפות)$/, tsp: /^(?:tsps?|teaspoons?|tl|theelepels?|cdtas?|cucharaditas?|cucchiaini?|lingurițe|linguriță|łyżeczki|łyżeczka|łyżeczek|כפית|כפיות)$/,
-  can: /^(?:cans?|tins?|blikj?e?s?)$/, jar: /^(?:jars?|potj?e?s?)$/, bag: /^(?:bags?|zakj?e?s?)$/, bottle: /^(?:bottles?|flessen|fles)$/,
-  pack: /^(?:packs?|packets?|packages?|pakj?e?s?)$/, clove: /^(?:cloves?|teentjes?|tenen)$/, bunch: /^(?:bunch(?:es)?|bosj?e?s?)$/,
-  pinch: /^(?:pinch(?:es)?|snufjes?|snuifjes?|snuf)$/, splash: /^(?:splash(?:es)?|dash(?:es)?|scheutjes?|scheut)$/, slice: /^(?:slices?|plakj?e?s?)$/, sprig: /^(?:sprigs?|takjes?)$/, handful: /^(?:handfuls?|handjes?)$/,
-  stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|stuks?|st|x|whole|items?|stk|stück|uds?|un|pz|buc|bucăți|bucată|szt|sztuki|sztuk|adet|шт|個|个|حبة|حبات|قطعة|יח׳|יח'|יחידות)$/,
+  cup: /^(?:cups?|kopjes?|kop|kopper|kopp|koppar|tazas?|tazze|tazza|tasses?|كوب|أكواب|اكواب|כוס|כוסות)$/, tbsp: /^(?:tbsps?|tbs|tablespoons?|el|eetlepels?|spsk|spiseskefulde?|msk|matskedar|matsked|cdas?|cucharadas?|cucchiai[oa]?|linguri|lingură|łyżki|łyżka|łyżek|כף|כפות)$/, tsp: /^(?:tsps?|teaspoons?|tl|theelepels?|tsk|teskefulde?|teskedar|tesked|cdtas?|cucharaditas?|cucchiaini?|lingurițe|linguriță|łyżeczki|łyżeczka|łyżeczek|כפית|כפיות)$/,
+  can: /^(?:cans?|tins?|blikj?e?s?|dåser?|burkar|burk)$/, jar: /^(?:jars?|potj?e?s?|glas)$/, bag: /^(?:bags?|zakj?e?s?|poser?|påsar|påse)$/, bottle: /^(?:bottles?|flessen|fles|flasker?|flaskor|flaska)$/,
+  pack: /^(?:packs?|packets?|packages?|pakj?e?s?|pakker?|paket|förpackningar|förpackning)$/, clove: /^(?:cloves?|teentjes?|tenen|fed|klyftor|klyfta)$/, bunch: /^(?:bunch(?:es)?|bosj?e?s?|bundter?|knippen?)$/,
+  pinch: /^(?:pinch(?:es)?|snufjes?|snuifjes?|snuf|knivspidser?|nypor|nypa)$/, splash: /^(?:splash(?:es)?|dash(?:es)?|scheutjes?|scheut|skvæt|skvätt)$/, slice: /^(?:slices?|plakj?e?s?|skiver?|skivor|skiva)$/, sprig: /^(?:sprigs?|takjes?|kviste?|kvistar)$/, handful: /^(?:handfuls?|handjes?|håndfulde?|nävar|näve)$/,
+  stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|stuks?|st|stykker|stycken|x|whole|items?|stk|stück|uds?|un|pz|buc|bucăți|bucată|szt|sztuki|sztuk|adet|шт|個|个|حبة|حبات|قطعة|יח׳|יח'|יחידות)$/,
 };
 const TO_METRIC = { oz: [28.3495, 'g'], lb: [453.592, 'g'], 'fl oz': [29.5735, 'ml'], pint: [473.176, 'ml'], quart: [946.353, 'ml'], gallon: [3785.41, 'ml'], inch: [2.54, 'cm'] };
 const UNIT_SCALES = { mg: ['mass', 0.001], g: ['mass', 1], kg: ['mass', 1000], oz: ['mass', 28.3495], lb: ['mass', 453.592], ml: ['volume', 1], cl: ['volume', 10], dl: ['volume', 100], l: ['volume', 1000], 'fl oz': ['volume', 29.5735], tsp: ['volume', 5], tbsp: ['volume', 15], cup: ['volume', 240] };
@@ -822,11 +800,11 @@ function recipesUsingInventoryItem(item) {
 }
 
 // Storage locations are the kitchen's own names, in any language; these words decide which kind of storage it is.
-const FREEZER_WORDS = /freezer|vriezer|diepvries|gefrier|tiefkühl|congélateur|congelador|congelatore|congelator|zamrażar|dondurucu|морозил|冷冻|冷凍|فريزر|مجمد|ثلاجة التجميد|מקפיא/i;
-const FRIDGE_PATTERN = /fridge|koelkast|kühlschrank|réfrigérateur|frigo|nevera|frigorífico|geladeira|frigorifero|frigider|lodówk|buzdolab|холодильник|冰箱|冷蔵|ثلاجة(?! التجميد)|براد|מקרר/i;
+const FREEZER_WORDS = /freezer|vriezer|diepvries|gefrier|tiefkühl|congélateur|congelador|congelatore|congelator|zamrażar|dondurucu|fryser|frys|морозил|冷冻|冷凍|فريزر|مجمد|ثلاجة التجميد|מקפיא/i;
+const FRIDGE_PATTERN = /fridge|koelkast|kühlschrank|réfrigérateur|frigo|nevera|frigorífico|geladeira|frigorifero|frigider|lodówk|buzdolab|køleskab|kylskåp|kyl|холодильник|冰箱|冷蔵|ثلاجة(?! التجميد)|براد|מקרר/i;
 // "فريزر ثلاجة" (freezer) is not a fridge; dropped before testing instead of a lookbehind, which old browsers lack.
 const FRIDGE_WORDS = { test: (text) => FRIDGE_PATTERN.test(String(text).replace(/فريزر ثلاجة/g, '')) };
-const PANTRY_WORDS = /pantry|voorraad|vorrat|speisekammer|garde-manger|placard|despensa|dispensa|cămar|spiżar|kiler|кладов|食品|パントリー|食料|مؤن|مخزن|خزانة|מזווה/i;
+const PANTRY_WORDS = /pantry|voorraad|vorrat|speisekammer|garde-manger|placard|despensa|dispensa|cămar|spiżar|kiler|spisekammer|forråd|skafferi|förråd|кладов|食品|パントリー|食料|مؤن|مخزن|خزانة|מזווה/i;
 
 // General estimates used when the catalog has no entry (or no value for this storage type).
 const CATEGORY_SHELF_LIFE_DAYS = {
@@ -1000,7 +978,7 @@ const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'RON
 function defaultCurrency() {
   const tags = [].concat(navigator.languages || [], navigator.language || []).map((tag) => String(tag));
   const regions = { US: 'USD', GB: 'GBP', CH: 'CHF', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', RO: 'RON', CZ: 'CZK', HU: 'HUF', TR: 'TRY', RU: 'RUB', IL: 'ILS', AE: 'AED', SA: 'SAR', EG: 'EGP', JP: 'JPY', CN: 'CNY', IN: 'INR', BR: 'BRL', CA: 'CAD', AU: 'AUD', NZ: 'NZD', ZA: 'ZAR', MX: 'MXN' };
-  const languages = { pl: 'PLN', ro: 'RON', tr: 'TRY', ru: 'RUB', he: 'ILS', ja: 'JPY', zh: 'CNY' };
+  const languages = { da: 'DKK', sv: 'SEK', pl: 'PLN', ro: 'RON', tr: 'TRY', ru: 'RUB', he: 'ILS', ja: 'JPY', zh: 'CNY' };
   for (const tag of tags) {
     const region = (tag.split('-')[1] || '').toUpperCase();
     if (regions[region]) return regions[region];

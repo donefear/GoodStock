@@ -38,6 +38,8 @@
 		<string>tr</string>
 		<string>ar</string>
 		<string>he</string>
+		<string>da</string>
+		<string>sv</string>
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
