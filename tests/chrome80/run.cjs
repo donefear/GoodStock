@@ -43,7 +43,9 @@ async function main() {
     if (!flexGap) fail.push('the .no-flex-gap fallback is not switched on in Chromium 80');
 
     for (const view of ['inventory', 'week', 'shopping', 'recipes', 'tools']) {
-      await page.click(`.nav-item[data-view="${view}"]`);
+      // Clicked in the page: the text size zooms it (115% by default), and Chromium 80 reports element boxes
+      // without that zoom, so page.click() would land on the button above.
+      await page.evaluate((name) => document.querySelector(`.nav-item[data-view="${name}"]`).click(), view);
       await wait(200);
       const heading = await page.evaluate(() => (document.querySelector('#view-container .page-heading h1') || {}).textContent || '');
       log.push(`${view}: ${heading}`);

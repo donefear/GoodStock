@@ -212,6 +212,7 @@ window.GOODSTOCK_TRANSLATIONS.fr = {
   "Goodstock test": "Test Goodstock",
   "in {location}": "dans {location}",
   "not in inventory": "pas dans l’inventaire",
+  "{amount} short · {where}": "il manque {amount} · {where}",
   "Step by step": "Pas à pas",
   "Plan another day": "Prévoir un autre jour",
   "Plan this week": "Prévoir cette semaine",

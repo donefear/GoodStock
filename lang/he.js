@@ -90,6 +90,7 @@ window.GOODSTOCK_TRANSLATIONS.he = {
   "Resumed where you left off · start over": "ממשיכים מהמקום שעצרתם · להתחיל מחדש",
   "Tap each one as it lands on the counter.": "הקישו על כל אחד כשהוא מגיע לשיש.",
   "not in inventory": "לא במלאי",
+  "{amount} short · {where}": "חסרים {amount} · {where}",
   "Tap each one once it's out and ready.": "הקישו על כל אחד כשהוא בחוץ ומוכן.",
   "Start {time} timer": "הפעלת טיימר של {time}",
   "Tools for this step": "כלים לשלב הזה",

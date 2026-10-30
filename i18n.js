@@ -11,6 +11,7 @@ const LANGUAGES = [
   { code: 'de', name: 'Deutsch', locale: 'de-DE' },
   { code: 'da', name: 'Dansk', locale: 'da-DK' },
   { code: 'sv', name: 'Svenska', locale: 'sv-SE' },
+  { code: 'tl', name: 'Tagalog', locale: 'fil-PH' },
   { code: 'it', name: 'Italiano', locale: 'it-IT' },
   { code: 'pt', name: 'Português', locale: 'pt-BR' },
   { code: 'ru', name: 'Русский', locale: 'ru-RU' },

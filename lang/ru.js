@@ -212,6 +212,7 @@ window.GOODSTOCK_TRANSLATIONS.ru = {
   "Goodstock test": "Тест Goodstock",
   "in {location}": "есть: {location}",
   "not in inventory": "нет в запасах",
+  "{amount} short · {where}": "не хватает {amount} · {where}",
   "Step by step": "По шагам",
   "Plan another day": "На другой день",
   "Plan this week": "Запланировать",

@@ -207,10 +207,7 @@ function previewIdea(id) {
   $('#recipe-dialog-title').textContent = recipe.name;
   $('#recipe-dialog-description').textContent = recipe.description || '';
   $('#recipe-dialog-description').hidden = !recipe.description;
-  $('#recipe-dialog-ingredients').innerHTML = recipe.ingredients.map((ingredient) => {
-    const item = matchingInventory(ingredient);
-    return `<li class="${item ? 'in-stock' : 'not-stocked'}"><span aria-hidden="true">${item ? '✓' : '○'}</span><span>${escapeHtml(ingredient)}</span><small>${inStockText(item)}</small></li>`;
-  }).join('');
+  $('#recipe-dialog-ingredients').innerHTML = recipe.ingredients.map(ingredientStockRow).join('');
   const steps = recipeInstructions(recipe);
   const method = $('#recipe-dialog-steps');
   method.innerHTML = steps.length ? `<h3>${t('Method')}</h3><ol>${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol>` : '';

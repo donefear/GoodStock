@@ -1,5 +1,5 @@
 const fail = []; const log = [];
-for (const code of ['en', 'nl', 'de', 'da', 'sv', 'fr', 'es', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr', 'ar', 'he']) {
+for (const code of ['en', 'nl', 'de', 'da', 'sv', 'tl', 'fr', 'es', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr', 'ar', 'he']) {
   await setLanguage(code);
   const fresh = freshState();
   state = fresh;

@@ -256,7 +256,7 @@ function currentWeekPlans() {
 }
 
 // Every name of a catalog ingredient, in all the app's languages ("de": ["Kartoffel", "Kartoffeln"]).
-const CATALOG_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'da', 'sv', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr', 'ar', 'he'];
+const CATALOG_LANGUAGES = ['en', 'nl', 'es', 'fr', 'de', 'da', 'sv', 'tl', 'it', 'pt', 'ru', 'zh', 'ja', 'ro', 'pl', 'tr', 'ar', 'he'];
 const catalogNames = (ingredient, code) => [].concat(ingredient[code] || []).filter(Boolean);
 const CJK = /[぀-ヿ㐀-鿿]/;
 let catalogIndex = { source: null, entries: [] };
@@ -346,7 +346,7 @@ function cleanIngredientText(value) {
   // Arabic ta marbuta and alef maqsura count as their plain letters (hamza marks already go with the accents).
   return String(value || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/ı/g, 'i').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
     .replace(/^[\s\d\u00bc\u00bd\u00be\u2153\u2154\u215b\u215c\u215d\u215e./,\u2013-]+/, '')
-    .replace(/\b(?:g|gr|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|el|tl|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of|de|di|du|del|della|da|do|d|van|von|cdas?|cdtas?|cucharadas?|cucharaditas?|tazas?|cucchiai[oa]?|cucchiaini?|stk|st|uds?|pz|spsk|msk|tsk|dl)\b/g, ' ')
+    .replace(/\b(?:g|gr|kg|ml|l|oz|lb|lbs|cup|cups|tbsp|tsp|teaspoon|teaspoons|tablespoon|tablespoons|el|tl|can|cans|clove|cloves|piece|pieces|pcs|bunch|bunches|pinch|of|de|di|du|del|della|da|do|d|van|von|cdas?|cdtas?|cucharadas?|cucharaditas?|tazas?|cucchiai[oa]?|cucchiaini?|stk|st|uds?|pz|spsk|msk|tsk|dl|na|ng|mga|tasang?|kutsarang?|kutsaritang?|pirasong?|butil)\b/g, ' ')
     .replace(/[^\p{L}\p{N} ]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -363,15 +363,15 @@ const INGREDIENT_PATTERN = new RegExp(String.raw`^(${AMOUNT_SOURCE})(?:\s*(?:-|�
 const IMPERIAL_PATTERN = new RegExp(String.raw`(^|[^\d.,/])(${AMOUNT_SOURCE})(?:\s*(-|–|to)\s*(${AMOUNT_SOURCE}))?\s*(fl\.?\s*oz|fluid\s+ounces?|ounces?|oz|pounds?|lbs?|pints?|quarts?|gallons?|inch(?:es)?)(?![a-z])\.?`, 'gi');
 const FAHRENHEIT_PATTERN = /(\d{3})\s*(?:°\s*F|degrees?\s+F(?:ahrenheit)?|F)\b/g;
 const UNIT_ALIASES = {
-  g: /^(?:g|gr|grams?|grammes?|г|гр|克|غ|غرام|جم|جرام|גרם|ג׳|ג')$/, kg: /^(?:kg|kilos?|kilograms?|кг|公斤|千克|كغ|كجم|كيلو|كيلوغرام|ק״ג|ק"ג|קילו|קילוגרם)$/, mg: /^(?:mg|milligrams?|мг)$/,
-  ml: /^(?:ml|millilit(?:er|re)s?|мл|毫升|مل|מ״ל|מ"ל)$/, cl: /^(?:cl|centilit(?:er|re)s?)$/, dl: /^(?:dl|decilit(?:er|re)s?)$/, l: /^(?:l|lit(?:er|re)s?|л|升|لتر|ل|ליטר)$/,
+  g: /^(?:g|gr|grams?|grammes?|gramo|gramong|г|гр|克|غ|غرام|جم|جرام|גרם|ג׳|ג')$/, kg: /^(?:kg|kilos?|kilong|kilograms?|кг|公斤|千克|كغ|كجم|كيلو|كيلوغرام|ק״ג|ק"ג|קילו|קילוגרם)$/, mg: /^(?:mg|milligrams?|мг)$/,
+  ml: /^(?:ml|millilit(?:er|re)s?|мл|毫升|مل|מ״ל|מ"ל)$/, cl: /^(?:cl|centilit(?:er|re)s?)$/, dl: /^(?:dl|decilit(?:er|re)s?)$/, l: /^(?:l|lit(?:er|re)s?|litrong?|л|升|لتر|ل|ליטר)$/,
   oz: /^(?:oz|ounces?)$/, lb: /^(?:lbs?|pounds?)$/, 'fl oz': /^(?:fl\.?\s*oz|fluid\s+ounces?)$/,
   pint: /^(?:pints?|pt)$/, quart: /^(?:quarts?|qt)$/, gallon: /^(?:gallons?|gal)$/, inch: /^inch(?:es)?$/, cm: /^(?:cm|centimet(?:er|re)s?)$/,
-  cup: /^(?:cups?|kopjes?|kop|kopper|kopp|koppar|tazas?|tazze|tazza|tasses?|كوب|أكواب|اكواب|כוס|כוסות)$/, tbsp: /^(?:tbsps?|tbs|tablespoons?|el|eetlepels?|spsk|spiseskefulde?|msk|matskedar|matsked|cdas?|cucharadas?|cucchiai[oa]?|linguri|lingură|łyżki|łyżka|łyżek|כף|כפות)$/, tsp: /^(?:tsps?|teaspoons?|tl|theelepels?|tsk|teskefulde?|teskedar|tesked|cdtas?|cucharaditas?|cucchiaini?|lingurițe|linguriță|łyżeczki|łyżeczka|łyżeczek|כפית|כפיות)$/,
-  can: /^(?:cans?|tins?|blikj?e?s?|dåser?|burkar|burk)$/, jar: /^(?:jars?|potj?e?s?|glas)$/, bag: /^(?:bags?|zakj?e?s?|poser?|påsar|påse)$/, bottle: /^(?:bottles?|flessen|fles|flasker?|flaskor|flaska)$/,
-  pack: /^(?:packs?|packets?|packages?|pakj?e?s?|pakker?|paket|förpackningar|förpackning)$/, clove: /^(?:cloves?|teentjes?|tenen|fed|klyftor|klyfta)$/, bunch: /^(?:bunch(?:es)?|bosj?e?s?|bundter?|knippen?)$/,
-  pinch: /^(?:pinch(?:es)?|snufjes?|snuifjes?|snuf|knivspidser?|nypor|nypa)$/, splash: /^(?:splash(?:es)?|dash(?:es)?|scheutjes?|scheut|skvæt|skvätt)$/, slice: /^(?:slices?|plakj?e?s?|skiver?|skivor|skiva)$/, sprig: /^(?:sprigs?|takjes?|kviste?|kvistar)$/, handful: /^(?:handfuls?|handjes?|håndfulde?|nävar|näve)$/,
-  stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|stuks?|st|stykker|stycken|x|whole|items?|stk|stück|uds?|un|pz|buc|bucăți|bucată|szt|sztuki|sztuk|adet|шт|個|个|حبة|حبات|قطعة|יח׳|יח'|יחידות)$/,
+  cup: /^(?:cups?|tasang?|kopjes?|kop|kopper|kopp|koppar|tazas?|tazze|tazza|tasses?|كوب|أكواب|اكواب|כוס|כוסות)$/, tbsp: /^(?:tbsps?|kutsarang?|tbs|tablespoons?|el|eetlepels?|spsk|spiseskefulde?|msk|matskedar|matsked|cdas?|cucharadas?|cucchiai[oa]?|linguri|lingură|łyżki|łyżka|łyżek|כף|כפות)$/, tsp: /^(?:tsps?|kutsaritang?|teaspoons?|tl|theelepels?|tsk|teskefulde?|teskedar|tesked|cdtas?|cucharaditas?|cucchiaini?|lingurițe|linguriță|łyżeczki|łyżeczka|łyżeczek|כפית|כפיות)$/,
+  can: /^(?:cans?|latang?|tins?|blikj?e?s?|dåser?|burkar|burk)$/, jar: /^(?:jars?|garapong?|potj?e?s?|glas)$/, bag: /^(?:bags?|supot|zakj?e?s?|poser?|påsar|påse)$/, bottle: /^(?:bottles?|boteng?|flessen|fles|flasker?|flaskor|flaska)$/,
+  pack: /^(?:packs?|paketeng?|packets?|packages?|pakj?e?s?|pakker?|paket|förpackningar|förpackning)$/, clove: /^(?:cloves?|butil|teentjes?|tenen|fed|klyftor|klyfta)$/, bunch: /^(?:bunch(?:es)?|tali|bungkos|bosj?e?s?|bundter?|knippen?)$/,
+  pinch: /^(?:pinch(?:es)?|kurot|snufjes?|snuifjes?|snuf|knivspidser?|nypor|nypa)$/, splash: /^(?:splash(?:es)?|dash(?:es)?|scheutjes?|scheut|skvæt|skvätt)$/, slice: /^(?:slices?|hiwa|hiwang|plakj?e?s?|skiver?|skivor|skiva)$/, sprig: /^(?:sprigs?|takjes?|kviste?|kvistar)$/, handful: /^(?:handfuls?|dakot|handjes?|håndfulde?|nävar|näve)$/,
+  stick: /^sticks?$/, pcs: /^(?:pcs?|pieces?|pirasong?|stuks?|st|stykker|stycken|x|whole|items?|stk|stück|uds?|un|pz|buc|bucăți|bucată|szt|sztuki|sztuk|adet|шт|個|个|حبة|حبات|قطعة|יח׳|יח'|יחידות)$/,
 };
 const TO_METRIC = { oz: [28.3495, 'g'], lb: [453.592, 'g'], 'fl oz': [29.5735, 'ml'], pint: [473.176, 'ml'], quart: [946.353, 'ml'], gallon: [3785.41, 'ml'], inch: [2.54, 'cm'] };
 const UNIT_SCALES = { mg: ['mass', 0.001], g: ['mass', 1], kg: ['mass', 1000], oz: ['mass', 28.3495], lb: ['mass', 453.592], ml: ['volume', 1], cl: ['volume', 10], dl: ['volume', 100], l: ['volume', 1000], 'fl oz': ['volume', 29.5735], tsp: ['volume', 5], tbsp: ['volume', 15], cup: ['volume', 240] };
@@ -401,7 +401,7 @@ function parseIngredient(text) {
   const amount = parseAmount(match[1]) || null;
   const rest = match[2].trim();
   // Hebrew abbreviations carry a geresh or gershayim inside the word ("ק״ג", "מ״ל").
-  const unitMatch = /^(fl\.?\s*oz\.?|fluid\s+ounces?|[\p{L}׳״]+\.?)(?:\s+(?:of|van)\b)?\s+(.+)$/iu.exec(rest);
+  const unitMatch = /^(fl\.?\s*oz\.?|fluid\s+ounces?|[\p{L}׳״]+\.?)(?:\s+(?:of|van|na|ng)\b)?\s+(.+)$/iu.exec(rest);
   const unit = unitMatch ? canonicalUnit(unitMatch[1]) : null;
   const tidy = (name) => name.replace(/^\([^)]*\)\s*/, '').trim();
   if (unit) return { amount, unit, unitText: unitMatch[1].replace(/\.$/, ''), name: tidy(unitMatch[2]) };
@@ -801,10 +801,10 @@ function recipesUsingInventoryItem(item) {
 
 // Storage locations are the kitchen's own names, in any language; these words decide which kind of storage it is.
 const FREEZER_WORDS = /freezer|vriezer|diepvries|gefrier|tiefkühl|congélateur|congelador|congelatore|congelator|zamrażar|dondurucu|fryser|frys|морозил|冷冻|冷凍|فريزر|مجمد|ثلاجة التجميد|מקפיא/i;
-const FRIDGE_PATTERN = /fridge|koelkast|kühlschrank|réfrigérateur|frigo|nevera|frigorífico|geladeira|frigorifero|frigider|lodówk|buzdolab|køleskab|kylskåp|kyl|холодильник|冰箱|冷蔵|ثلاجة(?! التجميد)|براد|מקרר/i;
+const FRIDGE_PATTERN = /fridge|koelkast|kühlschrank|réfrigérateur|frigo|nevera|frigorífico|geladeira|frigorifero|frigider|lodówk|buzdolab|køleskab|kylskåp|kyl|refrigerator|\bref\b|palamigan|холодильник|冰箱|冷蔵|ثلاجة(?! التجميد)|براد|מקרר/i;
 // "فريزر ثلاجة" (freezer) is not a fridge; dropped before testing instead of a lookbehind, which old browsers lack.
 const FRIDGE_WORDS = { test: (text) => FRIDGE_PATTERN.test(String(text).replace(/فريزر ثلاجة/g, '')) };
-const PANTRY_WORDS = /pantry|voorraad|vorrat|speisekammer|garde-manger|placard|despensa|dispensa|cămar|spiżar|kiler|spisekammer|forråd|skafferi|förråd|кладов|食品|パントリー|食料|مؤن|مخزن|خزانة|מזווה/i;
+const PANTRY_WORDS = /pantry|voorraad|vorrat|speisekammer|garde-manger|placard|despensa|dispensa|cămar|spiżar|kiler|spisekammer|forråd|skafferi|förråd|paminggalan|imbakan|кладов|食品|パントリー|食料|مؤن|مخزن|خزانة|מזווה/i;
 
 // General estimates used when the catalog has no entry (or no value for this storage type).
 const CATEGORY_SHELF_LIFE_DAYS = {
@@ -978,7 +978,7 @@ const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'RON
 function defaultCurrency() {
   const tags = [].concat(navigator.languages || [], navigator.language || []).map((tag) => String(tag));
   const regions = { US: 'USD', GB: 'GBP', CH: 'CHF', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', RO: 'RON', CZ: 'CZK', HU: 'HUF', TR: 'TRY', RU: 'RUB', IL: 'ILS', AE: 'AED', SA: 'SAR', EG: 'EGP', JP: 'JPY', CN: 'CNY', IN: 'INR', BR: 'BRL', CA: 'CAD', AU: 'AUD', NZ: 'NZD', ZA: 'ZAR', MX: 'MXN' };
-  const languages = { da: 'DKK', sv: 'SEK', pl: 'PLN', ro: 'RON', tr: 'TRY', ru: 'RUB', he: 'ILS', ja: 'JPY', zh: 'CNY' };
+  const languages = { da: 'DKK', sv: 'SEK', tl: 'PHP', pl: 'PLN', ro: 'RON', tr: 'TRY', ru: 'RUB', he: 'ILS', ja: 'JPY', zh: 'CNY' };
   for (const tag of tags) {
     const region = (tag.split('-')[1] || '').toUpperCase();
     if (regions[region]) return regions[region];
@@ -1134,6 +1134,20 @@ function checkThawReminder() {
   show().catch(() => localStorage.removeItem(LAST_THAW_REMINDER_KEY));
 }
 
+// A recipe line against the stock: the item it comes from and how much of it is short, in the item's own unit (2 kg
+// of potatoes with 1 kg in stock is 1 kg short). As on the shopping list, amounts that can't be compared with the
+// item's unit ("1 bunch" against "200 g") count as enough.
+function ingredientStock(ingredient) {
+  const item = matchingInventory(ingredient);
+  if (!item) return { item, short: 0 };
+  const short = roundTo(deductionAmount(ingredient, item) - Number(item.quantity), 3);
+  return { item, short: short > 0 ? short : 0 };
+}
+
+// Lines not in stock, or not enough of them.
 function missingIngredients(recipe) {
-  return (recipe.ingredients || []).filter((ingredient) => !matchingInventory(ingredient));
+  return (recipe.ingredients || []).filter((ingredient) => {
+    const { item, short } = ingredientStock(ingredient);
+    return !item || short > 0;
+  });
 }

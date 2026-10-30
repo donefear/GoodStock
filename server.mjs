@@ -70,7 +70,8 @@ const staticFiles = new Map([
   ['/apple-touch-icon.png', ['apple-touch-icon.png', 'image/png']],
   ['/icon-192.png', ['icon-192.png', 'image/png']],
   ['/icon-512.png', ['icon-512.png', 'image/png']],
-  ...TRANSLATION_LANGUAGES.filter((code) => code !== 'en').map((code) => [`/lang/${code}.js`, [`lang/${code}.js`, 'text/javascript; charset=utf-8']]),
+  // Every interface language: the DeepL ones and Tagalog, which DeepL does not translate into.
+  ...[...TRANSLATION_LANGUAGES, 'tl'].filter((code) => code !== 'en').map((code) => [`/lang/${code}.js`, [`lang/${code}.js`, 'text/javascript; charset=utf-8']]),
 ]);
 
 // Errors for the page. A sentence with a value in it (an address, an HTTP status) also travels as its English

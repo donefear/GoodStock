@@ -184,6 +184,13 @@ KEEPING IT HEALTHY (FOR WHOEVER WORKS ON THE CODE)
     A Sort menu on the Recipes page: closest to ready (default), A to Z, best rated, cooked most, cooked lately, not
     cooked in a while, newest first, fewest ingredients. Kept per browser (goodstock-recipe-sort-v1); the list heading
     names the sort. sortRecipes in app/recipes.js. tests/page/recipe-sort.js.
+[x] DONE 0.59 Tagalog. (v4.7.1)
+    Tagalog as an interface language (lang/tl.js, locale fil-PH), with catalog names for every ingredient, units with
+    their linking na/ng (tasang, kutsarang, kutsaritang, butil na, latang, pirasong, gramong, kilong), storage places,
+    recipe headings and language, cook-mode times (oras, minuto, hanggang) and voice commands (susunod, bumalik,
+    ulitin), kitchen tools (kawali, kaldero, sandok, sangkalan…), PHP prices and the iOS app's languages. DeepL reads
+    Tagalog but does not translate into it, so it is not offered as a target (NOT_DEEPL_TARGETS in app/recipes.js);
+    the server serves lang/tl.js next to the DeepL languages. tests/page/tagalog-recipes.js.
 
 
 =====================================================================================================================

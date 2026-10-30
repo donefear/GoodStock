@@ -79,6 +79,7 @@ window.GOODSTOCK_TRANSLATIONS.ro = {
   "Resumed where you left off · start over": "Continuăm de unde ai rămas · ia-o de la capăt",
   "Tap each one as it lands on the counter.": "Atinge-l pe fiecare când ajunge pe blat.",
   "not in inventory": "nu e în inventar",
+  "{amount} short · {where}": "lipsesc {amount} · {where}",
   "Tap each one once it's out and ready.": "Atinge-l pe fiecare când e scos și pregătit.",
   "Start {time} timer": "Pornește cronometrul de {time}",
   "Tools for this step": "Ustensile pentru acest pas",

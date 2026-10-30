@@ -6,12 +6,12 @@
 // Times in recipe steps, in the app's languages ("10 minutes", "10 Minuten", "10 minutos", "5 分钟", "1時間").
 // Longer words come before their short forms; the lookahead keeps "min" from matching inside "minced".
 const TIME_UNITS = [
-  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'oră', 'godzin[ayę]?', 'godz', 'saat', 'timmar', 'timme', 'timer', 'time', 'tim', 'часов', 'часа', 'час', '小时', '小時', '時間', 'ساعات', 'ساعة', 'שעות', 'שעה', 'h',
-  'minutes?', 'minuten', 'minuut', 'minuti', 'minuto', 'minutos', 'minutter', 'minuter', 'minut[aeyę]?', 'dakika', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'دقائق', 'دقيقة', 'دقيقه', 'דקות', 'דקה', 'דק׳', "דק'", 'mins?', 'min',
-  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundos?', 'seg', 'secunde', 'secundă', 'sekunder', 'sekund[ayę]?', 'saniye', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'ثوانٍ', 'ثوان', 'ثواني', 'ثانية', 'שניות', 'שנייה', 'שניה', 'שנ׳', 'secs?',
+  'hours?', 'hrs?', 'uur', 'uren', 'stunden', 'stunde', 'std', 'heures?', 'horas?', 'ore', 'ora', 'oră', 'godzin[ayę]?', 'godz', 'saat', 'oras', 'timmar', 'timme', 'timer', 'time', 'tim', 'часов', 'часа', 'час', '小时', '小時', '時間', 'ساعات', 'ساعة', 'שעות', 'שעה', 'h',
+  'minutes?', 'minuten', 'minuut', 'minuti', 'minutong', 'minuto', 'minutos', 'minutter', 'minuter', 'minut[aeyę]?', 'dakika', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'دقائق', 'دقيقة', 'دقيقه', 'דקות', 'דקה', 'דק׳', "דק'", 'mins?', 'min',
+  'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundong', 'segundos?', 'seg', 'secunde', 'secundă', 'sekunder', 'sekund[ayę]?', 'saniye', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'ثوانٍ', 'ثوان', 'ثواني', 'ثانية', 'שניות', 'שנייה', 'שניה', 'שנ׳', 'secs?',
 ];
-const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|till|til|bis|à|a|al|do|до|至|إلى|עד)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё؀-ۿ֐-׿])`, 'i');
-const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[aeă]|godz|saat|tim|час|小时|小時|時間|ساع|שע)/i;
+const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|till|til|hanggang|bis|à|a|al|do|до|至|إلى|עד)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё؀-ۿ֐-׿])`, 'i');
+const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[aeă]|godz|saat|oras|tim|час|小时|小時|時間|ساع|שע)/i;
 const SECOND_UNIT = /^(?:s|сек|秒|ثو|ثان|שנ)/i;
 const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
 let recipeDialogRecipe = null;
@@ -576,11 +576,11 @@ let listening = false;
 const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const VOICE_COMMANDS = {
   // \b only knows Latin letters, so Russian, Chinese and Japanese words stand outside it.
-  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte|dalej|sonraki|ileri|næste|videre|nästa|vidare)\b|următorul|înainte|następny|дальше|далее|следующ|下一步|下一个|次へ|次|التالي|بعده|הבא/i,
-  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar|wstecz|cofnij|geri|tilbage|forrige|tillbaka|föregående)\b|înapoi|назад|上一步|戻る|前へ|رجوع|السابق|ارجع|אחורה|הקודם/i,
-  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete|tekrar|gentag|igen|upprepa)\b|repetă|powtórz|повтори|重复|もう一度|كرر|أعد|שוב|שוב פעם/i,
+  next: /\b(?:next|volgende|verder|weiter|nächster|suivant|suivante|siguiente|avanti|prossimo|próximo|seguinte|dalej|sonraki|ileri|næste|videre|nästa|vidare|susunod|sunod)\b|următorul|înainte|następny|дальше|далее|следующ|下一步|下一个|次へ|次|التالي|بعده|הבא/i,
+  back: /\b(?:back|previous|terug|vorige|zurück|retour|précédent|atrás|anterior|indietro|voltar|wstecz|cofnij|geri|tilbage|forrige|tillbaka|föregående|bumalik|balik|nakaraan)\b|înapoi|назад|上一步|戻る|前へ|رجوع|السابق|ارجع|אחורה|הקודם/i,
+  repeat: /\b(?:repeat|again|herhaal|opnieuw|wiederholen|nochmal|répète|répéter|repite|repetir|ripeti|repete|tekrar|gentag|igen|upprepa|ulitin|ulit)\b|repetă|powtórz|повтори|重复|もう一度|كرر|أعد|שוב|שוב פעם/i,
   timer: /\b(?:timer|minuteur|temporizador|cronometro|cronometru|temporizator|minutnik)\b|zamanlayıcı|cronômetro|таймер|计时|タイマー|مؤقت|مؤقّت|טיימר/i,
-  stop: /\b(?:stop|stopp|para|ferma|pare|dur)\b|arrête|стоп|停止|止めて|توقف|أوقف|עצור|עצרי/i,
+  stop: /\b(?:stop|stopp|para|ferma|pare|dur|tigil|itigil|hinto)\b|arrête|стоп|停止|止めて|توقف|أوقف|עצור|עצרי/i,
 };
 
 const canSpeak = () => (STANDALONE && nativeApp.canSpeak ? Boolean(nativeApp.canSpeak()) : 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function');

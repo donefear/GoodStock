@@ -90,6 +90,7 @@ window.GOODSTOCK_TRANSLATIONS.ar = {
   "Resumed where you left off · start over": "استُكملت من حيث توقفت · ابدأ من جديد",
   "Tap each one as it lands on the counter.": "اضغط على كل واحد عندما يصبح على سطح العمل.",
   "not in inventory": "ليس في المخزون",
+  "{amount} short · {where}": "ينقص {amount} · {where}",
   "Tap each one once it's out and ready.": "اضغط على كل واحدة عندما تكون جاهزة.",
   "Start {time} timer": "بدء مؤقّت {time}",
   "Tools for this step": "أدوات هذه الخطوة",

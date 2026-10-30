@@ -212,6 +212,7 @@ window.GOODSTOCK_TRANSLATIONS.zh = {
   "Goodstock test": "Goodstock 测试",
   "in {location}": "在{location}",
   "not in inventory": "不在库存中",
+  "{amount} short · {where}": "缺 {amount} · {where}",
   "Step by step": "分步烹饪",
   "Plan another day": "安排到其他日子",
   "Plan this week": "安排到本周",

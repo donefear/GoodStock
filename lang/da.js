@@ -212,6 +212,7 @@ window.GOODSTOCK_TRANSLATIONS.da = {
   "Goodstock test": "Goodstock-test",
   "in {location}": "i {location}",
   "not in inventory": "ikke på lager",
+  "{amount} short · {where}": "mangler {amount} · {where}",
   "Step by step": "Trin for trin",
   "Plan another day": "Planlæg en anden dag",
   "Plan this week": "Planlæg i denne uge",

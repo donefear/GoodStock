@@ -250,6 +250,29 @@ const NORDIC_TOOL_WORDS = {
 for (const [id, [danish, swedish]] of Object.entries(NORDIC_TOOL_WORDS)) {
   KITCHEN_TOOL_WORDS[id] = [...(KITCHEN_TOOL_WORDS[id] || []), ...danish, ...swedish];
 }
+
+// Tagalog recipes often name tools in English (already caught above); these are the Tagalog and Spanish-loan names.
+const TAGALOG_TOOL_WORDS = {
+  'whisk': ['batidor'],
+  'stock-pot': ['kaldero'],
+  'saucepan': ['kaserola'],
+  'skillet': ['kawali'],
+  'kettle': ['takure'],
+  'colander': ['salaan', 'salain'],
+  'ladle': ['sandok(?! na kahoy)'],
+  'spoon': ['sandok na kahoy', 'kutsarang kahoy'],
+  'spatula': ['siyanse'],
+  'tongs': ['sipit'],
+  'knife': ['kutsilyo', 'hiwain', 'tadtarin', 'hiniwa', 'tinadtad'],
+  'cutting-board': ['sangkalan'],
+  'grater': ['kudkuran', 'kudkurin', 'kinudkod'],
+  'mortar': ['almires', 'dikdikan'],
+  'rolling-pin': ['rodilyo'],
+  'bowl': ['mangkok'],
+  'scale': ['timbangan', 'timbangin'],
+  'lid': ['takip', 'takpan'],
+};
+for (const [id, words] of Object.entries(TAGALOG_TOOL_WORDS)) KITCHEN_TOOL_WORDS[id] = [...(KITCHEN_TOOL_WORDS[id] || []), ...words];
 const CJK_TOOL_WORD = /^[぀-ヿ㐀-鿿(]/;
 const kitchenToolWords = {};
 

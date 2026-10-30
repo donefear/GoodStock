@@ -212,6 +212,7 @@ window.GOODSTOCK_TRANSLATIONS.sv = {
   "Goodstock test": "Goodstock-test",
   "in {location}": "i {location}",
   "not in inventory": "finns inte i förrådet",
+  "{amount} short · {where}": "{amount} för lite · {where}",
   "Step by step": "Steg för steg",
   "Plan another day": "Planera en annan dag",
   "Plan this week": "Planera den här veckan",

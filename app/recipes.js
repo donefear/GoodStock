@@ -27,8 +27,8 @@ function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
 // Splits pasted recipe text into name, ingredients and steps. Headings ("Ingredients", "Method", "Bereiding") help;
 // without them, short lines that start with an amount count as ingredients and everything else as steps.
 function parseRecipeText(text) {
-  const ingredientHeading = /^(?:ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden|zutaten|ingredienser|det skal du bruge|du behöver|ingrédients|ingredientes|ingredienti|ingrediente|składniki|malzemeler|ингредиенты|材料|食材|用料|المكونات|المقادير|מצרכים|רכיבים)\s*[:：]?$/i;
-  const stepHeading = /^(?:instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze|zubereitung|fremgangsmåde|tilberedning|sådan gør du|gör så här|tillagning|instruktioner|préparation|instructions|preparación|elaboración|preparazione|procedimento|modo de preparo|preparo|mod de preparare|preparare|przygotowanie|sposób przygotowania|hazırlanışı|yapılışı|приготовление|способ приготовления|作り方|手順|做法|步骤|طريقة التحضير|الطريقة|الخطوات|אופן ההכנה|הוראות הכנה|הכנה)\s*[:：]?$/i;
+  const ingredientHeading = /^(?:ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden|zutaten|ingredienser|det skal du bruge|du behöver|mga sangkap|sangkap|ingrédients|ingredientes|ingredienti|ingrediente|składniki|malzemeler|ингредиенты|材料|食材|用料|المكونات|المقادير|מצרכים|רכיבים)\s*[:：]?$/i;
+  const stepHeading = /^(?:instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze|zubereitung|fremgangsmåde|tilberedning|sådan gør du|gör så här|tillagning|instruktioner|paraan ng pagluluto|paraan ng paghahanda|paano lutuin|paano gawin|pamamaraan|préparation|instructions|preparación|elaboración|preparazione|procedimento|modo de preparo|preparo|mod de preparare|preparare|przygotowanie|sposób przygotowania|hazırlanışı|yapılışı|приготовление|способ приготовления|作り方|手順|做法|步骤|طريقة التحضير|الطريقة|الخطوات|אופן ההכנה|הוראות הכנה|הכנה)\s*[:：]?$/i;
   const clean = (line) => line.replace(/^(?:[-–•*▢☐□✓]\s*|(?:step\s*)?\d+[.)]\s+)/i, '').trim();
   const lines = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const hasHeadings = lines.some((line) => ingredientHeading.test(line) || stepHeading.test(line));
@@ -264,6 +264,13 @@ const SOURCE_LABELS = { 'My recipes': N_('My recipes'), Imported: N_('Imported')
 const sourceLabel = (source) => (SOURCE_LABELS[source || 'Kitchen collection'] ? t(SOURCE_LABELS[source || 'Kitchen collection']) : source);
 const inStockText = (item) => (item ? t('in {location}', { location: escapeHtml(item.location) }) : t('not in inventory'));
 
+// An ingredient line with what is in stock: ✓ enough, ◷ some but short ("1 kg short · in Pantry"), ○ none.
+function ingredientStockRow(ingredient) {
+  const { item, short } = ingredientStock(ingredient);
+  if (item && short > 0) return `<li class="short-stocked"><span aria-hidden="true">◷</span><span>${escapeHtml(ingredient)}</span><small>${t('{amount} short · {where}', { amount: escapeHtml(amountText(short, item.unit)), where: inStockText(item) })}</small></li>`;
+  return `<li class="${item ? 'in-stock' : 'not-stocked'}"><span aria-hidden="true">${item ? '✓' : '○'}</span><span>${escapeHtml(ingredient)}</span><small>${inStockText(item)}</small></li>`;
+}
+
 function renderRecipePage() {
   const saved = recipeById(recipePageId);
   if (!saved) { activeView = 'recipes'; return renderRecipes(); }
@@ -290,10 +297,7 @@ function renderRecipePage() {
     `<button class="text-button recipe-delete-button" type="button" data-action="delete-recipe" data-id="${escapeHtml(recipe.id)}">${t('Delete')}</button>`,
   ].filter(Boolean).join('');
   const ingredientList = ingredients.length
-    ? `<ul class="recipe-ingredient-list recipe-page-ingredients">${ingredients.map((ingredient) => {
-      const item = matchingInventory(ingredient);
-      return `<li class="${item ? 'in-stock' : 'not-stocked'}"><span aria-hidden="true">${item ? '✓' : '○'}</span><span>${escapeHtml(ingredient)}</span><small>${inStockText(item)}</small></li>`;
-    }).join('')}</ul>`
+    ? `<ul class="recipe-ingredient-list recipe-page-ingredients">${ingredients.map(ingredientStockRow).join('')}</ul>`
     : `<p class="muted">${t('No ingredients listed.')}</p>`;
   let number = 0;
   const method = steps.length
@@ -378,6 +382,7 @@ const RECIPE_LANGUAGE_WORDS = {
   tr: /\s(?:ve|ile|bir|için|dakika|ekle|ekleyin|tuz|biber|soğan|yumurta|süt|tereyağı|kadar)\s/g,
   da: /\s(?:og|af|til|et|minutter|tilsæt|indtil|hak|steg|peber|løg|æg|mælk|smør|gryde|ovnen|lidt)\s/g,
   sv: /\s(?:och|av|till|ett|minuter|tillsätt|tills|hacka|stek|peppar|lök|ägg|mjölk|smör|kastrull|ugnen|lite)\s/g,
+  tl: /\s(?:ang|ng|mga|sa|at|na|ito|hanggang|minuto|ilagay|haluin|lutuin|asin|paminta|sibuyas|bawang|itlog|gatas|kawali)\s/g,
 };
 
 function recipeLanguage(recipe) {
@@ -404,12 +409,16 @@ function textLanguage(value) {
 // "Translate" offers every app language except the recipe's own. English and the app's language go hand in hand: a
 // recipe in another language starts at the app's language, one already in it starts at English. An English recipe
 // in an English app starts at the browser's own language when that is one of the app's, or else asks.
+// DeepL reads Tagalog but does not write it, so it is never a target.
+const NOT_DEEPL_TARGETS = ['tl'];
+const deeplTarget = (code) => LANGUAGES.some((language) => language.code === code) && !NOT_DEEPL_TARGETS.includes(code);
+
 function recipeTranslationTarget(recipe) {
   const source = recipeLanguage(recipe);
-  if (source !== currentLanguage) return currentLanguage;
+  if (source !== currentLanguage && deeplTarget(currentLanguage)) return currentLanguage;
   if (source !== 'en') return 'en';
   const preferred = (navigator.languages || [navigator.language || '']).map((code) => String(code).slice(0, 2).toLowerCase());
-  return preferred.find((code) => code !== 'en' && LANGUAGES.some((language) => language.code === code)) || '';
+  return preferred.find((code) => code !== 'en' && deeplTarget(code)) || '';
 }
 
 function chooseRecipeTranslation(id) {
@@ -421,7 +430,7 @@ async function startRecipeTranslation(id, chosen) {
   const recipe = recipeById(id);
   if (!recipe) return;
   const source = recipeLanguage(recipe);
-  const target = LANGUAGES.some((language) => language.code === chosen) && chosen !== source ? chosen : recipeTranslationTarget(recipe);
+  const target = deeplTarget(chosen) && chosen !== source ? chosen : recipeTranslationTarget(recipe);
   if (!target) return;
   const ingredients = recipe.ingredients || [];
   const steps = recipeInstructions(recipe).map((text) => String(text).trim()).filter(Boolean);
@@ -484,7 +493,7 @@ function renderTranslationPanel(recipe) {
   if (current.choosing) {
     const source = recipeLanguage(recipe);
     const target = recipeTranslationTarget(recipe);
-    const options = (target ? '' : `<option value="" selected disabled>${t('Choose a language')}</option>`) + LANGUAGES.filter((language) => language.code !== source)
+    const options = (target ? '' : `<option value="" selected disabled>${t('Choose a language')}</option>`) + LANGUAGES.filter((language) => language.code !== source && deeplTarget(language.code))
       .map((language) => `<option value="${language.code}"${language.code === target ? ' selected' : ''}>${escapeHtml(language.name)}</option>`).join('');
     return `<section class="translation-panel translation-choose"><label class="translation-status" for="translation-target">${t('Translate into')}</label><div class="translation-actions"><select id="translation-target">${options}</select><button class="button button-small button-primary" type="button" data-action="translate-recipe" data-id="${escapeHtml(recipe.id)}">${t('Translate')}</button><button class="button button-small button-quiet" type="button" data-action="translation-discard">${t('Close')}</button></div></section>`;
   }
@@ -937,10 +946,7 @@ async function openRecipeDialog(id, isRemote, planId = '') {
   const ingredients = recipe.ingredients || [];
   $('#recipe-dialog-steps').hidden = true;
   $('#recipe-dialog-ingredients').innerHTML = ingredients.length
-    ? ingredients.map((ingredient) => {
-      const item = matchingInventory(ingredient);
-      return `<li class="${item ? 'in-stock' : 'not-stocked'}"><span aria-hidden="true">${item ? '✓' : '○'}</span><span>${escapeHtml(ingredient)}</span><small>${inStockText(item)}</small></li>`;
-    }).join('')
+    ? ingredients.map(ingredientStockRow).join('')
     : `<li class="not-stocked"><span></span><span>${t('No ingredients listed.')}</span></li>`;
   const planAction = planId
     ? ''

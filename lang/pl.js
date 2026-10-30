@@ -79,6 +79,7 @@ window.GOODSTOCK_TRANSLATIONS.pl = {
   "Resumed where you left off · start over": "Wznowiono tam, gdzie skończyłeś · zacznij od nowa",
   "Tap each one as it lands on the counter.": "Dotknij każdego, gdy wyląduje na blacie.",
   "not in inventory": "nie ma w zapasach",
+  "{amount} short · {where}": "brakuje {amount} · {where}",
   "Tap each one once it's out and ready.": "Dotknij każdego, gdy jest wyjęty i gotowy.",
   "Start {time} timer": "Włącz minutnik na {time}",
   "Tools for this step": "Przybory do tego kroku",

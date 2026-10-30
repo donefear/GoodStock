@@ -23,7 +23,7 @@ await new Promise((resolve) => setTimeout(resolve, 50));
 const select = document.querySelector('#translation-target');
 const codes = select ? Array.from(select.options).map((option) => option.value) : [];
 log.push(`choices: ${codes.join(' ')} (selected ${select && select.value})`);
-if (codes.filter(Boolean).length !== LANGUAGES.length - 1 || codes.includes('en')) fail.push('the choice should be every language except the recipe\'s own');
+if (codes.filter(Boolean).length !== LANGUAGES.length - 1 - NOT_DEEPL_TARGETS.length || codes.includes('en') || codes.includes('tl')) fail.push('the choice should be every DeepL language except the recipe\'s own');
 if (select && select.value !== '') fail.push(`an English recipe in an English app (browser en-US) should ask, not start at ${select.value}`);
 if (codes.length && !document.querySelector('#translation-target option[disabled]')) fail.push('no "Choose a language" option');
 await setLanguage('de');

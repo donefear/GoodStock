@@ -212,6 +212,7 @@ window.GOODSTOCK_TRANSLATIONS.ja = {
   "Goodstock test": "Goodstock テスト",
   "in {location}": "{location} にあり",
   "not in inventory": "在庫なし",
+  "{amount} short · {where}": "{amount}不足 · {where}",
   "Step by step": "ステップ調理",
   "Plan another day": "別の日の献立に追加",
   "Plan this week": "今週の献立に追加",

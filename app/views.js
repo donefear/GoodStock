@@ -344,7 +344,7 @@ function renderInventoryMap(rows) {
   const locations = [...new Set([...state.locations, ...rows.map((item) => item.location).filter(Boolean)])]
     .filter((location) => inventoryLocation === ALL_LOCATIONS || location === inventoryLocation);
   const categoryIcons = { Fruit: '🍎', Vegetables: '🥕', Herbs: '🌿', Dairy: '🥛', 'Meat and fish': '🍗', Bakery: '🍞', Baking: '🥣', Pantry: '🥫' };
-  const locationIcon = (location) => FREEZER_WORDS.test(location) || FRIDGE_WORDS.test(location) ? '❄' : PANTRY_WORDS.test(location) ? '▤' : /clean|schoonmaak|putz|nettoyage|rengøring|städ|limpieza|pulizia|limpeza|curățenie|sprzątan|temizlik|убор|清洁|掃除|تنظيف|ניקיון/i.test(location) ? '✦' : '⌂';
+  const locationIcon = (location) => FREEZER_WORDS.test(location) || FRIDGE_WORDS.test(location) ? '❄' : PANTRY_WORDS.test(location) ? '▤' : /clean|schoonmaak|putz|nettoyage|rengøring|städ|paglilinis|limpieza|pulizia|limpeza|curățenie|sprzątan|temizlik|убор|清洁|掃除|تنظيف|ניקיון/i.test(location) ? '✦' : '⌂';
   const itemIcon = (item) => item.kind === 'Household' ? '🧽' : categoryIcons[ingredientRecord(item.name)?.category] || '◌';
   return `<div class="storage-map">${locations.map((location) => {
     const items = rows.filter((item) => item.location === location);

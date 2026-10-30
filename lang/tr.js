@@ -79,6 +79,7 @@ window.GOODSTOCK_TRANSLATIONS.tr = {
   "Resumed where you left off · start over": "Kaldığın yerden devam · baştan başla",
   "Tap each one as it lands on the counter.": "Tezgâha koydukça her birine dokun.",
   "not in inventory": "stokta yok",
+  "{amount} short · {where}": "{amount} eksik · {where}",
   "Tap each one once it's out and ready.": "Çıkarıp hazırladıkça her birine dokun.",
   "Start {time} timer": "{time} zamanlayıcı başlat",
   "Tools for this step": "Bu adımın araçları",

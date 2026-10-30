@@ -212,6 +212,7 @@ window.GOODSTOCK_TRANSLATIONS.nl = {
   "Goodstock test": "Goodstock-test",
   "in {location}": "in {location}",
   "not in inventory": "niet in voorraad",
+  "{amount} short · {where}": "{amount} te weinig · {where}",
   "Step by step": "Stap voor stap",
   "Plan another day": "Andere dag plannen",
   "Plan this week": "Deze week plannen",

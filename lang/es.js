@@ -212,6 +212,7 @@ window.GOODSTOCK_TRANSLATIONS.es = {
   "Goodstock test": "Prueba de Goodstock",
   "in {location}": "en {location}",
   "not in inventory": "no está en el inventario",
+  "{amount} short · {where}": "faltan {amount} · {where}",
   "Step by step": "Paso a paso",
   "Plan another day": "Planificar otro día",
   "Plan this week": "Planificar esta semana",
