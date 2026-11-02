@@ -37,6 +37,21 @@ jobs:
         with:
           node-version: '22'
 
+      # The repository's own dev dependencies (Babel, PostCSS…), so prepare.mjs can build legacy/, the copy for old
+      # browsers that open a desktop-hosted kitchen. package-lock.json is not committed, so npm's download cache is
+      # kept instead of node_modules.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package.json', 'desktop/package.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - name: Install the build tools for legacy/
+        working-directory: .
+        run: npm install --no-audit --no-fund --prefer-offline
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+
       - name: Build
         env:
           # Signing is optional (desktop/README.md, "Signed builds"). With these repository secrets the Windows files

@@ -266,7 +266,7 @@ function renderKitchenScreen() {
         ? `<ul class="kitchen-list">${meals.map(({ entry, recipe }) => `<li><span>${escapeHtml(recipe.name)}</span><button class="button button-primary" type="button" data-action="kitchen-cook" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}">${t('Step by step')} <span aria-hidden="true">▶</span></button></li>`).join('')}</ul>`
         : `<p class="kitchen-empty">${t('Nothing planned for today.')}</p>`)}
       ${card(t('Timers'), timers.length
-        ? `<ul class="kitchen-list">${timers.map((timer) => `<li class="${timer.done ? 'done' : ''}"><span>${escapeHtml(timer.name || timer.label || '')}</span><strong class="kitchen-timer">${timer.done ? t('Done') : formatTimer(timerRemaining(timer))}</strong></li>`).join('')}</ul>`
+        ? `<ul class="kitchen-list">${timers.map((timer) => `<li class="${timer.done ? 'done' : ''}"><span>${escapeHtml(timer.recipe ? timerLabel(timer) : timerTitle(timer))}</span><strong class="kitchen-timer">${timer.done ? t('Done') : formatTimer(timerRemaining(timer))}</strong></li>`).join('')}</ul>`
         : `<p class="kitchen-empty">${t('No timers running.')}</p>`)}
       ${card(t('Use soon'), soon.length
         ? `<ul class="kitchen-list">${soon.map((item) => `<li class="${expiryClass(item.expiresOn, item.dateKind)}"><span>${escapeHtml(item.name)}</span><small>${escapeHtml(expirationLabel(item.expiresOn, item.dateKind))}</small></li>`).join('')}</ul>`
@@ -316,7 +316,7 @@ function renderInventory() {
     ${renderMonthOverview()}
     ${renderShelfLifeSuggestions()}
     <section class="section-block" id="inventory-items"><div class="section-heading"><div><h2>${inventoryLowOnly ? t('Running low') : t('Everything in its place')}</h2><span class="muted">${tp(rows.length, '{count} item', '{count} items')}</span>${inventoryLowOnly ? `<button class="text-button" type="button" data-action="filter-low">× ${t('Show everything')}</button>` : ''}</div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="${t('Find something')}" aria-label="${t('Find an item')}" /></label><select id="location-filter" aria-label="${t('Filter by location')}">${locations.map((location) => `<option value="${escapeHtml(location)}" ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location === ALL_LOCATIONS ? t(ALL_LOCATIONS) : location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="${t('Inventory display mode')}"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">${t('List')}</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">${t('Map')}</button></div></div></div>
-    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><button class="stepper-amount" type="button" data-action="use-some" data-id="${escapeHtml(item.id)}" title="${t('Use some')}">${escapeHtml(formatNumber(shownAmount(item.quantity, item.unit).quantity))} <small>${escapeHtml(shownUnitLabel(shownAmount(item.quantity, item.unit).unit))}</small><span class="visually-hidden"> · ${t('Use some of {name}', { name: escapeHtml(item.name) })}</span></button><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery || inventoryLowOnly ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryLowOnly ? t('Nothing is running low.') : inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery || inventoryLowOnly ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
+    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><button class="stepper-amount" type="button" data-action="use-some" data-id="${escapeHtml(item.id)}" title="${t('Use some')}">${escapeHtml(formatNumber(shownAmount(item.quantity, item.unit).quantity))} <small>${escapeHtml(shownUnitLabel(shownAmount(item.quantity, item.unit).unit, shownAmount(item.quantity, item.unit).quantity))}</small><span class="visually-hidden"> · ${t('Use some of {name}', { name: escapeHtml(item.name) })}</span></button><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery || inventoryLowOnly ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryLowOnly ? t('Nothing is running low.') : inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery || inventoryLowOnly ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
 }
 
 // Extra notes on an inventory row: a staple's minimum, when it was opened, when it went into the freezer.
@@ -372,7 +372,7 @@ function renderInventoryMap(rows) {
   const itemIcon = (item) => item.kind === 'Household' ? '🧽' : categoryIcons[ingredientRecord(item.name)?.category] || '◌';
   return `<div class="storage-map">${locations.map((location) => {
     const items = rows.filter((item) => item.location === location);
-    return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${tp(items.length, '{count} item', '{count} items')}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(kindLabel(item.kind))}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(formatNumber(shownAmount(item.quantity, item.unit).quantity))}</strong><small>${escapeHtml(shownUnitLabel(shownAmount(item.quantity, item.unit).unit) || t('items'))}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<p class="storage-zone-empty">${t('Nothing stored here yet')}</p>`}</section>`;
+    return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${tp(items.length, '{count} item', '{count} items')}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(kindLabel(item.kind))}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(formatNumber(shownAmount(item.quantity, item.unit).quantity))}</strong><small>${escapeHtml(shownUnitLabel(shownAmount(item.quantity, item.unit).unit, shownAmount(item.quantity, item.unit).quantity) || t('items'))}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<p class="storage-zone-empty">${t('Nothing stored here yet')}</p>`}</section>`;
   }).join('')}</div>`;
 }
 
@@ -722,7 +722,7 @@ function formatDuration(seconds) {
 // Built-in presets are shown in the chosen language; saved presets keep the name they were given.
 function timerPresetButton(preset, saved = false) {
   const name = saved ? preset.name : t(preset.name);
-  const start = `<button class="timer-preset" type="button" data-action="timer-preset" data-name="${escapeHtml(name)}" data-seconds="${preset.seconds}"><span class="timer-preset-icon" aria-hidden="true">${escapeHtml(preset.icon || '⏱')}</span><strong>${escapeHtml(name)}</strong><small>${formatDuration(preset.seconds)}</small></button>`;
+  const start = `<button class="timer-preset" type="button" data-action="timer-preset" data-name="${escapeHtml(name)}"${saved ? '' : ` data-key="${escapeHtml(preset.name)}"`} data-seconds="${preset.seconds}"><span class="timer-preset-icon" aria-hidden="true">${escapeHtml(preset.icon || '⏱')}</span><strong>${escapeHtml(name)}</strong><small>${formatDuration(preset.seconds)}</small></button>`;
   return saved
     ? `<div class="timer-preset-saved">${start}<button class="timer-preset-remove" type="button" data-action="timer-preset-remove" data-id="${escapeHtml(preset.id)}" aria-label="${t('Remove {name} preset', { name: escapeHtml(name) })}">×</button></div>`
     : start;
@@ -810,22 +810,34 @@ function updateConverter() {
 function updateTemperature() {
   const results = $('#temp-results');
   if (!results) return;
-  const value = parseAmount(temperatureInput.value.replace(',', '.').replace(/[°\s]|gas/gi, ''));
+  // A unit typed with the number wins over the one picked: "350F", "350 °F", "180c", "gas 4", "mark 6".
+  const typed = temperatureInput.value.trim().toLowerCase().replace(',', '.');
+  const suffix = /^(.*?)\s*(?:°\s*f|f|fahrenheit)$/.exec(typed) ? 'f' : /^(.*?)\s*(?:°\s*c|c|celsius)$/.exec(typed) ? 'c' : /gas|mark/.test(typed) ? 'gas' : '';
+  const unit = suffix || temperatureInput.unit;
+  const value = parseAmount(typed.replace(/fahrenheit|celsius|gas\s*mark|gas|mark|[°\sfc]/g, ''));
   if (value === null || !Number.isFinite(value)) { results.innerHTML = `<p class="muted">${t('Type a temperature, like 180.')}</p>`; return; }
   let celsius = value;
-  if (temperatureInput.unit === 'f') celsius = ((value - 32) * 5) / 9;
-  if (temperatureInput.unit === 'gas') {
-    const exact = GAS_MARKS.find(([mark]) => mark === value);
-    celsius = exact ? exact[1] : 140 + (value - 1) * 12.5;
+  if (unit === 'f') celsius = ((value - 32) * 5) / 9;
+  if (unit === 'gas') {
+    // Gas marks run from ¼ to 9; in between, the temperature between the two marks next to it.
+    const first = GAS_MARKS[0];
+    const last = GAS_MARKS[GAS_MARKS.length - 1];
+    if (value < first[0] || value > last[0]) { results.innerHTML = `<p class="muted">${t('Gas marks go from ¼ to 9.')}</p>`; return; }
+    const upper = GAS_MARKS.findIndex(([mark]) => mark >= value);
+    const [highMark, highC] = GAS_MARKS[upper];
+    const [lowMark, lowC] = GAS_MARKS[Math.max(0, upper - 1)];
+    celsius = highMark === value || highMark === lowMark ? highC : lowC + ((value - lowMark) / (highMark - lowMark)) * (highC - lowC);
   }
   const gas = GAS_MARKS.reduce((best, entry) => (Math.abs(entry[1] - celsius) < Math.abs(best[1] - celsius) ? entry : best));
+  // Far below gas ¼ or above gas 9 there is no gas mark for it.
+  const gasInRange = celsius >= GAS_MARKS[0][1] - 10 && celsius <= GAS_MARKS[GAS_MARKS.length - 1][1] + 15;
   const heat = celsius < 150 ? t('A very low oven.') : celsius < 170 ? t('A low oven.') : celsius < 190 ? t('A moderate oven.') : celsius < 210 ? t('A moderately hot oven.') : celsius < 235 ? t('A hot oven.') : t('A very hot oven.');
   const round5 = (number) => Math.round(number / 5) * 5;
   const gasLabel = gas[0] < 1 ? (gas[0] === 0.25 ? '¼' : '½') : String(gas[0]);
   results.innerHTML = `<div class="converter-grid">
-      <div class="converter-result ${temperatureInput.unit === 'c' ? 'is-source' : ''}"><strong>${round5(celsius)} °C</strong><span>${t('Celsius')}</span></div>
-      <div class="converter-result ${temperatureInput.unit === 'f' ? 'is-source' : ''}"><strong>${round5((celsius * 9) / 5 + 32)} °F</strong><span>${t('Fahrenheit')}</span></div>
-      <div class="converter-result ${temperatureInput.unit === 'gas' ? 'is-source' : ''}"><strong>${t('Gas {mark}', { mark: gasLabel })}</strong><span>${t('Gas mark')}</span></div>
+      <div class="converter-result ${unit === 'c' ? 'is-source' : ''}"><strong>${round5(celsius)} °C</strong><span>${t('Celsius')}</span></div>
+      <div class="converter-result ${unit === 'f' ? 'is-source' : ''}"><strong>${round5((celsius * 9) / 5 + 32)} °F</strong><span>${t('Fahrenheit')}</span></div>
+      <div class="converter-result ${unit === 'gas' ? 'is-source' : ''}"><strong>${gasInRange ? t('Gas {mark}', { mark: gasLabel }) : '–'}</strong><span>${t('Gas mark')}</span></div>
       <div class="converter-result"><strong>${round5(celsius - 20)} °C</strong><span>${t('Fan oven')}</span></div>
     </div><p class="converter-note">${heat} ${t('Fan (hot-air) ovens run hotter, so set them about 20 °C lower.')}</p>`;
 }
@@ -875,10 +887,12 @@ function renderTimers() {
     </section>`;
 }
 
-function startCustomTimer(name, seconds) {
+// A timer keeps what its text is made of (seconds, and a built-in preset's English name in nameKey), so its texts
+// follow the app's language when it changes while the timer runs (timerTitle, timerLabel in app/cook.js).
+function startCustomTimer(name, seconds, nameKey = '') {
   if (!(seconds > 0)) return;
   unlockAlarmAudio();
-  cookTimers.push({ id: makeId(), recipe: null, name: name || t('Timer'), label: formatDuration(seconds), endsAt: Date.now() + seconds * 1000, done: false });
+  cookTimers.push({ id: makeId(), recipe: null, name: name || '', ...(nameKey ? { nameKey } : {}), seconds, label: formatDuration(seconds), endsAt: Date.now() + seconds * 1000, done: false });
   if (!timerTickId) timerTickId = setInterval(refreshTimers, 1000);
   if (activeView === 'tools' && toolsTab === 'timers') render(); else refreshTimers();
 }
@@ -887,6 +901,9 @@ function extendTimer(id, seconds = 60) {
   const timer = cookTimers.find((entry) => entry.id === id);
   if (!timer) return;
   timer.endsAt = timer.done ? Date.now() + seconds * 1000 : timer.endsAt + seconds * 1000;
+  // A finished timer starts again for just the extra minute; a running one now lasts that much longer.
+  timer.seconds = timer.done ? seconds : (Number(timer.seconds) || Number(timer.duration) || 0) + seconds;
+  timer.label = formatDuration(timer.seconds);
   timer.done = false;
   if (!timerTickId) timerTickId = setInterval(refreshTimers, 1000);
   refreshTimers();
@@ -907,6 +924,15 @@ function shoppingListText(items) {
     lines.push(`☐ ${item.name}${item.quantity ? ` · ${amountText(item.quantity, item.unit)}` : ''}`);
   }
   return lines.join('\n');
+}
+
+// The lines for the QR download (/api/shopping/share): only what is still to buy, with the amount as this device
+// shows it (the server writes "quantity unit" as it gets them).
+function shoppingShareItems() {
+  return groupedShoppingItems(state.shopping.filter((item) => !item.checked)).map((item) => {
+    const shown = item.quantity ? amountText(item.quantity, item.unit) : '';
+    return { name: item.name, quantity: shown, unit: '', checked: false, ...(item.group ? { group: item.group } : {}) };
+  });
 }
 
 // The phone apps have no server for the QR link, so the list goes to the share sheet instead.
@@ -1207,7 +1233,7 @@ function fillAmountFields(form, quantity, unit) {
 }
 
 // The amount as it is saved: metric, also when this device enters imperial.
-const readAmountFields = (form) => storedAmount(Number(form.elements.quantity.value), form.elements.unit.value);
+const readAmountFields = (form) => storedAmount(Math.min(MAX_QUANTITY, Number(form.elements.quantity.value)), form.elements.unit.value);
 
 // "Use some": tap an item's amount, say how much went ("150 g" off "1 kg"), see what is left, take it off.
 function openUseDialog(id) {
@@ -1265,6 +1291,7 @@ function openItemDialog(item) {
   $('#item-remove').hidden = !item;
   $('#item-remove-choice').hidden = true;
   form.elements.id.value = item?.id || '';
+  form.dataset.addedOn = item?.addedOn || '';
   form.elements.barcode.value = item?.barcode || '';
   form.elements.name.value = item?.name || '';
   fillAmountFields(form, item ? item.quantity : 1, item ? item.unit : 'pcs');
@@ -1307,10 +1334,11 @@ function updateFrozenField(form) {
   if (frozen && !form.elements.frozenOn.value) form.elements.frozenOn.value = dateKey(new Date());
 }
 
-// Where the shelf-life estimate counts from: the freezer date for frozen food, else today.
+// Where the shelf-life estimate counts from: the freezer date for frozen food, else the day an edited item came into
+// the kitchen (an old milk renamed doesn't get a fresh week), else today.
 function itemFormStartDate(form) {
   const frozen = isFrozen({ kind: form.elements.kind.value, location: form.elements.location.value });
-  return (frozen && dateFromKey(form.elements.frozenOn.value)) || new Date();
+  return (frozen && dateFromKey(form.elements.frozenOn.value)) || (form.elements.id.value && dateFromKey(form.dataset.addedOn)) || new Date();
 }
 
 // "Opened today", for food already in the inventory that keeps shorter once open (not in the freezer).

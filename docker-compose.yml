@@ -16,6 +16,10 @@ services:
       # Optional: a second copy of the server backups (README → Features → Backups), for example on a NAS share. Set
       # BACKUP_COPY_PATH to a folder on the Docker host; it is mounted at /backup-copy below.
       BACKUP_COPY_DIR: "${BACKUP_COPY_PATH:+/backup-copy}"
+      # The optional HTTPS service below (Docker resolves its name "https" only while it runs): logins through it
+      # are told apart by the address it passes on (X-Forwarded-For), so a wrong PIN on one phone doesn't lock out
+      # the others. Nobody else's X-Forwarded-For is believed.
+      TRUST_PROXY: "https"
     # Watched by the optional autoheal service below.
     labels:
       autoheal-goodstock: "true"

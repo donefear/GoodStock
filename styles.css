@@ -608,10 +608,10 @@ html:not(.is-standalone) .phone-only { display: none; }
   .item-main strong { font-size: 12px; }
   .item-main span { font-size: 9px; }
   .quantity-stepper { height: 46px; }
-  .quantity-stepper button { width: 34px; height: 44px; font-size: 15px; }
+  .quantity-stepper button { width: 44px; height: 44px; font-size: 15px; }
   .quantity-stepper > span { min-width: 48px; font-size: 11px; }
   .quantity-stepper button.stepper-amount { width: auto; min-width: 48px; font-size: 11px; }
-  .row-edit { width: 32px; height: 44px; letter-spacing: 1px; }
+  .row-edit { width: 44px; height: 44px; letter-spacing: 1px; }
   .week-strip { grid-template-columns: repeat(7, minmax(58px, 1fr)); padding: 8px; gap: 3px; }
   /* ‹ Today › on the first row, the date field across the whole second row. */
   .week-navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 7px; margin-top: -5px; }
@@ -702,10 +702,10 @@ html:not(.is-standalone) .phone-only { display: none; }
 .compact-layout .item-main strong { font-size: 12px; }
 .compact-layout .item-main span { font-size: 9px; }
 .compact-layout .quantity-stepper { height: 46px; }
-.compact-layout .quantity-stepper button { width: 34px; height: 44px; font-size: 15px; }
+.compact-layout .quantity-stepper button { width: 44px; height: 44px; font-size: 15px; }
 .compact-layout .quantity-stepper > span { min-width: 48px; font-size: 11px; }
 .compact-layout .quantity-stepper button.stepper-amount { width: auto; min-width: 48px; font-size: 11px; }
-.compact-layout .row-edit { width: 32px; height: 44px; letter-spacing: 1px; }
+.compact-layout .row-edit { width: 44px; height: 44px; letter-spacing: 1px; }
 .compact-layout .week-strip { grid-template-columns: repeat(7, minmax(58px, 1fr)); padding: 8px; gap: 3px; }
 .compact-layout .week-navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 7px; margin-top: -5px; }
 .compact-layout .week-navigation > [data-action="previous-week"] { grid-column: 1; grid-row: 1; }
@@ -1064,6 +1064,12 @@ html:not(.is-standalone) .phone-only { display: none; }
 /* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
 .compact-layout .undo-bar { bottom: calc(76px + env(safe-area-inset-bottom)); }
 /* end of html.compact-layout copy */
+/* While the Undo bar shows, running timers move up above it instead of under it (the bar is about 60px high). */
+.undo-bar:not([hidden]) ~ .floating-timers { bottom: 92px; bottom: calc(max(20px, env(safe-area-inset-bottom)) + 72px); }
+@media (max-width: 720px) { .undo-bar:not([hidden]) ~ .floating-timers { bottom: calc(148px + env(safe-area-inset-bottom)); } }
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+.compact-layout .undo-bar:not([hidden]) ~ .floating-timers { bottom: calc(148px + env(safe-area-inset-bottom)); }
+/* end of html.compact-layout copy */
 
 /* Text size (Settings): the page is zoomed, so limits in screen units are divided by the zoom to still fit. */
 :root[data-text-size="normal"] { --text-zoom: 1.15; }
@@ -1177,7 +1183,7 @@ body.kitchen-screen-open { overflow: hidden; }
   .page-heading .eyebrow, .shopping-row.checked, .shopping-group.is-done { display: none !important; }
   .print-only { display: block; }
   .main-area { margin: 0; min-height: 0; }
-  .view-container, .compact-layout .view-container { max-width: none; padding: 0; animation: none; }
+  .view-container, .compact-layout .view-container { max-width: none; padding: 0 2px; animation: none; }
   .page-heading, .compact-layout .page-heading { margin: 0 0 14px; padding: 0; display: block; }
   .page-heading h1 { margin: 0 0 4px; font-size: 22pt; }
   .page-heading p { margin: 0; color: #444; }
@@ -1194,7 +1200,8 @@ body.kitchen-screen-open { overflow: hidden; }
   .recipe-method-heading { break-after: avoid; }
   .steps-tools li { border: 1px solid #ccc; background: none; }
   .shopping-group { margin: 12px 0 2px; break-after: avoid; }
-  .shopping-row { min-height: 0; padding: 5px 0; break-inside: avoid; }
+  .shopping-row { min-height: 0; padding: 5px 0; padding-inline-end: 8px; break-inside: avoid; }
+  .shopping-amount, .compact-layout .shopping-amount { flex: 0 0 auto; color: #444; font-size: 10pt; white-space: nowrap; }
   .custom-check { border: 1.5px solid #333; background: #fff; }
   .print-footer { margin-top: 18px; color: #777; font-size: 9pt; }
 }
@@ -1254,7 +1261,7 @@ body.kitchen-screen-open { overflow: hidden; }
 /* Ratings and notes on recipes (0.56). */
 .recipe-rating { max-width: 100%; display: inline-flex; flex-wrap: wrap; align-items: center; }
 .rating-label { margin-inline-end: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
-.rating-star { min-width: 40px; min-height: 44px; padding: 0; border: 0; background: none; color: #8a7a4c; font-size: 22px; line-height: 1; cursor: pointer; }
+.rating-star { min-width: 44px; min-height: 44px; padding: 0; border: 0; background: none; color: #8a7a4c; font-size: 22px; line-height: 1; cursor: pointer; }
 .rating-star.is-on { color: #b7800f; }
 :root[data-theme="dark"] .rating-star { color: #b9a46a; }
 :root[data-theme="dark"] .rating-star.is-on { color: #f0c457; }
@@ -1327,3 +1334,90 @@ body.kitchen-screen-open { overflow: hidden; }
 .page-heading h1, .page-heading p, .item-main strong, .visual-item-copy strong, .shopping-name, .planned-copy strong,
 .picker-item strong, .picker-item p, .expiry-item-info strong, .steps-text, .steps-body li, .translation-panel p, .translation-panel li,
 .term-card p { unicode-bidi: plaintext; }
+
+/* Flex gap fallbacks, round 2 (4.9): Chrome 81 on the kitchen tablet has no flex gap (html.no-flex-gap). Rows space
+   their children with margin-inline-start (`* + *`, the same as the .button + .button rule above), columns with
+   margin-top. Rows that wrap keep a margin-bottom on each child for the line gap; space-between rows put the margin
+   on the first child's end, so a wrapped second line starts flush. Rows whose first child already has a margin above
+   (.custom-check, .item-symbol, .timer-pill-icon, .brand-mark, .sync-dot, .recipe-step-number) are left alone. */
+.no-flex-gap .expiration-panel > header > * + * { margin-inline-start: 12px; }
+.no-flex-gap .expiry-item-info > * + * { margin-inline-start: 10px; }
+.no-flex-gap .stat > * + * { margin-inline-start: 13px; }
+.no-flex-gap .inventory-mode-switch > * + * { margin-inline-start: 3px; }
+.no-flex-gap .search-field > * + * { margin-inline-start: 8px; }
+.no-flex-gap .storage-zone-heading > * + * { margin-inline-start: 11px; }
+.no-flex-gap .visual-item > * + * { margin-inline-start: 8px; }
+.no-flex-gap .inventory-row > * + *:not(.item-main) { margin-inline-start: 14px; }
+.no-flex-gap .week-navigation > * + *:not(.week-range) { margin-inline-start: 10px; }
+.no-flex-gap .date-jump > input { margin-inline-start: 8px; }
+.no-flex-gap .picker-foot > * + * { margin-inline-start: 8px; }
+.no-flex-gap .recipe-import-row > * + * { margin-inline-start: 8px; }
+.no-flex-gap .shopping-row > * + * { margin-inline-start: 14px; }
+.no-flex-gap .recipe-missing > span { margin-inline-end: 6px; }
+.no-flex-gap .integration-note > * + * { margin-inline-start: 13px; }
+.no-flex-gap .ingredient-check > .custom-check ~ * + * { margin-inline-start: 10px; }
+.no-flex-gap .host-login > input, .no-flex-gap .custom-timer-save > input { margin-inline-end: 10px; }
+.no-flex-gap .recipe-shopping-row > * + * { margin-inline-start: 10px; }
+.no-flex-gap .page-heading > * + * { margin-inline-start: 24px; }
+.no-flex-gap .barcode-row > .button, .no-flex-gap .opened-row > .button { margin-inline-end: 10px; }
+.no-flex-gap .barcode-row > *, .no-flex-gap .opened-row > * { margin-top: 5px; margin-bottom: 5px; }
+/* Icons beside button text (a text node, which no margin can reach): a little room on both sides. */
+.no-flex-gap .button > [aria-hidden="true"] { margin-inline-start: 4px; margin-inline-end: 4px; }
+/* Columns. */
+.no-flex-gap .inventory-tools > * + *, .no-flex-gap .term-card > * + * { margin-top: 8px; }
+.no-flex-gap .steps-body > * + * { margin-top: 16px; }
+/* Rows that wrap, started at the inline start. */
+/* (Each child keeps its distance at its end, so a wrapped line starts flush; the row gives that last margin back.) */
+.no-flex-gap .stocktake-actions, .no-flex-gap .backup-actions, .no-flex-gap .shelf-life-actions { margin-inline-end: -6px; }
+.no-flex-gap .stocktake-actions > *, .no-flex-gap .backup-actions > *, .no-flex-gap .shelf-life-actions > *,
+.no-flex-gap .stocktake-actions > .button, .no-flex-gap .backup-actions > .button, .no-flex-gap .shelf-life-actions > .button { margin: 3px 0; margin-inline-end: 6px; }
+.no-flex-gap .planned-actions > * + * { margin-inline-start: 6px; }
+.no-flex-gap .planned-actions > * { margin-top: 3px; margin-bottom: 3px; }
+.no-flex-gap .filter-controls > * + * { margin-inline-start: 9px; }
+.no-flex-gap .filter-controls > * { margin-bottom: 9px; }
+.no-flex-gap .shopping-heading-actions, .no-flex-gap .recipe-heading-actions, .no-flex-gap .inventory-heading-actions, .no-flex-gap .week-heading-actions, .no-flex-gap .translation-actions, .no-flex-gap .mealie-actions, .no-flex-gap .recipe-photo-buttons { margin-inline-end: -8px; }
+.no-flex-gap .shopping-heading-actions > *, .no-flex-gap .shopping-heading-actions > .button, .no-flex-gap .recipe-heading-actions > *, .no-flex-gap .recipe-heading-actions > .button, .no-flex-gap .inventory-heading-actions > *, .no-flex-gap .inventory-heading-actions > .button, .no-flex-gap .week-heading-actions > *, .no-flex-gap .week-heading-actions > .button, .no-flex-gap .translation-actions > *, .no-flex-gap .translation-actions > .button, .no-flex-gap .mealie-actions > *, .no-flex-gap .mealie-actions > .button, .no-flex-gap .recipe-photo-buttons > *, .no-flex-gap .recipe-photo-buttons > .button { margin: 4px 0; margin-inline-end: 8px; }
+.no-flex-gap .expiry-actions > * + *:not(.expiry-ideas) { margin-inline-start: 14px; }
+.no-flex-gap .expiry-actions > * { margin-top: 3px; margin-bottom: 3px; }
+.no-flex-gap .expiry-suggestions > * + * { margin-inline-start: 10px; }
+.no-flex-gap .planned-meal > * + * { margin-inline-start: 13px; }
+.no-flex-gap .expiry-suggestions > * { margin-top: 1px; margin-bottom: 1px; }
+.no-flex-gap .planned-meal > * { margin-top: 3px; margin-bottom: 3px; }
+.no-flex-gap .cook-amount > * + * { margin-inline-start: 8px; }
+.no-flex-gap .cook-amount > * { margin-top: 2px; margin-bottom: 2px; }
+.no-flex-gap .deepl-help-links > * { margin-inline-end: 16px; margin-bottom: 2px; }
+/* Rows that wrap with space-between: the first child keeps its distance at its end. */
+.no-flex-gap .stocktake-row > :first-child, .no-flex-gap .shelf-life-suggestion > :first-child { margin: 4px 0; margin-inline-end: 16px; }
+.no-flex-gap .stocktake-footer > :first-child, .no-flex-gap .translation-heading > :first-child { margin: 5px 0; margin-inline-end: 10px; }
+.no-flex-gap .test-zone > :first-child, .no-flex-gap .danger-zone > :first-child { margin: 6px 0; margin-inline-end: 12px; }
+.no-flex-gap .recipe-cooked-row > :first-child { margin-top: 3px; margin-bottom: 3px; margin-inline-end: 14px; }
+.no-flex-gap .idea-actions > :first-child { margin: 4px 0; margin-inline-end: 8px; }
+/* Phones: these rows turn into columns, grids or tighter rows. */
+@media (max-width: 720px) {
+  .no-flex-gap .page-heading > * + * { margin-inline-start: 0; margin-top: 15px; }
+  .no-flex-gap .stat > * + * { margin-inline-start: 8px; }
+  .no-flex-gap .week-navigation > * + *:not(.week-range) { margin-inline-start: 0; }
+  .no-flex-gap .date-jump > input { margin-inline-start: 0; margin-top: 3px; }
+  .no-flex-gap .inventory-row > * + *:not(.item-main) { margin-inline-start: 9px; }
+  .no-flex-gap .inventory-row > .quantity-stepper { margin-inline-start: auto; }
+  .no-flex-gap .inventory-row > .item-main { margin-inline-end: 9px; }
+  .no-flex-gap .inventory-row > * { margin-top: 3px; margin-bottom: 3px; }
+  .no-flex-gap .planned-meal > * + * { margin-inline-start: 8px; }
+  .no-flex-gap .planned-meal > .planned-actions { margin-inline-start: 0; }
+  .no-flex-gap .shopping-row > * + * { margin-inline-start: 7px; }
+  .no-flex-gap .integration-note > * { margin-bottom: 8px; }
+}
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+.compact-layout.no-flex-gap .page-heading > * + * { margin-inline-start: 0; margin-top: 15px; }
+.compact-layout.no-flex-gap .stat > * + * { margin-inline-start: 8px; }
+.compact-layout.no-flex-gap .week-navigation > * + *:not(.week-range) { margin-inline-start: 0; }
+.compact-layout.no-flex-gap .date-jump > input { margin-inline-start: 0; margin-top: 3px; }
+.compact-layout.no-flex-gap .inventory-row > * + *:not(.item-main) { margin-inline-start: 9px; }
+.compact-layout.no-flex-gap .inventory-row > .quantity-stepper { margin-inline-start: auto; }
+.compact-layout.no-flex-gap .inventory-row > .item-main { margin-inline-end: 9px; }
+.compact-layout.no-flex-gap .inventory-row > * { margin-top: 3px; margin-bottom: 3px; }
+.compact-layout.no-flex-gap .planned-meal > * + * { margin-inline-start: 8px; }
+.compact-layout.no-flex-gap .planned-meal > .planned-actions { margin-inline-start: 0; }
+.compact-layout.no-flex-gap .shopping-row > * + * { margin-inline-start: 7px; }
+.compact-layout.no-flex-gap .integration-note > * { margin-bottom: 8px; }
+/* end of html.compact-layout copy */

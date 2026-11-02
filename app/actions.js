@@ -266,11 +266,17 @@ async function openShoppingShare() {
   link.hidden = true;
   status.textContent = t('Preparing your shopping list link…');
   dialog.showModal();
+  // What is still to buy, as this device shows it (pounds on an imperial phone, translated units), like Share list.
+  const items = shoppingShareItems();
+  if (!items.length) {
+    status.textContent = t('The shopping list is empty');
+    return;
+  }
   try {
     const response = await fetch('/api/shopping/share', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ items: groupedShoppingItems(state.shopping), title: t('Shopping list') }),
+      body: JSON.stringify({ items, title: t('Shopping list') }),
     });
     const result = await response.json();
     if (!response.ok) throw serverError(result, N_('Could not create the download link'));
@@ -397,7 +403,7 @@ document.addEventListener('click', async (event) => {
   if (action === 'timer-stop') stopCookTimer(button.dataset.timer);
   if (action === 'timer-open') openTimerStep(button.dataset.timer);
   if (action === 'timer-extend') extendTimer(button.dataset.timer);
-  if (action === 'timer-preset') startCustomTimer(button.dataset.name, Number(button.dataset.seconds));
+  if (action === 'timer-preset') startCustomTimer(button.dataset.name, Number(button.dataset.seconds), button.dataset.key || '');
   if (action === 'timer-preset-remove') {
     state.timerPresets = (state.timerPresets || []).filter((preset) => preset.id !== button.dataset.id);
     persist();
@@ -480,6 +486,13 @@ document.addEventListener('click', async (event) => {
     }
   }
   if (action === 'plan-recipe') {
+    // "Plan this week" from a recipe means this week: a day picked on another week of the Week page doesn't count
+    // (the Week page's own Add buttons plan the day shown there).
+    const thisWeek = startOfWeek(new Date());
+    if (activeView !== 'week' && startOfWeek(selectedDate).getTime() !== thisWeek.getTime()) {
+      selectedDate = new Date();
+      weekStart = thisWeek;
+    }
     if (!currentWeekPlans().some((entry) => entry.date === dateKey(selectedDate) && entry.recipeId === id)) {
       const scale = recipeScales.get(id) || 1;
       state.plan.push({ id: makeId(), date: dateKey(selectedDate), recipeId: id, cooked: false, ...(scale !== 1 ? { scale } : {}) });
@@ -773,7 +786,12 @@ $('#item-form').addEventListener('submit', (event) => {
   const previous = state.inventory.find((entry) => entry.id === id);
   // Amounts left as the dialog showed them stay exactly as stored (openItemDialog keeps what it showed).
   const amountUntouched = previous && form.elements.quantity.value === form.dataset.shownQuantity && form.elements.unit.value === form.dataset.shownUnit;
+  // An edit starts from the item as it was, so fields the dialog doesn't show (leftovers, and anything a newer
+  // version added) stay; the fields below that the dialog does set are rebuilt from it.
+  const kept = previous ? { ...previous } : {};
+  for (const field of ['quantity', 'unit', 'expiresOn', 'expirationSource', 'unitPrice', 'dateKind', 'minimum', 'barcode', 'restockListed', 'openedOn', 'frozenOn', 'addedOn']) delete kept[field];
   const item = metricInventoryItem({
+    ...kept,
     id,
     name,
     ...(amountUntouched ? { quantity: previous.quantity, unit: previous.unit } : readAmountFields(form)),
@@ -795,7 +813,7 @@ $('#item-form').addEventListener('submit', (event) => {
   // Only a date from the package can be "best before"; an estimate is just an estimate.
   if (form.elements.dateKind.value === 'best-before' && item.expiresOn && item.expirationSource !== 'estimated') item.dateKind = 'best-before';
   // The minimum was typed in the unit picked for the amount; it is kept in the unit the item is saved in.
-  const typedMinimum = Number(form.elements.minimum.value);
+  const typedMinimum = Math.min(MAX_QUANTITY, Number(form.elements.minimum.value));
   const minimumUntouched = previous && Number(previous.minimum) > 0 && form.elements.minimum.value === form.dataset.shownMinimum && form.elements.unit.value === form.dataset.shownUnit;
   const keptMinimum = minimumUntouched ? amountIn(Number(previous.minimum), previous.unit, item.unit) : null;
   const minimum = keptMinimum !== null ? keptMinimum : typedMinimum > 0 ? (amountIn(typedMinimum, form.elements.unit.value, item.unit) ?? typedMinimum) : 0;
@@ -1185,6 +1203,9 @@ function restoreKitchenData(parsed) {
   if (!window.confirm(t('Replace everything in this kitchen with the backup ({summary})? This cannot be undone.', { summary }))) return;
   state = cleaned;
   inventoryLocation = ALL_LOCATIONS;
+  // The server keeps a copy of the kitchen as it was before this save (POST /api/state with safetyCopy: true), so a
+  // restore of the wrong backup can itself be undone from Server backups. The helper lives in app/sync.js.
+  if (!STANDALONE && typeof requestSafetyCopy === 'function') requestSafetyCopy();
   persist();
   status.textContent = t('Restored {summary}.', { summary });
 }
@@ -1291,7 +1312,7 @@ document.addEventListener('submit', (event) => {
       state.timerPresets = [...(state.timerPresets || []), { id: makeId(), name: name || formatDuration(seconds), seconds, icon: '⏱' }];
       persist();
     }
-    startCustomTimer(name || formatDuration(seconds), seconds);
+    startCustomTimer(name, seconds);
     return;
   }
   if (formId === 'recipe-note-form') {
@@ -1321,6 +1342,8 @@ $('#settings-button').addEventListener('click', async () => {
 // Settings has three tabs: General (this device), Connections (Mealie, DeepL, PIN, home server, each folded to one
 // line with its status) and Your data (backups, wipe). It opens on General with the connections folded.
 function showSettingsTab(tab) {
+  // A browser on a phone or computer that hosts the kitchen has none of the connections (its tab is hidden).
+  if (HOSTED && tab === 'connections') tab = 'data';
   for (const button of $$('#settings-dialog [data-action="settings-tab"]')) {
     const active = button.dataset.tab === tab;
     button.classList.toggle('active', active);

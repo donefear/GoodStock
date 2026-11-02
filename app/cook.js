@@ -74,8 +74,28 @@ function timeUnitMinutes(value, unit) {
 }
 
 // The first time in a step. Minutes right after hours add up ("1 hour 30 min" → 90); a range uses its lower bound.
+// "timer" and "time" are hours only in Danish and Norwegian ("1 time", "2 timer"); in "Use 1 timer." they are not.
+const NORDIC_HOUR = /^tim(?:er|e)$/i;
+const NORDIC_TEXT = /[æøå]|\b(?:og|lad|ovnen|bag|kog|steg|minutter|cirka|omkring|efter|etter|ca)\b/i;
+const nordicHours = (text) => ['da', 'nb', 'no'].includes(currentLanguage) || NORDIC_TEXT.test(text);
+
+// The first time match that is a time in this text (skipping "timer" outside Danish or Norwegian text).
+function timeMatch(text) {
+  let offset = 0;
+  while (offset < text.length) {
+    const match = TIME_PATTERN.exec(text.slice(offset));
+    if (!match) return null;
+    if (!NORDIC_HOUR.test(match[3]) || nordicHours(text)) {
+      if (offset) { match.index += offset; }
+      return match;
+    }
+    offset += match.index + match[0].length;
+  }
+  return null;
+}
+
 function stepMinutes(text) {
-  const match = TIME_PATTERN.exec(text);
+  const match = timeMatch(text);
   const words = WORD_TIME_PATTERN.exec(text);
   if (words && (!match || words.index < match.index)) return { minutes: WORD_TIMES[words[0].toLowerCase()], label: words[0] };
   if (!match) return null;
@@ -429,7 +449,8 @@ function buildCookBites(recipe) {
 
 function highlightStepText(text) {
   const pattern = new RegExp(`${TIME_PATTERN.source}|${WORD_TIME_PATTERN.source}|${TEMPERATURE_PATTERN.source}`, 'gi');
-  return escapeHtml(text).replace(pattern, (match) => `<mark>${match}</mark>`)
+  const nordic = nordicHours(text);
+  return escapeHtml(text).replace(pattern, (match) => (!nordic && /\btim(?:er|e)$/i.test(match) ? match : `<mark>${match}</mark>`))
     .replace(/\u0001([^\u0002]*)\u0002/g, '<strong class="steps-amount">$1</strong>');
 }
 
@@ -459,7 +480,7 @@ function timerAlarm(timer) {
   }
   // The Android app posts its own alarm notification when it is in the background.
   if (!STANDALONE && document.visibilityState !== 'visible' && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification(t('Goodstock timer'), { body: t('{name}: {time} is done.', { name: timerTitle(timer), time: timer.label }), tag: timer.id, requireInteraction: true });
+    new Notification(t('Goodstock timer'), { body: t('{name}: {time} is done.', { name: timerTitle(timer), time: timerLabel(timer) }), tag: timer.id, requireInteraction: true });
   }
 }
 
@@ -486,12 +507,14 @@ const timerRemaining = (timer) => (timer.endsAt - Date.now()) / 1000;
 const timersByUrgency = (timers) => [...timers].sort((a, b) => Number(b.done) - Number(a.done) || a.endsAt - b.endsAt);
 const currentStepTimer = () => cookSession && cookTimers.find((timer) => timer.recipe?.id === cookSession.recipe.id && timer.stepIndex === cookSession.index);
 
-const timerTitle = (timer) => timer.recipe?.name || timer.name || t('Timer');
+const timerTitle = (timer) => timer.recipe?.name || (timer.nameKey ? t(timer.nameKey) : timer.name) || (Number(timer.seconds) > 0 ? formatDuration(Number(timer.seconds)) : '') || t('Timer');
+// How long a timer runs, in the app's language now; a recipe step's timer keeps the words of the recipe ("10 minutes").
+const timerLabel = (timer) => (Number(timer.seconds) > 0 ? formatDuration(Number(timer.seconds)) : timer.label || '');
 
 function timerPillText(timer) {
   return {
     time: timer.done ? t('Time is up!') : formatTimer(timerRemaining(timer)),
-    label: `${timerTitle(timer)} · ${timer.done ? (timer.recipe ? t('tap to go back') : t('tap to clear')) : timer.label}`,
+    label: `${timerTitle(timer)} · ${timer.done ? (timer.recipe ? t('tap to go back') : t('tap to clear')) : timerLabel(timer)}`,
   };
 }
 
@@ -530,8 +553,8 @@ function saveTimers() {
   const signature = timersSignature(cookTimers);
   if (signature === savedTimersSignature) return;
   savedTimersSignature = signature;
-  const snapshot = cookTimers.map(({ id, recipe, planId, stepIndex, label, name, endsAt, done }) => ({
-    id, planId, stepIndex, label, name, endsAt, done,
+  const snapshot = cookTimers.map(({ id, recipe, planId, stepIndex, label, name, nameKey, seconds, duration, endsAt, done }) => ({
+    id, planId, stepIndex, label, name, nameKey, seconds, duration, endsAt, done,
     recipe: recipe && { id: recipe.id, slug: recipe.slug, name: recipe.name, source: recipe.source, ingredients: recipe.ingredients, instructions: recipe.instructions },
   }));
   syncNativeTimers();
@@ -550,7 +573,7 @@ function syncNativeTimers() {
   const timers = cookTimers.map((timer) => ({
     id: timer.id, endsAt: timer.endsAt, done: Boolean(timer.done),
     title: `⏰ ${t('Time is up: {name}', { name: timerTitle(timer) })}`,
-    text: t('{time} · tap to open Goodstock', { time: timer.label || t('Your timer') }),
+    text: t('{time} · tap to open Goodstock', { time: timerLabel(timer) || t('Your timer') }),
   }));
   try { nativeApp.setTimers(JSON.stringify(timers)); } catch { /* In-app alarm still works while the app is open. */ }
 }
@@ -680,7 +703,7 @@ function startCookTimer(minutes, label) {
   unlockAlarmAudio();
   const existing = currentStepTimer();
   if (existing) cookTimers = cookTimers.filter((timer) => timer !== existing);
-  cookTimers.push({ id: makeId(), recipe: cookSession.recipe, planId: cookSession.planId, stepIndex: cookSession.index, label, endsAt: Date.now() + minutes * 60_000, done: false });
+  cookTimers.push({ id: makeId(), recipe: cookSession.recipe, planId: cookSession.planId, stepIndex: cookSession.index, label, duration: minutes * 60, endsAt: Date.now() + minutes * 60_000, done: false });
   if (!timerTickId) timerTickId = setInterval(refreshTimers, 1000);
   refreshTimers();
 }

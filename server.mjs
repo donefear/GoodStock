@@ -1,4 +1,7 @@
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import { Readable } from 'node:stream';
+import { createBrotliDecompress, createGunzip, createInflate } from 'node:zlib';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { copyFile, mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { lookup } from 'node:dns/promises';
@@ -140,14 +143,47 @@ async function checkPublicTarget(target) {
   if (!addresses.length || addresses.some((address) => privateAddress(address) && !(ownPort && ownMachine(address)))) {
     throw Object.assign(new Error('Only public web addresses can be imported.'), { status: 400 });
   }
+  return addresses[0];
+}
+
+// One request to `target`, connecting to `address` only: the address checkPublicTarget approved. The name is never
+// looked up a second time, so a DNS answer that changes in between (DNS rebinding) can't send the request to this
+// machine or the home network. TLS still checks the certificate against the host name. Answers like fetch's Response.
+function requestPinned(target, address, { headers = {}, signal } = {}) {
+  const family = isIP(address) === 6 ? 6 : 4;
+  const lookupPinned = (hostname, options, callback) => {
+    if (typeof options === 'function') return options(null, address, family);
+    if (options?.all) return callback(null, [{ address, family }]);
+    return callback(null, address, family);
+  };
+  const client = target.protocol === 'https:' ? httpsRequest : httpRequest;
+  return new Promise((resolve, reject) => {
+    const outgoing = client(target, { method: 'GET', headers: { 'accept-encoding': 'gzip, deflate, br', ...headers }, lookup: lookupPinned, signal }, (incoming) => {
+      const encoding = String(incoming.headers['content-encoding'] || '').trim().toLowerCase();
+      const decoder = { gzip: createGunzip, 'x-gzip': createGunzip, deflate: createInflate, br: createBrotliDecompress }[encoding];
+      const body = decoder ? incoming.pipe(decoder()) : incoming;
+      if (decoder) incoming.on('error', (error) => body.destroy(error));
+      const answerHeaders = new Headers();
+      for (const [name, value] of Object.entries(incoming.headers)) {
+        if (decoder && (name === 'content-encoding' || name === 'content-length')) continue;
+        for (const each of [].concat(value)) answerHeaders.append(name, each);
+      }
+      const status = incoming.statusCode || 502;
+      const empty = [204, 205, 304].includes(status) || status < 200;
+      if (empty) incoming.resume();
+      resolve(new Response(empty ? null : Readable.toWeb(body), { status: status < 200 || status > 599 ? 502 : status, headers: answerHeaders }));
+    });
+    outgoing.on('error', reject);
+    outgoing.end();
+  });
 }
 
 async function fetchPublic(address, options) {
   let target = address;
   for (let hop = 0; hop <= 5; hop++) {
     if (!/^https?:$/.test(target.protocol)) throw Object.assign(new Error('Only http and https links can be imported.'), { status: 400 });
-    await checkPublicTarget(target);
-    const result = await fetch(target, { ...options, redirect: 'manual' });
+    const checked = await checkPublicTarget(target);
+    const result = await requestPinned(target, checked, options);
     const next = result.headers.get('location');
     if (![301, 302, 303, 307, 308].includes(result.status) || !next) return Object.assign(result, { finalUrl: target.href });
     result.body?.cancel().catch(() => {});
@@ -243,10 +279,10 @@ async function loadKitchen() {
 
 // Writes go one after another, so a slow disk can never put an older state on top of a newer one. Each write first
 // backs up the kitchen it replaces. The returned promise fails when this write failed (the queue goes on).
-function writeKitchen(previous) {
+function writeKitchen(previous, safetyCopy = false) {
   const snapshot = { ...kitchen.state, _revision: kitchen.revision };
   const next = kitchen.state;
-  const write = kitchenWrites.then(() => backupBeforeSave(previous, next)).then(() => saveState(snapshot));
+  const write = kitchenWrites.then(() => backupBeforeSave(previous, next, safetyCopy)).then(() => saveState(snapshot));
   kitchenWrites = write.catch((error) => console.error('Could not save the kitchen:', error.message));
   return write;
 }
@@ -282,8 +318,13 @@ function openLiveStream(request, response) {
 // removes most of the inventory and recipes at once (a mistaken wipe, a bad sync). The newest BACKUP_KEEP files are
 // kept in /data/backups and can be restored from Settings → Your data.
 const backupsDirectory = join(dataDirectory, 'backups');
+// The newest BACKUP_KEEP daily copies and, counted apart so a bad day can't push the daily ones out, the newest
+// SAFETY_KEEP safety copies. Safety copies are named by the time to the second (older ones: to the minute), with
+// -02, -03 … when several fall in the same second.
 const BACKUP_KEEP = 14;
-const BACKUP_NAME = /^state-\d{4}-\d{2}-\d{2}(?:-before-\d{4})?\.json$/;
+const SAFETY_KEEP = 10;
+const BACKUP_NAME = /^state-\d{4}-\d{2}-\d{2}(?:-before-\d{4}(?:\d{2}(?:-\d{2})?)?)?\.json$/;
+const isSafetyCopy = (name) => name.includes('-before-');
 // Oldest first: each day's daily copy, then that day's safety copies in time order.
 const byAge = (first, second) => {
   const [a, b] = [first, second].map((name) => name.replace(/\.json$/, ''));
@@ -302,7 +343,22 @@ async function writeBackup(name, state) {
 
 async function pruneBackups(directory) {
   const names = (await readdir(directory)).filter((file) => BACKUP_NAME.test(file)).sort(byAge);
-  for (const old of names.slice(0, Math.max(0, names.length - BACKUP_KEEP))) await unlink(join(directory, old)).catch(() => {});
+  const daily = names.filter((name) => !isSafetyCopy(name));
+  const safety = names.filter(isSafetyCopy);
+  const old = [...daily.slice(0, Math.max(0, daily.length - BACKUP_KEEP)), ...safety.slice(0, Math.max(0, safety.length - SAFETY_KEEP))];
+  for (const name of old) await unlink(join(directory, name)).catch(() => {});
+}
+
+// A safety copy of the kitchen as it is now: before a save that removes most of it, or before a restore.
+async function writeSafetyCopy(state) {
+  const now = new Date();
+  const stamp = `state-${localDay(now)}-before-${now.toTimeString().slice(0, 8).replace(/:/g, '')}`;
+  // After the highest number this second already has (never a pruned, lower one again: it would sort as oldest).
+  const taken = (await readdir(backupsDirectory).catch(() => [])).filter((file) => file.startsWith(stamp) && BACKUP_NAME.test(file))
+    .map((file) => Number((/-(\d{2})\.json$/.exec(file.slice(stamp.length)) || [0, 1])[1]));
+  const count = taken.length ? Math.max(...taken) + 1 : 1;
+  if (count > 99) throw new Error('too many safety copies in one second');
+  await writeBackup(count === 1 ? `${stamp}.json` : `${stamp}-${String(count).padStart(2, '0')}.json`, state);
 }
 
 // A second copy of the backups (0.38), for example on a NAS share mounted into the container: BACKUP_COPY_DIR. Every
@@ -329,17 +385,14 @@ async function copyBackups() {
   }
 }
 
-async function backupBeforeSave(current, next) {
+async function backupBeforeSave(current, next, safetyCopy = false) {
   if (!current) return;
   try {
     const daily = `state-${localDay()}.json`;
     const names = await readdir(backupsDirectory).catch(() => []);
     if (!names.includes(daily)) await writeBackup(daily, current);
     const size = (state) => (state.inventory?.length || 0) + (state.recipes?.length || 0);
-    if (size(current) >= 6 && size(next) < size(current) / 2) {
-      const time = new Date().toTimeString().slice(0, 5).replace(':', '');
-      await writeBackup(`state-${localDay()}-before-${time}.json`, current);
-    }
+    if (safetyCopy || (size(current) >= 6 && size(next) < size(current) / 2)) await writeSafetyCopy(current);
   } catch (error) {
     console.error('Could not write a backup:', error.message);
   }
@@ -359,7 +412,8 @@ async function listBackups() {
 }
 
 async function receiveKitchen(payload) {
-  // New pages send { state, baseRevision, client }; older cached pages send the bare state and simply overwrite.
+  // New pages send { state, baseRevision, client }, plus safetyCopy: true when restoring a backup (the kitchen as it
+  // was is then kept as a safety copy first); older cached pages send the bare state and simply overwrite.
   const tracked = payload && typeof payload === 'object' && payload.state && Object.hasOwn(payload, 'baseRevision');
   const state = tracked ? payload.state : payload;
   if (!state || typeof state !== 'object' || Array.isArray(state) || !Array.isArray(state.inventory) || !Array.isArray(state.recipes)) {
@@ -374,7 +428,7 @@ async function receiveKitchen(payload) {
   const previous = kitchen.state;
   kitchen = { revision: kitchen.revision + 1, state: clean };
   const revision = kitchen.revision;
-  const written = writeKitchen(previous);
+  const written = writeKitchen(previous, tracked && payload.safetyCopy === true);
   broadcast('state', { revision, origin: tracked ? String(payload.client || '') : '' });
   try {
     await written;
@@ -700,14 +754,62 @@ function tooManyAttempts(address) {
   return Boolean(entry && entry.count >= 5 && entry.until > Date.now());
 }
 
-// Besides each address's own limit, at most ALL_FAILURES_LIMIT wrong PINs in five minutes from everywhere together,
-// so many addresses (or a burst of parallel requests) can't try every PIN either.
+// Besides each address's own limit (5 wrong PINs, then 5 minutes locked), a limit for everywhere together, so many
+// addresses can't try every PIN either. Up to ALL_FAILURES_LIMIT wrong PINs in five minutes are answered straight
+// away; beyond that, logins from all addresses go single file, one every SLOW_LOGIN_SPACING (and at most
+// SLOW_LOGIN_QUEUE waiting, the rest get 429). That keeps the overall guessing rate at the same 50 per five minutes,
+// but unlike a lockout the right PIN from a device without wrong tries of its own still gets in, after a wait.
 const ALL_FAILURES_LIMIT = 50;
+const SLOW_LOGIN_SPACING = 6_000;
+const SLOW_LOGIN_QUEUE = 5;
 let allFailures = [];
 const tooManyFailuresOverall = () => {
   allFailures = allFailures.filter((time) => time > Date.now() - 5 * 60_000);
   return allFailures.length >= ALL_FAILURES_LIMIT;
 };
+let slowLoginLane = Promise.resolve();
+let slowLoginWaiting = 0;
+let slowLoginAt = 0;
+// Resolves true when this login's turn has come, false when too many are already waiting.
+async function slowLoginTurn() {
+  if (slowLoginWaiting >= SLOW_LOGIN_QUEUE) return false;
+  slowLoginWaiting++;
+  const turn = slowLoginLane.then(async () => {
+    const wait = slowLoginAt + SLOW_LOGIN_SPACING - Date.now();
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    slowLoginAt = Date.now();
+  });
+  slowLoginLane = turn;
+  try { await turn; } finally { slowLoginWaiting--; }
+  return true;
+}
+
+// The address a login comes from, for its own limit. Behind the optional HTTPS proxy (the Caddy "https" service)
+// every request arrives from the proxy, so then the proxy's X-Forwarded-For is used: only for requests from an
+// address in TRUST_PROXY (comma-separated IP addresses or host names; docker-compose.yml sets "https", the Caddy
+// service's name, which Docker resolves only while that service runs). Anyone else's X-Forwarded-For is ignored, so a
+// device talking to port 8484 directly can't pick a fresh address for every guess. The last entry is the one the
+// proxy itself saw (Caddy replaces what an untrusted client sent).
+const trustedProxyNames = String(process.env.TRUST_PROXY || '').split(',').map((name) => name.trim()).filter(Boolean);
+let trustedProxies = { at: 0, addresses: new Set() };
+const plainAddress = (address) => String(address || '').replace(/^::ffff:(?=\d+\.\d+\.\d+\.\d+$)/, '');
+async function trustedProxyAddresses() {
+  if (!trustedProxyNames.length) return trustedProxies.addresses;
+  if (Date.now() - trustedProxies.at < 30_000) return trustedProxies.addresses;
+  const addresses = new Set();
+  for (const name of trustedProxyNames) {
+    if (isIP(name)) { addresses.add(plainAddress(name)); continue; }
+    try { for (const entry of await lookup(name, { all: true })) addresses.add(plainAddress(entry.address)); } catch { /* not running */ }
+  }
+  trustedProxies = { at: Date.now(), addresses };
+  return addresses;
+}
+async function clientAddress(request) {
+  const direct = plainAddress(request.socket.remoteAddress);
+  if (!trustedProxyNames.length || !(await trustedProxyAddresses()).has(direct)) return direct;
+  const forwarded = String(request.headers['x-forwarded-for'] || '').split(',').map((part) => part.trim()).filter(Boolean).pop();
+  return forwarded && isIP(plainAddress(forwarded)) ? plainAddress(forwarded) : direct;
+}
 
 function noteFailure(address) {
   const entry = loginFailures.get(address);
@@ -725,16 +827,21 @@ const validPin = (pin) => typeof pin === 'string' && pin.length >= 4 && pin.leng
 const OPEN_API = [/^\/api\/auth\//, /^\/api\/health$/, /^\/api\/shopping\/download\//, /^\/api\/plan\.ics$/];
 
 async function handleAuth(request, response, url) {
-  const address = request.socket.remoteAddress || '';
   if (request.method === 'GET' && url.pathname === '/api/auth/status') {
     return sendJson(response, 200, { required: pinRequired(), unlocked: isAuthorized(request) });
   }
   if (request.method === 'POST' && url.pathname === '/api/auth/login') {
-    const blocked = () => tooManyAttempts(address) || tooManyFailuresOverall();
-    if (blocked()) return sendJson(response, 429, { error: 'Too many wrong PINs. Try again in a few minutes.' });
+    const address = await clientAddress(request);
+    const tooMany = () => sendJson(response, 429, { error: 'Too many wrong PINs. Try again in a few minutes.' });
+    if (tooManyAttempts(address)) return tooMany();
     const { pin } = Object(await requestBody(request));
-    // Checked again now the body is in: from here to noteFailure nothing waits, so parallel tries all count.
-    if (blocked()) return sendJson(response, 429, { error: 'Too many wrong PINs. Try again in a few minutes.' });
+    if (tooManyAttempts(address)) return tooMany();
+    if (tooManyFailuresOverall()) {
+      // Over the overall limit: wait for a turn in the single file, then check this address again.
+      if (!(await slowLoginTurn())) return tooMany();
+      if (tooManyAttempts(address)) return tooMany();
+    }
+    // From the checks above to noteFailure nothing waits, so parallel tries all count.
     if (!pinMatches(pin)) {
       noteFailure(address);
       return sendJson(response, 401, { error: 'That PIN is not right.' });
@@ -763,6 +870,12 @@ async function handleAuth(request, response, url) {
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   const reading = request.method === 'GET' || request.method === 'HEAD'; // static files answer HEAD with headers only
+  // On every answer: no guessing of content types, no addresses (with tokens in them) leaking to other sites, and no
+  // framing by other sites. No content security policy beyond frame-ancestors: the page uses inline scripts and styles.
+  response.setHeader('x-content-type-options', 'nosniff');
+  response.setHeader('referrer-policy', 'same-origin');
+  response.setHeader('x-frame-options', 'SAMEORIGIN');
+  response.setHeader('content-security-policy', "frame-ancestors 'self'");
   try {
     if (url.pathname.startsWith('/api/auth/')) return await handleAuth(request, response, url);
     if (url.pathname === '/api/health') {

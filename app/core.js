@@ -203,6 +203,23 @@ function tidyRecipe(recipe) {
   return { ...recipe, name: String(recipe.name || ''), ingredients: textLines(recipe.ingredients), instructions: textLines(recipe.instructions) };
 }
 
+// The largest amount an item or shopping line can hold; anything bigger (1e300 from a typo or a file) is cut to it.
+const MAX_QUANTITY = 1000000;
+const ITEM_DATE_FIELDS = ['expiresOn', 'openedOn', 'frozenOn', 'addedOn'];
+
+// Items from a file or another device: dates that are no real calendar day ("2026-02-30") go, as if never set, and
+// amounts stay within MAX_QUANTITY.
+function tidyItem(item) {
+  const bad = ITEM_DATE_FIELDS.filter((field) => item[field] !== undefined && item[field] !== '' && !dateFromKey(item[field]));
+  const tooMuch = Number(item.quantity) > MAX_QUANTITY;
+  if (!bad.length && !tooMuch) return item;
+  const tidy = { ...item };
+  for (const field of bad) delete tidy[field];
+  if (bad.includes('expiresOn')) { delete tidy.expirationSource; delete tidy.dateKind; }
+  if (tooMuch) tidy.quantity = MAX_QUANTITY;
+  return tidy;
+}
+
 function normalizeState(value) {
   const defaults = freshState();
   if (!value || typeof value !== 'object') return defaults;
@@ -211,10 +228,10 @@ function normalizeState(value) {
   const recipes = cleanList(value.recipes, tidyRecipe);
   const locations = Array.isArray(value.locations) ? value.locations.filter((location) => typeof location === 'string' && location.trim()) : [];
   return {
-    inventory: inventory ? inventory.map(metricInventoryItem) : defaults.inventory,
+    inventory: inventory ? inventory.map(tidyItem).map(metricInventoryItem) : defaults.inventory,
     recipes: recipes ? recipes.map(upgradeStarterRecipe).map(metricRecipe) : defaults.recipes,
     plan: list('plan'),
-    shopping: list('shopping').map(metricInventoryItem),
+    shopping: list('shopping').map(tidyItem).map(metricInventoryItem),
     locations: locations.length ? locations : defaults.locations,
     timerPresets: list('timerPresets'),
     // What happened to removed items ({ id, name, date, outcome: 'used' | 'wasted' }), for the month overview.
@@ -389,7 +406,7 @@ const UNIT_ALIASES = {
   ml: /^(?:ml|millilit(?:er|re)s?|мл|毫升|مل|מ״ל|מ"ל)$/, cl: /^(?:cl|centilit(?:er|re)s?)$/, dl: /^(?:dl|decilit(?:er|re)s?)$/, l: /^(?:l|lit(?:er|re)s?|litrong?|л|升|لتر|ل|ליטר)$/,
   oz: /^(?:oz|ounces?)$/, lb: /^(?:lbs?|pounds?)$/, 'fl oz': /^(?:fl\.?\s*oz|fluid\s+ounces?)$/,
   pint: /^(?:pints?|pt)$/, quart: /^(?:quarts?|qt)$/, gallon: /^(?:gallons?|gal)$/, inch: /^inch(?:es)?$/, cm: /^(?:cm|centimet(?:er|re)s?)$/,
-  cup: /^(?:cups?|tasang?|kopjes?|kop|kopper|kopp|koppar|tazas?|tazze|tazza|tasses?|كوب|أكواب|اكواب|כוס|כוסות)$/, tbsp: /^(?:tbsps?|kutsarang?|tbs|tablespoons?|el|eetlepels?|spsk|spiseskefulde?|msk|matskedar|matsked|cdas?|cucharadas?|cucchiai[oa]?|linguri|lingură|łyżki|łyżka|łyżek|כף|כפות)$/, tsp: /^(?:tsps?|kutsaritang?|teaspoons?|tl|theelepels?|tsk|teskefulde?|teskedar|tesked|cdtas?|cucharaditas?|cucchiaini?|lingurițe|linguriță|łyżeczki|łyżeczka|łyżeczek|כפית|כפיות)$/,
+  cup: /^(?:cups?|tasang?|kopjes?|kop|kopper|kopp|koppar|tazas?|tazze|tazza|tasses?|كوب|أكواب|اكواب|כוס|כוסות)$/, tbsp: /^(?:tbsps?|kutsarang?|tbs|tablespoons?|el|eetlepels?|spsk|spiseskefulde?|msk|matskedar|matsked|cdas?|cucharadas?|cucchiai[oa]?|esslöffel|essl|linguri|lingură|łyżki|łyżka|łyżek|כף|כפות)$/, tsp: /^(?:tsps?|kutsaritang?|teaspoons?|tl|theelepels?|tsk|teskefulde?|teskedar|tesked|cdtas?|cucharaditas?|cucchiain[oi]|teelöffel|teel|lingurițe|linguriță|łyżeczki|łyżeczka|łyżeczek|כפית|כפיות)$/,
   can: /^(?:cans?|latang?|tins?|blikj?e?s?|dåser?|burkar|burk)$/, jar: /^(?:jars?|garapong?|potj?e?s?|glas)$/, bag: /^(?:bags?|supot|zakj?e?s?|poser?|påsar|påse)$/, bottle: /^(?:bottles?|boteng?|flessen|fles|flasker?|flaskor|flaska)$/,
   pack: /^(?:packs?|paketeng?|packets?|packages?|pakj?e?s?|pakker?|paket|förpackningar|förpackning)$/, clove: /^(?:cloves?|butil|teentjes?|tenen|fed|klyftor|klyfta)$/, bunch: /^(?:bunch(?:es)?|tali|bungkos|bosj?e?s?|bundter?|knippen?)$/,
   pinch: /^(?:pinch(?:es)?|kurot|snufjes?|snuifjes?|snuf|knivspidser?|nypor|nypa)$/, splash: /^(?:splash(?:es)?|dash(?:es)?|scheutjes?|scheut|skvæt|skvätt)$/, slice: /^(?:slices?|hiwa|hiwang|plakj?e?s?|skiver?|skivor|skiva)$/, sprig: /^(?:sprigs?|takjes?|kviste?|kvistar)$/, handful: /^(?:handfuls?|dakot|handjes?|håndfulde?|nävar|näve)$/,
@@ -416,16 +433,22 @@ function canonicalUnit(value) {
   return Object.keys(UNIT_ALIASES).find((unit) => UNIT_ALIASES[unit].test(word)) ?? null;
 }
 
+// Group 1 a tablespoon, group 2 a teaspoon, group 3 the name after "de" or "d’" ("2 cuillères à soupe d’huile").
+const SPOON_PHRASE = /^(?:(cuill[eè]res?\s+à\s+soupe|c\.\s?à\s?s\.?|càs|colher(?:es)?\s+de\s+sopa)|(cuill[eè]res?\s+à\s+caf[eé]|c\.\s?à\s?c\.?|càc|colher(?:es)?\s+de\s+ch[aá]))(?:\s+de\s+|\s*d['’]\s*|\s+)(.+)$/i;
+
 function parseIngredient(text) {
   const raw = String(text || '').trim();
   const match = INGREDIENT_PATTERN.exec(raw);
   if (!match) return { amount: null, unit: '', unitText: '', name: raw };
   const amount = parseAmount(match[1]) || null;
   const rest = match[2].trim();
+  const tidy = (name) => name.replace(/^\([^)]*\)\s*/, '').trim();
+  // Spoons written in several words: French "cuillères à soupe", "c. à c.", Portuguese "colheres de sopa".
+  const phrase = SPOON_PHRASE.exec(rest);
+  if (phrase) return { amount, unit: phrase[1] ? 'tbsp' : 'tsp', unitText: (phrase[1] || phrase[2]).trim(), name: tidy(phrase[3]) };
   // Hebrew abbreviations carry a geresh or gershayim inside the word ("ק״ג", "מ״ל").
   const unitMatch = /^(fl\.?\s*oz\.?|fluid\s+ounces?|[\p{L}׳״]+\.?)(?:\s+(?:of|van|na|ng)\b)?\s+(.+)$/iu.exec(rest);
   const unit = unitMatch ? canonicalUnit(unitMatch[1]) : null;
-  const tidy = (name) => name.replace(/^\([^)]*\)\s*/, '').trim();
   if (unit) return { amount, unit, unitText: unitMatch[1].replace(/\.$/, ''), name: tidy(unitMatch[2]) };
   return { amount, unit: '', unitText: '', name: tidy(rest) || raw };
 }
@@ -491,6 +514,17 @@ function metricIngredient(text) {
 const AMOUNT_AT_START = new RegExp(String.raw`^(${AMOUNT_SOURCE})(?:(\s*(?:-|–|to|tot)\s*)(${AMOUNT_SOURCE}))?`);
 const recipeScales = new Map(); // recipe id → scale chosen on its page during this visit
 
+// A scaled amount as a cook would weigh it: grams and millilitres whole from 10 up, to 5 from 100 and to 10 from
+// 1000 (562.5 g → 565 g, 1137.5 g → 1140 g); kilos, litres and everything else keep two decimals.
+function roundScaled(value, unit) {
+  if (unit === 'g' || unit === 'ml') {
+    const step = value >= 1000 ? 10 : value >= 100 ? 5 : value >= 10 ? 1 : 0;
+    if (step) return Math.max(step, Math.round(value / step) * step);
+    return Math.round(value * 10) / 10;
+  }
+  return Math.round(value * 100) / 100;
+}
+
 function scaleIngredientLine(line, factor) {
   const text = String(line || '').trim();
   if (!factor || factor === 1) return text;
@@ -499,7 +533,7 @@ function scaleIngredientLine(line, factor) {
   const { unit } = parseIngredient(text);
   const scale = (amountText) => {
     const value = parseAmount(amountText.trim());
-    return value ? `${formatAmount(Math.round(value * factor * 100) / 100, unit)}${/\s*$/.exec(amountText)[0]}` : amountText;
+    return value ? `${formatAmount(roundScaled(value * factor, unit), unit)}${/\s*$/.exec(amountText)[0]}` : amountText;
   };
   return `${scale(match[1])}${match[3] ? `${match[2]}${scale(match[3])}` : ''}${text.slice(match[0].length)}`;
 }
@@ -646,12 +680,27 @@ function formatNumber(value, maximumFractionDigits = 3, minimumFractionDigits = 
   }
 }
 
-// A unit as shown: "pcs" in the app's language (the same word as on the cook dialog); the stored unit stays English.
-const shownUnitLabel = (unit) => (canonicalUnit(unit) === 'pcs' ? t('pcs') : String(unit || ''));
+// A unit as shown: "pcs" and the other counted units (cans, jars, bottles…) in the app's language, singular or
+// plural by the amount when it is given (the same word as on the cook dialog); the stored unit stays as it was.
+// Weights and volumes (g, kg, ml, l, oz, lb, fl oz, cup, tbsp, tsp) stay symbols.
+const COUNT_UNIT_LABELS = {
+  can: (count) => tp(count, 'can', 'cans'), jar: (count) => tp(count, 'jar', 'jars'), bag: (count) => tp(count, 'bag', 'bags'),
+  bottle: (count) => tp(count, 'bottle', 'bottles'), pack: (count) => tp(count, 'pack', 'packs'), clove: (count) => tp(count, 'clove', 'cloves'),
+  bunch: (count) => tp(count, 'bunch', 'bunches'), pinch: (count) => tp(count, 'pinch', 'pinches'), splash: (count) => tp(count, 'splash', 'splashes'),
+  slice: (count) => tp(count, 'slice', 'slices'), sprig: (count) => tp(count, 'sprig', 'sprigs'), handful: (count) => tp(count, 'handful', 'handfuls'),
+  stick: (count) => tp(count, 'stick', 'sticks'),
+};
+
+function shownUnitLabel(unit, count) {
+  const canonical = canonicalUnit(unit);
+  if (canonical === 'pcs') return t('pcs');
+  if (COUNT_UNIT_LABELS[canonical]) return COUNT_UNIT_LABELS[canonical](Number.isFinite(Number(count)) && count !== '' && count !== null && count !== undefined ? Number(count) : 2);
+  return String(unit || '');
+}
 
 function amountText(quantity, unit) {
   const shown = shownAmount(quantity, unit);
-  return `${formatNumber(shown.quantity)}${shown.unit ? ` ${shownUnitLabel(shown.unit)}` : ''}`;
+  return `${formatNumber(shown.quantity)}${shown.unit ? ` ${shownUnitLabel(shown.unit, shown.quantity)}` : ''}`;
 }
 
 // An amount entered in imperial, saved metric: whole grams or millilitres, or kg and l from 1000 up.
@@ -977,9 +1026,12 @@ function suggestedExpiration(name, location, from = new Date()) {
   return { date: dateKey(date), days };
 }
 
+// A real calendar date only: "2026-02-30" or "2026-13-45" from a file or another device counts as no date.
 const dateFromKey = (key) => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || '');
-  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(typeof key === 'string' ? key : '');
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return date.getFullYear() === Number(match[1]) && date.getMonth() === Number(match[2]) - 1 && date.getDate() === Number(match[3]) ? date : null;
 };
 
 // Once opened, some things keep far shorter (milk, a can of tomatoes, a jar of something unknown); dry goods,
@@ -1200,7 +1252,7 @@ function expirationText(item) {
 }
 
 function inventoryExpiryMarkup(item, tag) {
-  if (item.expiresOn) return `<${tag} class="item-expiry ${expiryClass(item.expiresOn, item.dateKind)}">${escapeHtml(expirationText(item))}</${tag}>`;
+  if (item.expiresOn && dateFromKey(item.expiresOn)) return `<${tag} class="item-expiry ${expiryClass(item.expiresOn, item.dateKind)}">${escapeHtml(expirationText(item))}</${tag}>`;
   return item.kind === 'Household' ? '' : `<${tag} class="item-expiry expiry-missing">${t('No expiry date')}</${tag}>`;
 }
 

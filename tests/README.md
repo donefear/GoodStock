@@ -11,14 +11,21 @@ Without Node on the computer, run it in Docker (from the repository folder):
     docker run --rm --user root -v "$PWD":/app -v goodstock-test-cache:/root/.cache -w /app \
       ghcr.io/puppeteer/puppeteer:latest sh -c "npm install --no-audit --no-fund && node tests/run.mjs"
 
+From Git Bash on Windows, put `MSYS_NO_PATHCONV=1` in front of the Docker commands here (e.g.
+`MSYS_NO_PATHCONV=1 docker run …` or `MSYS_NO_PATHCONV=1 wsl docker run …`); otherwise Git Bash rewrites `/app`,
+`/root/.cache` and the other container paths into Windows paths and the container can't find them.
+
 The suite uses a current Chromium. The kitchen tablet runs Chrome 81, so `tests/chrome80/run.cjs` also opens every
 page, the main dialogs and cook mode in Chromium 80 (puppeteer 2.1.1, in its own folder because its API is older),
 and fails on any script error. GitHub runs it as "Kitchen tablet (Chromium 80)". Locally:
 
     cd tests/chrome80 && npm install && node run.cjs
 
-In Docker it needs a Debian image (`node:22-bookworm`) with Chromium's libraries (libnss3, libgbm1, libgtk-3-0,
-libasound2…). The optional HTTPS service has its own check, `bash tools/check-https.sh`.
+In Docker it needs a Debian image (`node:22-bookworm`) with Chromium 80's libraries:
+
+    apt-get update && apt-get install -y libnss3 libgbm1 libgtk-3-0 libasound2 libx11-xcb1 libxss1 libxtst6
+
+(on newer Debian, `libasound2t64` instead of `libasound2`). The optional HTTPS service has its own check, `bash tools/check-https.sh`.
 
 Writing tests:
 

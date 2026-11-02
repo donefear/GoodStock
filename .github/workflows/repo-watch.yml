@@ -19,7 +19,7 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         env:
           TRAFFIC_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
         with:
@@ -28,15 +28,35 @@ jobs:
             const TITLE = 'Repo watch';
             const MARK = /<!-- state:(.*?) -->/s;
 
+            // Every call says what it was when it fails ("Resource not accessible by integration" alone doesn't).
+            const call = async (what, run) => {
+              try { return await run(); } catch (error) {
+                throw new Error(`${what}: ${error.status || ''} ${error.message}`.replace(/\s+/g, ' '));
+              }
+            };
+            // The issue first: its last counts stand in for a list GitHub won't give this time (a warning, not a
+            // failed run that hides everything else).
+            const issues = await call('list the issues (needs issues: read)', () => github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'all', creator: 'github-actions[bot]', per_page: 100 }));
+            const issue = issues.find((item) => item.title === TITLE && !item.pull_request);
+            const before = issue && MARK.test(issue.body || '') ? JSON.parse(MARK.exec(issue.body)[1]) : null;
+            const soft = async (what, run, fallback) => {
+              try { return await run(); } catch (error) {
+                core.warning(`Could not ${what} (${error.status || ''} ${error.message}); keeping the last counts.`);
+                return fallback;
+              }
+            };
+
             const people = (list) => list.map((user) => (user.user || user).login).filter((login) => login && login !== owner);
-            const forks = (await github.paginate(github.rest.repos.listForks, { owner, repo, per_page: 100 }))
-              .map((fork) => fork.full_name);
-            const stars = people(await github.paginate(github.rest.activity.listStargazersForRepo, { owner, repo, per_page: 100 }));
-            const watchers = people(await github.paginate(github.rest.activity.listWatchersForRepo, { owner, repo, per_page: 100 }));
-            const downloads = {};
-            for (const release of await github.paginate(github.rest.repos.listReleases, { owner, repo, per_page: 100 })) {
-              for (const asset of release.assets) downloads[`${release.tag_name} · ${asset.name}`] = asset.download_count;
-            }
+            const forks = await soft('list the forks', async () => (await github.paginate(github.rest.repos.listForks, { owner, repo, per_page: 100 })).map((fork) => fork.full_name), (before && before.forks) || []);
+            const stars = await soft('list the stargazers', async () => people(await github.paginate(github.rest.activity.listStargazersForRepo, { owner, repo, per_page: 100 })), (before && before.stars) || []);
+            const watchers = await soft('list the watchers', async () => people(await github.paginate(github.rest.activity.listWatchersForRepo, { owner, repo, per_page: 100 })), (before && before.watchers) || []);
+            const downloads = await soft('list the releases', async () => {
+              const counts = {};
+              for (const release of await github.paginate(github.rest.repos.listReleases, { owner, repo, per_page: 100 })) {
+                for (const asset of release.assets) counts[`${release.tag_name} · ${asset.name}`] = asset.download_count;
+              }
+              return counts;
+            }, (before && before.downloads) || {});
 
             // Traffic needs more than the workflow token; GitHub keeps 14 days of it, so days are kept here for 30.
             const traffic = async (path) => {
@@ -57,10 +77,6 @@ jobs:
                 core.warning(`No traffic data: ${error.message}`);
               }
             }
-
-            const issues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'all', creator: 'github-actions[bot]', per_page: 100 });
-            const issue = issues.find((item) => item.title === TITLE && !item.pull_request);
-            const before = issue && MARK.test(issue.body || '') ? JSON.parse(MARK.exec(issue.body)[1]) : null;
 
             const notes = [];
             const added = (list, old) => list.filter((name) => !(old || []).includes(name));
@@ -111,13 +127,16 @@ jobs:
               `<!-- state:${JSON.stringify(state)} -->`,
             ].join('\n');
 
+            // Writing needs issues: write (granted above). If GitHub still refuses, the cause is outside this file:
+            // Issues switched off, or Settings → Actions → General → Workflow permissions.
+            const WRITE = 'needs issues: write; check that Issues are on and Settings → Actions → General → Workflow permissions';
             if (!issue) {
-              const created = await github.rest.issues.create({ owner, repo, title: TITLE, body });
-              await github.rest.issues.createComment({ owner, repo, issue_number: created.data.number, body: `@${owner} Watching started. From tomorrow, new forks, stars, watchers and downloads show up here.` });
+              const created = await call(`create the "${TITLE}" issue (${WRITE})`, () => github.rest.issues.create({ owner, repo, title: TITLE, body }));
+              await call(`comment on the issue (${WRITE})`, () => github.rest.issues.createComment({ owner, repo, issue_number: created.data.number, body: `@${owner} Watching started. From tomorrow, new forks, stars, watchers and downloads show up here.` }));
               return;
             }
-            await github.rest.issues.update({ owner, repo, issue_number: issue.number, body, state: 'open' });
+            await call(`update the issue (${WRITE})`, () => github.rest.issues.update({ owner, repo, issue_number: issue.number, body, state: 'open' }));
             if (notes.length) {
-              await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body: `@${owner}\n\n${notes.map((note) => `- ${note}`).join('\n')}` });
+              await call(`comment on the issue (${WRITE})`, () => github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body: `@${owner}\n\n${notes.map((note) => `- ${note}`).join('\n')}` }));
             }
             core.info(notes.length ? notes.join('\n') : 'Nothing new.');

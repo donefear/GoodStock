@@ -82,9 +82,9 @@
         <input type="hidden" name="barcode" />
         <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><datalist id="ingredient-options"></datalist><span class="field-hint">Common ingredients, in your language and in English. A barcode number works too.</span></label>
         <div class="barcode-row"><button class="button button-outline button-small" type="button" data-action="scan-barcode" id="scan-barcode-button" hidden>Scan barcode</button><span class="field-hint" id="barcode-status" role="status" aria-live="polite"></span></div>
-        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
-        <label>Keep at least<input name="minimum" type="number" min="0" step="any" inputmode="decimal" placeholder="Optional" /><span class="field-hint">For staples. Below this amount it goes on the shopping list by itself.</span></label>
-        <label>Price<input name="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Optional" /><span class="field-hint">For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.</span></label>
+        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" max="1000000" step="any" required value="1" /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
+        <label>Keep at least<input name="minimum" type="number" min="0" max="1000000" step="any" inputmode="decimal" placeholder="Optional" /><span class="field-hint">For staples. Below this amount it goes on the shopping list by itself.</span></label>
+        <label>Price<input name="price" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" placeholder="Optional" /><span class="field-hint">For the whole amount. Shows what thrown-away food cost, and fills in by itself next time.</span></label>
         <div class="form-row"><label>Stored in<select name="location"></select></label><label>Type<select name="kind"><option value="Food">Food</option><option value="Household">Household</option></select></label></div>
         <label id="frozen-field" hidden>Frozen on<input name="frozenOn" type="date" /><span class="field-hint">The freezer estimate counts from this day.</span></label>
         <div class="form-row"><label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="expiry-estimate-note">Optional. Product estimates are approximate; check the package date.</span></label><label>The package says<select name="dateKind"><option value="">Use by</option><option value="best-before">Best before</option></select><span class="field-hint">Best before: still fine after the date, just check it.</span></label></div>
@@ -100,7 +100,7 @@
         <div class="dialog-heading"><div><span class="eyebrow">INVENTORY</span><h2 id="use-title">Use some</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <input type="hidden" name="id" />
         <p class="dialog-copy" id="use-have"></p>
-        <div class="form-row"><label>Amount used<input name="quantity" type="number" min="0" step="any" inputmode="decimal" required /></label><label>Unit<select name="unit" required></select></label></div>
+        <div class="form-row"><label>Amount used<input name="quantity" type="number" min="0" max="1000000" step="any" inputmode="decimal" required /></label><label>Unit<select name="unit" required></select></label></div>
         <p class="use-left" id="use-left" role="status" aria-live="polite"></p>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Take it off</button></div>
       </form>
@@ -110,7 +110,7 @@
       <form id="shopping-item-form" method="dialog">
         <div class="dialog-heading"><div><span class="eyebrow">SHOPPING</span><h2>Add to the list</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
         <label>Item name<input name="name" list="ingredient-options" autocomplete="off" required placeholder="e.g. Rolled oats / Havermout" /><span class="field-hint">Common ingredients, in your language and in English.</span></label>
-        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" required value="1" /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
+        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" max="1000000" step="any" required value="1" /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Add to the shopping list</button></div>
       </form>
     </dialog>
@@ -184,10 +184,10 @@
         <input type="hidden" name="estimateName" />
         <p class="putaway-item" id="putaway-item-name"></p>
         <div class="barcode-row"><button class="button button-outline button-small" type="button" data-action="scan-putaway" id="putaway-scan-button" hidden>Scan barcode</button><span class="field-hint" id="putaway-barcode-status" role="status" aria-live="polite"></span></div>
-        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" step="any" value="1" required /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
+        <div class="form-row"><label>Amount<input name="quantity" type="number" min="0" max="1000000" step="any" value="1" required /></label><label>Unit<select name="unit" required></select><span class="field-hint unit-hint"></span></label></div>
         <label>Expiration date<input name="expiresOn" type="date" /><span class="field-hint" id="putaway-expiry-note">An estimate is added for supported products.</span></label>
         <label>Stored in<select name="location"></select></label>
-        <label>Price paid<input name="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Optional" /></label>
+        <label>Price paid<input name="price" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" placeholder="Optional" /></label>
         <div class="dialog-actions"><button class="button button-quiet" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Add to inventory</button></div>
       </form>
     </dialog>
@@ -209,7 +209,7 @@
     <dialog id="settings-dialog" class="app-dialog">
       <form id="settings-form" method="dialog" novalidate>
         <div class="dialog-heading"><div><span class="eyebrow">YOUR SPACE</span><h2>Kitchen settings</h2></div><button class="icon-button close-button" type="button" data-close aria-label="Close">×</button></div>
-        <div class="inventory-mode-switch settings-tabs" role="tablist" aria-label="Settings"><button type="button" role="tab" class="active" aria-selected="true" data-action="settings-tab" data-tab="general">General</button><button type="button" role="tab" aria-selected="false" data-action="settings-tab" data-tab="connections">Connections</button><button type="button" role="tab" aria-selected="false" data-action="settings-tab" data-tab="data">Your data</button></div>
+        <div class="inventory-mode-switch settings-tabs" role="tablist" aria-label="Settings"><button type="button" role="tab" class="active" aria-selected="true" data-action="settings-tab" data-tab="general">General</button><button type="button" role="tab" class="hosted-hide" aria-selected="false" data-action="settings-tab" data-tab="connections">Connections</button><button type="button" role="tab" aria-selected="false" data-action="settings-tab" data-tab="data">Your data</button></div>
         <div class="settings-panel" data-panel="general" role="tabpanel">
         <label class="setting-language" for="language-select"><span><strong>Language</strong><small>Menus and buttons on this device. Recipes can be translated with DeepL.</small></span><select id="language-select"></select></label>
         <label class="setting-language" for="units-select"><span><strong>Units</strong><small>Weights and volumes on this device. The kitchen itself is kept in metric.</small></span><select id="units-select"><option value="metric">Metric (g, kg, ml, l)</option><option value="imperial">Imperial (oz, lb, fl oz)</option></select></label>
@@ -276,7 +276,7 @@
         <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v4.9.0 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v4.9.1 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 

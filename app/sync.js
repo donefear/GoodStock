@@ -110,8 +110,16 @@ async function savePin() {
 
 async function removePin() {
   if (!window.confirm(t('Remove the household PIN? Anyone on your home network can then open this kitchen.'))) return;
-  await plainFetch('/api/auth/pin', { method: 'DELETE' }).catch(() => null);
+  const response = await plainFetch('/api/auth/pin', { method: 'DELETE' }).catch(() => null);
   await fillPinSettings();
+  if (!response || !response.ok) {
+    const note = $('#pin-note');
+    // Existing texts: unreachable, or the server refused the change (the PIN stays on, as fillPinSettings shows).
+    note.textContent = response ? t('Could not save the PIN.') : t('Could not reach the app server.');
+    note.className = 'settings-note is-error';
+    return false;
+  }
+  return true;
 }
 
 // True when this device takes part in a shared kitchen: the server version always, a phone app once connected.
@@ -182,9 +190,10 @@ async function pushPendingState() {
   updateSyncStatus('pending', t('Sending changes'));
   let again = false;
   try {
+    const safetyCopy = safetyCopyRequested();
     const response = await kitchenRequest('/api/state', {
       method: 'POST',
-      body: { state: JSON.parse(pending), baseRevision: readSyncBase()?.revision || 0, client: CLIENT_ID },
+      body: { state: JSON.parse(pending), baseRevision: readSyncBase()?.revision || 0, client: CLIENT_ID, ...(safetyCopy ? { safetyCopy: true } : {}) },
     });
     const result = await response.json().catch(() => ({}));
     if (response.status === 409 && result.state) {
@@ -193,7 +202,8 @@ async function pushPendingState() {
     } else if (!response.ok) {
       throw new Error('Save failed');
     } else {
-      writeSyncBase({ revision: result.revision, state: JSON.parse(pending) });
+      if (safetyCopy) localStorage.removeItem(SAFETY_COPY_KEY);
+      writeSyncBase({ revision: result.revision, state: JSON.parse(pending) }, true);
       if (localStorage.getItem(PENDING_KEY) === pending) localStorage.removeItem(PENDING_KEY);
       else again = true;
       showSyncStatus();
@@ -211,8 +221,14 @@ async function pushPendingState() {
 function persist() {
   restockStaples();
   const snapshot = JSON.stringify(state);
-  localStorage.setItem(STORAGE_KEY, snapshot);
-  if (isShared()) localStorage.setItem(PENDING_KEY, snapshot);
+  // Full browser storage (a kitchen with many photos) must not stop the page: the change to send comes first, and
+  // the local copy makes room for it when both don't fit.
+  try {
+    if (isShared()) localStorage.setItem(PENDING_KEY, snapshot);
+  } catch {
+    try { localStorage.removeItem(STORAGE_KEY); localStorage.setItem(PENDING_KEY, snapshot); } catch { /* Kept in memory only. */ }
+  }
+  try { localStorage.setItem(STORAGE_KEY, snapshot); } catch { /* The server or the pending copy still has it. */ }
   render();
   checkExpiryReminders();
   pushPendingState();
@@ -230,13 +246,46 @@ let pullAfterSync = false;
 let retryTimer = null;
 let renderDeferred = false;
 
+// The base is kept as fingerprints (fingerprintState: one short stamp per item), not a third full copy of the
+// kitchen next to the saved and the queued one, so photos can't fill the browser's storage with it. A server kitchen
+// is normalised first (normalizeState, as this page holds it), so an item the page only tidied doesn't look changed
+// here and beat the next edit made elsewhere. If even the fingerprints can't be stored, the base stays in memory for
+// this visit: a base left behind at an old revision would make every save answer 409 and merge again, endlessly.
+let memorySyncBase = null;
+
 function readSyncBase() {
+  if (memorySyncBase) return memorySyncBase;
   try { return JSON.parse(localStorage.getItem(SYNC_BASE_KEY) || 'null'); } catch { return null; }
 }
 
-function writeSyncBase(base) {
-  try { localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(base)); } catch { /* Merging then treats everything as changed. */ }
+// `base` is { revision, state }; `normalized` says the state already is as this page holds it (what it just sent).
+function writeSyncBase(base, normalized = false) {
+  const kitchenState = base && base.state;
+  const value = { revision: Number(base && base.revision) || 0, state: kitchenState ? fingerprintState(normalized ? kitchenState : normalizeState(kitchenState)) : null };
+  memorySyncBase = null;
+  try {
+    localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(value));
+  } catch {
+    memorySyncBase = value;
+    try { localStorage.removeItem(SYNC_BASE_KEY); } catch { /* Nothing stored. */ }
+  }
 }
+
+function forgetSyncBase() {
+  memorySyncBase = null;
+  localStorage.removeItem(SYNC_BASE_KEY);
+}
+
+// Restoring a backup (Settings → Your data) asks the server to keep the kitchen as it is now as a safety copy first:
+// the next save sends safetyCopy: true, until one is accepted. Remembered across a reload while offline.
+const SAFETY_COPY_KEY = 'goodstock-safety-copy-v1';
+
+function requestSafetyCopy() {
+  if (!isShared()) return;
+  try { localStorage.setItem(SAFETY_COPY_KEY, '1'); } catch { /* Then this restore has no safety copy. */ }
+}
+
+const safetyCopyRequested = () => { try { return localStorage.getItem(SAFETY_COPY_KEY) === '1'; } catch { return false; } };
 
 async function fetchRemoteKitchen() {
   const response = await kitchenRequest('/api/state');
@@ -337,8 +386,10 @@ function renderWhenIdle() {
 
 function applyRemoteKitchen(remote) {
   const hasLocalChanges = Boolean(localStorage.getItem(PENDING_KEY));
-  state = normalizeState(hasLocalChanges ? mergeStates(readSyncBase()?.state, state, remote.state) : remote.state);
-  writeSyncBase(remote);
+  // Merged as this page holds kitchens (normalised), like the base: only real changes count on either side.
+  const remoteState = normalizeState(remote.state);
+  state = normalizeState(hasLocalChanges ? mergeStates(readSyncBase()?.state, state, remoteState) : remoteState);
+  writeSyncBase({ revision: remote.revision, state: remoteState }, true);
   const snapshot = JSON.stringify(state);
   localStorage.setItem(STORAGE_KEY, snapshot);
   if (hasLocalChanges) localStorage.setItem(PENDING_KEY, snapshot);
@@ -432,7 +483,7 @@ async function connectHomeServer() {
   localStorage.setItem(HOME_SERVER_KEY, address);
   // No common history yet: everything on this phone counts as new and is added to the server's kitchen, except
   // what the server already has (the same item in the same place, the same shopping-list line).
-  localStorage.removeItem(SYNC_BASE_KEY);
+  forgetSyncBase();
   try {
     const remote = await fetchRemoteKitchen();
     if (remote.state) {
@@ -461,7 +512,7 @@ function disconnectHomeServer() {
   localStorage.removeItem(HOME_SERVER_KEY);
   localStorage.removeItem(HOME_TOKEN_KEY);
   localStorage.removeItem(PENDING_KEY);
-  localStorage.removeItem(SYNC_BASE_KEY);
+  forgetSyncBase();
   startPhonePolling();
   fillHomeServerSettings();
   fillSettingsMode();
@@ -685,7 +736,7 @@ async function startHosting(resume = false) {
   localStorage.setItem(HOME_SERVER_KEY, `http://127.0.0.1:${info.port}`);
   sendTrayLabels();
   if (resume) return;
-  localStorage.removeItem(SYNC_BASE_KEY);
+  forgetSyncBase();
   localStorage.setItem(PENDING_KEY, JSON.stringify(state));
 }
 
@@ -740,7 +791,8 @@ function endHosting() {
   if (!window.confirm(t('Stop hosting? The other devices keep their copy but no longer stay in step with this one.'))) return;
   try { nativeApp.stopKitchenHost(); } catch { /* Already stopped. */ }
   setStartAtLogin(false);
-  for (const key of [HOST_KEY, HOME_SERVER_KEY, HOME_TOKEN_KEY, PENDING_KEY, SYNC_BASE_KEY]) localStorage.removeItem(key);
+  for (const key of [HOST_KEY, HOME_SERVER_KEY, HOME_TOKEN_KEY, PENDING_KEY]) localStorage.removeItem(key);
+  forgetSyncBase();
   liveSync.devices = 0;
   startPhonePolling();
   fillHostSettings();

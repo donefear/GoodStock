@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 const web = join(here, 'web');
-const files = ['index.html', 'i18n.js', 'kitchen-tools.js', 'kitchen-reference.js', 'recipe-import.mjs', 'mealie.mjs', 'deepl.mjs', 'styles.css', 'ingredients.json', 'manifest.webmanifest', 'logo.svg', 'icon.svg', 'fonts/fonts.css'];
+const files = ['index.html', 'i18n.js', 'kitchen-tools.js', 'kitchen-reference.js', 'recipe-import.mjs', 'mealie.mjs', 'deepl.mjs', 'styles.css', 'ingredients.json', 'manifest.webmanifest', 'logo.svg', 'icon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'fonts/fonts.css'];
 const folders = [['lang', '.js'], ['app', '.js'], ['fonts', '.woff2'], ['fonts/legacy', '.woff'], ['fonts/legacy', '.css']];
 
 await rm(web, { recursive: true, force: true });
@@ -22,11 +22,16 @@ for (const [folder, extension] of folders) {
 // The copy for old browsers (tools/build-legacy.mjs, generated and git-ignored): index.html sends a browser without
 // ?. and ?? there, e.g. the kitchen tablet opening a desktop-hosted kitchen. Built here when the repository's own dev
 // dependencies are installed (npm install in the repository root); otherwise an existing legacy/ is copied as it is.
+// In CI (CI=true, as on GitHub, and desktop/build.sh) a build without it fails instead of shipping without legacy/.
+const strict = /^(1|true)$/i.test(process.env.CI || '');
 if (existsSync(join(root, 'node_modules', '@babel', 'core'))) {
   const build = spawnSync(process.execPath, ['tools/build-legacy.mjs'], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
   if (build.status !== 0) throw new Error('tools/build-legacy.mjs failed');
+} else if (strict) {
+  throw new Error('The repository\'s dev dependencies are missing, so legacy/ cannot be built: run npm install in the repository root first.');
 }
 if (existsSync(join(root, 'legacy', 'index.html'))) await cp(join(root, 'legacy'), join(web, 'legacy'), { recursive: true });
+else if (strict) throw new Error('No legacy/ copy for old browsers was built.');
 else console.error('No legacy/ copy for old browsers (run npm install in the repository root, then this again).');
 // One square picture serves as the window icon and, through electron-builder, the .exe/.app/AppImage icon.
 const icon = join(root, 'ios/Goodstock/Assets.xcassets/AppIcon.appiconset/icon-1024.png');

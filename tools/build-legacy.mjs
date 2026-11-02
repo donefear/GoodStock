@@ -22,7 +22,7 @@ import postcss from 'postcss';
 import customProperties from 'postcss-custom-properties';
 import logical from 'postcss-logical';
 import { symbolsInApp } from '../fonts/build-legacy-fonts.mjs';
-import { legacyGrid, legacySelectors, legacyThemeValues, legacyValues } from './legacy/css.mjs';
+import { checkBalanced, legacyGrid, legacySelectors, legacyThemeValues, legacyValues } from './legacy/css.mjs';
 
 const require = createRequire(import.meta.url);
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -187,7 +187,9 @@ for (const [theme, direction] of [['light', 'ltr'], ['dark', 'ltr'], ['light', '
   // @import only counts at the very top, so the fonts' import goes before dialog-polyfill's styles.
   const imports = styled.css.match(/^@import [^;]+;\n?/gm) || [];
   if (!imports.length) throw new Error('legacy styles: the fonts @import is missing');
-  write(`styles${theme === 'dark' ? '-dark' : ''}${direction === 'rtl' ? '-rtl' : ''}.css`, [...imports, read('node_modules/dialog-polyfill/dist/dialog-polyfill.css'), styled.css.replace(/^@import [^;]+;\n?/gm, ''), read('tools/legacy/legacy.css')].join('\n'));
+  // An unbalanced "(" (a min() cut in half, say) makes old engines drop every rule after it, silently: fail here.
+  const sheet = `styles${theme === 'dark' ? '-dark' : ''}${direction === 'rtl' ? '-rtl' : ''}.css`;
+  write(sheet, checkBalanced([...imports, read('node_modules/dialog-polyfill/dist/dialog-polyfill.css'), styled.css.replace(/^@import [^;]+;\n?/gm, ''), read('tools/legacy/legacy.css')].join('\n'), `legacy/${sheet}`));
 }
 
 // The page: same markup, files from legacy/ (the <base> keeps every other address, like ingredients.json, at the root).

@@ -19,29 +19,85 @@ function splitTop(value, separator) {
   return parts;
 }
 
+// The arguments of a whole "name(a, b(c, d))" value, split on its top-level commas; null when the value is not one
+// balanced call of that function.
+function callArgs(value, name) {
+  const text = value.trim();
+  if (!text.startsWith(`${name}(`) || !text.endsWith(')')) return null;
+  let depth = 0;
+  for (let index = name.length; index < text.length; index++) {
+    if (text[index] === '(') depth += 1;
+    if (text[index] === ')' && --depth === 0 && index !== text.length - 1) return null;
+  }
+  return depth === 0 ? splitTop(text.slice(name.length + 1, -1), ',') : null;
+}
+
 const RELATIVE = /%|vw|vh|calc\(/;
 const SYMBOL_FONTS = "'Noto Sans Symbols 2', 'Noto Sans Symbols', 'Noto Sans Math', 'Noto Emoji'";
+// min( / max( / clamp( as functions of their own: not the "max(" inside "minmax(" (no lookbehind, for symmetry with
+// the browser code).
+const MATH_CALL = /(^|[^\w-])(min|max|clamp)\(/;
 
 // min(a, b) → the fixed length (px/rem/em), max(a, b) → its first plain length, clamp(a, b, c) → b (the preferred
-// size). env() falls away. Returns the value without any of these functions, or null when nothing changed.
-function plainValue(value) {
+// size). env() falls away. Works anywhere in a value (flex: 1 1 min(140px, 100%), minmax(min(160px, 100%), 1fr),
+// padding: clamp(…) …). Returns the value without any of these functions, or null when nothing changed.
+export function plainValue(value) {
   let result = value;
-  for (let guard = 0; guard < 20; guard++) {
-    const match = /(min|max|clamp)\(/.exec(result);
+  for (let guard = 0; guard < 50; guard++) {
+    const match = MATH_CALL.exec(result);
     if (!match) break;
+    const start = match.index + match[1].length;
+    const open = start + match[2].length;
     let depth = 0;
-    let end = match.index + match[0].length - 1;
+    let end = open;
     for (; end < result.length; end++) {
       if (result[end] === '(') depth += 1;
       if (result[end] === ')' && --depth === 0) break;
     }
-    const args = splitTop(result.slice(match.index + match[0].length, end), ',').filter((arg) => !/^env\(/.test(arg));
+    if (end >= result.length) throw new Error(`legacy styles: unbalanced parentheses in "${value}"`);
+    const args = splitTop(result.slice(open + 1, end), ',').filter((arg) => !/^env\(/.test(arg));
     let chosen = args[0] || '0';
-    if (match[1] === 'min') chosen = args.find((arg) => !RELATIVE.test(arg)) || args[0];
-    if (match[1] === 'clamp' && args.length === 3) chosen = args[1];
-    result = result.slice(0, match.index) + chosen + result.slice(end + 1);
+    if (match[2] === 'min') chosen = args.find((arg) => !RELATIVE.test(arg)) || args[0];
+    if (match[2] === 'clamp' && args.length === 3) chosen = args[1];
+    result = result.slice(0, start) + chosen + result.slice(end + 1);
   }
   return result === value ? null : result;
+}
+
+// A stylesheet whose parentheses don't pair up makes old engines drop everything after the bad declaration, without
+// an error anywhere. Comments and strings are skipped; a url() runs to its closing parenthesis. Throws with the place.
+export function checkBalanced(css, file = 'legacy styles') {
+  let depth = 0;
+  let line = 1;
+  let opened = 0;
+  for (let index = 0; index < css.length; index++) {
+    const char = css[index];
+    if (char === '\n') line += 1;
+    if (char === '/' && css[index + 1] === '*') {
+      const close = css.indexOf('*/', index + 2);
+      if (close < 0) throw new Error(`${file}: unclosed comment at line ${line}`);
+      line += (css.slice(index, close).match(/\n/g) || []).length;
+      index = close + 1;
+    } else if (char === '"' || char === "'") {
+      let close = index + 1;
+      while (close < css.length && css[close] !== char) close += css[close] === '\\' ? 2 : 1;
+      if (close >= css.length) throw new Error(`${file}: unclosed string at line ${line}`);
+      index = close;
+    } else if (/^url\(\s*[^\s'"]/i.test(css.slice(index, index + 6)) && !/[\w-]/.test(css[index - 1] || '')) {
+      const close = css.indexOf(')', index);
+      if (close < 0) throw new Error(`${file}: unclosed url( at line ${line}`);
+      index = close;
+    } else if (char === '(') {
+      if (!depth) opened = line;
+      depth += 1;
+    } else if (char === ')') {
+      if (--depth < 0) throw new Error(`${file}: a ")" without "(" at line ${line}`);
+    } else if (depth && (char === ';' || char === '{' || char === '}')) {
+      throw new Error(`${file}: unbalanced parentheses: "(" at line ${opened} is still open at "${char}" on line ${line}: ${css.slice(Math.max(0, index - 60), index + 1).replace(/\s+/g, ' ')}`);
+    }
+  }
+  if (depth) throw new Error(`${file}: unbalanced parentheses: "(" at line ${opened} is never closed`);
+  return css;
 }
 
 export const legacyValues = () => ({
@@ -56,7 +112,9 @@ export const legacyValues = () => ({
     if ((decl.prop === 'font-family' || decl.prop === 'font') && /(^|,|\s)(sans-serif|serif)$/.test(decl.value) && !decl.value.includes('Noto Emoji')) {
       decl.value = decl.value.replace(/(sans-serif|serif)$/, `${SYMBOL_FONTS}, $1`);
     }
-    if (/\b(min|max|clamp)\(/.test(decl.value) && !decl.prop.startsWith('grid')) {
+    // Old engines have no min()/max()/clamp() (Chrome 79). In grid tracks too: Chrome 57–78 has grid and would drop a
+    // template with min() in it, so it gets the plain one first (the grid → flexbox fallback reads its own copy).
+    if (MATH_CALL.test(decl.value)) {
       const plain = plainValue(decl.value);
       if (plain === null) return;
       // width: min(640px, calc(100% - 20px)) → width: calc(100% - 20px); max-width: 640px
@@ -120,19 +178,20 @@ export const legacySelectors = () => ({
 // CSS grid → flexbox under html.no-grid (set by tools/legacy/dom.js when the engine lacks grid).
 function tracksOf(template) {
   const tracks = [];
-  for (const part of splitTop(template, ' ')) {
-    const repeat = /^repeat\(\s*([^,]+),(.*)\)$/.exec(part);
-    if (!repeat) { tracks.push(part); continue; }
-    const inner = splitTop(repeat[2].trim(), ' ');
-    if (/auto-(fill|fit)/.test(repeat[1])) return { autoFill: inner[0] };
-    for (let i = 0; i < Number(repeat[1]); i++) tracks.push(...inner);
+  // min()/max()/clamp() inside the tracks become their plain fallback length first.
+  for (const part of splitTop(plainValue(template) || template, ' ')) {
+    const repeat = callArgs(part, 'repeat');
+    if (!repeat || repeat.length !== 2) { tracks.push(part); continue; }
+    const inner = splitTop(repeat[1], ' ');
+    if (/auto-(fill|fit)/.test(repeat[0])) return { autoFill: inner[0] };
+    for (let i = 0; i < Number(repeat[0]); i++) tracks.push(...inner);
   }
   return { tracks };
 }
 
 function trackKind(track) {
-  const minmax = /^minmax\(([^,]+),(.*)\)$/.exec(track);
-  const max = minmax ? minmax[2].trim() : track;
+  const minmax = callArgs(track, 'minmax');
+  const max = minmax && minmax.length === 2 ? minmax[1] : track;
   const fr = /^([\d.]+)fr$/.exec(max);
   if (fr) return { fr: Number(fr[1]) };
   if (max === 'auto' || /content/.test(max)) return { auto: true };
@@ -205,9 +264,9 @@ export const legacyGrid = (direction = 'ltr') => {
         add(' > :last-child', { 'margin-bottom': '0' });
       } else if (columns.autoFill) {
         const min = trackKind(columns.autoFill);
-        const basis = /^minmax\(([^,]+),/.exec(columns.autoFill);
+        const basis = callArgs(columns.autoFill, 'minmax');
         add('', { display: 'flex', 'flex-direction': 'row', 'flex-wrap': 'wrap' });
-        add(' > :nth-child(n)', { flex: `1 1 ${basis ? basis[1].trim() : min.fixed || '150px'}`, 'min-width': '0', 'box-sizing': 'border-box', [START]: '0', [END]: gap.column, 'margin-bottom': gap.row, width: 'auto' });
+        add(' > :nth-child(n)', { flex: `1 1 ${basis && basis.length === 2 ? basis[0] : min.fixed || '150px'}`, 'min-width': '0', 'box-sizing': 'border-box', [START]: '0', [END]: gap.column, 'margin-bottom': gap.row, width: 'auto' });
       } else {
         const tracks = columns.tracks.map(trackKind);
         const count = tracks.length;

@@ -51,6 +51,9 @@ run's **Artifacts**; a `v*` tag also attaches them to the GitHub release.
 `index.html`. It also copies `legacy/` (the copy for old browsers, which a desktop-hosted kitchen serves to the kitchen
 tablet) and `fonts/legacy/`; when the repository's own dev dependencies are installed (`npm install` in the repository
 root) it builds `legacy/` first with `tools/build-legacy.mjs`, otherwise it copies an existing `legacy/` or warns.
+With `CI=true` (GitHub sets it; `desktop/build.sh` too) it fails instead of warning, so no build ships without
+`legacy/`: the desktop workflow and `build.sh` run `npm install` in the repository root before `node prepare.mjs`.
+The home-screen icons (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`) are bundled too, as in the phone apps.
 
 ## Signed builds
 
