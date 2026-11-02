@@ -38,6 +38,8 @@ const VIEWS = [
   ['kitchen screen', () => {
     state.plan.push({ id: 'a11y-meal', date: dateKey(new Date()), recipeId: state.recipes[0].id, cooked: false });
     cookTimers.push({ id: 'a11y-timer', label: 'Pasta', name: 'Pasta', endsAt: Date.now() + 300000, done: false });
+    // Between 22:00 and 6:00 the screen dims on purpose; check it as it looks by day (and after a tap at night).
+    kitchenScreenAwakeUntil = Date.now() + 600000;
     openKitchenScreen();
   }],
 ];

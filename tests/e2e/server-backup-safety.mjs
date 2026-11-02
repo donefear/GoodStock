@@ -33,6 +33,17 @@ export default async function run() {
       child.on('exit', (code) => reject(new Error(`server exited (${code})`)));
     });
     const list = async () => (await (await fetch(`${base}/api/backups`)).json()).backups;
+    // The server answers a save before its queued backup writes finish, so wait until the list stops changing.
+    const settled = async () => {
+      let last = '';
+      for (let tries = 0; tries < 50; tries++) {
+        const now = JSON.stringify(await list());
+        if (now === last) return JSON.parse(now);
+        last = now;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+      return JSON.parse(last);
+    };
     const revision = async () => (await (await fetch(`${base}/api/state/revision`)).json()).revision;
     const kitchen = (items) => ({ inventory: Array.from({ length: items }, (_, index) => ({ id: `i${index}`, name: `Item ${index}`, quantity: 1, unit: '', location: 'Fridge', kind: 'Food' })), recipes: [] });
     const save = async (state, extra = {}) => fetch(`${base}/api/state`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state, baseRevision: await revision(), client: 'test', ...extra }) });
@@ -40,7 +51,7 @@ export default async function run() {
     // The first save has nothing to back up; the second makes today's daily copy and prunes the old daily ones to 14.
     await save(kitchen(8));
     await save(kitchen(9));
-    let names = (await list()).map((backup) => backup.name);
+    let names = (await settled()).map((backup) => backup.name);
     const daily = names.filter((name) => !name.includes('-before-'));
     log.push(`after two saves: ${daily.length} daily, ${names.length - daily.length} safety`);
     if (daily.length !== 14) fail.push(`${daily.length} daily copies kept (should be 14)`);
@@ -52,7 +63,7 @@ export default async function run() {
       const answer = await save(kitchen(10 + count), { safetyCopy: true });
       if (answer.status !== 200) fail.push(`save with safetyCopy answered ${answer.status}`);
     }
-    const listed = await list();
+    const listed = await settled();
     names = listed.map((backup) => backup.name);
     const safety = listed.filter((backup) => backup.safety);
     log.push(`after twelve restores: ${names.length} backups, safety ${safety.map((backup) => `${backup.name}:${backup.inventory}`).join(' ')}`);
@@ -72,9 +83,9 @@ export default async function run() {
       if ((await fetch(`${base}/api/backups/${bad}`)).status !== 400) fail.push(`${bad} was accepted as a backup name`);
     }
     // A save without the flag that changes little makes no safety copy.
-    const before = (await list()).filter((backup) => backup.safety).map((backup) => backup.name).join();
+    const before = (await settled()).filter((backup) => backup.safety).map((backup) => backup.name).join();
     await save(kitchen(21));
-    if ((await list()).filter((backup) => backup.safety).map((backup) => backup.name).join() !== before) fail.push('a small save without safetyCopy made a safety copy');
+    if ((await settled()).filter((backup) => backup.safety).map((backup) => backup.name).join() !== before) fail.push('a small save without safetyCopy made a safety copy');
     if ((await readdir(backups)).some((name) => name.endsWith('.tmp'))) fail.push('a temporary backup file was left behind');
   } finally {
     child.kill();
