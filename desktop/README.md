@@ -48,7 +48,9 @@ run's **Artifacts**; a `v*` tag also attaches them to the GitHub release.
 
 `prepare.mjs` copies the web files into `desktop/web` before each build (keep its list in step with `webFiles` in
 `android/app/build.gradle` and `ios/scripts/copy-web.sh`) and reads the version from the `Goodstock vX.Y.Z` label in
-`index.html`.
+`index.html`. It also copies `legacy/` (the copy for old browsers, which a desktop-hosted kitchen serves to the kitchen
+tablet) and `fonts/legacy/`; when the repository's own dev dependencies are installed (`npm install` in the repository
+root) it builds `legacy/` first with `tools/build-legacy.mjs`, otherwise it copies an existing `legacy/` or warns.
 
 ## Signed builds
 

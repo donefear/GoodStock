@@ -10,10 +10,37 @@ const TIME_UNITS = [
   'minutes?', 'minuten', 'minuut', 'minuti', 'minutong', 'minuto', 'minutos', 'minutter', 'minuter', 'minut[aeyę]?', 'dakika', 'минуты', 'минуту', 'минута', 'минут', 'мин', '分钟', '分鐘', '分', 'دقائق', 'دقيقة', 'دقيقه', 'דקות', 'דקה', 'דק׳', "דק'", 'mins?', 'min',
   'seconds?', 'seconden', 'sekunden', 'sekunde', 'sek', 'secondes?', 'secondi', 'secondo', 'segundong', 'segundos?', 'seg', 'secunde', 'secundă', 'sekunder', 'sekund[ayę]?', 'saniye', 'секунды', 'секунду', 'секунда', 'секунд', 'сек', '秒', 'ثوانٍ', 'ثوان', 'ثواني', 'ثانية', 'שניות', 'שנייה', 'שניה', 'שנ׳', 'secs?',
 ];
-const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|~|〜|to|tot|till|til|hanggang|bis|à|a|al|do|до|至|إلى|עד)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё؀-ۿ֐-׿])`, 'i');
+// The number may carry a fraction ("1½ hours", "½ hour").
+const TIME_PATTERN = new RegExp(String.raw`(\d+(?:[.,]\d+)?(?:\s?[½¼¾])?|[½¼¾])(?:\s*(?:-|–|~|〜|to|tot|till|til|hanggang|bis|à|a|al|do|до|至|إلى|עד)\s*(\d+))?\s*(?:de\s+)?(${TIME_UNITS.join('|')})(?![a-zà-ÿа-яё؀-ۿ֐-׿])`, 'i');
 const HOUR_UNIT = /^(?:h|uur|uren|stund|std|heure|hora|or[aeă]|godz|saat|oras|tim|час|小时|小時|時間|ساع|שע)/i;
 const SECOND_UNIT = /^(?:s|сек|秒|ثو|ثان|שנ)/i;
 const TEMPERATURE_PATTERN = /\d{2,3}\s*°\s*[CF]?/;
+// Times written in words: "an hour", "half an hour", "een uur", "anderhalf uur" (longer forms first).
+const WORD_TIME_PATTERN = /\b(?:an hour and a half|one and a half hours?|half an hour|an hour|one hour|anderhalf uur|een half uur|een halfuur|half uur|halfuur|een uur)\b/i;
+const WORD_TIMES = { 'an hour and a half': 90, 'one and a half hour': 90, 'one and a half hours': 90, 'half an hour': 30, 'an hour': 60, 'one hour': 60, 'anderhalf uur': 90, 'een half uur': 30, 'een halfuur': 30, 'half uur': 30, halfuur: 30, 'een uur': 60 };
+const TIME_FRACTIONS = { '½': 0.5, '¼': 0.25, '¾': 0.75 };
+// Oven temperatures for the early heads-up: "180 °C", "350°F", "180 graden", "gas mark 4". Lower ones ("Warm the
+// milk to 37 °C") count only in a step that mentions the oven or baking, and hot ones only when no oil, sugar or
+// thermometer suggests frying or a syrup instead.
+const OVEN_TEMPERATURE = /(\d{2,3})\s*°\s*([CF])?|(\d{2,3})\s*(?:graden|grad|degrees|degrés|grados|gradi|graus|stopni|derece|градус[а-я]*)(?:\s+(celsius|fahrenheit))?|gas\s*mark\s*(\d{1,2})/gi;
+const OVEN_WORDS = /oven|bake|baking|roast|preheat|broil|\bbak(?:ken|t)?\b|voorverwarm|braad|(?:au|le|du) four\b|ofen|backen|horno|hornea|forno|piekarnik|piecz|духовк|запек|fırın|cuptor|烤|オーブン|فرن|תנור/i;
+const NOT_OVEN_WORDS = /\b(?:oil|fry|frying|deep-fry|thermometer|syrup|sugar|water|milk|olie|frituur|frituren|suiker|siroop|melk)\b/i;
+
+function ovenTemperature(text) {
+  const oven = OVEN_WORDS.test(text);
+  OVEN_TEMPERATURE.lastIndex = 0;
+  let match;
+  while ((match = OVEN_TEMPERATURE.exec(text))) {
+    if (match[5]) return match[0].replace(/\s+/g, ' ');
+    const value = Number(match[1] || match[3]);
+    const fahrenheit = /f/i.test(match[2] || match[4] || '');
+    if (oven || (value >= (fahrenheit ? 210 : 100) && !NOT_OVEN_WORDS.test(text))) {
+      OVEN_TEMPERATURE.lastIndex = 0;
+      return match[1] ? match[0].replace(/\s+/g, '') : match[0].replace(/\s+/g, ' ');
+    }
+  }
+  return '';
+}
 let recipeDialogRecipe = null;
 let recipeDialogPlanId = '';
 let cookSession = null;
@@ -35,31 +62,73 @@ function saveCookProgress() {
   try { localStorage.setItem(COOK_PROGRESS_KEY, JSON.stringify(progress)); } catch { /* Progress is a convenience only. */ }
 }
 
+// "1½" → 1.5, "1,5" → 1.5, "½" → 0.5.
+function timeNumber(text) {
+  const fraction = /[½¼¾]/.exec(text);
+  const whole = text.replace(/[½¼¾\s]/g, '').replace(',', '.');
+  return (whole ? Number(whole) : 0) + (fraction ? TIME_FRACTIONS[fraction[0]] : 0);
+}
+
+function timeUnitMinutes(value, unit) {
+  return HOUR_UNIT.test(unit) ? value * 60 : SECOND_UNIT.test(unit) ? value / 60 : value;
+}
+
+// The first time in a step. Minutes right after hours add up ("1 hour 30 min" → 90); a range uses its lower bound.
 function stepMinutes(text) {
   const match = TIME_PATTERN.exec(text);
+  const words = WORD_TIME_PATTERN.exec(text);
+  if (words && (!match || words.index < match.index)) return { minutes: WORD_TIMES[words[0].toLowerCase()], label: words[0] };
   if (!match) return null;
-  const value = Number(match[1].replace(',', '.'));
   const unit = match[3].toLowerCase();
-  const minutes = HOUR_UNIT.test(unit) ? value * 60 : SECOND_UNIT.test(unit) ? value / 60 : value;
-  return minutes > 0 ? { minutes, label: match[0].trim() } : null;
+  let minutes = timeUnitMinutes(timeNumber(match[1]), unit);
+  let end = match.index + match[0].length;
+  if (HOUR_UNIT.test(unit)) {
+    const rest = text.slice(end);
+    const link = /^\s*(?:(?:and|en|und|et|y|e|i|и)\s+)?/i.exec(rest)[0];
+    const more = TIME_PATTERN.exec(rest.slice(link.length));
+    if (more && more.index === 0 && !more[2] && !HOUR_UNIT.test(more[3]) && !SECOND_UNIT.test(more[3])) {
+      minutes += timeNumber(more[1]);
+      end += link.length + more[0].length;
+    }
+  }
+  return minutes > 0 ? { minutes, label: text.slice(match.index, end).trim() } : null;
 }
 
+// Short lines without end punctuation ("For the sauce") or ending with a colon ("Saus:") label the next steps; a
+// line with a time or a temperature ("Bake for 25 minutes", "Oven 200°C") is a step of its own.
 function isStepHeading(text) {
-  return text.length <= 40 && !/[.!?:。！？：؟]$/.test(text) && text.split(/\s+/).length <= 4;
+  const line = String(text || '').trim();
+  if (!line || line.length > 40 || stepMinutes(line) || TEMPERATURE_PATTERN.test(line) || /gas\s*mark\s*\d|\d{2,3}\s*(?:graden|degrees)/i.test(line)) return false;
+  const words = line.split(/\s+/).length;
+  if (/[:：]$/.test(line)) return words <= 5;
+  return !/[.!?:。！？：؟]$/.test(line) && words <= 4;
 }
+
+// Abbreviations that never end a sentence ("approx. 1.5 cm", "bijv. peper", "z.B. Gouda"), and units that end one
+// only before a capital ("1 tsp. salt" but "Bake for 10 min. Then …").
+const NO_SENTENCE_END = /\b(?:approx|ca|e\.g|i\.e|bijv|z\.B|resp|evt|ong|o\.a|bzw|ggf|vs)\./gi;
+const UNIT_DOT = /\b(?:min|mins|tsp|tbsp|etc)\.(?=\s+[a-zß-ÿа-яё0-9(])/g;
 
 function splitIntoBites(text) {
-  const cleaned = text.replace(/^\s*(?:step\s*)?\d+[.):]\s*/i, '').trim();
+  // Step numbers at the start and inside the text ("1. Mix … 2. Add …") go; a new number starts a new step.
+  const cleaned = text.replace(/^\s*(?:step\s*)?\d+[.):]\s*/i, '').trim()
+    .replace(/([.!?؟])\s+(?:step\s*)?\d{1,2}[.)]\s+/gi, '$1\u0003\u0007\u0003')
+    .replace(NO_SENTENCE_END, (abbreviation) => abbreviation.replace(/\./g, '\u0004'))
+    .replace(UNIT_DOT, (abbreviation) => abbreviation.replace(/\./g, '\u0004'));
   // Sentences end with . ! ? before a capital (Latin or Cyrillic) or any Arabic or Hebrew letter (no capitals there),
   // or with Chinese/Japanese 。！？.
-  // (Marked with \u0003 and split there: old browsers have no lookbehind.)
-  const sentences = cleaned.replace(/([.!?؟])\s+(?=[A-ZÀ-ÝА-ЯЁ0-9¿¡؀-ۿ֐-׿])/g, '$1\u0003').replace(/[。！？]/g, '$&\u0003').split('\u0003').flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
+  // (Marked with \u0003 and split there: old browsers have no lookbehind. Abbreviations' dots are \u0004 meanwhile.)
+  const sentences = cleaned.replace(/([.!?؟])\s+(?=[A-ZÀ-ÝА-ЯЁ0-9¿¡؀-ۿ֐-׿])/g, '$1\u0003').replace(/[。！？]/g, '$&\u0003').replace(/\u0004/g, '.').split('\u0003').flatMap((sentence) => sentence.length > 160 ? sentence.split(/;\s+/) : [sentence]);
   // Chinese and Japanese say as much in far fewer characters, so "very short" is shorter there.
   const dense = /[぀-ヿ一-鿿]/.test(cleaned);
+  // After a step number (\u0007) the next sentence never joins the one before.
+  let numbered = false;
   return sentences.map((sentence) => sentence.trim()).filter(Boolean).reduce((bites, sentence) => {
+    if (sentence === '\u0007') { numbered = true; return bites; }
     const previous = bites[bites.length - 1];
-    if (previous && previous.length < (dense ? 8 : 25)) bites[bites.length - 1] = `${previous}${dense ? '' : ' '}${sentence}`;
+    if (previous && !numbered && previous.length < (dense ? 8 : 25)) bites[bites.length - 1] = `${previous}${dense ? '' : ' '}${sentence}`;
     else bites.push(sentence);
+    numbered = false;
     return bites;
   }, []).filter(Boolean);
 }
@@ -94,16 +163,26 @@ const AMOUNT_LINKS = { en: ' of ', fr: ' de ', es: ' de ', it: ' di ', pt: ' de 
 const STEP_WORD = /[lLdD]['’](?=\p{L})|[\p{L}-]+(?:['’][\p{L}-]+)*/gu;
 const isPrepWord = (word) => /^\p{L}{2,}ed$/u.test(word) || /^ge\p{L}+(?:en|de|te)$/iu.test(word);
 
+// Ingredient names inside other names ("milk" in "coconut milk", "卵" in "卵黄") get the right amount: longer names
+// go first, and every placed name is wrapped in \u0005…\u0006 while this runs, so later names skip it.
+const PLACED_RANGES = /\u0001[^\u0002]*\u0002|\u0005[^\u0006]*\u0006/g;
+const placedRanges = (text) => [...text.matchAll(PLACED_RANGES)].map((match) => [match.index, match.index + match[0].length]);
+
 // Puts each ingredient's amount in front of its first mention in the steps:
 // "Add the sesame oil" → "Add 1 tbsp of sesame oil", "Weeg de bloem" → "Weeg 200 gram bloem",
 // "Meet de hoeveelheid melk af" → "Meet 5 deciliter melk af", "the crushed garlic" → "3 cloves of crushed garlic".
 // Exact names match anywhere; looser matches (compound words like patisseriebloem ↔ bloem or nootjeschocolade ↔
 // chocolade, or only the last word of a longer name) need "the/de/het/een/a" right before them.
 function addStepAmounts(steps, ingredients) {
-  const markerRanges = (text) => [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
   const language = textLanguage(steps.map((step) => step.text).join(' '));
-  if (BRACKET_AMOUNT_LANGUAGES.includes(language) || CJK_AMOUNT_LANGUAGES.includes(language)) { addStepAmountsByName(steps, ingredients, language); return; }
+  if (BRACKET_AMOUNT_LANGUAGES.includes(language) || CJK_AMOUNT_LANGUAGES.includes(language)) addStepAmountsByName(steps, ingredients, language);
+  else addStepAmountsByArticle(steps, ingredients, language);
+  for (const step of steps) step.text = step.text.replace(/[\u0005\u0006]/g, '');
+}
+
+function addStepAmountsByArticle(steps, ingredients, language) {
   const articles = new Set(STEP_ARTICLES[language] || []);
+  const targets = [];
   for (const target of ingredients.map(parseIngredient).filter((entry) => entry.amount)) {
     const name = target.name.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/\s+/g, ' ').trim().toLowerCase().replace(/^(?:de|d['’]|di)\s*/, '');
     const core = name.split(/\s+(?:met|with|zonder|without|voor|for|mit|ohne|für|avec|sans|pour|con|sin|para|senza|per|com|sem)\s+/)[0].trim();
@@ -112,56 +191,75 @@ function addStepAmounts(steps, ingredients) {
     const phrases = [...new Set([name, core])].map((phrase) => phrase.split(' ').filter(Boolean).map(wordStem));
     const lastWord = coreWords[coreWords.length - 1];
     const loose = coreWords.length === 1 ? wordStem(coreWords[0]) : (lastWord.length > 3 ? wordStem(lastWord) : '');
-    let placed = false;
-    for (const step of steps) {
-      if (placed) break;
-      const skip = markerRanges(step.text);
-      const words = [...step.text.matchAll(STEP_WORD)]
-        .filter((match) => !skip.some(([from, to]) => match.index >= from && match.index < to))
-        .map((match) => ({ text: match[0], start: match.index, end: match.index + match[0].length, stem: wordStem(match[0]) }));
-      let found = null;
-      for (let index = 0; index < words.length && !found; index++) {
-        // Exact: the whole name (or its core) word for word.
-        for (const phrase of phrases) {
-          if (phrase.every((stem, offset) => words[index + offset]?.stem === stem)) { found = { first: index, last: index + phrase.length - 1, exact: true }; break; }
+    targets.push({ target, phrases, loose, size: Math.max(...phrases.map((phrase) => phrase.length)), length: name.length, placed: false });
+  }
+  // Longest names first; exact names in every step before any looser match, so "the sugar" stays sugar's even when
+  // "brown sugar" is also listed.
+  targets.sort((first, second) => second.size - first.size || second.length - first.length);
+  for (const exactOnly of [true, false]) {
+    for (const entry of targets) {
+      if (entry.placed) continue;
+      const { target, phrases, loose } = entry;
+      if (!exactOnly && !loose) continue;
+      for (const step of steps) {
+        const skip = placedRanges(step.text);
+        const words = [...step.text.matchAll(STEP_WORD)]
+          .filter((match) => !skip.some(([from, to]) => match.index >= from && match.index < to))
+          .map((match) => ({ text: match[0], start: match.index, end: match.index + match[0].length, stem: wordStem(match[0]) }));
+        // Words split by a placed name don't run together ("coconut ‹milk›" is no "coconut milk").
+        const joined = (index, offset) => offset === 0 || !skip.some(([from, to]) => from >= words[index + offset - 1].end && to <= words[index + offset].start);
+        let found = null;
+        for (let index = 0; index < words.length && !found; index++) {
+          if (exactOnly) {
+            // Exact: the whole name (or its core) word for word.
+            for (const phrase of phrases) {
+              if (phrase.every((stem, offset) => words[index + offset]?.stem === stem && joined(index, offset))) { found = { first: index, last: index + phrase.length - 1 }; break; }
+            }
+            continue;
+          }
+          const stem = words[index].stem;
+          const similar = stem === loose || (loose.length >= 4 && stem.endsWith(loose)) || (stem.length >= 4 && loose.endsWith(stem));
+          if (!similar) continue;
+          // Loose matches need an article (or a prep word after one) right before them.
+          const previous = words[index - 1]?.text.toLowerCase();
+          const beforePrep = words[index - 2]?.text.toLowerCase();
+          if (articles.has(previous) || previous === 'hoeveelheid' || (isPrepWord(words[index - 1]?.text || '') && articles.has(beforePrep))) {
+            found = { first: index, last: index };
+          }
         }
-        if (found || !loose) continue;
-        const stem = words[index].stem;
-        const similar = stem === loose || (loose.length >= 4 && stem.endsWith(loose)) || (stem.length >= 4 && loose.endsWith(stem));
-        if (!similar) continue;
-        // Loose matches need an article (or a prep word after one) right before them.
-        const previous = words[index - 1]?.text.toLowerCase();
-        const beforePrep = words[index - 2]?.text.toLowerCase();
-        if (articles.has(previous) || previous === 'hoeveelheid' || (isPrepWord(words[index - 1]?.text || '') && articles.has(beforePrep))) {
-          found = { first: index, last: index, exact: false };
+        if (!found) continue;
+        entry.placed = true;
+        // Words just before the name: a prep word stays after the amount, and an article (or "de hoeveelheid",
+        // "the amount of") is replaced by the amount.
+        let from = found.first;
+        let prep = '';
+        if (from > 0 && isPrepWord(words[from - 1].text)) { prep = words[from - 1].text; from -= 1; }
+        let dropFrom = from;
+        const previous = (offset) => words[from - offset]?.text.toLowerCase();
+        if (previous(1) === 'hoeveelheid' && articles.has(previous(2))) dropFrom = from - 2;
+        else if (previous(1) === 'of' && previous(2) === 'amount' && articles.has(previous(3))) dropFrom = from - 3;
+        else if (articles.has(previous(1))) dropFrom = from - 1;
+        const insertAt = words[dropFrom].start;
+        const before = step.text.slice(0, insertAt);
+        const nameStart = words[found.first].start;
+        const nameEnd = words[found.last].end;
+        // Already has an amount right there ("2 tbsp milk"): leave it.
+        // Also when another ingredient line already put its amount there.
+        if (/[\d¼½¾⅓⅔⅛⅜⅝⅞]\s*[\p{L}.]*\s*(?:(?:of|van|de|di)\s+|d['’])?$/u.test(before) || /\u0002\s*$/.test(before)) {
+          step.text = `${step.text.slice(0, nameStart)}\u0005${step.text.slice(nameStart, nameEnd)}\u0006${step.text.slice(nameEnd)}`;
+          break;
         }
+        const named = step.text.slice(nameStart, nameEnd);
+        const moved = `${prep ? `${prep} ` : ''}${named}`;
+        // "200 g of flour", "200 g de farine", "200 g d’huile" (French before a vowel), "200 g Mehl".
+        let link = target.unitText ? (AMOUNT_LINKS[language] || ' ') : ' ';
+        if (language === 'fr' && link === ' de ' && /^[aeiouyhàâéèêëîïôûü]/i.test(moved)) link = ' d’';
+        const unit = target.unitText ? ` ${unitLabel(target.unitText, target.amount)}` : '';
+        const amount = `${formatAmount(target.amount, target.unit)}${unit}${link.trimEnd()}`;
+        const gap = link.endsWith(' ') ? ' ' : '';
+        step.text = `${before}\u0001${amount}\u0002${gap}\u0005${insertAt === 0 && language !== 'de' ? moved.toLowerCase() : moved}\u0006${step.text.slice(nameEnd)}`;
+        break;
       }
-      if (!found) continue;
-      // Words just before the name: a prep word stays after the amount, and an article (or "de hoeveelheid",
-      // "the amount of") is replaced by the amount.
-      let from = found.first;
-      let prep = '';
-      if (from > 0 && isPrepWord(words[from - 1].text)) { prep = words[from - 1].text; from -= 1; }
-      let dropFrom = from;
-      const previous = (offset) => words[from - offset]?.text.toLowerCase();
-      if (previous(1) === 'hoeveelheid' && articles.has(previous(2))) dropFrom = from - 2;
-      else if (previous(1) === 'of' && previous(2) === 'amount' && articles.has(previous(3))) dropFrom = from - 3;
-      else if (articles.has(previous(1))) dropFrom = from - 1;
-      const insertAt = words[dropFrom].start;
-      const before = step.text.slice(0, insertAt);
-      // Already has an amount right there ("2 tbsp milk"): leave it.
-      // Also when another ingredient line already put its amount there.
-      if (/[\d¼½¾⅓⅔⅛⅜⅝⅞]\s*[\p{L}.]*\s*(?:(?:of|van|de|di)\s+|d['’])?$/u.test(before) || /\u0002\s*$/.test(before)) { placed = true; break; }
-      const named = step.text.slice(words[found.first].start, words[found.last].end);
-      const moved = `${prep ? `${prep} ` : ''}${named}`;
-      // "200 g of flour", "200 g de farine", "200 g d’huile" (French before a vowel), "200 g Mehl".
-      let link = target.unitText ? (AMOUNT_LINKS[language] || ' ') : ' ';
-      if (language === 'fr' && link === ' de ' && /^[aeiouyhàâéèêëîïôûü]/i.test(moved)) link = ' d’';
-      const unit = target.unitText ? ` ${unitLabel(target.unitText, target.amount)}` : '';
-      const amount = `${formatAmount(target.amount, target.unit)}${unit}${link.trimEnd()}`;
-      const gap = link.endsWith(' ') ? ' ' : '';
-      step.text = `${before}\u0001${amount}\u0002${gap}${insertAt === 0 && language !== 'de' ? moved.toLowerCase() : moved}${step.text.slice(words[found.last].end)}`;
-      placed = true;
     }
   }
 }
@@ -201,41 +299,58 @@ function amountAndName(line, language) {
 
 function addStepAmountsByName(steps, ingredients, language) {
   const cjk = CJK_AMOUNT_LANGUAGES.includes(language);
+  const targets = [];
   for (const line of ingredients) {
     const found = amountAndName(line, language);
     if (!found) continue;
     const name = found.name.split(/[,，、]/)[0].trim().toLowerCase();
-    if (!name) continue;
-    const marked = `\u0001${found.amount}\u0002`;
-    for (const step of steps) {
-      const spot = cjk ? cjkMention(step.text, name, language) : wordMention(step.text, name, language);
-      if (!spot) continue;
-      const before = step.text.slice(0, spot.start);
-      const after = step.text.slice(spot.end);
-      // An amount already written right there ("200 г муки", "2个鸡蛋", "卵2個") stays as it is.
-      // Amounts this put in brackets after the previous word don't count ("البيضة (2) وزيت الزيتون").
-      const lead = before.replace(/[（(]\u0001[^\u0002]*\u0002[）)]/g, '');
-      if (/[\d¼½¾⅓⅔⅛]\s*\S{0,6}\s*(?:من\s+)?$/u.test(lead) || /^\s*[（(]?\s*[\d¼½¾⅓⅔⅛]/.test(after) || /\u0002[^\u0001]{0,3}$/.test(lead)) break;
-      const named = step.text.slice(spot.start, spot.end);
-      if (language === 'zh') step.text = `${before}${marked}${named}${after}`;
-      else if (language === 'ja') step.text = `${before}${named}（${marked}）${after}`;
-      else step.text = `${before}${named} (${marked})${after}`;
-      break;
+    if (name) targets.push({ name, marked: `\u0001${found.amount}\u0002`, placed: false });
+  }
+  // Longest names first ("卵黄" before "卵", "коричневый сахар" before "сахар"), and whole names in every step before
+  // a single word of a longer name.
+  targets.sort((first, second) => second.name.split(/\s+/).length - first.name.split(/\s+/).length || second.name.length - first.name.length);
+  const names = targets.map((target) => target.name);
+  for (const loose of cjk ? [false] : [false, true]) {
+    for (const target of targets) {
+      if (target.placed) continue;
+      const { name, marked } = target;
+      for (const step of steps) {
+        const spot = cjk ? cjkMention(step.text, name, language, names) : wordMention(step.text, name, language, loose);
+        if (!spot) continue;
+        target.placed = true;
+        const before = step.text.slice(0, spot.start);
+        const after = step.text.slice(spot.end);
+        const named = `\u0005${step.text.slice(spot.start, spot.end)}\u0006`;
+        // An amount already written right there ("200 г муки", "2个鸡蛋", "卵2個") stays as it is.
+        // Amounts this put in brackets after the previous word don't count ("البيضة (2) وزيت الزيتون").
+        const lead = before.replace(/[\u0005\u0006]/g, '').replace(/[（(]\u0001[^\u0002]*\u0002[）)]/g, '');
+        if (/[\d¼½¾⅓⅔⅛]\s*\S{0,6}\s*(?:من\s+)?$/u.test(lead) || /^\s*[（(]?\s*[\d¼½¾⅓⅔⅛]/.test(after) || /\u0002[^\u0001]{0,3}$/.test(lead)) {
+          step.text = `${before}${named}${after}`;
+          break;
+        }
+        if (language === 'zh') step.text = `${before}${marked}${named}${after}`;
+        else if (language === 'ja') step.text = `${before}${named}（${marked}）${after}`;
+        else step.text = `${before}${named} (${marked})${after}`;
+        break;
+      }
     }
   }
 }
 
-// Chinese and Japanese: the ingredient's name, or one of its catalog names in that language, inside the sentence.
-function cjkMention(text, name, language) {
+// Chinese and Japanese: the ingredient's name, or one of its catalog names in that language, inside the sentence;
+// not where it is part of a longer ingredient's name ("卵" in "卵黄").
+function cjkMention(text, name, language, others = []) {
   const record = ingredientRecord(name);
-  const names = [...new Set([name, ...(record ? catalogNames(record, language) : [])].map((entry) => String(entry).toLowerCase()).filter((entry) => entry.length >= 1 && CJK.test(entry)))]
+  // A catalog name that is another ingredient's own name ("卵" for "卵黄") belongs to that one.
+  const names = [...new Set([name, ...(record ? catalogNames(record, language) : [])].map((entry) => String(entry).toLowerCase()).filter((entry) => entry.length >= 1 && CJK.test(entry) && (entry === name || !others.includes(entry))))]
     .sort((first, second) => second.length - first.length);
   const lower = text.toLowerCase();
-  const skip = [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
+  const skip = placedRanges(text);
+  const inLonger = (entry, index) => others.some((other) => other.length > entry.length && other.includes(entry) && lower.startsWith(other, index - other.indexOf(entry)));
   let best = null;
   for (const entry of names) {
     let index = lower.indexOf(entry);
-    while (index >= 0 && skip.some(([from, to]) => index >= from && index < to)) index = lower.indexOf(entry, index + 1);
+    while (index >= 0 && (skip.some(([from, to]) => index >= from && index < to) || inLonger(entry, index))) index = lower.indexOf(entry, index + 1);
     if (index >= 0 && (!best || index < best.start)) best = { start: index, end: index + entry.length };
   }
   return best;
@@ -243,7 +358,7 @@ function cjkMention(text, name, language) {
 
 // Russian, Polish, Romanian, Turkish: the words of the name in a row, each matched by its stem (the word without
 // its last vowels), or else the longest word of the name on its own.
-function wordMention(text, name, language = '') {
+function wordMention(text, name, language = '', loose = true) {
   const stem = (word) => { const cut = word.replace(ENDING_VOWELS, ''); return cut.length >= 3 ? cut : word; };
   const plain = (word) => word.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/ة/g, 'ه');
   const prefixes = WORD_PREFIXES[language];
@@ -256,14 +371,22 @@ function wordMention(text, name, language = '') {
     const base = stem(part);
     return base.length < 3 ? lower === part || (lower.startsWith(part) && lower.length - part.length <= 3) : lower.startsWith(base) && lower.length <= base.length + 5;
   };
-  const skip = [...text.matchAll(/\u0001[^\u0002]*\u0002/g)].map((match) => [match.index, match.index + match[0].length]);
+  const skip = placedRanges(text);
   const words = [...text.matchAll(/[\p{L}\p{M}-]+/gu)].filter((match) => !skip.some(([from, to]) => match.index >= from && match.index < to))
     .map((match) => ({ text: match[0], start: match.index, end: match.index + match[0].length }));
+  // Words before the last one are often adjectives with another ending ("коричневого сахара" ↔ "коричневый сахар"):
+  // there most of the word is enough.
+  const close = (word, part) => {
+    const [first, second] = [word.toLowerCase(), part.toLowerCase()];
+    let same = 0;
+    while (same < first.length && same < second.length && first[same] === second[same]) same++;
+    return same >= 4 && same >= Math.min(first.length, second.length) - 3;
+  };
   const parts = name.split(/\s+/).filter(Boolean);
   for (let index = 0; index + parts.length <= words.length; index++) {
-    if (parts.every((part, offset) => matches(words[index + offset].text, part))) return { start: words[index].start, end: words[index + parts.length - 1].end };
+    if (parts.every((part, offset) => matches(words[index + offset].text, part) || (!prefixes && offset < parts.length - 1 && close(words[index + offset].text, part)))) return { start: words[index].start, end: words[index + parts.length - 1].end };
   }
-  if (parts.length > 1) {
+  if (loose && parts.length > 1) {
     for (const part of [...parts].filter((entry) => entry.length >= 4).sort((first, second) => second.length - first.length)) {
       const word = words.find((entry) => matches(entry.text, part));
       if (word) return { start: word.start, end: word.end };
@@ -282,18 +405,18 @@ function buildCookBites(recipe) {
   let heading = '';
   for (const raw of recipeInstructions(recipe).map((text) => metricText(String(text).trim())).filter(Boolean)) {
     if (isStepHeading(raw)) {
-      if (heading) steps.push({ type: 'step', heading: '', text: heading });
-      heading = raw;
+      if (heading) steps.push({ type: 'step', heading: '', text: heading, timer: stepMinutes(heading) });
+      heading = raw.replace(/\s*[:：]$/, '');
       continue;
     }
     for (const text of splitIntoBites(raw)) steps.push({ type: 'step', heading, text, timer: stepMinutes(text) });
     heading = '';
   }
-  if (heading) steps.push({ type: 'step', heading: '', text: heading });
+  if (heading) steps.push({ type: 'step', heading: '', text: heading, timer: stepMinutes(heading) });
   addStepAmounts(steps, ingredients);
-  const ovenIndex = steps.findIndex((step) => TEMPERATURE_PATTERN.test(step.text));
+  const ovenIndex = steps.findIndex((step) => ovenTemperature(step.text.replace(/[\u0001\u0002]/g, '')));
   if (ovenIndex > 0) {
-    const temperature = steps[ovenIndex].text.match(TEMPERATURE_PATTERN)[0].replace(/\s+/g, '');
+    const temperature = ovenTemperature(steps[ovenIndex].text.replace(/[\u0001\u0002]/g, ''));
     steps.unshift({ type: 'step', heading: t('Heads-up'), text: t('Turn the oven on to {temperature} now. You will need it in step {step}.', { temperature, step: ovenIndex + 2 }) });
   }
   for (const step of steps) step.tools = typeof kitchenToolsIn === 'function' ? kitchenToolsIn(step.text) : [];
@@ -305,7 +428,7 @@ function buildCookBites(recipe) {
 }
 
 function highlightStepText(text) {
-  const pattern = new RegExp(`${TIME_PATTERN.source}|${TEMPERATURE_PATTERN.source}`, 'gi');
+  const pattern = new RegExp(`${TIME_PATTERN.source}|${WORD_TIME_PATTERN.source}|${TEMPERATURE_PATTERN.source}`, 'gi');
   return escapeHtml(text).replace(pattern, (match) => `<mark>${match}</mark>`)
     .replace(/\u0001([^\u0002]*)\u0002/g, '<strong class="steps-amount">$1</strong>');
 }
@@ -528,7 +651,8 @@ function openTimerStep(id) {
   if (!timer) return;
   if (timer.done) cookTimers = cookTimers.filter((entry) => entry !== timer);
   if (!timer.recipe) {
-    if ($('#steps-dialog').open) $('#steps-dialog').close();
+    // In cook mode a finished timer of its own is only cleared; cook mode stays open.
+    if ($('#steps-dialog').open) { refreshTimers(); return; }
     activeView = 'tools';
     toolsTab = 'timers';
     render();
@@ -591,21 +715,24 @@ function speak(parts) {
   const clean = parts.map((part) => ({ ...part, text: String(part.text || '').replace(/[\u0001\u0002]/g, '').trim() })).filter((part) => part.text);
   if (!clean.length) return;
   if (STANDALONE && nativeApp.speak) { try { nativeApp.speak(JSON.stringify(clean)); } catch { /* Optional. */ } return; }
-  for (const part of clean) {
-    const utterance = new window.SpeechSynthesisUtterance(part.text);
-    utterance.lang = part.lang;
-    window.speechSynthesis.speak(utterance);
-  }
+  if (!('speechSynthesis' in window) || typeof window.SpeechSynthesisUtterance !== 'function') return;
+  try {
+    for (const part of clean) {
+      const utterance = new window.SpeechSynthesisUtterance(part.text);
+      utterance.lang = part.lang;
+      window.speechSynthesis.speak(utterance);
+    }
+  } catch { /* Reading aloud is optional; the step is on screen. */ }
 }
 
 function stopSpeaking() {
   if (STANDALONE && nativeApp.stopSpeaking) { try { nativeApp.stopSpeaking(); } catch { /* Optional. */ } return; }
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch { /* Nothing to stop. */ }
 }
 
 // The step in the recipe's language; the short label before it in the app's language.
 function speakCookStep() {
-  if (!readAloud || !cookSession) return;
+  if (!readAloud || !cookSession || !canSpeak()) return;
   const bite = cookSession.bites[cookSession.index];
   const app = speechLocale();
   const spoken = LANGUAGES.find((language) => language.code === recipeLanguage(cookSession.recipe)) || LANGUAGES[0];
@@ -748,6 +875,8 @@ async function startCookSteps(recipe, planId = '') {
   renderCookStep();
   const dialog = $('#steps-dialog');
   if (!dialog.open) dialog.showModal();
+  // The step was drawn before the dialog opened, so a running timer's countdown shows only now.
+  refreshTimers();
   await keepScreenOn(true);
 }
 

@@ -33,6 +33,7 @@ function collectKeys() {
   for (const item of data.ingredients) keys.set(item.label, item.label);
   for (const term of data.terms) { keys.set(`term: ${term.en}`, `term: ${term.en}`); keys.set(term.what, term.what); }
 
+  keys.set('Kitchen', 'Kitchen'); // document.title in setLanguage (i18n.js): "Goodstock | Kitchen"
   for (const [key, value] of collectHtmlKeys(read('index.html'))) if (!IGNORED_HTML_TEXT.some((pattern) => pattern.test(key))) keys.set(key, value);
   return keys;
 }
@@ -108,7 +109,8 @@ function collectHtmlKeys(html) {
     const attribute = (attr) => new RegExp(String.raw`(?:^|\s)${attr}="([^"]*)"`).exec(attributes)?.[1];
     const i18n = attribute('data-i18n');
     const skip = SKIP_TAGS.has(lower) || SKIP_IDS.has(attribute('id')) || Boolean(i18n);
-    if (!skipping && !skip) {
+    // A skipped element's own attributes are still translated (translateAttributes in i18n.js), but not a skipped tag's.
+    if (!skipping && !SKIP_TAGS.has(lower) && !i18n) {
       for (const attr of ATTRIBUTES) {
         const value = attribute(attr);
         if (value && value.trim()) keys.set(decode(value), decode(value));

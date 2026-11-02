@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goodstock-shell-v4.8.0';
+const CACHE_NAME = 'goodstock-shell-v4.9.0';
 const APP_SHELL = ['/', '/index.html', '/i18n.js', '/app/core.js', '/app/sync.js', '/app/views.js', '/app/recipes.js', '/app/cook.js', '/app/ideas.js', '/app/actions.js', '/kitchen-tools.js', '/kitchen-reference.js', '/recipe-import.mjs', '/mealie.mjs', '/deepl.mjs', '/styles.css', '/manifest.webmanifest', '/icon.svg', '/apple-touch-icon.png', '/icon-192.png', '/ingredients.json', '/fonts/fonts.css', '/fonts/dm-sans-latin.woff2', '/fonts/dm-sans-latin-ext.woff2', '/fonts/fraunces-latin.woff2', '/fonts/fraunces-latin-ext.woff2'];
 
 self.addEventListener('install', (event) => {
@@ -15,8 +15,11 @@ self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
   if (event.request.method !== 'GET' || requestUrl.origin !== self.location.origin || requestUrl.pathname.startsWith('/api/')) return;
   event.respondWith(fetch(event.request).then((response) => {
-    const copy = response.clone();
-    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+    // Only good answers replace the cached copy (a 404 or a server error must not overwrite the offline shell).
+    if (response.ok) {
+      const copy = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+    }
     return response;
   }).catch(async () => {
     const cached = await caches.match(event.request);

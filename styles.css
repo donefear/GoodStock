@@ -26,14 +26,21 @@
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--paper); }
 button, input, select { font: inherit; }
 button { color: inherit; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #80ad94; outline-offset: 2px; }
+/* The hidden attribute always wins, also over classes that set display (buttons, setting zones…). */
+[hidden] { display: none !important; }
+/* Focus rings: :focus for Chrome 81 (the kitchen tablet), which drops any selector list containing :focus-visible;
+   newer browsers hide the ring again after a mouse or touch tap. Keep :focus-visible in rules of its own. */
+button:focus, input:focus, select:focus, textarea:focus { outline: 3px solid #80ad94; outline-offset: 2px; }
+button:focus:not(:focus-visible) { outline: none; }
+input:focus:not(:focus-visible) { outline: none; }
+select:focus:not(:focus-visible) { outline: none; }
 .app-shell { min-height: 100vh; }
 .sidebar { position: fixed; top: 0; bottom: 0; left: 0; width: 236px; padding: 30px 18px 22px; display: flex; flex-direction: column; background: #e8eee6; border-inline-end: 1px solid #dfe7dd; z-index: 3; }
 .brand { display: inline-flex; align-items: center; gap: 10px; width: fit-content; color: var(--ink); text-decoration: none; }
 .brand-mark { display: grid; place-items: center; width: 40px; height: 40px; color: var(--green); }
 /* The Goodstock mark: a G with the donefear logo in its centre. */
 .brand-logo { width: 100%; height: 100%; }
-.brand-name { font: 600 23px 'Fraunces', Georgia, serif; letter-spacing: 0; }
+.brand-name { font: 600 23px 'Fraunces', Georgia, serif; letter-spacing: 0; direction: ltr; unicode-bidi: isolate; }
 .brand-name > span { color: var(--coral); }
 .side-label, .eyebrow { color: var(--muted); font-size: 10px; line-height: 1.5; font-weight: 700; letter-spacing: 1.2px; }
 .side-label { margin: 54px 10px 12px; }
@@ -47,7 +54,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .sidebar-bottom { margin-top: auto; }
 .sync-card { width: 100%; display: flex; align-items: center; gap: 10px; padding: 13px 10px; border: 0; border-top: 1px solid #d3ded4; border-bottom: 1px solid #d3ded4; border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
 .sync-card:hover { background: rgba(47, 107, 79, 0.08); }
-.sync-card:focus-visible { background: rgba(47, 107, 79, 0.08); }
+.sync-card:focus { background: rgba(47, 107, 79, 0.08); }
 .sync-text { display: block; min-width: 0; }
 .sync-dot { width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; background: #4e9a70; box-shadow: 0 0 0 4px #d7e9db; }
 .sync-dot.offline { background: #d9775b; box-shadow: 0 0 0 4px #f5ded6; }
@@ -65,16 +72,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .settings-actions { align-items: center; }
 .settings-actions .made-by { margin: 0; margin-inline-end: auto; }
 .main-area { min-height: 100vh; margin-inline-start: 236px; }
-.topbar { height: 70px; padding: 0 clamp(28px, 5vw, 70px); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(255,254,250,.56); }
+/* Side padding: 56px (fixed, not vw, which grows with the text-size zoom); on wide screens the bar lines up with the
+   1240px content column below it. */
+.topbar { height: 70px; padding: 0 max(56px, calc((100% - 1240px) / 2 + 56px)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(255,254,250,.56); }
 .breadcrumb { display: flex; gap: 9px; align-items: center; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); }
 .breadcrumb strong { color: #49594f; }
 .crumb-slash { color: #c5cac2; }
 .top-actions { display: flex; align-items: center; gap: 18px; }
-.today-label { color: var(--muted); font-size: 12px; }
+.today-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .icon-button { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; display: inline-grid; place-items: center; background: var(--white); color: #59665e; font-size: 17px; cursor: pointer; }
 .icon-button:hover { border-color: #bbcdc0; color: var(--green); }
 .mobile-brand { display: none; }
-.view-container { max-width: 1240px; margin: 0 auto; padding: 38px clamp(28px, 5vw, 70px) 70px; animation: arrive .28s ease both; }
+.view-container { max-width: 1240px; margin: 0 auto; padding: 38px 56px 70px; animation: arrive .28s ease both; }
 @keyframes arrive { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 .page-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .eyebrow { display: inline-block; }
@@ -100,10 +109,10 @@ h3 { margin: 0; font: 500 21px/1.25 'Fraunces', Georgia, serif; }
 .expiration-panel > header h2 { margin-top: 3px; color: #584a2d; font-size: 20px; }
 .expiry-window { padding: 6px 9px; border-radius: 4px; background: #f2e5bd; color: #826521; font-size: 10px; font-weight: 700; white-space: nowrap; }
 .expiry-list { border-top: 1px solid #e8dcb9; }
-.expiry-row { min-height: 65px; padding: 10px 0; border-bottom: 1px solid #e8dcb9; display: grid; grid-template-columns: minmax(180px, .85fr) minmax(250px, 1.15fr); align-items: center; gap: 16px; }
+.expiry-row { min-height: 65px; padding: 10px 0; border-bottom: 1px solid #e8dcb9; display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: center; gap: 16px; }
 .expiry-row:last-child { border-bottom: 0; }
-.expiry-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; }
-.expiry-ideas { white-space: nowrap; }
+.expiry-actions { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 6px 14px; }
+.expiry-ideas { max-width: 100%; margin-inline-start: auto; white-space: nowrap; }
 .expiry-item-info { min-width: 0; display: flex; align-items: center; gap: 10px; }
 .expiry-mark { width: 29px; height: 29px; flex: 0 0 29px; border-radius: 50%; display: grid; place-items: center; background: #f0dca6; color: #896b24; font-size: 16px; font-weight: 700; }
 .thaw-panel { border-color: #b7d3e6; background: #eef6fb; }
@@ -128,7 +137,7 @@ h3 { margin: 0; font: 500 21px/1.25 'Fraunces', Georgia, serif; }
 .expiry-item-info strong, .expiry-item-info > div > span { display: block; }
 .expiry-item-info strong { color: #3d4337; font-size: 12px; }
 .expiry-item-info > div > span { margin-top: 4px; font-size: 10px; }
-.expiry-suggestions { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
+.expiry-suggestions { min-width: 0; flex: 1 1 auto; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; }
 .expiry-suggestions > span, .expiry-no-recipe { color: #827a63; font-size: 10px; }
 .expiry-recipe-link { min-height: 32px; font-size: 10px; }
 .item-expiry.expiring { color: #996715 !important; font-weight: 700; }
@@ -152,20 +161,21 @@ h3 { margin: 0; font: 500 21px/1.25 'Fraunces', Georgia, serif; }
 .stat strong { font: 500 22px 'Fraunces', Georgia, serif; }
 .stat div span { margin-top: 2px; color: var(--muted); font-size: 11px; }
 .section-block { margin-top: 32px; }
-.section-heading { min-height: 44px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.section-heading { min-height: 44px; margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; }
+.section-heading > * { max-width: 100%; }
 .section-heading > div:first-child { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .section-heading h2 { font-size: 21px; }
 .muted { color: var(--muted); font-size: 12px; }
-.inventory-tools { display: flex; flex-direction: column; align-items: end; gap: 8px; }
-.filter-controls { display: flex; gap: 9px; }
+.inventory-tools { max-width: 100%; display: flex; flex-direction: column; align-items: end; gap: 8px; }
+.filter-controls { max-width: 100%; display: flex; flex-wrap: wrap; gap: 9px; }
 .inventory-mode-switch { padding: 3px; border: 1px solid var(--line); border-radius: 6px; display: inline-flex; gap: 3px; background: var(--white); }
-.inventory-mode-switch button { min-width: 67px; min-height: 32px; padding: 0 10px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; cursor: pointer; }
+.inventory-mode-switch button { min-width: 67px; min-height: 44px; padding: 0 10px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; cursor: pointer; }
 .inventory-mode-switch button.active { background: var(--mint); color: var(--green-dark); }
-.search-field { width: min(260px, 30vw); height: 42px; padding: 0 11px; border: 1px solid #dce2d9; border-radius: 5px; display: flex; align-items: center; gap: 8px; background: var(--white); color: #88938a; }
+.search-field { width: 260px; max-width: 100%; height: 44px; padding: 0 11px; border: 1px solid #dce2d9; border-radius: 5px; display: flex; align-items: center; gap: 8px; background: var(--white); color: #88938a; }
 .search-field > span { font-size: 21px; }
 .search-field input, .recipe-search input { width: 100%; min-width: 0; border: 0; outline: none; background: transparent; color: var(--ink); font-size: 13px; }
-.search-field input:focus-visible, .recipe-search input:focus-visible { outline: none; }
-select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; border-radius: 5px; background: var(--white); color: #536158; font-size: 12px; }
+.search-field input:focus, .recipe-search input:focus { outline: none; }
+select { min-height: 44px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; border-radius: 5px; background: var(--white); color: #536158; font-size: 12px; }
 .inventory-list { border-top: 1px solid var(--line); }
 .storage-map { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
 .storage-zone { min-width: 0; min-height: 176px; padding: 15px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); }
@@ -192,11 +202,13 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .item-symbol.household { background: #f7edce; color: #98711e; }
 .item-main { min-width: 0; flex: 1; }
 .item-main strong, .item-main span { display: block; }
-.item-main strong { overflow: hidden; color: #354239; font-size: 14px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+/* Long names get two lines before they are cut off. */
+.item-main strong { overflow: hidden; color: #354239; font-size: 14px; font-weight: 700; line-height: 1.3; max-height: 2.6em; overflow-wrap: break-word; }
+@supports (-webkit-line-clamp: 2) { .item-main strong { display: -webkit-box; max-height: none; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; } }
 .item-main span { margin-top: 5px; color: var(--muted); font-size: 11px; }
 .item-main i { padding: 0 3px; font-style: normal; color: #c0c7c0; }
-.quantity-stepper { height: 39px; border: 1px solid #e0e5dd; border-radius: 5px; display: flex; align-items: center; background: var(--white); }
-.quantity-stepper button { width: 39px; height: 37px; border: 0; background: transparent; color: #627268; font-size: 18px; cursor: pointer; }
+.quantity-stepper { height: 46px; border: 1px solid #e0e5dd; border-radius: 5px; display: flex; align-items: center; background: var(--white); }
+.quantity-stepper button { width: 44px; height: 44px; border: 0; background: transparent; color: #627268; font-size: 18px; cursor: pointer; }
 .quantity-stepper button:hover { color: var(--green); background: #edf3ed; }
 .quantity-stepper > span { min-width: 65px; text-align: center; color: #354239; font-size: 13px; font-weight: 700; }
 .quantity-stepper small { color: var(--muted); font-size: 10px; font-weight: 500; }
@@ -230,28 +242,30 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .day-detail h2 { margin-top: 4px; }
 .plan-count { color: var(--muted); font-size: 11px; }
 .planned-list { border-top: 1px solid var(--line); }
-.planned-meal { min-height: 65px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 13px; }
+.planned-meal { min-height: 65px; padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 13px; }
 .meal-index { width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; background: #f5ead0; color: #9a771e; font-size: 11px; font-weight: 700; }
 .is-cooked .meal-index { background: var(--mint); color: var(--green); }
-.planned-copy { flex: 1; }
+.planned-copy { min-width: 0; flex: 1 1 140px; overflow-wrap: break-word; }
 .mealie-link { color: inherit; text-decoration: underline; text-decoration-color: #33785e66; text-underline-offset: 3px; }
-.mealie-link:hover, .mealie-link:focus-visible { color: var(--green); text-decoration-color: currentColor; }
+.mealie-link:hover, .mealie-link:focus { color: var(--green); text-decoration-color: currentColor; }
 .mealie-link span { color: var(--green); font-size: 11px; }
 .recipe-title-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
-.recipe-card-title:hover, .recipe-card-title:focus-visible { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.recipe-card-title:hover, .recipe-card-title:focus { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
 .mealie-button { text-decoration: none; }
 .planned-copy > strong, .planned-copy > span { display: block; }
 .planned-copy strong { font-size: 13px; }
 .planned-copy > span { margin-top: 3px; color: var(--muted); font-size: 10px; }
 .cooked-label { color: var(--green); font-size: 9px; font-weight: 700; letter-spacing: 1px; }
-.remove-button { width: 34px; height: 34px; border: 0; background: transparent; color: #97a097; font-size: 21px; }
+.remove-button { width: 44px; height: 44px; border: 0; background: transparent; color: #97a097; font-size: 21px; }
 .day-empty { min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #9a781f; }
 .day-empty > span { font-size: 20px; }
 .day-empty p { margin: 5px 0 3px; color: #57645b; font: 500 16px 'Fraunces', Georgia, serif; }
 .day-empty small { color: var(--muted); font-size: 10px; }
 .recipe-picker { margin-top: 36px; }
 .text-button { min-height: 40px; padding: 0 4px; border: 0; background: transparent; color: var(--green); font-size: 12px; font-weight: 700; cursor: pointer; }
-.list-actions { display: flex; align-items: center; gap: 12px; }
+.list-actions { max-width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.list-actions > * { white-space: nowrap; }
+.no-flex-gap .list-actions > * + * { margin-inline-start: 12px; }
 .clear-list-button { color: #ab5644; }
 .picker-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .picker-item { min-height: 184px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; background: var(--white); }
@@ -358,7 +372,7 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .shopping-name { overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .shopping-amount, .shopping-source { color: var(--muted); font-size: 11px; }
 .putaway-button { min-width: 105px; }
-.recipe-search { min-height: 56px; margin: 2px 0 34px; padding: 6px 7px 6px 15px; border: 1px solid #dce2d9; border-radius: 6px; display: flex; align-items: center; gap: 12px; background: var(--white); color: #87938a; }
+.recipe-search { min-height: 56px; margin: 2px 0 34px; padding-top: 6px; padding-bottom: 6px; padding-inline-start: 15px; padding-inline-end: 7px; border: 1px solid #dce2d9; border-radius: 6px; display: flex; align-items: center; gap: 12px; background: var(--white); color: #87938a; }
 .recipe-search > span { font-size: 24px; }
 .recipe-search input { font-size: 14px; }
 .stock-search-button { margin: -20px 0 26px; }
@@ -391,8 +405,12 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .close-button { border-color: transparent; background: transparent; font-size: 23px; }
 .app-dialog label:not(.ingredient-check) { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
 .app-dialog label > input, .app-dialog label > select { width: 100%; height: 45px; margin-top: 7px; padding: 0 11px; border: 1px solid #dbe2d9; border-radius: 5px; background: white; color: var(--ink); font-size: 13px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.dialog-actions { margin-top: 9px; display: flex; justify-content: end; gap: 9px; }
+/* Room for the suggestion list's arrow. */
+.app-dialog label > input[list] { padding-inline-end: 34px; }
+.form-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.dialog-actions { margin-top: 9px; display: flex; flex-wrap: wrap; justify-content: end; gap: 9px; }
+/* A long button label (German, Tagalog…) wraps inside the button instead of pushing it off the dialog. */
+.dialog-actions > .button { max-width: 100%; white-space: normal; text-align: center; }
 .dialog-copy, .settings-note { margin: -4px 0 3px; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .share-dialog { width: min(440px, calc(100% - 28px)); }
 .share-dialog .dialog-copy { min-height: 34px; margin: 0; text-align: center; }
@@ -401,13 +419,13 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .qr-frame img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .share-actions { justify-content: center; }
 .share-expiry { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; text-align: center; }
-.ingredient-checks { display: grid; gap: 7px; max-height: 42vh; overflow: auto; }
+.ingredient-checks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; max-height: 42vh; overflow: auto; }
 .ingredient-check { position: relative; min-height: 45px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .ingredient-check > span:nth-of-type(2) { flex: 1; font-size: 12px; }
 .ingredient-check small { color: var(--muted); font-size: 10px; }
 .ingredient-check.not-stocked { color: var(--muted); }
 .cook-check { flex-wrap: wrap; }
-.cook-amount { flex: 1 0 100%; padding-inline-start: 33px; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.cook-amount { min-width: 0; flex: 1 0 100%; padding-inline-start: 33px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--muted); font-size: 12px; }
 .cook-amount i { font-style: normal; opacity: .75; }
 .ingredient-check .cook-amount input { position: static; width: 84px; height: 38px; padding: 0 10px; border: 1px solid #dbe2d9; border-radius: 5px; background: white; color: var(--ink); font-size: 14px; opacity: 1; pointer-events: auto; }
 .cook-check:has(> input:not(:checked)) .cook-amount { opacity: .45; }
@@ -431,8 +449,9 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .mealie-settings .settings-note.is-error { color: #ab5644; font-weight: 700; }
 /* Settings tabs, and connections folded to one line (name + status) until tapped. A <details> cannot be a grid or
    flex container in Chrome 81, so its contents are spaced with margins. */
-.inventory-mode-switch.settings-tabs { display: flex; align-self: stretch; }
-.settings-tabs button { flex: 1; min-width: 0; min-height: 38px; padding: 0 4px; font-size: 13px; }
+.app-dialog .inventory-mode-switch.settings-tabs { display: flex; align-self: stretch; }
+/* Long words (Verbindungen, Pangkalahatan) keep their width; shorter tabs give way, and words wrap only as a last resort. */
+.settings-tabs button { flex: 1 1 auto; min-width: auto; min-height: 44px; padding: 2px 4px; font-size: 13px; line-height: 1.15; overflow-wrap: break-word; hyphens: auto; }
 .no-flex-gap .settings-tabs button + button { margin-inline-start: 3px; }
 .settings-panel:not([hidden]) { display: grid; gap: 15px; }
 .settings-panel > * { min-width: 0; }
@@ -443,7 +462,8 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .settings-connection > summary::after { content: '›'; position: absolute; top: 50%; right: 18px; color: var(--muted); font-size: 22px; line-height: 1; transform: translateY(-50%); transition: transform .15s ease; }
 .settings-connection[open] > summary::after { transform: translateY(-50%) rotate(90deg); }
 .settings-connection > summary:hover { background: rgba(73, 128, 92, .07); }
-.settings-connection > summary:focus-visible { outline: 3px solid #80ad94; outline-offset: -3px; }
+.settings-connection > summary:focus { outline: 3px solid #80ad94; outline-offset: -3px; }
+.settings-connection > summary:focus:not(:focus-visible) { outline: none; }
 .settings-connection > summary strong { display: block; color: var(--ink); font-size: 13px; }
 .settings-connection > summary .settings-note { display: block; margin-top: 3px; }
 .settings-connection[open] { padding-bottom: 14px; }
@@ -485,19 +505,21 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .setting-language strong, .setting-language small { display: block; }
 .setting-language strong { color: var(--ink); font-size: 13px; }
 .setting-language small { margin-top: 4px; color: var(--muted); font-size: 10px; font-weight: 400; }
-.app-dialog .setting-language > select { width: auto; min-width: 140px; flex: 0 0 auto; margin-top: 0; }
+.app-dialog .setting-language > select { width: auto; min-width: 140px; max-width: 100%; flex: 0 1 auto; margin-top: 0; }
 .toggle-track { position: relative; width: 46px; height: 26px; flex: 0 0 46px; border-radius: 20px; background: #c7d0c7; transition: background .18s ease; }
 .toggle-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; transition: transform .18s ease; }
 .setting-toggle input:checked + .toggle-track { background: var(--green); }
 .setting-toggle input:checked + .toggle-track::after { transform: translateX(20px); }
-.setting-toggle input:focus-visible + .toggle-track { outline: 3px solid #80ad94; outline-offset: 2px; }
+.setting-toggle input:focus + .toggle-track { outline: 3px solid #80ad94; outline-offset: 2px; }
+.setting-toggle input:focus:not(:focus-visible) + .toggle-track { outline: none; }
 .setting-toggle input:disabled + .toggle-track { opacity: .45; }
-.test-zone { margin-top: 4px; padding: 14px 12px; border: 1px dashed var(--line); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.test-zone { margin-top: 4px; padding: 14px 12px; border: 1px dashed var(--line); border-radius: 6px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.test-zone > div:first-child, .danger-zone > div:first-child { min-width: 0; flex: 1 1 200px; }
 .test-zone strong, .test-zone span { display: block; }
 .test-zone strong { color: var(--green); font-size: 12px; }
 .test-zone span { max-width: 250px; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.45; }
 .test-zone .button { flex: 0 0 auto; }
-.backup-actions { display: flex; flex: 0 0 auto; gap: 6px; }
+.backup-actions { min-width: 0; max-width: 100%; display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: 6px; }
 .test-zone .updates-daily { display: block; margin-top: 8px; color: var(--ink); font-size: 12px; cursor: pointer; }
 .test-zone .updates-daily > input { width: auto; height: auto; margin: 0; margin-inline-end: 6px; vertical-align: middle; }
 .test-zone .updates-daily > span { display: inline; margin: 0; color: inherit; font-size: inherit; }
@@ -509,11 +531,11 @@ select { min-height: 42px; padding: 0 30px 0 11px; border: 1px solid #dce2d9; bo
 .test-zone .backup-status:empty { display: none; }
 .is-standalone .server-only, .is-hosted .server-only, .is-hosted .hosted-hide { display: none; }
 html:not(.is-standalone) .phone-only { display: none; }
-.danger-zone { margin-top: 4px; padding: 14px 12px; border: 1px solid #efd2c9; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fcf4f0; }
+.danger-zone { margin-top: 4px; padding: 14px 12px; border: 1px solid #efd2c9; border-radius: 6px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; background: #fcf4f0; }
 .danger-zone strong, .danger-zone span { display: block; }
 .danger-zone strong { color: #984b3b; font-size: 12px; }
 .danger-zone span { max-width: 250px; margin-top: 4px; color: #7d6b65; font-size: 10px; line-height: 1.45; }
-.button-danger { flex: 0 0 auto; background: #b65443; color: white; }
+.button-danger { flex: 0 0 auto; max-width: 100%; background: #b65443; color: white; }
 .button-danger:hover { background: #973e32; }
 .button-danger:disabled { background: #d9b3aa; cursor: not-allowed; }
 .wipe-eyebrow { color: #b65443; }
@@ -524,6 +546,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 @media (max-width: 1100px) {
   .sidebar { width: 205px; }
   .main-area { margin-inline-start: 205px; }
+  .topbar { padding: 0 34px; }
   .view-container { padding-inline-end: 34px; padding-inline-start: 34px; }
   .recipe-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .picker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -532,8 +555,9 @@ html:not(.is-standalone) .phone-only { display: none; }
 @media (max-width: 720px) {
   .sidebar { top: auto; right: 0; bottom: 0; left: 0; width: auto; height: 66px; padding: 4px 8px max(4px, env(safe-area-inset-bottom)); border-top: 1px solid #d7e0d6; border-inline-end: 0; background: #f9faf5; }
   .sidebar > .brand, .side-label, .sidebar-bottom { display: none; }
-  .nav-list { height: 100%; grid-template-columns: repeat(5, 1fr); gap: 3px; }
-  .nav-item { min-height: 52px; padding: 3px 2px; flex-direction: column; justify-content: center; gap: 2px; border-radius: 5px; font-size: 9px; }
+  .nav-list { height: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+  .nav-item { min-width: 0; min-height: 52px; padding: 3px 2px; flex-direction: column; justify-content: center; gap: 2px; border-radius: 5px; font-size: 9px; line-height: 1.15; text-align: center; overflow-wrap: break-word; }
+  .nav-item > span { max-width: 100%; }
   .nav-icon { height: 21px; font-size: 18px; }
   .nav-count { position: absolute; margin: -29px 0 0 32px; min-width: 17px; height: 17px; font-size: 9px; }
   .main-area { margin-inline-start: 0; padding-bottom: 70px; }
@@ -544,20 +568,27 @@ html:not(.is-standalone) .phone-only { display: none; }
   .breadcrumb { display: none; }
   .top-actions { gap: 10px; }
   .today-label { font-size: 10px; }
-  .icon-button { width: 37px; height: 37px; }
+  .icon-button { width: 44px; height: 44px; }
   .view-container { padding: 25px 17px 45px; }
   .page-heading { align-items: start; flex-direction: column; gap: 15px; margin-bottom: 22px; }
   h1 { font-size: 30px; }
   .page-heading p { max-width: 440px; font-size: 12px; }
   .page-heading > .button { min-height: 43px; }
   .stats-row { margin-bottom: 27px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .stat > div { min-width: 0; overflow-wrap: anywhere; }
-  .test-zone { flex-wrap: wrap; }
-  .backup-actions { flex-wrap: wrap; }
+  .stat > div { min-width: 0; overflow-wrap: break-word; hyphens: auto; }
+  .backup-actions { flex: 1 1 100%; }
+  .danger-zone .button-danger { margin-inline-start: auto; }
+  .dialog-actions .item-remove-button { flex: 1 0 100%; margin-inline-end: 0; }
+  .no-flex-gap .dialog-actions .item-remove-button { margin-bottom: 8px; }
+  .no-flex-gap .dialog-actions .item-remove-button + .button { margin-inline-start: 0; }
+  .settings-tabs button { font-size: 12px; }
+  /* Two fields side by side only when both get 140px (a date field needs that). No min() inside grid tracks:
+     tools/legacy/css.mjs cannot turn that into flexbox. */
+  .form-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
   .expiration-panel { margin-top: -7px; padding: 13px; }
   .expiration-panel > header { align-items: start; }
   .expiry-row { grid-template-columns: 1fr; gap: 4px; }
-  .expiry-suggestions { padding-inline-start: 39px; }
+  .expiry-actions, .expiry-row > .expiry-suggestions { padding-inline-start: 39px; }
   .stat { min-height: 76px; padding: 10px; gap: 8px; }
   .stat-icon { width: 31px; height: 31px; font-size: 16px; }
   .stat strong { font-size: 18px; }
@@ -569,32 +600,41 @@ html:not(.is-standalone) .phone-only { display: none; }
   .inventory-mode-switch { align-self: flex-end; }
   .search-field { width: auto; flex: 1; }
   .filter-controls select { max-width: 45%; }
-  .inventory-row { min-height: 69px; gap: 9px; padding: 8px 1px; }
+  /* When the name has less than ~110px, the amount and ••• move to a second line, on the end side. */
+  .inventory-row { min-height: 69px; flex-wrap: wrap; gap: 6px 9px; padding: 8px 1px; }
+  .inventory-row > .item-main { flex: 1 1 110px; }
+  .inventory-row > .quantity-stepper { margin-inline-start: auto; }
   .item-symbol { width: 33px; height: 33px; flex-basis: 33px; font-size: 18px; }
   .item-main strong { font-size: 12px; }
   .item-main span { font-size: 9px; }
-  .quantity-stepper { height: 35px; }
-  .quantity-stepper button { width: 30px; height: 33px; font-size: 15px; }
+  .quantity-stepper { height: 46px; }
+  .quantity-stepper button { width: 34px; height: 44px; font-size: 15px; }
   .quantity-stepper > span { min-width: 48px; font-size: 11px; }
   .quantity-stepper button.stepper-amount { width: auto; min-width: 48px; font-size: 11px; }
-  .row-edit { width: 28px; }
+  .row-edit { width: 32px; height: 44px; letter-spacing: 1px; }
   .week-strip { grid-template-columns: repeat(7, minmax(58px, 1fr)); padding: 8px; gap: 3px; }
-  .week-navigation { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 40px; gap: 7px; margin-top: -5px; }
-  .week-navigation > [data-action="previous-week"] { grid-column: 1; }
-  .date-jump { grid-column: 2; min-width: 0; flex-direction: column; align-items: start; gap: 3px; }
-  .date-jump input { width: 100%; min-width: 0; }
+  /* ‹ Today › on the first row, the date field across the whole second row. */
+  .week-navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 7px; margin-top: -5px; }
+  .week-navigation > [data-action="previous-week"] { grid-column: 1; grid-row: 1; }
+  .date-jump { grid-column: 1 / -1; grid-row: 2; min-width: 0; flex-direction: column; align-items: stretch; gap: 3px; }
+  .date-jump input { width: 100%; min-width: 0; min-height: 44px; padding: 0 6px; }
   .week-range { display: none; }
-  .week-navigation > .today-button { grid-column: 3; }
-  .week-navigation > [data-action="next-week"] { grid-column: 4; }
+  .week-navigation > .today-button { grid-column: 2; grid-row: 1; justify-self: center; }
+  .week-navigation > [data-action="next-week"] { grid-column: 3; grid-row: 1; }
   .storage-map { grid-template-columns: 1fr; }
+  .storage-items { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .terms-list { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
   .day-chip { min-width: 58px; min-height: 70px; }
   .day-detail { padding: 16px 12px; }
   .day-detail .section-heading { flex-direction: row; align-items: end; }
   .day-detail h2 { font-size: 18px; }
-  .planned-meal { gap: 8px; }
+  .planned-meal { gap: 6px 8px; }
+  .planned-copy { flex-basis: 90px; }
   .planned-copy strong { font-size: 11px; }
-  .planned-meal .button-small { min-height: 36px; padding: 0 8px; font-size: 10px; }
-  .remove-button { width: 29px; }
+  /* The actions get a row of their own under the title; × stays next to the title. */
+  .planned-meal > .remove-button { order: 1; }
+  .planned-actions { order: 2; flex: 1 0 100%; justify-content: flex-start; padding-inline-start: 39px; }
+  .planned-meal .button-small { min-height: 44px; padding: 0 10px; font-size: 11px; }
   .picker-grid, .recipe-grid { grid-template-columns: 1fr; }
   .picker-item { min-height: 166px; }
   .recipe-card { min-height: 205px; }
@@ -608,6 +648,106 @@ html:not(.is-standalone) .phone-only { display: none; }
   .integration-note { align-items: start; flex-wrap: wrap; }
   .integration-note p { min-width: calc(100% - 55px); }
   .integration-state { margin-inline-start: 48px; }
+}
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+.compact-layout .sidebar { top: auto; right: 0; bottom: 0; left: 0; width: auto; height: 66px; padding: 4px 8px max(4px, env(safe-area-inset-bottom)); border-top: 1px solid #d7e0d6; border-inline-end: 0; background: #f9faf5; }
+.compact-layout .sidebar > .brand, .compact-layout .side-label, .compact-layout .sidebar-bottom { display: none; }
+.compact-layout .nav-list { height: 100%; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+.compact-layout .nav-item { min-width: 0; min-height: 52px; padding: 3px 2px; flex-direction: column; justify-content: center; gap: 2px; border-radius: 5px; font-size: 9px; line-height: 1.15; text-align: center; overflow-wrap: break-word; }
+.compact-layout .nav-item > span { max-width: 100%; }
+.compact-layout .nav-icon { height: 21px; font-size: 18px; }
+.compact-layout .nav-count { position: absolute; margin: -29px 0 0 32px; min-width: 17px; height: 17px; font-size: 9px; }
+.compact-layout .main-area { margin-inline-start: 0; padding-bottom: 70px; }
+.compact-layout .topbar { height: 60px; padding: 0 17px; }
+.compact-layout .mobile-brand { display: inline-flex; align-items: center; gap: 7px; }
+.compact-layout .mobile-brand .brand-mark { width: 34px; height: 34px; }
+.compact-layout .mobile-brand .brand-name { font-size: 19px; }
+.compact-layout .breadcrumb { display: none; }
+.compact-layout .top-actions { gap: 10px; }
+.compact-layout .today-label { font-size: 10px; }
+.compact-layout .icon-button { width: 44px; height: 44px; }
+.compact-layout .view-container { padding: 25px 17px 45px; }
+.compact-layout .page-heading { align-items: start; flex-direction: column; gap: 15px; margin-bottom: 22px; }
+.compact-layout h1 { font-size: 30px; }
+.compact-layout .page-heading p { max-width: 440px; font-size: 12px; }
+.compact-layout .page-heading > .button { min-height: 43px; }
+.compact-layout .stats-row { margin-bottom: 27px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.compact-layout .stat > div { min-width: 0; overflow-wrap: break-word; hyphens: auto; }
+.compact-layout .backup-actions { flex: 1 1 100%; }
+.compact-layout .danger-zone .button-danger { margin-inline-start: auto; }
+.compact-layout .dialog-actions .item-remove-button { flex: 1 0 100%; margin-inline-end: 0; }
+.compact-layout.no-flex-gap .dialog-actions .item-remove-button { margin-bottom: 8px; }
+.compact-layout.no-flex-gap .dialog-actions .item-remove-button + .button { margin-inline-start: 0; }
+.compact-layout .settings-tabs button { font-size: 12px; }
+.compact-layout .form-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.compact-layout .expiration-panel { margin-top: -7px; padding: 13px; }
+.compact-layout .expiration-panel > header { align-items: start; }
+.compact-layout .expiry-row { grid-template-columns: 1fr; gap: 4px; }
+.compact-layout .expiry-actions, .compact-layout .expiry-row > .expiry-suggestions { padding-inline-start: 39px; }
+.compact-layout .stat { min-height: 76px; padding: 10px; gap: 8px; }
+.compact-layout .stat-icon { width: 31px; height: 31px; font-size: 16px; }
+.compact-layout .stat strong { font-size: 18px; }
+.compact-layout .stat div span { font-size: 9px; }
+.compact-layout .section-heading { align-items: start; flex-direction: column; gap: 11px; }
+.compact-layout .section-heading h2 { font-size: 19px; }
+.compact-layout .filter-controls { width: 100%; }
+.compact-layout .inventory-tools { width: 100%; align-items: stretch; }
+.compact-layout .inventory-mode-switch { align-self: flex-end; }
+.compact-layout .search-field { width: auto; flex: 1; }
+.compact-layout .filter-controls select { max-width: 45%; }
+.compact-layout .inventory-row { min-height: 69px; flex-wrap: wrap; gap: 6px 9px; padding: 8px 1px; }
+.compact-layout .inventory-row > .item-main { flex: 1 1 110px; }
+.compact-layout .inventory-row > .quantity-stepper { margin-inline-start: auto; }
+.compact-layout .item-symbol { width: 33px; height: 33px; flex-basis: 33px; font-size: 18px; }
+.compact-layout .item-main strong { font-size: 12px; }
+.compact-layout .item-main span { font-size: 9px; }
+.compact-layout .quantity-stepper { height: 46px; }
+.compact-layout .quantity-stepper button { width: 34px; height: 44px; font-size: 15px; }
+.compact-layout .quantity-stepper > span { min-width: 48px; font-size: 11px; }
+.compact-layout .quantity-stepper button.stepper-amount { width: auto; min-width: 48px; font-size: 11px; }
+.compact-layout .row-edit { width: 32px; height: 44px; letter-spacing: 1px; }
+.compact-layout .week-strip { grid-template-columns: repeat(7, minmax(58px, 1fr)); padding: 8px; gap: 3px; }
+.compact-layout .week-navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 7px; margin-top: -5px; }
+.compact-layout .week-navigation > [data-action="previous-week"] { grid-column: 1; grid-row: 1; }
+.compact-layout .date-jump { grid-column: 1 / -1; grid-row: 2; min-width: 0; flex-direction: column; align-items: stretch; gap: 3px; }
+.compact-layout .date-jump input { width: 100%; min-width: 0; min-height: 44px; padding: 0 6px; }
+.compact-layout .week-range { display: none; }
+.compact-layout .week-navigation > .today-button { grid-column: 2; grid-row: 1; justify-self: center; }
+.compact-layout .week-navigation > [data-action="next-week"] { grid-column: 3; grid-row: 1; }
+.compact-layout .storage-map { grid-template-columns: 1fr; }
+.compact-layout .storage-items { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.compact-layout .terms-list { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.compact-layout .day-chip { min-width: 58px; min-height: 70px; }
+.compact-layout .day-detail { padding: 16px 12px; }
+.compact-layout .day-detail .section-heading { flex-direction: row; align-items: end; }
+.compact-layout .day-detail h2 { font-size: 18px; }
+.compact-layout .planned-meal { gap: 6px 8px; }
+.compact-layout .planned-copy { flex-basis: 90px; }
+.compact-layout .planned-copy strong { font-size: 11px; }
+.compact-layout .planned-meal > .remove-button { order: 1; }
+.compact-layout .planned-actions { order: 2; flex: 1 0 100%; justify-content: flex-start; padding-inline-start: 39px; }
+.compact-layout .planned-meal .button-small { min-height: 44px; padding: 0 10px; font-size: 11px; }
+.compact-layout .picker-grid, .compact-layout .recipe-grid { grid-template-columns: 1fr; }
+.compact-layout .picker-item { min-height: 166px; }
+.compact-layout .recipe-card { min-height: 205px; }
+.compact-layout .shopping-row { gap: 7px; }
+.compact-layout .shopping-name { font-size: 12px; }
+.compact-layout .shopping-amount, .compact-layout .shopping-source { font-size: 9px; }
+.compact-layout .putaway-button { min-width: 83px; padding: 0 7px; font-size: 10px; }
+.compact-layout .recipe-search { gap: 7px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+.compact-layout .recipe-search input { flex: 1 1 60%; min-height: 40px; }
+.compact-layout .recipe-search .button { padding: 0 11px; flex: 1 1 auto; }
+.compact-layout .integration-note { align-items: start; flex-wrap: wrap; }
+.compact-layout .integration-note p { min-width: calc(100% - 55px); }
+.compact-layout .integration-state { margin-inline-start: 48px; }
+/* end of html.compact-layout copy */
+/* Very narrow phones: the stat tiles lose their icon so the words fit, and the date in the top bar goes. */
+@media (max-width: 420px) {
+  .stat-icon { display: none; }
+  .terms-list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 380px) {
+  .today-label { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -716,14 +856,14 @@ html:not(.is-standalone) .phone-only { display: none; }
 .steps-timer-chip { min-height: 40px; padding: 0 12px; border: 1px solid var(--green); border-radius: 20px; background: var(--mint); color: var(--green); font: inherit; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer; }
 .steps-timer-inline { align-self: flex-start; min-width: 220px; padding: 12px 20px; border: 2px solid var(--green); border-radius: 14px; display: grid; justify-items: center; gap: 2px; background: var(--mint); color: var(--green); font: inherit; cursor: pointer; }
 /* Keep the space reserved while hidden, so starting the timer doesn't shift the step. */
-.steps-timer-inline[hidden] { display: grid; visibility: hidden; }
+.steps-timer-inline[hidden] { display: grid !important; visibility: hidden; }
 .steps-timer-inline strong { font-size: 44px; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .steps-timer-inline span { font-size: 12px; font-weight: 700; opacity: .8; }
 .steps-timer-inline.is-done { border-color: var(--coral); background: var(--coral-pale); color: var(--coral); animation: steps-pulse 1s ease-in-out infinite; }
 /* Tools tab */
 .tools-tabs { margin: -8px 0 4px; }
-.tools-tabs button { min-width: 96px; min-height: 38px; font-size: 13px; }
-.converter-form { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(160px, 1.3fr) minmax(180px, 1.5fr); gap: 12px; max-width: 760px; align-items: end; }
+.tools-tabs button { min-width: 96px; min-height: 44px; font-size: 13px; }
+.converter-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1.5fr); gap: 12px; max-width: 760px; align-items: end; }
 .converter-form label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .converter-form input, .converter-form select { width: 100%; height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); color: var(--ink); font-size: 16px; }
 .converter-form input { font-size: 20px; font-variant-numeric: tabular-nums; }
@@ -738,6 +878,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 #temp-results { margin-top: 18px; }
 .terms-search { margin-bottom: 16px; }
 .terms-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.term-card { min-width: 0; overflow-wrap: break-word; }
 .term-card { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; gap: 8px; background: var(--white); }
 .term-card h3 { margin: 0; font-size: 17px; }
 .term-card h3 span { color: var(--muted); font: 500 13px 'DM Sans', sans-serif; }
@@ -747,8 +888,14 @@ html:not(.is-standalone) .phone-only { display: none; }
   .converter-form { grid-template-columns: 1fr 1fr; }
   .converter-form label:last-child { grid-column: 1 / -1; }
   .tools-tabs { display: flex; }
-  .tools-tabs button { flex: 1; min-width: 0; }
+  .tools-tabs button { flex: 1 1 auto; min-width: 0; padding: 2px 6px; line-height: 1.15; overflow-wrap: anywhere; }
 }
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+.compact-layout .converter-form { grid-template-columns: 1fr 1fr; }
+.compact-layout .converter-form label:last-child { grid-column: 1 / -1; }
+.compact-layout .tools-tabs { display: flex; }
+.compact-layout .tools-tabs button { flex: 1 1 auto; min-width: 0; padding: 2px 6px; line-height: 1.15; overflow-wrap: anywhere; }
+/* end of html.compact-layout copy */
 /* Timers tab */
 .timer-view-list { overflow: visible; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .timer-view-list .timer-pill { box-shadow: none; }
@@ -793,9 +940,13 @@ html:not(.is-standalone) .phone-only { display: none; }
 @keyframes steps-pulse { 50% { transform: scale(1.05); } }
 .steps-progress { height: 6px; overflow: hidden; border-radius: 3px; background: var(--line); }
 .steps-progress span { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--green); transition: width .25s ease; }
-.steps-body { min-height: 0; flex: 1; overflow: auto; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+/* Centred while it fits; a long step scrolls from its top (justify-content: center would cut the top off). */
+.steps-body { min-height: 0; flex: 1; overflow: auto; display: flex; flex-direction: column; justify-content: flex-start; gap: 16px; }
+.steps-body > :first-child { margin-top: auto; }
+.steps-body > :last-child { margin-bottom: auto; }
 .steps-step-heading { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }
 .steps-text { margin: 0; color: var(--ink); font-size: clamp(22px, 4.2vw, 30px); font-weight: 600; line-height: 1.4; }
+.steps-text mark, .recipe-method-step mark { white-space: nowrap; }
 .steps-text mark { padding: 0 4px; border-radius: 4px; background: #f5ead0; color: inherit; }
 .steps-text .steps-amount { color: var(--green); font-weight: 800; }
 .steps-heading { margin: 0; font-size: 24px; }
@@ -820,7 +971,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 .steps-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
 .steps-nav .button { min-height: 60px; font-size: 17px; }
 .steps-nav .button:disabled { opacity: .4; cursor: default; }
-.planned-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 6px; }
+.planned-actions { min-width: 0; display: flex; flex-wrap: wrap; justify-content: end; gap: 6px; }
 .planned-actions .button { flex: 0 0 auto; }
 :root[data-theme="dark"] .steps-text mark { background: #4a3f22; }
 @media (max-width: 720px) {
@@ -829,6 +980,14 @@ html:not(.is-standalone) .phone-only { display: none; }
   .floating-timers { right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); max-height: calc(100vh - 150px); max-height: calc(100dvh - 150px); }
   .steps-timer-panel { top: 66px; right: 12px; left: 12px; width: auto; }
 }
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+.compact-layout .steps-dialog { width: 100%; height: 100%; max-width: 100%; max-height: 100%; margin: 0; border-radius: 0; padding: 16px; }
+@supports (height: 100dvh) {
+  .compact-layout .steps-dialog { height: 100dvh; max-height: 100dvh; }
+}
+.compact-layout .floating-timers { right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); max-height: calc(100vh - 150px); max-height: calc(100dvh - 150px); }
+.compact-layout .steps-timer-panel { top: 66px; right: 12px; left: 12px; width: auto; }
+/* end of html.compact-layout copy */
 
 /* Chrome before 84 (like Chrome 81, the last Chrome for Android 4.4 tablets) has no gap in flex rows. app.js adds
    .no-flex-gap on those browsers; space the most common neighbours with margins instead. */
@@ -886,7 +1045,7 @@ html:not(.is-standalone) .phone-only { display: none; }
 /* Servings on the recipe page. */
 .recipe-page-side .section-heading { flex-wrap: wrap; }
 .servings-control { display: inline-flex; align-items: center; gap: 8px; }
-.servings-control .icon-button { width: 34px; height: 34px; }
+.servings-control .icon-button { width: 44px; height: 44px; }
 .servings-control span { min-width: 92px; text-align: center; font-size: 13px; font-weight: 600; }
 .no-flex-gap .servings-control > * + * { margin-inline-start: 8px; }
 
@@ -901,7 +1060,10 @@ html:not(.is-standalone) .phone-only { display: none; }
 .undo-bar span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .undo-bar .text-button { flex: 0 0 auto; color: #9fe0bf; font-weight: 700; }
 .no-flex-gap .undo-bar > * + * { margin-inline-start: 16px; }
-@media (max-width: 760px) { .undo-bar { bottom: calc(76px + env(safe-area-inset-bottom)); } }
+@media (max-width: 720px) { .undo-bar { bottom: calc(76px + env(safe-area-inset-bottom)); } }
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+.compact-layout .undo-bar { bottom: calc(76px + env(safe-area-inset-bottom)); }
+/* end of html.compact-layout copy */
 
 /* Text size (Settings): the page is zoomed, so limits in screen units are divided by the zoom to still fit. */
 :root[data-text-size="normal"] { --text-zoom: 1.15; }
@@ -914,17 +1076,24 @@ html:not(.is-standalone) .phone-only { display: none; }
 :root[data-text-size="normal"] .recipe-ingredient-list, :root[data-text-size="large"] .recipe-ingredient-list { max-height: calc(45vh / var(--text-zoom)); }
 :root[data-text-size="normal"] .floating-timers, :root[data-text-size="large"] .floating-timers { max-height: calc((100vh - 40px) / var(--text-zoom)); width: min(300px, calc((100vw - 24px) / var(--text-zoom))); }
 :root[data-text-size="normal"] .undo-bar, :root[data-text-size="large"] .undo-bar { max-width: calc((100vw - 32px) / var(--text-zoom)); }
-@media (max-width: 760px) {
+@media (max-width: 720px) {
   :root[data-text-size="normal"] .steps-dialog, :root[data-text-size="large"] .steps-dialog { height: calc(100vh / var(--text-zoom)); max-height: calc(100vh / var(--text-zoom)); }
 }
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+:root.compact-layout[data-text-size="normal"] .steps-dialog, :root.compact-layout[data-text-size="large"] .steps-dialog { height: calc(100vh / var(--text-zoom)); max-height: calc(100vh / var(--text-zoom)); }
+/* end of html.compact-layout copy */
 
 /* Dialog headings (title and ×) stay at the top while the dialog scrolls. The heading stretches over the dialog's
    25px padding and has its background, so content scrolls underneath it. */
 .app-dialog .dialog-heading { position: sticky; top: -25px; z-index: 3; margin: -25px -25px 3px; padding: 25px 25px 10px; background: var(--white); }
+/* A long title (recipes) takes at most two lines, so the sticky heading leaves room for the dialog itself. */
+.app-dialog .dialog-heading > div { min-width: 0; }
+.app-dialog .dialog-heading h2 { overflow: hidden; max-height: 2.4em; overflow-wrap: break-word; }
+@supports (-webkit-line-clamp: 2) { .app-dialog .dialog-heading h2 { display: -webkit-box; max-height: none; -webkit-box-orient: vertical; -webkit-line-clamp: 2; } }
 :root[data-theme="dark"] .app-dialog .dialog-heading { background: #202a24; }
 
 /* Recipe ideas from the web (Recipes page). */
-.ideas-panel { margin: 22px 0 8px; }
+.ideas-panel { margin: 22px 0 30px; }
 .ideas-status { margin: 4px 0 0; }
 .ideas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
 .idea-card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); display: flex; flex-direction: column; }
@@ -984,7 +1153,11 @@ html:not(.is-standalone) .phone-only { display: none; }
 .kitchen-count { color: var(--ink); }
 body.kitchen-screen-open { overflow: hidden; }
 :root[data-theme="dark"] .kitchen-list li.expired small, :root[data-theme="dark"] .kitchen-list li.done .kitchen-timer { color: #f09988; }
-@media (max-width: 760px) { .kitchen-screen-grid { grid-template-columns: 1fr; } .kitchen-screen-head { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 720px) { .kitchen-screen-grid { grid-template-columns: 1fr; } .kitchen-screen-head { align-items: flex-start; flex-direction: column; } }
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+.compact-layout .kitchen-screen-grid { grid-template-columns: 1fr; }
+.compact-layout .kitchen-screen-head { align-items: flex-start; flex-direction: column; }
+/* end of html.compact-layout copy */
 .no-flex-gap .kitchen-screen-head > * + * { margin-inline-start: 16px; }
 .no-flex-gap .top-actions > * + * { margin-inline-start: 18px; }
 .no-flex-gap .kitchen-list li > * + * { margin-inline-start: 12px; }
@@ -1004,8 +1177,8 @@ body.kitchen-screen-open { overflow: hidden; }
   .page-heading .eyebrow, .shopping-row.checked, .shopping-group.is-done { display: none !important; }
   .print-only { display: block; }
   .main-area { margin: 0; min-height: 0; }
-  .view-container { max-width: none; padding: 0; animation: none; }
-  .page-heading { margin: 0 0 14px; padding: 0; display: block; }
+  .view-container, .compact-layout .view-container { max-width: none; padding: 0; animation: none; }
+  .page-heading, .compact-layout .page-heading { margin: 0 0 14px; padding: 0; display: block; }
   .page-heading h1 { margin: 0 0 4px; font-size: 22pt; }
   .page-heading p { margin: 0; color: #444; }
   .section-block { padding: 0; border: 0; box-shadow: none; background: none; }
@@ -1050,17 +1223,17 @@ body.kitchen-screen-open { overflow: hidden; }
 .no-flex-gap .week-suggestions li > * + *, .no-flex-gap .week-suggestion-actions > * + * { margin-inline-start: 12px; }
 
 /* Favourites and "cooked … times" (0.16). */
-.favourite-button { min-width: 30px; min-height: 30px; padding: 0 4px; border: 0; background: none; color: #b9a46a; font-size: 18px; line-height: 1; cursor: pointer; }
+.favourite-button { min-width: 44px; min-height: 44px; padding: 0 4px; border: 0; background: none; color: #b9a46a; font-size: 18px; line-height: 1; cursor: pointer; }
 .favourite-button.is-on { color: #d79b1d; }
 .favourite-button.with-label { padding: 0; font-size: 12px; font-weight: 700; color: var(--green); }
 .favourite-button.with-label span { margin-inline-end: 2px; color: #d79b1d; font-size: 15px; }
-.recipe-card-top .favourite-button { margin: -7px -6px -7px 0; }
+.recipe-card-top .favourite-button { margin: -14px -12px -14px 0; }
 .recipe-results-heading > .recipe-results-tools { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px 14px; }
 @media (max-width: 560px) { .recipe-results-heading:not(.remote-heading) { flex-wrap: wrap; } .recipe-results-heading > .recipe-results-tools { justify-content: flex-start; } }
 .recipe-sort { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
-.recipe-sort select { min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.recipe-sort select { min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .no-flex-gap .recipe-sort > * + * { margin-inline-start: 6px; }
-.favourites-filter { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+.favourites-filter { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
 .favourites-filter.active { border-color: #d79b1d; background: #fbf1d8; color: #7a5a10; }
 :root[data-theme="dark"] .favourites-filter.active { background: #44391c; color: #f0d48a; }
 
@@ -1069,7 +1242,7 @@ body.kitchen-screen-open { overflow: hidden; }
 .recipe-diet small { display: block; margin-top: 2px; font-size: 11px; }
 .diet-tag { display: inline-block; margin-inline-end: 6px; padding: 1px 8px; border-radius: 10px; background: var(--mint); color: var(--green-dark); font-weight: 700; }
 .diet-filters { margin: -4px 0 14px; display: flex; flex-wrap: wrap; gap: 8px; }
-.diet-filter { min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+.diet-filter { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; }
 .diet-filter.active { border-color: var(--green); background: var(--mint); color: var(--green-dark); }
 .no-flex-gap .diet-filters > * { margin: 0 0 8px; margin-inline-end: 8px; }
 .recipe-cooked-note { margin: 0 0 18px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
@@ -1079,9 +1252,9 @@ body.kitchen-screen-open { overflow: hidden; }
 @media print { .recipe-cooked-note, .favourite-button, .recipe-rating, .recipe-note-form, .recipe-note-delete { display: none !important; } }
 
 /* Ratings and notes on recipes (0.56). */
-.recipe-rating { display: inline-flex; align-items: center; }
+.recipe-rating { max-width: 100%; display: inline-flex; flex-wrap: wrap; align-items: center; }
 .rating-label { margin-inline-end: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
-.rating-star { min-width: 34px; min-height: 34px; padding: 0; border: 0; background: none; color: #8a7a4c; font-size: 22px; line-height: 1; cursor: pointer; }
+.rating-star { min-width: 40px; min-height: 44px; padding: 0; border: 0; background: none; color: #8a7a4c; font-size: 22px; line-height: 1; cursor: pointer; }
 .rating-star.is-on { color: #b7800f; }
 :root[data-theme="dark"] .rating-star { color: #b9a46a; }
 :root[data-theme="dark"] .rating-star.is-on { color: #f0c457; }
@@ -1096,6 +1269,9 @@ body.kitchen-screen-open { overflow: hidden; }
 .recipe-note-delete { font-size: 12px; }
 .recipe-note-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
 .recipe-note-form textarea { flex: 1 1 240px; min-height: 48px; }
+/* Same look as the dialog textareas (.app-dialog label > textarea). */
+.recipe-note-form textarea, .cook-feedback textarea { min-width: 0; padding: 10px 11px; border: 1px solid #dbe2d9; border-radius: 5px; background: white; color: var(--ink); font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
+:root[data-theme="dark"] .recipe-note-form textarea, :root[data-theme="dark"] .cook-feedback textarea { border-color: #3b4b40; background: #18221c; color: var(--ink); }
 .no-flex-gap .recipe-note-form > * + *, .no-flex-gap .recipe-notes li > * + * { margin-inline-start: 10px; }
 .cook-feedback { margin: 14px 0 4px; }
 .cook-feedback-label { display: block; color: var(--ink); font-size: 13px; font-weight: 700; }
@@ -1120,12 +1296,13 @@ body.kitchen-screen-open { overflow: hidden; }
    Chrome 81 has no inset-inline. Arrows like → are swapped in render() (mirrorArrows); ‹ › mirror by themselves. */
 [dir="rtl"] .sidebar { right: 0; left: auto; }
 [dir="rtl"] select { padding: 0 11px 0 30px; }
-[dir="rtl"] .recipe-search { padding: 6px 15px 6px 7px; }
 [dir="rtl"] .settings-connection > summary { padding: 12px 14px 12px 44px; }
 [dir="rtl"] .settings-connection > summary::after { right: auto; left: 18px; }
+[dir="rtl"] .settings-connection[open] > summary::after { transform: translateY(-50%) rotate(-90deg); }
+[dir="rtl"] .undo-bar { padding: 10px 18px 10px 12px; }
 [dir="rtl"] #settings-button.has-update::after { right: auto; left: 1px; }
 [dir="rtl"] .steps-tools li { padding: 6px 8px 6px 12px; }
-[dir="rtl"] .recipe-card-top .favourite-button { margin: -7px 0 -7px -6px; }
+[dir="rtl"] .recipe-card-top .favourite-button { margin: -14px 0 -14px -12px; }
 [dir="rtl"] .help-steps li::before { left: auto; right: 0; }
 [dir="rtl"] .toggle-track::after { left: auto; right: 3px; }
 [dir="rtl"] .setting-toggle input:checked + .toggle-track::after { transform: translateX(-20px); }
@@ -1138,6 +1315,12 @@ body.kitchen-screen-open { overflow: hidden; }
   [dir="rtl"] .floating-timers { left: 12px; }
   [dir="rtl"] .steps-timer-panel { right: 12px; left: 12px; }
 }
+/* html.compact-layout: the same rules as the 720px block above (made by tests/e2e/layout-compact-css.mjs --write). */
+.compact-layout[dir="rtl"] .sidebar { left: 0; }
+.compact-layout[dir="rtl"] .nav-count { margin: -29px 32px 0 0; }
+.compact-layout[dir="rtl"] .floating-timers { left: 12px; }
+.compact-layout[dir="rtl"] .steps-timer-panel { right: 12px; left: 12px; }
+/* end of html.compact-layout copy */
 /* What people type (recipes, items, the shopping list) keeps its own direction: an English recipe stays readable in an
    Arabic interface, and an Arabic one in an English interface. */
 .recipe-method-step p, .recipe-method-heading, .recipe-ingredient-list li > span:not([aria-hidden]), .recipe-card h3, .recipe-card > p,

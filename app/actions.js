@@ -77,8 +77,11 @@ function shoppingNeeds(meals = weekMeals(), { fromStock = true } = {}) {
       const need = needs.get(key) || { name: item ? item.name : name, item, amount: 0, unit: item ? item.unit || '' : '', comparable: true, sources: [], more: [] };
       if (!need.sources.includes(recipe.name)) need.sources.push(recipe.name);
       if (item) {
-        const used = deductionAmount(ingredient, item);
-        if (used > 0) need.amount += used; else need.comparable = false;
+        // A line without an amount ("flour for dusting") adds nothing (one piece of something counted); only an
+        // amount that can't be compared with the item's unit makes the whole need uncountable.
+        const isCount = ['', 'pcs'].includes(canonicalUnit(item.unit));
+        const used = parsed.amount === null ? (isCount ? 1 : 0) : amountForItem(parsed.amount, parsed.unit, item);
+        if (used === null) need.comparable = false; else need.amount += used;
       } else if (!needs.has(key)) {
         need.amount = parsed.amount || 1;
         need.unit = parsed.amount ? parsed.unitText : '';
@@ -92,8 +95,13 @@ function shoppingNeeds(meals = weekMeals(), { fromStock = true } = {}) {
   }
   const short = [];
   for (const need of needs.values()) {
+    // Everything in stock that is this ingredient counts (0.2 l of milk in the fridge and a 1 l carton in the
+    // cupboard), in the first item's unit; items whose amount can't be put in that unit are left out.
+    const record = need.item ? ingredientRecord(need.item.name) : null;
+    const others = record ? inventoryMatches(need.item.name).filter((match) => match.id !== need.item.id && ingredientRecord(match.name) === record) : [];
+    const stock = need.item ? others.reduce((sum, match) => sum + (amountForItem(Number(match.quantity), match.unit, need.item) || 0), Number(need.item.quantity)) : 0;
     for (const part of need.item ? [need] : [need, ...need.more]) {
-      let amount = need.item ? need.amount - Number(need.item.quantity) : part.amount;
+      let amount = need.item ? roundTo(need.amount - stock, 3) : part.amount;
       if (need.item && (!need.comparable || amount <= 0)) continue;
       let unit = part.unit;
       const canonical = canonicalUnit(unit);
@@ -112,10 +120,24 @@ function addToShoppingList(lines, { combine = false } = {}) {
   for (const line of lines) {
     const key = shoppingKey(line.name);
     const same = state.shopping.filter((entry) => shoppingKey(entry.name) === key);
-    if (!combine && same.length) continue;
+    if (!combine && same.length) {
+      // Refreshing again: a line not ticked yet grows to what the plan now needs (never shrinks), and names the
+      // recipes it is for; a ticked one (bought) is left alone.
+      const open = same.find((entry) => !entry.checked && amountIn(Number(line.quantity) || 0, line.unit, entry.unit) !== null);
+      if (!open) continue;
+      const needed = amountIn(Number(line.quantity) || 0, line.unit, open.unit);
+      const sources = String(open.source || '').split(', ').filter(Boolean);
+      const newSources = String(line.source || '').split(', ').filter((source) => source && !sources.includes(source));
+      const grows = needed > (Number(open.quantity) || 0);
+      if (!grows && !newSources.length) continue;
+      if (grows) open.quantity = roundTo(needed, 3);
+      if (newSources.length) open.source = [...sources, ...newSources].join(', ');
+      changed += 1;
+      continue;
+    }
     const target = combine && same.find((entry) => !entry.checked && amountIn(Number(line.quantity) || 0, line.unit, entry.unit) !== null);
     if (target) {
-      target.quantity = Math.round(((Number(target.quantity) || 0) + amountIn(Number(line.quantity) || 0, line.unit, target.unit)) * 100) / 100 || '';
+      target.quantity = roundTo((Number(target.quantity) || 0) + amountIn(Number(line.quantity) || 0, line.unit, target.unit), 3) || '';
       const sources = String(target.source || '').split(', ').filter(Boolean);
       for (const source of String(line.source || '').split(', ')) if (source && !sources.includes(source)) sources.push(source);
       target.source = sources.join(', ');
@@ -738,22 +760,35 @@ $('#item-form').addEventListener('submit', (event) => {
   event.preventDefault();
   const form = event.currentTarget;
   const name = form.elements.name.value.trim();
+  // Spaces only are no name ("required" lets them through).
+  if (!name) {
+    form.elements.name.setCustomValidity(t('Enter a name for the item.'));
+    form.elements.name.reportValidity();
+    return;
+  }
   const location = form.elements.location.value;
   const resolved = resolvedExpiration(name, location, form.elements.expiresOn, itemFormStartDate(form));
   const expiration = form.elements.kind.value === 'Household' && resolved.expirationSource === 'estimated' ? { expiresOn: '', expirationSource: '' } : resolved;
   const id = form.elements.id.value || makeId();
   const previous = state.inventory.find((entry) => entry.id === id);
+  // Amounts left as the dialog showed them stay exactly as stored (openItemDialog keeps what it showed).
+  const amountUntouched = previous && form.elements.quantity.value === form.dataset.shownQuantity && form.elements.unit.value === form.dataset.shownUnit;
   const item = metricInventoryItem({
     id,
     name,
-    ...readAmountFields(form),
+    ...(amountUntouched ? { quantity: previous.quantity, unit: previous.unit } : readAmountFields(form)),
     ...expiration,
     location,
     kind: form.elements.kind.value,
   });
-  // A price is for the whole amount; the item keeps it per unit, and the product remembers it (0.51).
+  // A price is for the whole amount; the item keeps it per unit, and the product remembers it (0.51). A price field
+  // nobody touched keeps the unit price it had, also when the amount changed (half a kilo left of 2 a kilo is still
+  // 2 a kilo, not 4).
   const price = Number(form.elements.price.value);
-  if (price > 0 && item.quantity > 0) {
+  const priceUntouched = previous && form.elements.price.value === form.dataset.shownPrice;
+  if (priceUntouched && Number(previous.unitPrice) > 0) {
+    item.unitPrice = previous.unitPrice;
+  } else if (price > 0 && item.quantity > 0) {
     item.unitPrice = Math.round((price / item.quantity) * 10000) / 10000;
     rememberPrice(item.name, item.unitPrice, item.unit);
   }
@@ -761,7 +796,9 @@ $('#item-form').addEventListener('submit', (event) => {
   if (form.elements.dateKind.value === 'best-before' && item.expiresOn && item.expirationSource !== 'estimated') item.dateKind = 'best-before';
   // The minimum was typed in the unit picked for the amount; it is kept in the unit the item is saved in.
   const typedMinimum = Number(form.elements.minimum.value);
-  const minimum = typedMinimum > 0 ? (amountIn(typedMinimum, form.elements.unit.value, item.unit) ?? typedMinimum) : 0;
+  const minimumUntouched = previous && Number(previous.minimum) > 0 && form.elements.minimum.value === form.dataset.shownMinimum && form.elements.unit.value === form.dataset.shownUnit;
+  const keptMinimum = minimumUntouched ? amountIn(Number(previous.minimum), previous.unit, item.unit) : null;
+  const minimum = keptMinimum !== null ? keptMinimum : typedMinimum > 0 ? (amountIn(typedMinimum, form.elements.unit.value, item.unit) ?? typedMinimum) : 0;
   if (minimum > 0) item.minimum = minimum;
   if (form.elements.barcode.value) item.barcode = form.elements.barcode.value;
   // Still listed for restocking while below the same minimum, so saving doesn't add it to the list again.
@@ -777,6 +814,8 @@ $('#item-form').addEventListener('submit', (event) => {
   persist();
   $('#item-dialog').close();
 });
+
+$('#item-form').elements.name.addEventListener('input', (event) => event.target.setCustomValidity(''));
 
 $('#use-form').addEventListener('input', updateUseLeft);
 $('#use-form').addEventListener('change', updateUseLeft);
@@ -809,11 +848,14 @@ $('#cook-form').addEventListener('submit', (event) => {
   if (plan && recipe) {
     const usedIndices = new Set($$('#cook-ingredients input[name="ingredient"]:checked').map((input) => Number(input.value)));
     for (const index of usedIndices) {
-      const item = matchingInventory(recipe.ingredients[index]);
-      // The amount is shown in a friendly unit (150 g off a 1 kg bag); it comes off in the item's own unit.
+      // The item the dialog showed for this line (data-item), not a new match: an earlier line may have used it up.
       const input = form.elements[`amount-${index}`];
+      const item = input && input.dataset.item ? state.inventory.find((entry) => entry.id === input.dataset.item) : null;
+      // The amount is shown in a friendly unit (150 g off a 1 kg bag); it comes off in the item's own unit, exactly
+      // as the recipe says while the shown amount wasn't changed.
       const typed = Number(input?.value);
-      const used = item && typed > 0 ? (amountForItem(typed, input.dataset.unit || item.unit, item) ?? typed) : 0;
+      const untouched = input && input.dataset.exact !== undefined && input.value === input.dataset.shown;
+      const used = !item || !(typed > 0) ? 0 : untouched ? Number(input.dataset.exact) : (amountForItem(typed, input.dataset.unit || item.unit, item) ?? typed);
       if (item && used > 0) item.quantity = Math.max(0, roundTo(Number(item.quantity) - used, 3));
     }
     if (form.elements.leftovers.checked) addLeftovers(recipe);
@@ -865,10 +907,12 @@ function addLeftovers(recipe) {
 function storeShoppingItem(shoppingItem, { quantity, unit, location, expiration, packageDate, barcode = '', price = 0 }) {
   const bought = metricInventoryItem({ quantity, unit });
   const existing = state.inventory.find((entry) => cleanIngredient(entry.name) === cleanIngredient(shoppingItem.name));
-  if (existing) {
+  // Added to what is there when the amounts compare (500 g onto 1 kg); 500 g of potatoes counted in pieces becomes
+  // an item of its own instead of 500 more pieces.
+  const added = existing ? amountForItem(Number(bought.quantity), bought.unit, existing) : null;
+  if (existing && added !== null) {
     if (barcode) existing.barcode = barcode;
-    const added = deductionAmount(`${bought.quantity} ${bought.unit}`.trim(), existing) || bought.quantity;
-    existing.quantity = Math.round((Number(existing.quantity) + added) * 100) / 100;
+    existing.quantity = roundTo(Number(existing.quantity) + added, 3);
     // The price paid for what was just bought sets the unit price (0.51).
     if (price > 0 && added > 0) existing.unitPrice = Math.round((price / added) * 10000) / 10000;
     if (packageDate) Object.assign(existing, expiration);
@@ -1105,7 +1149,7 @@ async function fillServerBackups() {
     list.innerHTML = copyLine + (backups.length
       ? backups.map((backup) => {
         const when = backup.savedAt ? formatDate(new Date(backup.savedAt), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : backup.name;
-        const what = t('{items} inventory items and {recipes} recipes', { items: backup.inventory, recipes: backup.recipes });
+        const what = kitchenSummary(backup.inventory, backup.recipes);
         return `<li><span><b>${escapeHtml(when)}</b>${backup.safety ? ` <i>${t('before a big change')}</i>` : ''}<br/>${escapeHtml(what)}</span><button class="button button-small button-quiet" type="button" data-action="restore-server-backup" data-name="${escapeHtml(backup.name)}">${t('Restore')}</button></li>`;
       }).join('')
       : `<li class="muted">${t('No backups yet. The first one is made with the first change of the day.')}</li>`);
@@ -1125,13 +1169,22 @@ async function restoreServerBackup(name) {
   await fillServerBackups();
 }
 
+// "3 inventory items and 1 recipe", counted in the app's language.
+const kitchenSummary = (items, recipes) => t('{items} and {recipes}', {
+  items: tp(Number(items) || 0, '{count} inventory item', '{count} inventory items'),
+  recipes: tp(Number(recipes) || 0, '{count} recipe', '{count} recipes'),
+});
+
 function restoreKitchenData(parsed) {
   const status = $('#backup-status');
   const restored = parsed?.state || parsed;
   if (!restored || !Array.isArray(restored.inventory) || !Array.isArray(restored.recipes)) { status.textContent = t('That file is not a Goodstock backup.'); return; }
-  const summary = t('{items} inventory items and {recipes} recipes', { items: restored.inventory.length, recipes: restored.recipes.length });
+  // Cleaned first (normalizeState drops entries that aren't items), so the counts are what will be restored.
+  const cleaned = normalizeState(restored);
+  const summary = kitchenSummary(cleaned.inventory.length, cleaned.recipes.length);
   if (!window.confirm(t('Replace everything in this kitchen with the backup ({summary})? This cannot be undone.', { summary }))) return;
-  state = normalizeState(restored);
+  state = cleaned;
+  inventoryLocation = ALL_LOCATIONS;
   persist();
   status.textContent = t('Restored {summary}.', { summary });
 }
@@ -1171,7 +1224,8 @@ $('#wipe-form').addEventListener('submit', (event) => {
   if (event.currentTarget.elements.confirmation.value.trim().toUpperCase() !== 'WIPE') return;
   $('#wipe-dialog').close();
   $('#settings-dialog').close();
-  state = { inventory: [], recipes: [], plan: [], shopping: [], locations: localDefaultLocations(), timerPresets: [] };
+  // Every list the kitchen has (log, prices, notes…), empty, so the pages and the sync find what they expect.
+  state = normalizeState({ ...freshState(), inventory: [], recipes: [] });
   activeView = 'inventory';
   inventoryQuery = '';
   inventoryLocation = 'All locations';
@@ -1180,13 +1234,35 @@ $('#wipe-form').addEventListener('submit', (event) => {
   persist();
 });
 
+// Settings → storage places. With as many places as before, a changed name in the same position is a rename: its
+// items and its stocktake date go along. A place taken off the list sends its items to the first place; items in a
+// place that was never on the list (an older kitchen's "Cupboard") stay where they are. Returns whether anything changed.
+function saveLocations(locations) {
+  const old = state.locations;
+  if (JSON.stringify(old) === JSON.stringify(locations)) return false;
+  const moves = new Map();
+  if (locations.length === old.length) {
+    old.forEach((place, index) => {
+      if (place !== locations[index] && !locations.includes(place) && !old.includes(locations[index])) moves.set(place, locations[index]);
+    });
+  }
+  for (const place of old) if (!locations.includes(place) && !moves.has(place)) moves.set(place, locations[0]);
+  for (const item of state.inventory) if (moves.has(item.location)) item.location = moves.get(item.location);
+  state.checks = (state.checks || []).map((check) => {
+    const renamed = moves.get(check.id);
+    return renamed && locations.indexOf(renamed) === old.indexOf(check.id) ? { ...check, id: renamed } : check;
+  });
+  state.locations = locations;
+  if (inventoryLocation !== ALL_LOCATIONS && !locations.includes(inventoryLocation)) inventoryLocation = moves.get(inventoryLocation) || ALL_LOCATIONS;
+  return true;
+}
+
 $('#settings-form').addEventListener('submit', (event) => {
   event.preventDefault();
   const locations = event.currentTarget.elements.locations.value.split(',').map((value) => value.trim()).filter(Boolean);
   if (locations.length) {
-    state.locations = [...new Set(locations)];
-    for (const item of state.inventory) if (!state.locations.includes(item.location)) item.location = state.locations[0];
-    persist();
+    const changed = saveLocations([...new Set(locations)]);
+    if (changed) persist();
   }
   $('#settings-dialog').close();
 });

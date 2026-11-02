@@ -20,6 +20,16 @@ function applyTextSize(size) {
   document.documentElement.dataset.textSize = chosen;
   const select = $('#text-size-select');
   if (select) select.value = chosen;
+  updateCompactLayout();
+}
+
+// The narrow (phone) layout follows the width the zoomed page really has: 800 px at Large (130%) is 615 px of
+// layout. styles.css applies its 720px rules under html.compact-layout too. The inline script in index.html does the
+// same before the first paint and on every resize.
+function updateCompactLayout() {
+  if (typeof window.goodstockCompactLayout === 'function') { window.goodstockCompactLayout(); return; }
+  const zoom = parseFloat(document.documentElement.style.zoom) || 1;
+  document.documentElement.classList.toggle('compact-layout', window.innerWidth / zoom <= 720);
 }
 
 function applyTheme(theme) {
@@ -117,6 +127,9 @@ async function initialize() {
   const shared = isShared();
   const pending = shared ? localStorage.getItem(PENDING_KEY) : 'local';
   if (cached) state = normalizeState(JSON.parse(cached));
+  // A first visit's sample kitchen is only sent to the server once the server said it has none; while it can't be
+  // asked (offline, or locked by a household PIN) it stays on this device and the server's copy replaces it later.
+  let queueChanges = !shared || Boolean(pending) || Boolean(cached && readSyncBase());
   // Shared kitchen: start from the server's copy, folding in anything this device changed while away.
   if (shared && navigator.onLine) {
     try {
@@ -125,24 +138,23 @@ async function initialize() {
         state = normalizeState(pending ? mergeStates(readSyncBase()?.state, JSON.parse(pending), remote.state) : remote.state);
         writeSyncBase(remote);
         if (pending) localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+        queueChanges = true;
       } else {
         // An empty server: this device's kitchen becomes the shared one.
         localStorage.setItem(PENDING_KEY, JSON.stringify(state));
+        queueChanges = true;
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       if (cached) updateSyncStatus('offline');
     }
   }
-  if (!cached && (!pending || !shared)) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    if (shared) localStorage.setItem(PENDING_KEY, JSON.stringify(state));
-  }
+  if (!cached && (!pending || !shared)) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   await loadIngredientCatalog();
   if (backfillMissingExpirations()) {
     const snapshot = JSON.stringify(state);
     localStorage.setItem(STORAGE_KEY, snapshot);
-    if (shared) localStorage.setItem(PENDING_KEY, snapshot);
+    if (shared && queueChanges) localStorage.setItem(PENDING_KEY, snapshot);
   }
   inventoryMode = localStorage.getItem(INVENTORY_MODE_KEY) === 'map' ? 'map' : 'list';
   loadTimers();
@@ -170,6 +182,12 @@ async function initialize() {
 }
 
 function render() {
+  // A resize event can arrive after the next render (rotating the tablet), so check the narrow layout here too.
+  updateCompactLayout();
+  withInventoryMatchCache(drawPage);
+}
+
+function drawPage() {
   const names = { inventory: t('INVENTORY'), week: t('THIS WEEK'), shopping: t('SHOPPING LIST'), recipes: t('RECIPES'), tools: t('TOOLS'), recipe: t('RECIPE') };
   $('#page-crumb').textContent = names[activeView];
   $('#today-label').textContent = formatDate(new Date(), { month: 'short', day: 'numeric' });
@@ -279,6 +297,8 @@ const ALL_LOCATIONS = N_('All locations');
 let inventoryLowOnly = false;
 
 function renderInventory() {
+  // A place renamed or removed (here or on another device) no longer filters the list.
+  if (inventoryLocation !== ALL_LOCATIONS && !state.locations.includes(inventoryLocation)) inventoryLocation = ALL_LOCATIONS;
   const locations = [ALL_LOCATIONS, ...state.locations];
   const rows = state.inventory.filter((item) => {
     const matchesText = matchesSearch(inventoryQuery, `${item.name} ${item.kind} ${kindLabel(item.kind)}`, [item.name]);
@@ -296,7 +316,7 @@ function renderInventory() {
     ${renderMonthOverview()}
     ${renderShelfLifeSuggestions()}
     <section class="section-block" id="inventory-items"><div class="section-heading"><div><h2>${inventoryLowOnly ? t('Running low') : t('Everything in its place')}</h2><span class="muted">${tp(rows.length, '{count} item', '{count} items')}</span>${inventoryLowOnly ? `<button class="text-button" type="button" data-action="filter-low">× ${t('Show everything')}</button>` : ''}</div><div class="inventory-tools"><div class="filter-controls"><label class="search-field"><span aria-hidden="true">⌕</span><input id="inventory-search" value="${escapeHtml(inventoryQuery)}" placeholder="${t('Find something')}" aria-label="${t('Find an item')}" /></label><select id="location-filter" aria-label="${t('Filter by location')}">${locations.map((location) => `<option value="${escapeHtml(location)}" ${inventoryLocation === location ? 'selected' : ''}>${escapeHtml(location === ALL_LOCATIONS ? t(ALL_LOCATIONS) : location)}</option>`).join('')}</select></div><div class="inventory-mode-switch" role="group" aria-label="${t('Inventory display mode')}"><button class="${inventoryMode === 'list' ? 'active' : ''}" data-action="inventory-mode" data-mode="list" aria-pressed="${inventoryMode === 'list'}">${t('List')}</button><button class="${inventoryMode === 'map' ? 'active' : ''}" data-action="inventory-mode" data-mode="map" aria-pressed="${inventoryMode === 'map'}">${t('Map')}</button></div></div></div>
-    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><button class="stepper-amount" type="button" data-action="use-some" data-id="${escapeHtml(item.id)}" title="${t('Use some')}">${escapeHtml(shownAmount(item.quantity, item.unit).quantity)} <small>${escapeHtml(shownAmount(item.quantity, item.unit).unit)}</small><span class="visually-hidden"> · ${t('Use some of {name}', { name: escapeHtml(item.name) })}</span></button><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery || inventoryLowOnly ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryLowOnly ? t('Nothing is running low.') : inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery || inventoryLowOnly ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
+    ${inventoryMode === 'map' ? renderInventoryMap(rows) : rows.length ? `<div class="inventory-list">${rows.map((item) => `<article class="inventory-row"><div class="item-symbol ${item.kind === 'Household' ? 'household' : ''}" aria-hidden="true">${item.kind === 'Household' ? '⌂' : '◌'}</div><div class="item-main"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.location)} <i>·</i> ${escapeHtml(kindLabel(item.kind))}${itemDetails(item)}</span>${inventoryExpiryMarkup(item, 'span')}</div><div class="quantity-stepper"><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="-1" aria-label="${t('Decrease {name}', { name: escapeHtml(item.name) })}">−</button><button class="stepper-amount" type="button" data-action="use-some" data-id="${escapeHtml(item.id)}" title="${t('Use some')}">${escapeHtml(formatNumber(shownAmount(item.quantity, item.unit).quantity))} <small>${escapeHtml(shownUnitLabel(shownAmount(item.quantity, item.unit).unit))}</small><span class="visually-hidden"> · ${t('Use some of {name}', { name: escapeHtml(item.name) })}</span></button><button data-action="adjust" data-id="${escapeHtml(item.id)}" data-delta="1" aria-label="${t('Increase {name}', { name: escapeHtml(item.name) })}">＋</button></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<div class="empty-state"><span class="empty-mark">＋</span><strong>${inventoryQuery || inventoryLowOnly ? t('Nothing found just yet.') : t('A little room for the good stuff.')}</strong><p>${inventoryLowOnly ? t('Nothing is running low.') : inventoryQuery ? t('Try another name or location.') : t('Add what you already have in your kitchen.')}</p>${inventoryQuery || inventoryLowOnly ? '' : `<button class="button button-primary" data-action="add-item">${t('Add the first item')}</button>`}</div>`}</section>`;
 }
 
 // Extra notes on an inventory row: a staple's minimum, when it was opened, when it went into the freezer.
@@ -340,15 +360,19 @@ function renderShelfLifeSuggestions() {
 }
 
 function renderInventoryMap(rows) {
-  if (!rows.length && inventoryQuery) return `<div class="empty-state"><span class="empty-mark">⌕</span><strong>${t('Nothing found just yet.')}</strong><p>${t('Try another name or location.')}</p></div>`;
+  // While searching or showing only what runs low, places with nothing that matches are left out: they may well
+  // hold other things.
+  const filtering = Boolean(inventoryQuery) || inventoryLowOnly;
+  if (!rows.length && filtering) return `<div class="empty-state"><span class="empty-mark">⌕</span><strong>${t('Nothing found just yet.')}</strong><p>${inventoryLowOnly ? t('Nothing is running low.') : t('Try another name or location.')}</p></div>`;
   const locations = [...new Set([...state.locations, ...rows.map((item) => item.location).filter(Boolean)])]
-    .filter((location) => inventoryLocation === ALL_LOCATIONS || location === inventoryLocation);
+    .filter((location) => inventoryLocation === ALL_LOCATIONS || location === inventoryLocation)
+    .filter((location) => !filtering || rows.some((item) => item.location === location));
   const categoryIcons = { Fruit: '🍎', Vegetables: '🥕', Herbs: '🌿', Dairy: '🥛', 'Meat and fish': '🍗', Bakery: '🍞', Baking: '🥣', Pantry: '🥫' };
   const locationIcon = (location) => FREEZER_WORDS.test(location) || FRIDGE_WORDS.test(location) ? '❄' : PANTRY_WORDS.test(location) ? '▤' : /clean|schoonmaak|putz|nettoyage|rengøring|städ|paglilinis|limpieza|pulizia|limpeza|curățenie|sprzątan|temizlik|убор|清洁|掃除|تنظيف|ניקיון/i.test(location) ? '✦' : '⌂';
   const itemIcon = (item) => item.kind === 'Household' ? '🧽' : categoryIcons[ingredientRecord(item.name)?.category] || '◌';
   return `<div class="storage-map">${locations.map((location) => {
     const items = rows.filter((item) => item.location === location);
-    return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${tp(items.length, '{count} item', '{count} items')}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(kindLabel(item.kind))}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(shownAmount(item.quantity, item.unit).quantity)}</strong><small>${escapeHtml(shownAmount(item.quantity, item.unit).unit || t('items'))}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<p class="storage-zone-empty">${t('Nothing stored here yet')}</p>`}</section>`;
+    return `<section class="storage-zone"><header class="storage-zone-heading"><span class="storage-zone-icon" aria-hidden="true">${locationIcon(location)}</span><div><h3>${escapeHtml(location)}</h3><span>${tp(items.length, '{count} item', '{count} items')}</span></div><span class="storage-zone-total">${items.length}</span></header>${items.length ? `<div class="storage-items">${items.map((item) => `<article class="visual-item"><span class="visual-item-icon" aria-hidden="true">${itemIcon(item)}</span><div class="visual-item-copy"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(kindLabel(item.kind))}</small>${inventoryExpiryMarkup(item, 'small')}</div><div class="visual-quantity"><strong>${escapeHtml(formatNumber(shownAmount(item.quantity, item.unit).quantity))}</strong><small>${escapeHtml(shownUnitLabel(shownAmount(item.quantity, item.unit).unit) || t('items'))}</small></div><button class="row-edit" data-action="edit-item" data-id="${escapeHtml(item.id)}" aria-label="${t('Edit {name}', { name: escapeHtml(item.name) })}" title="${t('Edit item')}">•••</button></article>`).join('')}</div>` : `<p class="storage-zone-empty">${t('Nothing stored here yet')}</p>`}</section>`;
   }).join('')}</div>`;
 }
 
@@ -412,7 +436,7 @@ function renderExpirationPanel() {
       ? `<div class="expiry-suggestions"><span>${t('Try using it in')}</span>${recipes.slice(0, 2).map((recipe) => `<button class="text-button expiry-recipe-link" data-action="show-expiring-recipe" data-id="${escapeHtml(recipe.id)}">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`).join('')}</div>`
       : `<span class="expiry-no-recipe">${t('No saved recipe uses this yet')}</span>`;
     const ideasButton = `<button class="text-button expiry-ideas" type="button" data-action="use-it-up" data-id="${escapeHtml(item.id)}">${t('Recipe ideas')} <span aria-hidden="true">✨</span></button>`;
-    return `<article class="expiry-row"><div class="expiry-item-info"><span class="expiry-mark" aria-hidden="true">!</span><div><strong>${escapeHtml(item.name)}</strong><span class="item-expiry ${expiryClass(item.expiresOn, item.dateKind)}">${escapeHtml(expirationText(item))} · ${escapeHtml(item.quantity)} ${escapeHtml(item.unit || '')}</span></div></div><div class="expiry-actions">${suggestions}${ideasButton}</div></article>`;
+    return `<article class="expiry-row"><div class="expiry-item-info"><span class="expiry-mark" aria-hidden="true">!</span><div><strong>${escapeHtml(item.name)}</strong><span class="item-expiry ${expiryClass(item.expiresOn, item.dateKind)}">${escapeHtml(expirationText(item))} · ${escapeHtml(amountText(item.quantity, item.unit))}</span></div></div><div class="expiry-actions">${suggestions}${ideasButton}</div></article>`;
   }).join('');
   return `<section class="expiration-panel" aria-label="${t('Items nearing expiration')}"><header><div><span class="eyebrow">${t('USE SOON')}</span><h2>${tp(expiringItems.length, '{count} item nearing its date', '{count} items nearing their date')}</h2></div><span class="expiry-window">${tp(EXPIRY_WINDOW_DAYS, 'Past due + {count} day', 'Past due + {count} days')}</span></header><div class="expiry-list">${rows}</div></section>`;
 }
@@ -436,11 +460,11 @@ function renderWeek() {
   if (weekSuggestions && !weekSuggestions.every((entry) => entry.date >= dateKey(weekStart) && entry.date <= dateKey(weekEnd))) weekSuggestions = null;
   const fillButton = !weekSuggestions && state.recipes.length && emptyDaysThisWeek().length ? `<button class="button button-outline" data-action="suggest-week">${t('Fill the empty days')} <span aria-hidden="true">✨</span></button>` : '';
   const repeatButton = repeatCount ? `<button class="button button-outline" data-action="repeat-last-week" title="${tp(repeatCount, 'Plan {count} meal from last week again', 'Plan {count} meals from last week again')}">${t('Repeat last week')} <span aria-hidden="true">↻</span></button>` : '';
-  const planned = selectedPlans.length ? selectedPlans.map((entry) => {
+  const planned = selectedPlans.length ? selectedPlans.map((entry, index) => {
     const recipe = recipeById(entry.recipeId);
     if (!recipe) return '';
     const title = `<button class="mealie-link recipe-title-link" type="button" data-action="view-recipe" data-id="${escapeHtml(recipe.id)}" title="${t('Show recipe')}">${escapeHtml(recipe.name)} <span aria-hidden="true">→</span></button>`;
-    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : '01'}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? t('Cooked and confirmed') : tp(recipe.ingredients.length, '{count} ingredient', '{count} ingredients')}${planScale(entry) !== 1 ? ` · ${escapeHtml(scaleLabel(recipe, planScale(entry)))}` : ''}</span></div>${entry.cooked ? `<span class="cooked-label">${t('DONE')}</span>` : `<div class="planned-actions"><button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="${t('Cook it step by step')}">${t('Steps')} <span aria-hidden="true">▶</span></button><button class="button button-small button-quiet" data-action="review-plan" data-id="${escapeHtml(entry.id)}" title="${t('See what this needs and what you have')}">${t('Review')}</button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}" title="${t('Mark as cooked and remove the ingredients from stock')}">${t('Cooked')} <span aria-hidden="true">✓</span></button></div>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="${t('Remove meal')}">×</button></article>`;
+    return `<article class="planned-meal ${entry.cooked ? 'is-cooked' : ''}"><span class="meal-index">${entry.cooked ? '✓' : String(index + 1).padStart(2, '0')}</span><div class="planned-copy"><strong>${title}</strong><span>${entry.cooked ? t('Cooked and confirmed') : tp((recipe.ingredients || []).length, '{count} ingredient', '{count} ingredients')}${planScale(entry) !== 1 ? ` · ${escapeHtml(scaleLabel(recipe, planScale(entry)))}` : ''}</span></div>${entry.cooked ? `<span class="cooked-label">${t('DONE')}</span>` : `<div class="planned-actions"><button class="button button-small button-dark steps-start" data-action="start-steps" data-id="${escapeHtml(recipe.id)}" data-plan="${escapeHtml(entry.id)}" title="${t('Cook it step by step')}">${t('Steps')} <span aria-hidden="true">▶</span></button><button class="button button-small button-quiet" data-action="review-plan" data-id="${escapeHtml(entry.id)}" title="${t('See what this needs and what you have')}">${t('Review')}</button><button class="button button-small button-outline" data-action="cook" data-id="${escapeHtml(entry.id)}" title="${t('Mark as cooked and remove the ingredients from stock')}">${t('Cooked')} <span aria-hidden="true">✓</span></button></div>`}<button class="icon-button remove-button" data-action="remove-plan" data-id="${escapeHtml(entry.id)}" aria-label="${t('Remove meal')}">×</button></article>`;
   }).join('') : `<div class="day-empty"><span aria-hidden="true">✳</span><p>${t('No meal planned for this day.')}</p><small>${t('Pick a recipe below to give the day a little shape.')}</small></div>`;
   // Recipes that use something from Use soon come first ("plan these first"), then the ones closest to ready.
   const soon = itemsNeedingExpiryAttention();
@@ -451,7 +475,7 @@ function renderWeek() {
     <div class="week-navigation"><button class="icon-button" data-action="previous-week" aria-label="${t('Previous week')}" title="${t('Previous week')}">‹</button><label class="date-jump">${t('Jump to date')}<input id="week-date" type="date" value="${dateKey(selectedDate)}" aria-label="${t('Select a date')}" /></label><span class="week-range">${escapeHtml(weekLabel)}</span><button class="button button-quiet today-button" data-action="go-today">${t('Today')}</button><button class="icon-button" data-action="next-week" aria-label="${t('Next week')}" title="${t('Next week')}">›</button></div>
     ${renderWeekSuggestions()}
     <section class="week-planner"><div class="week-strip">${dayButtons}</div><div class="day-detail"><h2 class="visually-hidden">${escapeHtml(selectedLabel)}</h2><div class="planned-list">${planned}</div>${copyButton ? `<div class="day-detail-actions">${copyButton}</div>` : ''}${copyRow}</div></section>
-    <section class="section-block recipe-picker"><div class="section-heading"><div><span class="eyebrow">${t('PICK SOMETHING GOOD')}</span><h2>${t('Add a recipe to this day')}</h2></div><button class="text-button" data-view="recipes">${t('Browse all recipes')} <span aria-hidden="true">→</span></button></div><div class="picker-grid">${recipeOptions.slice(0, 3).map((recipe) => `<article class="picker-item"><span class="recipe-number">${tp(recipe.ingredients.length, '{count} INGREDIENT', '{count} INGREDIENTS', { count: String(recipe.ingredients.length).padStart(2, '0') })}</span><strong>${escapeHtml(recipe.name)}</strong>${soonTag(recipe)}<p>${escapeHtml(recipe.description || t('An idea from your recipe shelf.'))}</p><div class="picker-foot"><span class="match-tag ${missingIngredients(recipe).length ? 'has-missing' : ''}">${missingIngredients(recipe).length ? tp(missingIngredients(recipe).length, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</span><button class="button button-small button-dark" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${t('Add')} <span aria-hidden="true">＋</span></button></div></article>`).join('') || `<p class="muted">${t('Add recipes in your recipe library first.')}</p>`}</div></section>`;
+    <section class="section-block recipe-picker"><div class="section-heading"><div><span class="eyebrow">${t('PICK SOMETHING GOOD')}</span><h2>${t('Add a recipe to this day')}</h2></div><button class="text-button" data-view="recipes">${t('Browse all recipes')} <span aria-hidden="true">→</span></button></div><div class="picker-grid">${recipeOptions.slice(0, 3).map((recipe) => `<article class="picker-item"><span class="recipe-number">${tp((recipe.ingredients || []).length, '{count} INGREDIENT', '{count} INGREDIENTS', { count: String((recipe.ingredients || []).length).padStart(2, '0') })}</span><strong>${escapeHtml(recipe.name)}</strong>${soonTag(recipe)}<p>${escapeHtml(recipe.description || t('An idea from your recipe shelf.'))}</p><div class="picker-foot"><span class="match-tag ${missingIngredients(recipe).length ? 'has-missing' : ''}">${missingIngredients(recipe).length ? tp(missingIngredients(recipe).length, '{count} to pick up', '{count} to pick up') : t('Ready to make')}</span><button class="button button-small button-dark" data-action="plan-recipe" data-id="${escapeHtml(recipe.id)}">${t('Add')} <span aria-hidden="true">＋</span></button></div></article>`).join('') || `<p class="muted">${t('Add recipes in your recipe library first.')}</p>`}</div></section>`;
 }
 
 // Faster planning: "Repeat last week" plans last week's meals again on the same weekdays, and "Copy this day to…"
@@ -502,7 +526,7 @@ function rankedForWeek() {
   const recent = new Set(state.plan.filter((entry) => entry.date >= recentFrom).map((entry) => entry.recipeId));
   return state.recipes
     .filter((recipe) => !recent.has(recipe.id) && (recipe.ingredients || []).length)
-    .map((recipe) => ({ recipe, uses: soon.filter((item) => recipe.ingredients.some((ingredient) => matchingInventory(ingredient)?.id === item.id)).length, missing: missingIngredients(recipe).length }))
+    .map((recipe) => ({ recipe, uses: soon.filter((item) => (recipe.ingredients || []).some((ingredient) => matchingInventory(ingredient)?.id === item.id)).length, missing: missingIngredients(recipe).length }))
     .sort((first, second) => second.uses - first.uses || first.missing - second.missing || first.recipe.name.localeCompare(second.recipe.name))
     .map(({ recipe }) => recipe.id);
 }
@@ -755,10 +779,15 @@ function renderConverter() {
 // Spoon and cup amounts round to the nearest ⅛ and show as fractions; weights and millilitres as whole numbers.
 function formatConverted(value, unitId) {
   if (!Number.isFinite(value)) return '–';
-  if (['cup', 'tbsp', 'tsp'].includes(unitId)) return formatAmount(Math.round(value * 8) / 8 || 0.125, unitId === 'cup' ? 'cup' : unitId);
-  if (['kg', 'l', 'lb', 'pint'].includes(unitId)) return String(Math.round(value * 100) / 100);
-  if (['oz', 'floz', 'dl', 'cl'].includes(unitId) || value < 10) return String(Math.round(value * 10) / 10);
-  return String(Math.round(value));
+  // Less than a sixteenth is "<⅛" (1 g is not ⅛ cup); a fraction glyph, else a number in the app's language.
+  if (['cup', 'tbsp', 'tsp'].includes(unitId)) {
+    if (value > 0 && value < 0.0625) return '<⅛';
+    const text = formatAmount(Math.round(value * 8) / 8, unitId);
+    return /^\d+(?:\.\d+)?$/.test(text) ? formatNumber(Number(text), 2) : text;
+  }
+  if (['kg', 'l', 'lb', 'pint'].includes(unitId)) return formatNumber(value, 2);
+  if (['oz', 'floz', 'dl', 'cl'].includes(unitId) || value < 10) return formatNumber(value, 1);
+  return formatNumber(Math.round(value), 0);
 }
 
 function updateConverter() {
@@ -820,7 +849,8 @@ function updateCookingTerms() {
     const name = t(`term: ${term.en}`);
     return name.indexOf('term: ') === 0 ? term.en : name;
   };
-  const terms = COOKING_TERMS.filter((term) => !query || cleanIngredient(`${term.en} ${local(term)} ${term.what} ${t(term.what)}`).includes(query));
+  // The Dutch name too, whatever the app's language (the glossary is English and Dutch).
+  const terms = COOKING_TERMS.filter((term) => !query || cleanIngredient(`${term.en} ${term.nl || ''} ${local(term)} ${term.what} ${t(term.what)}`).includes(query));
   list.innerHTML = terms.length
     ? terms.map((term) => {
       const name = local(term) || term.en;
@@ -896,7 +926,9 @@ function withUndo(message, keys, change) {
   const before = Object.fromEntries(keys.map((key) => [key, JSON.stringify(state[key])]));
   change();
   persist();
-  undoSnapshot = before;
+  // Kept as it was right after the change, so Undo puts back only what the change did (undoLastChange).
+  const after = Object.fromEntries(keys.map((key) => [key, JSON.stringify(state[key])]));
+  undoSnapshot = { before, after };
   clearTimeout(undoTimer);
   const bar = $('#undo-bar');
   bar.querySelector('span').textContent = message;
@@ -912,7 +944,17 @@ function hideUndo() {
 
 function undoLastChange() {
   if (!undoSnapshot) return;
-  for (const [key, value] of Object.entries(undoSnapshot)) state[key] = JSON.parse(value);
+  // Lists of items are merged like a sync (mergeById): what the change did is reversed item by item, and edits made
+  // since (here or on another device) stay. Other values (the storage places) go back as they were.
+  const { before, after } = undoSnapshot;
+  for (const key of Object.keys(before)) {
+    const old = JSON.parse(before[key]);
+    // Nothing else changed it since: exactly as it was, in its old order.
+    if (JSON.stringify(state[key]) === after[key]) { state[key] = old; continue; }
+    state[key] = MERGED_LISTS.includes(key) && Array.isArray(old) && Array.isArray(state[key])
+      ? mergeById(JSON.parse(after[key]) || [], old, state[key])
+      : old;
+  }
   hideUndo();
   persist();
 }
@@ -921,7 +963,7 @@ function undoLastChange() {
 function removeInventoryItem(id, outcome = '') {
   const item = state.inventory.find((entry) => entry.id === id);
   if (!item) return;
-  withUndo(t('Removed “{name}”', { name: item.name }), ['inventory', 'shopping', 'log'], () => {
+  withUndo(t('Removed “{name}”', { name: item.name }), ['inventory', 'shopping', 'log', 'logTotals'], () => {
     state.inventory = state.inventory.filter((entry) => entry.id !== id);
     if (outcome) logRemoval(item, outcome);
     if (Number(item.minimum) > 0) addRestockEntry(item);
@@ -1229,10 +1271,17 @@ function openItemDialog(item) {
   // The minimum in the unit the amount is shown in.
   const minimum = Number(item?.minimum) > 0 ? amountIn(Number(item.minimum), item.unit, shownAmount(item.quantity, item.unit).unit) : null;
   form.elements.minimum.value = minimum === null ? (Number(item?.minimum) > 0 ? item.minimum : '') : roundTo(minimum, 2);
+  // What the fields showed at first: saving them untouched keeps the stored amounts as they were, instead of
+  // rounding them through the shown unit (1 kg shown as 2.2 lb would come back as 998 g).
+  form.dataset.shownQuantity = item ? String(form.elements.quantity.value) : '';
+  form.dataset.shownUnit = item ? String(form.elements.unit.value) : '';
+  form.dataset.shownMinimum = item ? String(form.elements.minimum.value) : '';
   // A price saved with the item, else the last known one for this product and amount (0.51).
   const savedPrice = Number(item?.unitPrice) > 0 && Number(item?.quantity) > 0 ? Math.round(item.unitPrice * item.quantity * 100) / 100 : null;
   form.elements.price.value = savedPrice ?? (item ? priceOf(item.name, item.quantity, item.unit) ?? '' : '');
   form.elements.price.dataset.auto = savedPrice === null ? 'true' : 'false';
+  form.dataset.shownPrice = item ? String(form.elements.price.value) : '';
+  form.elements.name.setCustomValidity('');
   form.elements.expiresOn.value = item?.expiresOn || '';
   form.elements.expiresOn.dataset.estimated = item?.expirationSource === 'estimated' ? 'true' : 'false';
   form.elements.dateKind.value = item?.dateKind || '';
@@ -1294,9 +1343,14 @@ function openCookDialog(plan) {
   $('#cook-form').elements.leftovers.checked = false;
   $('#cook-form').elements.note.value = '';
   $('#cook-rating').innerHTML = ratingStars(recipeById(plan.recipeId), true);
-  $('#cook-ingredients').innerHTML = recipe.ingredients.map((ingredient, index) => {
+  $('#cook-ingredients').innerHTML = (recipe.ingredients || []).map((ingredient, index) => {
     const item = matchingInventory(ingredient);
-    const amount = item ? `<span class="cook-amount"><span>${t('Remove')}</span><input type="number" name="amount-${index}" min="0" step="any" value="${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).quantity)}" data-unit="${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).unit)}" inputmode="decimal" aria-label="${t('Amount of {name} to remove', { name: escapeHtml(item.name) })}"><span>${escapeHtml(shownAmount(Math.min(deductionAmount(ingredient, item), Number(item.quantity)), item.unit).unit || t('pcs'))} <i>${t('of {quantity}', { quantity: escapeHtml(amountText(item.quantity, item.unit)) })}</i></span></span>` : '';
+    // The input names the item it comes off (data-item), so ticking lines doesn't match them again against stock
+    // that changed meanwhile, and keeps the exact amount in the item's unit (data-exact): the shown one is rounded
+    // (100 g shows as 3.5 oz), and an untouched default takes off exactly what the recipe uses.
+    const exact = item ? Math.min(deductionAmount(ingredient, item), Number(item.quantity)) : 0;
+    const shown = item ? shownAmount(exact, item.unit) : null;
+    const amount = item ? `<span class="cook-amount"><span>${t('Remove')}</span><input type="number" name="amount-${index}" min="0" step="any" value="${escapeHtml(shown.quantity)}" data-unit="${escapeHtml(shown.unit)}" data-item="${escapeHtml(item.id)}" data-exact="${escapeHtml(exact)}" data-shown="${escapeHtml(shown.quantity)}" inputmode="decimal" aria-label="${t('Amount of {name} to remove', { name: escapeHtml(item.name) })}"><span>${escapeHtml(shown.unit || t('pcs'))} <i>${t('of {quantity}', { quantity: escapeHtml(amountText(item.quantity, item.unit)) })}</i></span></span>` : '';
     return `<label class="ingredient-check cook-check ${item ? '' : 'not-stocked'}"><input type="checkbox" name="ingredient" value="${index}" ${item ? 'checked' : ''}><span class="custom-check" aria-hidden="true"></span><span>${escapeHtml(ingredient)}</span><small>${inStockText(item)}</small>${amount}</label>`;
   }).join('');
   $('#cook-dialog').showModal();

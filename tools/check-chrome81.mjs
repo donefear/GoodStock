@@ -4,7 +4,10 @@
 //      private #names, regex flags d or v, or top-level await (numeric separators like 20_000 are fine since Chrome 75);
 //   2. no calls Chrome 81 lacks (replaceAll, .at(), Object.hasOwn, structuredClone, …), found in the code itself, not in
 //      comments or strings;
-//   3. styles.css has no inset, inset-inline or inset-block (use top, right, bottom and left).
+//   3. styles.css has no inset, inset-inline or inset-block (use top, right, bottom and left), no two-sided
+//      margin-inline/padding-block shorthands (Chrome 87; use the -start/-end longhands), and no :focus-visible,
+//      :is(), :where() or :has() in a selector list: Chrome 81 drops the whole rule when one selector is unknown
+//      (give them a rule of their own, with a :focus fallback).
 // `node tools/check-chrome81.mjs` prints what it finds and exits 1; `npm test` runs it.
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -55,8 +58,35 @@ export function checkStyles(css) {
   const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '));
   withoutComments.split('\n').forEach((text, index) => {
     if (/(^|[{;\s])inset(-inline|-block)?(-start|-end)?\s*:/.test(text)) problems.push(`line ${index + 1}: inset needs Chrome 87; use top, right, bottom and left`);
+    if (/(^|[{;\s])(margin|padding)-(inline|block)\s*:/.test(text)) problems.push(`line ${index + 1}: margin/padding-inline/-block shorthands need Chrome 87; use the -start and -end longhands`);
   });
+  // Selector lists: everything before a "{" that is not an at-rule.
+  const selectorPattern = /([^{};]+)\{/g;
+  for (let match; (match = selectorPattern.exec(withoutComments));) {
+    const prelude = match[1].trim();
+    if (!prelude || prelude.startsWith('@')) continue;
+    const selectors = splitSelectors(prelude);
+    const newer = selectors.find((selector) => /:focus-visible|:is\(|:where\(|:has\(/.test(selector));
+    if (selectors.length > 1 && newer) {
+      const line = withoutComments.slice(0, match.index + match[1].length - match[1].trimStart().length).split('\n').length;
+      problems.push(`line ${line}: "${newer.trim()}" in a selector list; Chrome 81 drops the whole rule, give it a rule of its own`);
+    }
+  }
   return problems;
+}
+
+// "a, b:is(c, d)" → ["a", "b:is(c, d)"]: commas inside brackets do not split.
+function splitSelectors(text) {
+  const parts = [];
+  let depth = 0;
+  let current = '';
+  for (const char of text) {
+    if (char === '(' || char === '[') depth += 1;
+    if (char === ')' || char === ']') depth -= 1;
+    if (char === ',' && depth === 0) { parts.push(current); current = ''; } else current += char;
+  }
+  parts.push(current);
+  return parts;
 }
 
 function main() {

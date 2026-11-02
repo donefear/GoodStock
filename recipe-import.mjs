@@ -17,6 +17,18 @@ export function cleanWebText(value) {
     .trim();
 }
 
+// "Recipe", "schema:Recipe" or "https://schema.org/Recipe" (also http, www.): just "recipe".
+const jsonLdTypes = (node) => [].concat(node['@type'] || []).map((type) => String(type).toLowerCase().replace(/^(?:https?:\/\/(?:www\.)?schema\.org\/|schema:)/, ''));
+
+// An ingredient is normally text; some sites give objects (a PropertyValue { name, value }, or { text }).
+function ingredientText(entry) {
+  if (entry && typeof entry === 'object') {
+    if (entry.text) return cleanWebText(entry.text);
+    return cleanWebText([entry.value, entry.name].filter((part) => typeof part === 'string' || typeof part === 'number').join(' '));
+  }
+  return cleanWebText(entry);
+}
+
 function findJsonLdRecipe(node) {
   if (!node || typeof node !== 'object') return null;
   if (Array.isArray(node)) {
@@ -26,8 +38,7 @@ function findJsonLdRecipe(node) {
     }
     return null;
   }
-  const types = [].concat(node['@type'] || []).map((type) => String(type).toLowerCase());
-  if (types.includes('recipe')) return node;
+  if (jsonLdTypes(node).includes('recipe')) return node;
   return findJsonLdRecipe(node['@graph']) || findJsonLdRecipe(node.mainEntity) || null;
 }
 
@@ -38,8 +49,10 @@ function jsonLdInstructions(value) {
   if (typeof value === 'string') return value.replace(/\.\s+(?=[A-Z])/g, '.\n').split(/\n+/).map(cleanWebText).filter(Boolean);
   if (Array.isArray(value)) return value.flatMap(jsonLdInstructions);
   if (typeof value === 'object') {
-    const types = [].concat(value['@type'] || []).map((type) => String(type).toLowerCase());
+    const types = jsonLdTypes(value);
     if (types.includes('howtosection')) return [cleanWebText(value.name), ...jsonLdInstructions(value.itemListElement)].filter(Boolean);
+    // An ItemList of steps, or a step whose text is in its own list (HowToDirection, HowToTip).
+    if (value.itemListElement && (types.includes('itemlist') || !value.text)) return jsonLdInstructions(value.itemListElement);
     return [cleanWebText(value.text || value.name || '')].filter(Boolean);
   }
   return [];
@@ -82,7 +95,7 @@ export function extractRecipeFromHtml(html, sourceUrl = '') {
     try { data = JSON.parse(body.trim()); } catch { continue; }
     const recipe = findJsonLdRecipe(data);
     if (!recipe) continue;
-    const ingredients = [].concat(recipe.recipeIngredient || recipe.ingredients || []).map(cleanWebText).filter(Boolean);
+    const ingredients = [].concat(recipe.recipeIngredient || recipe.ingredients || []).map(ingredientText).filter(Boolean);
     let instructions = jsonLdInstructions(recipe.recipeInstructions);
     // Prefer the page's own numbered steps when they are clearly more complete than the recipe data.
     const pageSteps = numberedPageSteps(page);

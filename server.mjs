@@ -1,6 +1,8 @@
 import { createServer } from 'node:http';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { copyFile, mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { join } from 'node:path';
 import QRCode from 'qrcode';
 import { extractRecipeFromHtml, NO_RECIPE_MESSAGE } from './recipe-import.mjs';
@@ -46,6 +48,8 @@ function mealieStatus() {
 }
 const shoppingShares = new Map();
 const shoppingShareLifetime = 30 * 60 * 1000;
+const MAX_SHARES = 100;
+const pruneShares = () => { for (const [token, share] of shoppingShares) if (share.expiresAt <= Date.now()) shoppingShares.delete(token); };
 const staticFiles = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
@@ -90,13 +94,85 @@ function sendJson(response, status, value) {
   response.end(JSON.stringify(value));
 }
 
+// The body as JSON. Bytes are collected first, so a character split across two chunks stays whole, and the limit
+// counts bytes. Not JSON at all is the sender's mistake (400).
 async function requestBody(request) {
-  let body = '';
+  const chunks = [];
+  let size = 0;
   for await (const chunk of request) {
-    body += chunk;
-    if (body.length > 8_000_000) throw new Error('Request body is too large');
+    size += chunk.length;
+    if (size > 8_000_000) throw Object.assign(new Error('Request body is too large'), { status: 413 });
+    chunks.push(chunk);
   }
-  return JSON.parse(body || '{}');
+  const body = Buffer.concat(chunks).toString('utf8');
+  try {
+    return JSON.parse(body || '{}');
+  } catch {
+    throw Object.assign(new Error('The request is not valid JSON.'), { status: 400 });
+  }
+}
+
+// Fetching web pages and photos for recipe import, on the user's behalf: only public internet addresses (never this
+// machine, the home network or link-local ones), checked again after every redirect, and at most `limit` bytes.
+// The one exception is this server itself on its own port (a recipe page's photo can be one of the app's files).
+const privateIPv4 = (address) => {
+  const [a, b] = address.split('.').map(Number);
+  return a === 0 || a === 10 || a === 127 || a >= 224 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+};
+function privateAddress(address) {
+  const text = String(address).toLowerCase().replace(/^\[|\]$/g, '');
+  if (isIP(text) === 4) return privateIPv4(text);
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(text);
+  if (mapped) return privateIPv4(mapped[1]);
+  return text === '::' || text === '::1' || /^f[cd]/.test(text) || /^fe[89ab]/.test(text) || /^ff/.test(text) || text.startsWith('::ffff:');
+}
+
+async function checkPublicTarget(target) {
+  const host = target.hostname.replace(/^\[|\]$/g, '');
+  let addresses;
+  try {
+    addresses = isIP(host) ? [host] : (await lookup(host, { all: true })).map((entry) => entry.address);
+  } catch {
+    throw Object.assign(new Error('Could not reach that website.'), { status: 502 });
+  }
+  const ownPort = String(target.port || (target.protocol === 'https:' ? 443 : 80)) === String(port);
+  const ownMachine = (address) => /^(?:127\.|::1$|::ffff:127\.)/.test(address);
+  if (!addresses.length || addresses.some((address) => privateAddress(address) && !(ownPort && ownMachine(address)))) {
+    throw Object.assign(new Error('Only public web addresses can be imported.'), { status: 400 });
+  }
+}
+
+async function fetchPublic(address, options) {
+  let target = address;
+  for (let hop = 0; hop <= 5; hop++) {
+    if (!/^https?:$/.test(target.protocol)) throw Object.assign(new Error('Only http and https links can be imported.'), { status: 400 });
+    await checkPublicTarget(target);
+    const result = await fetch(target, { ...options, redirect: 'manual' });
+    const next = result.headers.get('location');
+    if (![301, 302, 303, 307, 308].includes(result.status) || !next) return Object.assign(result, { finalUrl: target.href });
+    result.body?.cancel().catch(() => {});
+    try { target = new URL(next, target); } catch { throw Object.assign(new Error('Could not reach that website.'), { status: 502 }); }
+  }
+  throw Object.assign(new Error('That link redirects too many times.'), { status: 502 });
+}
+
+// Reads at most `limit` bytes of an answer; beyond that the download stops (and `tooLarge` is thrown, if given).
+async function readLimited(result, limit, tooLarge) {
+  if (tooLarge && Number(result.headers.get('content-length')) > limit) {
+    result.body?.cancel().catch(() => {});
+    throw tooLarge;
+  }
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of result.body || []) {
+    chunks.push(chunk);
+    size += chunk.length;
+    if (size > limit) {
+      if (tooLarge) throw tooLarge;
+      break;
+    }
+  }
+  return Buffer.concat(chunks).subarray(0, limit);
 }
 
 async function readState() {
@@ -165,11 +241,14 @@ async function loadKitchen() {
   }
 }
 
-// Writes go one after another, so a slow disk can never put an older state on top of a newer one.
-function writeKitchen() {
+// Writes go one after another, so a slow disk can never put an older state on top of a newer one. Each write first
+// backs up the kitchen it replaces. The returned promise fails when this write failed (the queue goes on).
+function writeKitchen(previous) {
   const snapshot = { ...kitchen.state, _revision: kitchen.revision };
-  kitchenWrites = kitchenWrites.then(() => saveState(snapshot)).catch((error) => console.error('Could not save the kitchen:', error.message));
-  return kitchenWrites;
+  const next = kitchen.state;
+  const write = kitchenWrites.then(() => backupBeforeSave(previous, next)).then(() => saveState(snapshot));
+  kitchenWrites = write.catch((error) => console.error('Could not save the kitchen:', error.message));
+  return write;
 }
 
 function broadcast(event, data) {
@@ -250,8 +329,7 @@ async function copyBackups() {
   }
 }
 
-async function backupBeforeSave(next) {
-  const current = kitchen.state;
+async function backupBeforeSave(current, next) {
   if (!current) return;
   try {
     const daily = `state-${localDay()}.json`;
@@ -290,12 +368,20 @@ async function receiveKitchen(payload) {
   if (tracked && kitchen.state && Number(payload.baseRevision) !== kitchen.revision) {
     return { status: 409, body: { error: 'The kitchen changed on another device.', revision: kitchen.revision, state: kitchen.state } };
   }
+  // The revision check above and taking the new revision here happen without waiting in between, so of several
+  // saves from the same revision exactly one wins and the others get 409. The backup and the disk write follow.
   const { _revision, ...clean } = state;
-  await backupBeforeSave(clean);
+  const previous = kitchen.state;
   kitchen = { revision: kitchen.revision + 1, state: clean };
-  await writeKitchen();
-  broadcast('state', { revision: kitchen.revision, origin: tracked ? String(payload.client || '') : '' });
-  return { status: 200, body: { saved: true, revision: kitchen.revision } };
+  const revision = kitchen.revision;
+  const written = writeKitchen(previous);
+  broadcast('state', { revision, origin: tracked ? String(payload.client || '') : '' });
+  try {
+    await written;
+  } catch {
+    return { status: 500, body: { error: 'The server could not save the kitchen to its disk.', revision } };
+  }
+  return { status: 200, body: { saved: true, revision } };
 }
 
 async function fetchMealie(path, config = mealie) {
@@ -350,14 +436,16 @@ async function disconnectMealie() {
 async function importRecipeFromUrl(address) {
   let target;
   try { target = new URL(address); } catch { throw Object.assign(new Error('That does not look like a web address.'), { status: 400 }); }
-  if (!/^https?:$/.test(target.protocol)) throw Object.assign(new Error('Only http and https links can be imported.'), { status: 400 });
-  const result = await fetch(target, {
+  const result = await fetchPublic(target, {
     headers: { 'user-agent': 'Mozilla/5.0 (compatible; GoodstockRecipeImport/1.0)', accept: 'text/html,application/xhtml+xml' },
-    redirect: 'follow',
     signal: AbortSignal.timeout(12000),
   });
-  if (!result.ok) throw pageError({ text: 'The website refused the import (HTTP {status}). Some sites block this; copy the recipe text and paste it instead.', vars: { status: result.status } }, 502);
-  const recipe = extractRecipeFromHtml(await result.text(), result.url || target.href);
+  if (!result.ok) {
+    result.body?.cancel().catch(() => {});
+    throw pageError({ text: 'The website refused the import (HTTP {status}). Some sites block this; copy the recipe text and paste it instead.', vars: { status: result.status } }, 502);
+  }
+  // extractRecipeFromHtml reads the first 4 MB of a page; the rest is never downloaded.
+  const recipe = extractRecipeFromHtml((await readLimited(result, 4_000_000)).toString('utf8'), result.finalUrl);
   if (!recipe) throw Object.assign(new Error(NO_RECIPE_MESSAGE), { status: 422 });
   return recipe;
 }
@@ -459,6 +547,41 @@ function calendarTokenValid(token) {
   return given.length === stored.length && timingSafeEqual(given, stored);
 }
 
+// A planned meal's scale (servings) applied to the amount at the start of an ingredient line, like
+// scaleIngredientLine in app/core.js: "2–3 cloves garlic" ×2 → "4–6 cloves garlic", "½ cup" ×2 → "1 cup".
+const FRACTION_GLYPHS = { '¼': 0.25, '½': 0.5, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875 };
+const AMOUNT_SOURCE = String.raw`(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?\s*[¼½¾⅓⅔⅛⅜⅝⅞]?|[¼½¾⅓⅔⅛⅜⅝⅞])`;
+const AMOUNT_AT_START = new RegExp(String.raw`^(${AMOUNT_SOURCE})(?:(\s*(?:-|–|to|tot)\s*)(${AMOUNT_SOURCE}))?`);
+
+function parseAmount(text) {
+  const value = String(text || '').trim();
+  const mixed = /^(\d+)\s+(\d+)\/(\d+)$/.exec(value);
+  if (mixed) return Number(mixed[3]) ? Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]) : null;
+  const fraction = /^(\d+)\/(\d+)$/.exec(value);
+  if (fraction) return Number(fraction[2]) ? Number(fraction[1]) / Number(fraction[2]) : null;
+  const decimal = /^(\d+(?:[.,]\d+)?)?\s*([¼½¾⅓⅔⅛⅜⅝⅞])?$/.exec(value);
+  if (!decimal || (!decimal[1] && !decimal[2])) return null;
+  return Number((decimal[1] || '0').replace(',', '.')) + (FRACTION_GLYPHS[decimal[2]] || 0);
+}
+
+function scaleIngredientLine(line, factor) {
+  const text = String(line || '').trim();
+  if (!(factor > 0) || factor === 1) return text;
+  const match = AMOUNT_AT_START.exec(text);
+  if (!match) return text;
+  const scale = (amountText) => {
+    const value = parseAmount(amountText);
+    if (!value) return amountText;
+    const scaled = Math.round(value * factor * 100) / 100;
+    const whole = Math.floor(scaled);
+    // Fractions stay fractions ("1½"), decimals stay decimals.
+    const glyph = /[\/¼½¾⅓⅔⅛⅜⅝⅞]/.test(amountText) && Object.keys(FRACTION_GLYPHS).find((key) => Math.abs(FRACTION_GLYPHS[key] - (scaled - whole)) < 0.02);
+    const shown = glyph ? `${whole || ''}${glyph}` : String(scaled);
+    return `${amountText.includes(',') ? shown.replace('.', ',') : shown}${/\s*$/.exec(amountText)[0]}`;
+  };
+  return `${scale(match[1])}${match[3] ? `${match[2]}${scale(match[3])}` : ''}${text.slice(match[0].length)}`;
+}
+
 // iCalendar text: every planned meal from two weeks back to two months ahead as an all-day event, its ingredients
 // in the description. Lines are folded at 75 bytes and text escaped as RFC 5545 asks.
 function planCalendar(state, now = new Date()) {
@@ -481,8 +604,8 @@ function planCalendar(state, now = new Date()) {
     const next = new Date(Date.UTC(year, month - 1, date + 1));
     return next.toISOString().slice(0, 10).replace(/-/g, '');
   };
-  const from = new Date(now.getTime() - 14 * 86_400_000).toISOString().slice(0, 10);
-  const until = new Date(now.getTime() + 62 * 86_400_000).toISOString().slice(0, 10);
+  const from = localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14));
+  const until = localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 62));
   const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
   const recipes = new Map((state?.recipes || []).map((recipe) => [recipe.id, recipe]));
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Goodstock//Meal plan//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Goodstock', 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
@@ -490,7 +613,7 @@ function planCalendar(state, now = new Date()) {
     const recipe = recipes.get(entry.recipeId) || (state?.recipes || []).find((item) => item.slug === entry.recipeId);
     if (!recipe || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date || '') || entry.date < from || entry.date > until) continue;
     lines.push('BEGIN:VEVENT', `UID:${escapeText(entry.id)}@goodstock`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${day(entry.date)}`, `DTEND;VALUE=DATE:${nextDay(entry.date)}`,
-      `SUMMARY:${escapeText(`${entry.cooked ? '✓ ' : ''}${recipe.name}`)}`, `DESCRIPTION:${escapeText((recipe.ingredients || []).join('\n'))}`, 'TRANSP:TRANSPARENT', 'END:VEVENT');
+      `SUMMARY:${escapeText(`${entry.cooked ? '✓ ' : ''}${recipe.name}`)}`, `DESCRIPTION:${escapeText((recipe.ingredients || []).map((line) => scaleIngredientLine(line, Number(entry.scale) > 0 ? Number(entry.scale) : 1)).join('\n'))}`, 'TRANSP:TRANSPARENT', 'END:VEVENT');
   }
   lines.push('END:VCALENDAR');
   return `${lines.map(fold).join('\r\n')}\r\n`;
@@ -577,10 +700,21 @@ function tooManyAttempts(address) {
   return Boolean(entry && entry.count >= 5 && entry.until > Date.now());
 }
 
+// Besides each address's own limit, at most ALL_FAILURES_LIMIT wrong PINs in five minutes from everywhere together,
+// so many addresses (or a burst of parallel requests) can't try every PIN either.
+const ALL_FAILURES_LIMIT = 50;
+let allFailures = [];
+const tooManyFailuresOverall = () => {
+  allFailures = allFailures.filter((time) => time > Date.now() - 5 * 60_000);
+  return allFailures.length >= ALL_FAILURES_LIMIT;
+};
+
 function noteFailure(address) {
   const entry = loginFailures.get(address);
   const fresh = !entry || entry.until <= Date.now();
   loginFailures.set(address, { count: fresh ? 1 : entry.count + 1, until: Date.now() + 5 * 60_000 });
+  allFailures.push(Date.now());
+  if (loginFailures.size > 10_000) for (const [key, value] of loginFailures) if (value.until <= Date.now()) loginFailures.delete(key);
 }
 
 const validPin = (pin) => typeof pin === 'string' && pin.length >= 4 && pin.length <= 32;
@@ -596,8 +730,11 @@ async function handleAuth(request, response, url) {
     return sendJson(response, 200, { required: pinRequired(), unlocked: isAuthorized(request) });
   }
   if (request.method === 'POST' && url.pathname === '/api/auth/login') {
-    if (tooManyAttempts(address)) return sendJson(response, 429, { error: 'Too many wrong PINs. Try again in a few minutes.' });
-    const { pin } = await requestBody(request);
+    const blocked = () => tooManyAttempts(address) || tooManyFailuresOverall();
+    if (blocked()) return sendJson(response, 429, { error: 'Too many wrong PINs. Try again in a few minutes.' });
+    const { pin } = Object(await requestBody(request));
+    // Checked again now the body is in: from here to noteFailure nothing waits, so parallel tries all count.
+    if (blocked()) return sendJson(response, 429, { error: 'Too many wrong PINs. Try again in a few minutes.' });
     if (!pinMatches(pin)) {
       noteFailure(address);
       return sendJson(response, 401, { error: 'That PIN is not right.' });
@@ -607,7 +744,7 @@ async function handleAuth(request, response, url) {
   }
   if (request.method === 'POST' && url.pathname === '/api/auth/pin') {
     if (!isAuthorized(request)) return sendJson(response, 401, { error: 'PIN required', code: 'pin' });
-    const { pin } = await requestBody(request);
+    const { pin } = Object(await requestBody(request));
     if (!validPin(pin)) return sendJson(response, 400, { error: 'Use a PIN of 4 to 32 characters.' });
     const salt = randomBytes(16).toString('hex');
     auth = { salt, hash: hashPin(pin, salt), sessions: [] };
@@ -625,6 +762,7 @@ async function handleAuth(request, response, url) {
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+  const reading = request.method === 'GET' || request.method === 'HEAD'; // static files answer HEAD with headers only
   try {
     if (url.pathname.startsWith('/api/auth/')) return await handleAuth(request, response, url);
     if (url.pathname === '/api/health') {
@@ -726,12 +864,13 @@ const server = createServer(async (request, response) => {
     if (request.method === 'GET' && url.pathname === '/api/photo') {
       try {
         const target = new URL(url.searchParams.get('url') || '');
-        if (!/^https?:$/.test(target.protocol)) throw Object.assign(new Error('Only http and https links can be imported.'), { status: 400 });
-        const result = await fetch(target, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; GoodstockRecipeImport/1.0)', accept: 'image/*' }, redirect: 'follow', signal: AbortSignal.timeout(12000) });
+        const result = await fetchPublic(target, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; GoodstockRecipeImport/1.0)', accept: 'image/*' }, signal: AbortSignal.timeout(12000) });
         const type = String(result.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-        if (!result.ok || !/^image\/(?:jpeg|png|webp|gif|avif)$/.test(type)) throw Object.assign(new Error('That photo could not be loaded.'), { status: 502 });
-        const bytes = Buffer.from(await result.arrayBuffer());
-        if (bytes.length > 8_000_000) throw Object.assign(new Error('That photo is too large.'), { status: 413 });
+        if (!result.ok || !/^image\/(?:jpeg|png|webp|gif|avif)$/.test(type)) {
+          result.body?.cancel().catch(() => {});
+          throw Object.assign(new Error('That photo could not be loaded.'), { status: 502 });
+        }
+        const bytes = await readLimited(result, 8_000_000, Object.assign(new Error('That photo is too large.'), { status: 413 }));
         response.writeHead(200, { 'content-type': type, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
         response.end(bytes);
       } catch (error) {
@@ -768,7 +907,7 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (request.method === 'POST' && url.pathname === '/api/shopping/share') {
-      const payload = await requestBody(request);
+      const payload = Object(await requestBody(request));
       if (!Array.isArray(payload.items) || payload.items.length === 0 || payload.items.length > 200) {
         sendJson(response, 400, { error: 'The shopping list must contain between 1 and 200 items' });
         return;
@@ -786,7 +925,9 @@ const server = createServer(async (request, response) => {
         return;
       }
       const now = Date.now();
-      for (const [token, share] of shoppingShares) if (share.expiresAt <= now) shoppingShares.delete(token);
+      pruneShares();
+      // At most MAX_SHARES lists at once: the oldest go first.
+      for (const old of shoppingShares.keys()) if (shoppingShares.size >= MAX_SHARES) shoppingShares.delete(old);
       const token = randomBytes(18).toString('base64url');
       const expiresAt = now + shoppingShareLifetime;
       shoppingShares.set(token, { items, title, expiresAt });
@@ -815,15 +956,15 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === 'GET' && url.pathname.startsWith('/api/shopping/download/')) {
       const token = url.pathname.slice('/api/shopping/download/'.length);
+      pruneShares();
       const share = shoppingShares.get(token);
-      if (!share || share.expiresAt <= Date.now()) {
-        shoppingShares.delete(token);
+      if (!share) {
         response.writeHead(410, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
         response.end('This shopping-list download link has expired. Create a new QR code in Goodstock.');
         return;
       }
       // Grouped like the list in the app (the page sends each item's heading in its own language).
-      const lines = [`Goodstock · ${share.title || 'Shopping list'}`, new Date().toISOString().slice(0, 10)];
+      const lines = [`Goodstock · ${share.title || 'Shopping list'}`, localDay()];
       let group = null;
       for (const item of share.items) {
         if (group === null || item.group !== group) {
@@ -876,10 +1017,10 @@ const server = createServer(async (request, response) => {
     }
     // Bundled fonts: only plain names from the fonts folder (and its legacy/ folder of .woff files), never other paths.
     const fontFile = /^\/fonts\/((?:legacy\/)?[a-z0-9-]+\.(woff2|woff|css))$/.exec(url.pathname);
-    if (request.method === 'GET' && fontFile) {
+    if (reading && fontFile) {
       try {
         const contents = await readFile(join(process.cwd(), 'fonts', fontFile[1]));
-        response.writeHead(200, { 'content-type': fontFile[2] === 'css' ? 'text/css; charset=utf-8' : `font/${fontFile[2]}`, 'cache-control': 'public, max-age=604800' });
+        response.writeHead(200, { 'content-type': fontFile[2] === 'css' ? 'text/css; charset=utf-8' : `font/${fontFile[2]}`, 'cache-control': 'public, max-age=604800', 'content-length': contents.length });
         response.end(contents);
       } catch {
         sendJson(response, 404, { error: 'Not found' });
@@ -889,27 +1030,27 @@ const server = createServer(async (request, response) => {
     // The copy of the app for old browsers (tools/build-legacy.mjs; built into the Docker image), which index.html
     // sends them to: plain names from legacy/, legacy/app/ and legacy/lang/ only.
     const legacyFile = /^\/legacy\/((?:app\/|lang\/)?[a-z0-9-]+\.(js|css|html))$/.exec(url.pathname);
-    if (request.method === 'GET' && (legacyFile || url.pathname === '/legacy/')) {
+    if (reading && (legacyFile || url.pathname === '/legacy/')) {
       const [file, type] = legacyFile ? [legacyFile[1], legacyFile[2]] : ['index.html', 'html'];
       try {
         const contents = await readFile(join(process.cwd(), 'legacy', file));
-        response.writeHead(200, { 'content-type': `${{ js: 'text/javascript', css: 'text/css', html: 'text/html' }[type]}; charset=utf-8`, 'cache-control': 'no-cache' });
+        response.writeHead(200, { 'content-type': `${{ js: 'text/javascript', css: 'text/css', html: 'text/html' }[type]}; charset=utf-8`, 'cache-control': 'no-cache', 'content-length': contents.length });
         response.end(contents);
       } catch {
         sendJson(response, 404, { error: 'Not found' });
       }
       return;
     }
-    if (request.method === 'GET' && staticFiles.has(url.pathname)) {
+    if (reading && staticFiles.has(url.pathname)) {
       const [file, contentType] = staticFiles.get(url.pathname);
       const contents = await readFile(join(process.cwd(), file));
-      response.writeHead(200, { 'content-type': contentType, 'cache-control': 'no-cache' });
+      response.writeHead(200, { 'content-type': contentType, 'cache-control': 'no-cache', 'content-length': contents.length });
       response.end(contents);
       return;
     }
     sendJson(response, 404, { error: 'Not found' });
   } catch (error) {
-    const status = error.message === 'Request body is too large' ? 413 : 502;
+    const status = error?.status >= 400 && error.status < 600 ? error.status : 502;
     sendJson(response, status, error?.template ? errorBody(error) : { error: error.message || 'Request failed' });
   }
 });

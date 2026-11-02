@@ -256,7 +256,7 @@ function renderIdeas() {
           <div class="idea-actions">${idea.added
             ? `<button class="button button-small button-outline" type="button" data-action="view-recipe" data-id="${escapeHtml(idea.added)}">${t('Open')}</button>`
             : `<button class="button button-small button-dark" type="button" data-action="add-idea" data-id="${escapeHtml(idea.meal.idMeal)}">${t('Add to my recipes')} <span aria-hidden="true">＋</span></button>`}
-            <a class="text-button" href="${escapeHtml(idea.recipe.sourceUrl)}" target="_blank" rel="noopener noreferrer">${t('Original recipe')} ↗</a></div>
+            ${/^https?:\/\//i.test(idea.recipe.sourceUrl || '') ? `<a class="text-button" href="${escapeHtml(idea.recipe.sourceUrl)}" target="_blank" rel="noopener noreferrer">${t('Original recipe')} ↗</a>` : ''}</div>
         </div>
       </article>`).join('')}</div>`;
   }

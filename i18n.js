@@ -97,19 +97,34 @@ async function setLanguage(code, { remember = false } = {}) {
   // Right-to-left languages ({ …, dir: 'rtl' } in LANGUAGES) flip the layout; see the end of styles.css.
   document.documentElement.dir = languageInfo(currentLanguage).dir === 'rtl' ? 'rtl' : 'ltr';
   translatePage(document.body);
+  document.title = `Goodstock | ${t('Kitchen')}`;
   return currentLanguage;
 }
 
 // The fixed parts of index.html. Plain text and the placeholder, title, aria-label, label and alt attributes are
 // looked up by their English text. Elements with mixed markup carry data-i18n="key", and the key's translation
 // replaces their inner HTML. The English original is remembered, so switching language again starts from it.
-// Views drawn by app/*.js are skipped: they are rebuilt with t() on every render.
+// Views drawn by app/*.js are skipped: they are rebuilt with t() on every render. A skipped element's own attributes
+// (aria-label="Running timers") are still translated; only what is inside it is left alone.
 const originalText = new WeakMap();
 const originalAttributes = new WeakMap();
 const originalHtml = new WeakMap();
 const TRANSLATED_ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'label', 'alt'];
 // Also skipped: parts of dialogs that app/*.js fills with recipe and item names, which must not be "translated".
 const SKIP_TRANSLATION = '#view-container, #floating-timers, script, style, svg, code, datalist, #recipe-dialog-title, #recipe-dialog-description, #recipe-dialog-ingredients, #recipe-dialog-actions, #cook-ingredients, #steps-body, #steps-recipe-name, #steps-timer-panel, #putaway-item-name, #wipe-summary, #kitchen-screen, #shared-preview, #recipe-shopping-list';
+
+// Tags whose attributes are not translated either (the checker in lang/check-translations.mjs mirrors this).
+const SKIP_TAGS = 'script, style, svg, code, datalist';
+
+function translateAttributes(node) {
+  for (const name of TRANSLATED_ATTRIBUTES) {
+    if (!node.hasAttribute(name)) continue;
+    let originals = originalAttributes.get(node);
+    if (!originals) { originals = {}; originalAttributes.set(node, originals); }
+    if (!(name in originals)) originals[name] = node.getAttribute(name);
+    node.setAttribute(name, t(originals[name]));
+  }
+}
 
 function translatePage(root) {
   if (!root) return;
@@ -121,7 +136,12 @@ function translatePage(root) {
   }
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
     acceptNode(node) {
-      if (node.nodeType === 1) return node.matches(SKIP_TRANSLATION) || node.hasAttribute('data-i18n') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      if (node.nodeType === 1) {
+        if (node.hasAttribute('data-i18n')) return NodeFilter.FILTER_REJECT;
+        if (!node.matches(SKIP_TRANSLATION)) return NodeFilter.FILTER_ACCEPT;
+        if (!node.matches(SKIP_TAGS)) translateAttributes(node);
+        return NodeFilter.FILTER_REJECT;
+      }
       return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
     },
   });
@@ -134,13 +154,7 @@ function translatePage(root) {
       node.nodeValue = translated === trimmed ? original : original.replace(trimmed, translated);
       continue;
     }
-    for (const name of TRANSLATED_ATTRIBUTES) {
-      if (!node.hasAttribute(name)) continue;
-      let originals = originalAttributes.get(node);
-      if (!originals) { originals = {}; originalAttributes.set(node, originals); }
-      if (!(name in originals)) originals[name] = node.getAttribute(name);
-      node.setAttribute(name, t(originals[name]));
-    }
+    translateAttributes(node);
   }
 }
 

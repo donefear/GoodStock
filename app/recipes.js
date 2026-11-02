@@ -26,10 +26,19 @@ function openRecipeEditor(recipe = null, { importFirst = false } = {}) {
 
 // Splits pasted recipe text into name, ingredients and steps. Headings ("Ingredients", "Method", "Bereiding") help;
 // without them, short lines that start with an amount count as ingredients and everything else as steps.
+// A heading may say more ("Ingrediënten voor 4 personen", "Ingredients (serves 2)", "Method - 30 minutes") and may be
+// written in Markdown ("## Ingredients", "**Method**").
+const HEADING_SUFFIX = String.raw`(?:\s+(?:for|voor|für|pour|para|per|til|för|para sa|dla|için|для)\s[^.!?]*|\s*[(（][^)）]*[)）]|\s+[-–—]\s[^.!?]*)?`;
+const headingPattern = (words) => new RegExp(`^(?:${words})${HEADING_SUFFIX}\\s*[:：]?$`, 'i');
+const RECIPE_INGREDIENT_HEADING = headingPattern(String.raw`ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden|zutaten|ingredienser|det skal du bruge|du behöver|mga sangkap|sangkap|ingrédients|ingredientes|ingredienti|ingrediente|składniki|malzemeler|ингредиенты|材料|食材|用料|المكونات|المقادير|מצרכים|רכיבים`);
+const RECIPE_STEP_HEADING = headingPattern(String.raw`instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze|zubereitung|fremgangsmåde|tilberedning|sådan gør du|gör så här|tillagning|instruktioner|paraan ng pagluluto|paraan ng paghahanda|paano lutuin|paano gawin|pamamaraan|préparation|instructions|preparación|elaboración|preparazione|procedimento|modo de preparo|preparo|mod de preparare|preparare|przygotowanie|sposób przygotowania|hazırlanışı|yapılışı|приготовление|способ приготовления|作り方|手順|做法|步骤|طريقة التحضير|الطريقة|الخطوات|אופן ההכנה|הוראות הכנה|הכנה`);
+
 function parseRecipeText(text) {
-  const ingredientHeading = /^(?:ingredients?|ingredi[eë]nten|you(?:'ll| will)? need|what you need|benodigdheden|zutaten|ingredienser|det skal du bruge|du behöver|mga sangkap|sangkap|ingrédients|ingredientes|ingredienti|ingrediente|składniki|malzemeler|ингредиенты|材料|食材|用料|المكونات|المقادير|מצרכים|רכיבים)\s*[:：]?$/i;
-  const stepHeading = /^(?:instructions?|directions?|method|steps?|preparation|how to make it|bereiding(?:swijze)?|werkwijze|zubereitung|fremgangsmåde|tilberedning|sådan gør du|gör så här|tillagning|instruktioner|paraan ng pagluluto|paraan ng paghahanda|paano lutuin|paano gawin|pamamaraan|préparation|instructions|preparación|elaboración|preparazione|procedimento|modo de preparo|preparo|mod de preparare|preparare|przygotowanie|sposób przygotowania|hazırlanışı|yapılışı|приготовление|способ приготовления|作り方|手順|做法|步骤|طريقة التحضير|الطريقة|الخطوات|אופן ההכנה|הוראות הכנה|הכנה)\s*[:：]?$/i;
-  const clean = (line) => line.replace(/^(?:[-–•*▢☐□✓]\s*|(?:step\s*)?\d+[.)]\s+)/i, '').trim();
+  const plain = (line) => line.replace(/^#{1,6}\s*/, '').replace(/^\*\*(.+)\*\*$/, '$1').replace(/^__(.+)__$/, '$1').trim();
+  const ingredientHeading = { test: (line) => RECIPE_INGREDIENT_HEADING.test(plain(line)) };
+  const stepHeading = { test: (line) => RECIPE_STEP_HEADING.test(plain(line)) };
+  // Bullets, "1." / "2)" / "1.Boil" and "Step 3:" go; "1.5 kg" stays an amount.
+  const clean = (line) => line.replace(/^(?:[-–•*▢☐□✓]\s*|(?:step|stap|schritt|étape|paso|passo)\s*\d+\s*[.:)]?\s*|\d+[.)]\s*(?=\D))/i, '').trim();
   const lines = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const hasHeadings = lines.some((line) => ingredientHeading.test(line) || stepHeading.test(line));
   const result = { name: '', description: '', ingredients: [], instructions: [] };
@@ -38,8 +47,8 @@ function parseRecipeText(text) {
   for (const line of lines) {
     if (ingredientHeading.test(line)) { section = 'ingredients'; continue; }
     if (stepHeading.test(line)) { section = 'instructions'; continue; }
-    if (section) { result[section].push(clean(line)); continue; }
-    if (!result.name) { result.name = line; continue; }
+    if (section) { if (clean(line)) result[section].push(clean(line)); continue; }
+    if (!result.name) { result.name = plain(line); continue; }
     before.push(line);
   }
   if (hasHeadings) {
@@ -62,15 +71,19 @@ function tidyImportedSteps(instructions = []) {
     .flatMap((text) => (isStepHeading(text) ? [text] : splitIntoBites(text)));
 }
 
+// An imported recipe replaces the whole form: a second import doesn't keep the first one's photo, servings or
+// description. When nothing was found the form stays as it was.
 function fillRecipeEditor(recipe, message) {
   const form = $('#recipe-edit-form');
-  if (recipe.name) form.elements.name.value = recipe.name;
-  if (recipe.description) form.elements.description.value = recipe.description;
-  if (recipe.servings) form.elements.servings.value = recipe.servings;
-  if (recipe.ingredients?.length) form.elements.ingredients.value = recipe.ingredients.join('\n');
-  if (recipe.instructions?.length) form.elements.instructions.value = recipe.instructions.join('\n');
-  if (recipe.sourceUrl) form.elements.sourceUrl.value = recipe.sourceUrl;
-  if (recipe.photo) setEditorPhoto(recipe.photo);
+  if (recipe && (recipe.name || recipe.ingredients?.length || recipe.instructions?.length)) {
+    form.elements.name.value = recipe.name || '';
+    form.elements.description.value = recipe.description || '';
+    form.elements.servings.value = recipe.servings || '';
+    form.elements.ingredients.value = (recipe.ingredients || []).join('\n');
+    form.elements.instructions.value = (recipe.instructions || []).join('\n');
+    form.elements.sourceUrl.value = recipe.sourceUrl || '';
+    setEditorPhoto(recipe.photo || '');
+  }
   $('#recipe-import-status').textContent = message;
 }
 

@@ -87,7 +87,7 @@ N_('Could not determine the application address for the QR code');
 N_('Mealie at {url} took too long to answer.'); N_('Could not reach Mealie at {url}.'); N_('Mealie answered with HTTP {status}.');
 N_('DeepL answered with HTTP {status}.'); N_('DeepL took too long to answer.'); N_('Could not reach DeepL. Check that the server has internet access.');
 N_('The website took too long to answer.'); N_('Could not reach that website.'); N_('Could not save the Mealie settings.');
-N_('Mealie is not configured'); N_('Request failed');
+N_('Mealie is not configured'); N_('Request failed'); N_('Enter the address of your Mealie server.');
 
 // An error to show: the English text stays the message (code checks it, e.g. for "API key"), and "local" holds the
 // sentence in the app's language. Sentences with a value in them arrive as a template plus values ({ text, vars }).
@@ -185,28 +185,50 @@ function upgradeStarterRecipe(recipe) {
   return { ...recipe, ingredients: [...starter.ingredients] };
 }
 
+// Lists from a file or another device may hold odd entries: anything that is not an object goes, and an entry
+// without an id gets one (merging and editing find entries by id). Recipes always have ingredient and step lists.
+function cleanList(value, fix = (entry) => entry) {
+  if (!Array.isArray(value)) return null;
+  return value.filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+    // The new id comes from the entry itself, so every device that loads the same list gives it the same one.
+    .map((entry) => fix(entry.id === undefined || entry.id === null || entry.id === '' ? { ...entry, id: typeof stamp === 'function' ? `id-${stamp(JSON.stringify(entry))}` : makeId() } : entry));
+}
+
+const textLines = (value) => (Array.isArray(value) ? value : typeof value === 'string' && value.trim() ? value.split('\n') : [])
+  .filter((line) => typeof line === 'string' || typeof line === 'number').map(String);
+
+function tidyRecipe(recipe) {
+  const fine = (list) => Array.isArray(list) && list.every((line) => typeof line === 'string');
+  if (fine(recipe.ingredients) && fine(recipe.instructions) && typeof recipe.name === 'string') return recipe;
+  return { ...recipe, name: String(recipe.name || ''), ingredients: textLines(recipe.ingredients), instructions: textLines(recipe.instructions) };
+}
+
 function normalizeState(value) {
   const defaults = freshState();
   if (!value || typeof value !== 'object') return defaults;
+  const list = (key) => cleanList(value[key]) || [];
+  const inventory = cleanList(value.inventory);
+  const recipes = cleanList(value.recipes, tidyRecipe);
+  const locations = Array.isArray(value.locations) ? value.locations.filter((location) => typeof location === 'string' && location.trim()) : [];
   return {
-    inventory: Array.isArray(value.inventory) ? value.inventory.map(metricInventoryItem) : defaults.inventory,
-    recipes: Array.isArray(value.recipes) ? value.recipes.map(upgradeStarterRecipe).map(metricRecipe) : defaults.recipes,
-    plan: Array.isArray(value.plan) ? value.plan : [],
-    shopping: Array.isArray(value.shopping) ? value.shopping.map(metricInventoryItem) : [],
-    locations: Array.isArray(value.locations) && value.locations.length ? value.locations : defaults.locations,
-    timerPresets: Array.isArray(value.timerPresets) ? value.timerPresets : [],
+    inventory: inventory ? inventory.map(metricInventoryItem) : defaults.inventory,
+    recipes: recipes ? recipes.map(upgradeStarterRecipe).map(metricRecipe) : defaults.recipes,
+    plan: list('plan'),
+    shopping: list('shopping').map(metricInventoryItem),
+    locations: locations.length ? locations : defaults.locations,
+    timerPresets: list('timerPresets'),
     // What happened to removed items ({ id, name, date, outcome: 'used' | 'wasted' }), for the month overview.
-    log: Array.isArray(value.log) ? value.log : [],
+    log: list('log'),
     // When each storage place was last checked item by item ({ id: location, date }), for the stocktake.
-    checks: Array.isArray(value.checks) ? value.checks : [],
+    checks: list('checks'),
     // Shelf lives this kitchen learned from what it threw away ({ id: 'catalog id|storage', days }; 0 = keep the estimate).
-    shelfLife: Array.isArray(value.shelfLife) ? value.shelfLife : [],
+    shelfLife: list('shelfLife'),
     // Last known unit prices per product ({ id: cleaned name, unitPrice, unit, date }), 0.51.
-    prices: Array.isArray(value.prices) ? value.prices : [],
+    prices: list('prices'),
     // Monthly totals of removals older than a year ({ id: 'YYYY-MM', used, wasted, value }), 0.55.
-    logTotals: Array.isArray(value.logTotals) ? value.logTotals : [],
+    logTotals: list('logTotals'),
     // Dated notes on recipes ({ id, recipeId, date, text }), 0.56.
-    recipeNotes: Array.isArray(value.recipeNotes) ? value.recipeNotes : [],
+    recipeNotes: list('recipeNotes'),
     // The order of the shop, learned from shopping trips ({ trips, groups: { group: { rank, seen } } }), 0.50.
     ...(value.shopOrder && typeof value.shopOrder === 'object' ? { shopOrder: value.shopOrder } : {}),
   };
@@ -434,14 +456,23 @@ function formatAmount(amount, unit = '') {
 }
 
 // Rewrites imperial amounts (8 oz, 1 lb, 2 pints, 350°F) anywhere in a line of text. Safe to run twice.
+// "1 lb 8 oz" is one amount: 24 oz, converted as a whole (not "450 g 225 g").
+const POUNDS_AND_OUNCES = new RegExp(String.raw`(^|[^\d.,/])(\d+(?:[.,]\d+)?)\s*(?:lbs?|pounds?)\.?\s+(\d+(?:[.,]\d+)?)\s*(?:oz|ounces?)(?![a-z])\.?`, 'gi');
+
 function metricText(text) {
   return String(text || '')
+    .replace(POUNDS_AND_OUNCES, (match, before, pounds, ounces) => `${before}${roundTo(parseAmount(pounds) * 16 + parseAmount(ounces), 2)} oz`)
     .replace(IMPERIAL_PATTERN, (match, before, first, dash, second, unitWord) => {
       const unit = canonicalUnit(unitWord);
       const low = metricAmount(parseAmount(first), unit);
       if (!Number.isFinite(low.amount) || low.amount === null) return match;
-      const high = second ? metricAmount(parseAmount(second), unit) : null;
-      return before + (high && high.unit === low.unit ? `${formatAmount(low.amount, low.unit)}–${formatAmount(high.amount, high.unit)} ${low.unit}` : `${formatAmount(low.amount, low.unit)} ${low.unit}`);
+      if (!second || !Number.isFinite(parseAmount(second))) return `${before}${formatAmount(low.amount, low.unit)} ${low.unit}`;
+      // A range ("2-3 lbs", "1 - 2 quarts") in one unit, the one its high end needs: "0.9–1.4 kg", never just "910 g".
+      const [factor, base] = TO_METRIC[unit];
+      const top = roundMetric(parseAmount(second) * factor, base);
+      if (typeof top !== 'object') return `${before}${formatAmount(roundMetric(parseAmount(first) * factor, base), base)}–${formatAmount(top, base)} ${base}`;
+      const bottom = Math.max(0.1, Math.round((parseAmount(first) * factor) / 100) / 10);
+      return `${before}${formatAmount(bottom, top.unit)}–${formatAmount(top.value, top.unit)} ${top.unit}`;
     })
     .replace(FAHRENHEIT_PATTERN, (match, degrees) => `${Math.round(((Number(degrees) - 32) * 5) / 9 / 5) * 5}°C`);
 }
@@ -560,7 +591,8 @@ function amountIn(amount, unit, toUnit) {
   if (from === to || (isCount(from) && isCount(to))) return amount;
   const a = UNIT_SCALES[from];
   const b = UNIT_SCALES[to];
-  return a && b && a[0] === b[0] ? Math.round((amount * a[1] / b[1]) * 100) / 100 : null;
+  // Three decimals, so 3 g still counts in 1.5 kg.
+  return a && b && a[0] === b[0] ? roundTo((amount * a[1]) / b[1], 3) : null;
 }
 
 // Units you pick for an item or a shopping line (v4.5.4): amounts that can be measured, so cooking can take off what
@@ -598,9 +630,28 @@ function shownAmount(quantity, unit) {
   return ounces >= 16 ? { quantity: roundTo(ounces / 16, 2), unit: 'lb' } : { quantity: roundTo(ounces, 1), unit: 'oz' };
 }
 
+// Numbers as people read them in the app's language: "1,5" in German, "1.5" in English, no thousands separators.
+// Only for text on screen: input fields, stored amounts and recipe lines keep a plain number (parseAmount reads both).
+const numberFormats = new Map();
+
+function formatNumber(value, maximumFractionDigits = 3, minimumFractionDigits = 0) {
+  const number = Number(value);
+  if (value === '' || value === null || value === undefined || !Number.isFinite(number)) return String(value === undefined || value === null ? '' : value);
+  const key = `${languageLocale()}|${maximumFractionDigits}|${minimumFractionDigits}`;
+  try {
+    if (!numberFormats.has(key)) numberFormats.set(key, new Intl.NumberFormat(languageLocale(), { maximumFractionDigits, minimumFractionDigits, useGrouping: false }));
+    return numberFormats.get(key).format(number);
+  } catch {
+    return String(roundTo(number, maximumFractionDigits));
+  }
+}
+
+// A unit as shown: "pcs" in the app's language (the same word as on the cook dialog); the stored unit stays English.
+const shownUnitLabel = (unit) => (canonicalUnit(unit) === 'pcs' ? t('pcs') : String(unit || ''));
+
 function amountText(quantity, unit) {
   const shown = shownAmount(quantity, unit);
-  return `${shown.quantity}${shown.unit ? ` ${shown.unit}` : ''}`;
+  return `${formatNumber(shown.quantity)}${shown.unit ? ` ${shownUnitLabel(shown.unit)}` : ''}`;
 }
 
 // An amount entered in imperial, saved metric: whole grams or millilitres, or kg and l from 1000 up.
@@ -608,7 +659,7 @@ function storedAmount(quantity, unit) {
   const conversion = TO_METRIC[canonicalUnit(unit)];
   if (!conversion || !Number.isFinite(quantity)) return { quantity, unit };
   const base = quantity * conversion[0];
-  if (base >= 1000) return { quantity: roundTo(base / 1000, 2), unit: conversion[1] === 'g' ? 'kg' : 'l' };
+  if (base >= 1000) return { quantity: roundTo(base / 1000, 3), unit: conversion[1] === 'g' ? 'kg' : 'l' };
   return { quantity: Math.round(base), unit: conversion[1] };
 }
 
@@ -631,19 +682,70 @@ function isRunningLow(item) {
 // "Kartoffeln") are one line, otherwise its cleaned name.
 function shoppingKey(name) {
   const record = ingredientRecord(name);
-  return record ? `catalog:${record.id}` : cleanIngredient(name);
+  // Coconut milk and milk stay two lines (productVariant).
+  if (!record) return cleanIngredient(name);
+  const variant = productVariant(name);
+  return variant ? `catalog:${record.id}|${variant}` : `catalog:${record.id}`;
 }
 
 function matchingInventory(ingredient) {
   return inventoryMatches(ingredient)[0];
 }
 
+// While the page is drawn the stock doesn't change, so render() (app/views.js) opens this cache and every recipe line
+// is matched against the stock once per redraw, however many panels ask: { matches: Map, recipeUses: Map | null }.
+let inventoryMatchCache = null;
+
+function withInventoryMatchCache(draw) {
+  if (inventoryMatchCache) return draw();
+  inventoryMatchCache = { matches: new Map(), recipeUses: null };
+  try { return draw(); } finally { inventoryMatchCache = null; }
+}
+
 // Every item in stock that a recipe line could mean, in inventory order.
 function inventoryMatches(ingredient) {
+  if (!inventoryMatchCache) return findInventoryMatches(ingredient);
+  const key = String(ingredient || '');
+  if (!inventoryMatchCache.matches.has(key)) inventoryMatchCache.matches.set(key, findInventoryMatches(key));
+  return inventoryMatchCache.matches.get(key);
+}
+
+// When both names are catalog ingredients they must be the same one, and the same kind of it: what is left of a
+// name once its catalog name is taken out may make it another product ("chicken stock", "buttermilk", "coconut
+// milk", "egg noodles" are not chicken, butter, milk or eggs). The variant is that other catalog ingredient or those
+// words, '' for a plain one ("2 large eggs", "kipfilet"). Only when one name is not in the catalog do names match by
+// containing each other.
+const PRODUCT_WORDS = /(?:^| )(coconut|kokos|almond|amandel|cashew|oat|haver|soy|soya|soja|rice|rijst|noodle|noedel|broth|bouillon|stock|powder|poeder|sauce|saus|paste|juice|sap|squash|nut|extract|syrup|siroop|flake|chip|crisp|cracker|jam|candy|spread)(?= |$)/g;
+let productVariantCache = { source: null, results: new Map() };
+
+function productVariant(name) {
+  if (productVariantCache.source !== ingredientCatalog) productVariantCache = { source: ingredientCatalog, results: new Map() };
+  const key = String(name || '');
+  if (!productVariantCache.results.has(key)) {
+    const record = ingredientRecord(key);
+    let variant = '';
+    if (record) {
+      const normalized = cleanIngredient(key);
+      const alias = catalogAliases().find((entry) => entry.ingredient === record).aliases
+        .filter((entry) => normalized.includes(entry)).sort((first, second) => second.length - first.length)[0] || '';
+      const rest = (alias ? normalized.replace(alias, ' ') : '').replace(/\s+/g, ' ').trim();
+      // Short leftovers ("un" in "un œuf") are small words, not Turkish flour.
+      const other = rest.length > 3 ? ingredientRecord(rest) : null;
+      variant = other && other !== record ? `catalog:${other.id}` : (rest.match(PRODUCT_WORDS) || []).map((word) => word.trim()).sort().join(' ');
+    }
+    productVariantCache.results.set(key, variant);
+  }
+  return productVariantCache.results.get(key);
+}
+
+function findInventoryMatches(ingredient) {
   const wantedTerms = ingredientTerms(ingredient);
   if (!wantedTerms.length) return [];
+  const wantedRecord = ingredientRecord(ingredient);
   return state.inventory.filter((item) => {
     if (Number(item.quantity) <= 0) return false;
+    const itemRecord = ingredientRecord(item.name);
+    if (wantedRecord && itemRecord) return wantedRecord === itemRecord && productVariant(ingredient) === productVariant(item.name);
     const availableTerms = ingredientTerms(item.name);
     // A name only counts inside a longer one when it is longer than three letters itself, in both directions: short
     // catalog names in other languages (Dutch "ei", Turkish "un") would otherwise be found in "leite" or "pătrunjel".
@@ -796,7 +898,25 @@ function thawReminderText(needs) {
 }
 
 function recipesUsingInventoryItem(item) {
-  return state.recipes.filter((recipe) => (recipe.ingredients || []).some((ingredient) => matchingInventory(ingredient)?.id === item.id));
+  return recipeUsesByItem().get(item.id) || [];
+}
+
+// Item id → the recipes with a line that comes from that item, worked out in one go (once per redraw).
+function recipeUsesByItem() {
+  if (inventoryMatchCache && inventoryMatchCache.recipeUses) return inventoryMatchCache.recipeUses;
+  const uses = new Map();
+  for (const recipe of state.recipes) {
+    const ids = new Set();
+    for (const ingredient of recipe.ingredients || []) {
+      const id = matchingInventory(ingredient)?.id;
+      if (id === undefined || ids.has(id)) continue;
+      ids.add(id);
+      if (!uses.has(id)) uses.set(id, []);
+      uses.get(id).push(recipe);
+    }
+  }
+  if (inventoryMatchCache) inventoryMatchCache.recipeUses = uses;
+  return uses;
 }
 
 // Storage locations are the kitchen's own names, in any language; these words decide which kind of storage it is.
@@ -995,7 +1115,7 @@ function formatMoney(amount) {
   try {
     return new Intl.NumberFormat(languageLocale(), { style: 'currency', currency: currentCurrency(), maximumFractionDigits: amount >= 100 ? 0 : 2 }).format(amount);
   } catch {
-    return `${currentCurrency()} ${amount.toFixed(2)}`;
+    return `${currentCurrency()} ${formatNumber(amount, 2, 2)}`;
   }
 }
 

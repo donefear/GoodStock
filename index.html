@@ -16,6 +16,29 @@
       // browsers (tools/build-legacy.mjs). Old-style JavaScript, so that browser can run this much.
       try { new Function('var a = {}; return a?.b ?? 1;'); } catch (tooOld) { if (!window.GoodstockNative) location.replace('legacy/index.html' + location.search + location.hash); }
     </script>
+    <script id="text-size-early">
+      // The text size (Settings, goodstock-text-size-v2) before the first paint, and the narrow layout when the zoomed
+      // page is no wider than a phone: html.compact-layout gets the 720px rules of styles.css, which media queries
+      // can't see through zoom. Old-style JavaScript like the check above; applyTextSize (app/views.js) keeps it up.
+      (function () {
+        var root = document.documentElement;
+        var sizes = { small: 1, normal: 1.15, large: 1.3 };
+        var older = { normal: 'small', large: 'normal', xlarge: 'large' };
+        var size = 'normal';
+        try { size = localStorage.getItem('goodstock-text-size-v2') || older[localStorage.getItem('goodstock-text-size-v1')] || 'normal'; } catch (noStorage) { size = 'normal'; }
+        var zoom = sizes[size] || sizes.normal;
+        root.style.zoom = zoom === 1 ? '' : String(zoom);
+        function compactLayout() {
+          var current = parseFloat(root.style.zoom) || 1;
+          var compact = window.innerWidth / current <= 720;
+          var classes = (' ' + root.className + ' ').replace(/ compact-layout /g, ' ');
+          root.className = (compact ? classes + 'compact-layout' : classes).replace(/^\s+|\s+$/g, '').replace(/\s+/g, ' ');
+        }
+        window.goodstockCompactLayout = compactLayout;
+        compactLayout();
+        window.addEventListener('resize', compactLayout);
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css" />
     <title>Goodstock | Kitchen</title>
   </head>
@@ -253,7 +276,7 @@
         <div class="danger-zone"><div><strong>Clear the inventory</strong><span>Remove every item from the inventory. Recipes, plans and the shopping list stay.</span></div><button class="button button-danger" type="button" data-action="clear-inventory">Clear inventory</button></div>
         <div class="danger-zone"><div><strong>Start from scratch</strong><span>Clear inventory, saved recipes, plans, and the shopping list. Default locations stay.</span></div><button class="button button-danger" type="button" data-action="wipe-data">Wipe all data</button></div>
         </div>
-        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v4.8.0 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
+        <div class="dialog-actions settings-actions"><span class="made-by"><svg class="made-by-logo" aria-hidden="true" focusable="false"><use href="#donefear-logo"/></svg> Goodstock v4.9.0 · made by donefear</span><button class="button button-primary" type="submit">Save settings</button></div>
       </form>
     </dialog>
 
