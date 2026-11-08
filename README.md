@@ -2,7 +2,7 @@
 
 **A touch-friendly kitchen companion for the whole household.** Goodstock keeps track of what's in your fridge, freezer and pantry, plans the week's meals, writes the shopping list, and walks you through recipes one step at a time. It's built for a tablet on the kitchen wall, and it works just as well on a phone or laptop.
 
-It comes in three forms:
+It comes in four forms:
 
 | | What it is | Best for |
 |---|---|---|
@@ -19,11 +19,13 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 
 ### 🥫 Inventory
 - **Everything you have, by location**: Fridge, Freezer, Pantry and any storage spots you add. You can see it as a **list** or as a visual **map** of your kitchen.
-- **Smart ingredient names.** A catalog of common ingredients in all 15 languages suggests names as you type. Recipes and search match across languages, so a Spanish "harina" finds the "Flour" in stock.
+- **Smart ingredient names.** A catalog of common ingredients in all 18 languages suggests names as you type. Recipes and search match across languages, so a Spanish "harina" finds the "Flour" in stock.
 - **Expiry dates, estimated for you.** Common perishables get a shelf-life estimate for their storage type. A date from the package always overrides the estimate, and can be marked **use by** (don't eat it after) or **best before** (past it, the item says "check it" instead of "expired").
 - **Opened and frozen.** "Opened today" shortens the date for things that keep less once open (milk, a can of tomatoes). Freezer items remember the day they were frozen, and their estimate counts from then.
 - **Use soon panel.** Shows items that expire within three days, and anything overdue, together with saved recipes that use them.
-- **Staples.** Give an item a "Keep at least" amount, and it goes on the shopping list by itself when it runs low.
+- **Use some.** Tap an amount to take part of it off: 150 g from 1 kg leaves 850 g. Amounts are shown in a friendly unit (850 g, 1.5 kg).
+- **Units your way.** Units are picked from a list. Settings can show and take imperial amounts (cups, ounces, °F) while the kitchen itself stays metric.
+- **Staples.** Give an item a "Keep at least" amount, and it goes on the shopping list by itself when it runs low. The **Running low** filter shows what is getting short.
 - **Less waste.** When you remove an item you can say whether it was used up or thrown away. A small "This month" card shows the count and what was thrown away most, and, when you add prices (optional, in the item dialog or when putting shopping away), what it cost. Prices are remembered per product, fill themselves in next time, and give the shopping list a rough total.
 - **Barcode scanning** in the phone apps (and Chrome on a phone over HTTPS) fills in a product's name and pack size when you add it or put the shopping away. Scan something from the cupboard on the Inventory page to use one, mark it used up or thrown away, or add it if it isn't there yet; the barcode is remembered with the item.
 - **Reminders.** In the browser you get notifications while the app is open. The phone apps send a daily "use soon" notification even when the app is closed.
@@ -34,11 +36,13 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **Photos.** Imported recipes keep their photo, and you can add one to your own (a small copy is saved with the recipe, so it works offline). Mealie recipes show their Mealie photo.
 - **Servings and scaling.** Make a recipe for 2 or for 8 and every amount changes with it.
 - **Metric throughout.** Pounds, ounces and °F are converted automatically. Cups and spoons stay as written.
-- **What you have.** Every recipe page marks which ingredients are in stock and how many are missing.
-- **Favourites.** Star the recipes your household loves and filter on them.
+- **What you have.** Every recipe page marks which ingredients are in stock, how many are missing, and how much you're short ("Potatoes: 1 kg short").
+- **Favourites, ratings and notes.** Star the recipes your household loves, give them one to five stars, and write notes ("less salt next time") that cook mode shows the next time.
+- **Sort the recipe box** by closest to ready, A to Z, best rated, cooked most, cooked lately, not cooked in a while, newest first or fewest ingredients.
 - **Diets and allergens.** Recipes show "Vegetarian" or "Vegan" and what they contain (gluten, milk, eggs, nuts, fish…), worked out from the ingredient names in every language, with filters such as "Without gluten". A hint only: check the packaging when it matters. Each recipe page says how often you cooked it and when you last did.
 - **Recipe translation** with DeepL into any of the app's languages (your own is picked first) saves a translated copy of a recipe.
-- **Mealie integration (optional).** Search your [Mealie](https://mealie.io) recipe server and import recipes from it.
+- **Mealie integration (optional, server version).** Search your [Mealie](https://mealie.io) recipe server and import recipes from it.
+- **Search online.** Next to your own recipes, search [TheMealDB](https://www.themealdb.com) and preview a recipe before adding it.
 - **Recipe ideas from the web (experimental).** Goodstock suggests new recipes from [TheMealDB](https://www.themealdb.com) based on what you've cooked lately and what's about to expire. Each suggestion says why it was picked.
 
 ### 👩‍🍳 Step-by-step cook mode
@@ -67,15 +71,16 @@ The phone apps can also connect to your home server and stay in sync with it. Wi
 - **Cooking terms.** A glossary (julienne, blanch, deglaze …), each term with a button that finds a how-to video.
 
 ### 🌍 Languages
-The interface is available in **English, Dutch, Spanish, French, German, Italian, Portuguese (Brazil), Russian, Chinese (simplified), Japanese, Romanian, Polish, Turkish, Arabic and Hebrew**, the last two right to left. The language is chosen per device, so people sharing one kitchen can each use their own. Without a choice, Goodstock uses the device's language when it has it.
+The interface is available in **English, Dutch, Spanish, French, German, Danish, Swedish, Tagalog, Italian, Portuguese (Brazil), Russian, Chinese (simplified), Japanese, Romanian, Polish, Turkish, Arabic and Hebrew**, the last two right to left. The language is chosen per device, so people sharing one kitchen can each use their own. Without a choice, Goodstock uses the device's language when it has it.
 
 ### ✨ Everyday comforts
 - **Shared, live kitchen.** Every device on the server sees changes right away. If two people edit at once, both changes are merged item by item, so nothing is lost.
 - **Works offline.** The app keeps working without a connection and syncs when it's back.
 - **Undo** instead of "are you sure?" pop-ups.
-- **Light and dark themes**, and **Large / Extra large text** for a tablet across the room.
+- **Light and dark themes**, and **Small / Normal / Large text** for a tablet across the room.
 - **Kitchen screen** (◷ at the top): a wall or counter tablet shows just the time, today's meals with a cook button, running timers, what to use soon and the shopping count, in large type. The screen stays on, dims at night (a tap brightens it), and comes back after a restart.
 - **Household PIN (optional).** Locks the server version so only your devices can use it.
+- **Feedback.** Settings has links to report a problem or send an idea by email.
 - **Backups.** Export and import your whole kitchen as a file. The phone apps can also make an automatic weekly backup to a folder you choose, such as Google Drive or iCloud. The server keeps a daily copy by itself (and one before any change that removes most of the kitchen), ready to restore from Settings → Your data. Set `BACKUP_COPY_PATH` (a folder on the Docker host, for example a NAS share) and every server backup is copied there too, so a broken disk or a deleted volume doesn't take the backups with it.
 
 ---
@@ -167,7 +172,7 @@ The apps hold the whole kitchen on the device and need no server. A household ca
 
 - **Home server:** connect to your Goodstock server.
 - **Shared folder** (Android, iPhone, desktop): every device picks the same folder that a sync app keeps in step (iCloud Drive, Syncthing, Dropbox, OneDrive, Google Drive on a computer). Each device writes its own file there and merges in the others' changes, item by item. No device has to be switched on at the same time as another.
-- **Host this kitchen** (Android, desktop): one device becomes the home server on your Wi-Fi. The others connect under Home server with the address and PIN it shows, and stay in step instantly while Goodstock runs on the host. On Android, hosting keeps running in the background, with a notification, until you stop it.
+- **Host this kitchen** (Android, desktop): one device becomes the home server on your Wi-Fi. The others connect under Home server with the address and PIN it shows, and stay in step instantly while Goodstock runs on the host. On Android, hosting keeps running in the background, with a notification, until you stop it. The host also serves the app itself, so any browser on the Wi-Fi can open the address it shows and sign in with the PIN. Features that need the Docker server (Mealie, DeepL, QR lists, server backups, link import) are hidden there.
 
 ## Browser support
 
@@ -190,6 +195,7 @@ Goodstock is plain HTML, CSS and JavaScript, with no framework and no build step
 | `recipe-import.mjs`, `mealie.mjs`, `deepl.mjs` | Code shared by the server and the phone apps |
 | `android/`, `ios/`, `desktop/` | The phone apps and the desktop app |
 | `tests/` | The test suite |
+| `CHANGELOG.md` | What changed in each version |
 
 ### Tests
 ```sh
@@ -204,7 +210,7 @@ Write it in English inside `t('…')`, then run `node lang/check-translations.mj
 The layout is ready for Arabic, Hebrew and other right-to-left languages: give the language `dir: 'rtl'` in `LANGUAGES` (`i18n.js`) and the page mirrors itself. In `styles.css`, use `margin-inline-start` and similar logical properties instead of left and right; positioned elements get a `[dir="rtl"]` rule at the end of the file. `tests/e2e/rtl-layout.mjs` checks every view in a right-to-left stand-in language.
 
 ### Versioning
-Every change bumps the patch number in the `Goodstock vX.Y.Z` label in `index.html` and the cache name in `sw.js`: `npm run bump` does both (`npm run bump -- minor` for a new X.Y.0), and `npm test` fails if they don't match. The phone apps take their version from that label.
+Every change bumps the patch number in the `Goodstock vX.Y.Z` label in `index.html` and the cache name in `sw.js`, and gets a line in [CHANGELOG.md](CHANGELOG.md): `npm run bump` does both (`npm run bump -- minor` for a new X.Y.0), and `npm test` fails if they don't match. The phone apps take their version from that label.
 
 Every X.Y.0 version is also backed up with `bash tools/backup-version.sh` (Git Bash or WSL). It tags the commit `vX.Y.0` and pushes the tag, so GitHub writes the release notes (the changes since the previous tag, and which file to download; `.github/workflows/release.yml`) and attaches the APK, desktop apps and iOS `.ipa` to that release. It also saves the source as a zip, plus any local builds, in `backups/vX.Y.0/` (not committed). To add the iOS `.ipa` to an older release, run the *iOS app* workflow by hand on GitHub and enter the tag.
 
